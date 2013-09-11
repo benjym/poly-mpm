@@ -3,7 +3,7 @@ from numpy import pi,array,dot,tan,zeros,eye,cumsum,outer,sum,trace,exp,linspace
 from numpy import random, cos, sin, ceil, around
 import matplotlib.pyplot as plt
 
-class Params():
+class Params(mode):
     def __init__(self):
         self.dt = 1e-3 # timestep (s)
         self.t = 0. # physical time (s)

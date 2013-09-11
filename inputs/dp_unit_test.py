@@ -61,8 +61,9 @@ class Solid_Params():
         self.x = 3#(10*2-1)*2 # particles in x direction
         self.y = 3#(5*2-1)*2-4 # particles in y direction
         self.n = 0
-        self.sizes = linspace(0.5,1,3)
-
+        #self.sizes = linspace(0.5,1,3)
+        self.sizes = 1.
+        
 #        self.law = 'elastic'
         self.law = 'dp'
         self.rho = 2650. # density (kg/m^3)

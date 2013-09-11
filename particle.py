@@ -1,36 +1,46 @@
-from numpy import linspace, sin, cos, pi, zeros, outer, array, dot
-from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot
-from numpy import sqrt, abs, ones, random#, min, max
+from numpy import *
 from numpy.linalg import norm
 from constit import *
 
 class Particle():
-    def __init__(self,x,y,P,G):
-#        self.rho = P.S.rho # density (kg/m^3)
-        self.rho = random.rand()*P.S.rho # density (kg/m^3)
+    def __init__(self,x,y,P,G,p):
+        self.rho = P.S[p].rho # density (kg/m^3)
         self.x = array([x, y, 0.]) # position (m)
-        self.v = array([0.,0.,0.]) # velocity (m/s)
-        self.V = P.S.A*P.G.thickness # volume (m^3)
+        try:
+            self.v = P.S[p].initial_v
+        except:
+            self.v = array([0.,0.,0.]) # velocity (m/s)
+        self.V = P.S[p].A*P.G.thickness # volume (m^3)
         self.m = self.rho*self.V # mass (kg)
-        self.b = array([P.g*sin(P.theta),P.g*cos(P.theta),0.]) # body forces
-        if P.S.law == 'dp':
-#            self.strain = -1e-15*eye(3) # isotropic compression
-            self.strain = -1e-15*ones((3,3)) # mixed state compression
+        if p == 0:
+            self.b = array([P.g*sin(P.theta),P.g*cos(P.theta),0.]) # body forces
         else:
-            self.strain = zeros((3,3)) # corresponding strains
+            self.b = array([0.,0.,0.])
+        try:
+            self.stress = -P.S[p].pressure*(self.x[0]+2.)*eye(3) # build in a pressure gradient
+            self.strain = zeros((3,3)) # mixed state compression
+        except:
+            if P.S[p].law == 'dp' or P.S[p].law == 'von_mises':
+    #            self.strain = -1e-15*eye(3) # isotropic compression
+                self.strain = -1e-15*ones((3,3)) # mixed state compression
+                self.stress = (P.S.K*trace(self.strain)*eye(3) +
+                               2.*P.S.G*(self.strain - trace(self.strain)*eye(3)/3.))
+            else:
+                self.strain = zeros((3,3)) # corresponding strains
+                self.stress = zeros((3,3))
+
         self.dstrain = zeros((3,3)) # change in strain
-        self.stress = (P.S.K*trace(self.strain)*eye(3) +
-                       2.*P.S.G*(self.strain - trace(self.strain)*eye(3)/3.))
         self.sigma_kk = trace(self.stress)
         self.dev_stress = self.stress - self.sigma_kk*eye(3)/3.
         self.gammadot = 0.
-        self.pressure = 0.
-        self.sigmav = 0.
-        self.sigmah = 0.
+        self.pressure = self.sigma_kk/3.
+        self.sigmav = self.stress[1,1]
+        self.sigmah = self.stress[0,0]
         self.yieldfunction = 0.
         self.G = zeros((4,3)) # gradient of shape function
         self.N = zeros((4)) # basis function
         self.n_star = 0 # reference node
+        
         try:
             self.phi = P.GSD.phi
             self.dphi = zeros(self.phi.shape)
@@ -55,7 +65,8 @@ class Particle():
         self.strain += self.dstrain
 
     def update_stress(self,P,G):
-        exec(P.S.law + '(self,P,G)')
+        for p in range(P.phases):
+            exec(P.S[p].law + '(self,P,G,p)')
 
     def get_reference_node(self,P,G):
         self.n_star = int(trunc((self.x[0] - P.G.x_m)/G.dx)
@@ -69,6 +80,13 @@ class Particle():
             n = G.nearby_nodes(self.n_star,r,P)
             G.m[n] += self.N[r]*self.m
             G.q[n] += self.N[r]*self.m*self.v
+            
+    def add_to_boundary(self,P,G):
+        mask = zeros_like(G.boundary_v)
+        for r in xrange(4):
+            n = G.nearby_nodes(self.n_star,r,P)
+            mask[n] = 1
+        return mask
 
     def get_nodal_gsd(self,P,G):
         for position,s in enumerate(P.GSD.s):
@@ -101,8 +119,9 @@ class Particle():
             G.fe[n] += self.N[r]*self.m*self.b
             # if there are tractions add something here
 
-    def increment_gravity(self,P,G):
-        self.b = array([P.g*sin(P.theta),P.g*cos(P.theta),0.]) # body forces
+    def increment_gravity(self,P,G,p):
+        if p == 0:
+            self.b = array([P.g*sin(P.theta),P.g*cos(P.theta),0.]) # body forces
 
     def energy(self,P):
         k = 0.5*self.m*sum(self.v**2) # kinetic
