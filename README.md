@@ -20,7 +20,7 @@ You will need a full python3 environment installed. I recommend [anaconda](https
 ## Contributing
 
 <!-- Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us. -->
-If you would like to contribute to the code, please contact [Benjy](benjy.marks@sydney.edu.au).
+If you would like to contribute to the code, please contact Benjy at <benjy.marks@sydney.edu.au>
 
 
 <!-- ## Versioning
