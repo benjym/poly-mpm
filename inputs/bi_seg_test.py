@@ -13,19 +13,16 @@ class Params():
         self.initial_flow = 'steady'
 
         self.segregate_grid = True
-#         self.segregate_grid = False
         self.c = 1e-3 # inter-particle drag coefficient
         self.D = 0.#1e-2 # segregation diffusion coefficient
 
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params(self)#self.nt)
-#         self.S = [Large_Params(self.G,self),Small_Params(self.G,self),]
         self.S = [Solid_Params(self.G,self),]
 
         self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ns_' + str(self.G.ns) + '/'
         self.smooth_grad2 = False
-
         print('Saving to ' + self.supername)
 
     def update_forces(self):
@@ -39,7 +36,7 @@ class Grid_Params():
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
 
-        self.nx = 51
+        self.nx = 2
         self.x_m = 0.0 # (m)
         self.x_M = self.dy*(self.nx-1) + self.x_m # (m)
         self.x = linspace(self.x_m,self.x_M,self.nx)
@@ -56,11 +53,7 @@ class Boundary_Params():
     def __init__(self):
         self.has_bottom = True
         self.cyclic_lr = True
-        self.roughness = True
-
-        self.has_top = True
-        self.has_left = True
-        self.has_right = True
+        self.no_slip_bottom = True
 
 class Solid_Params():
     def __init__(self,G,P):

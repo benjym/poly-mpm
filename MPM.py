@@ -73,6 +73,7 @@ def main(params):
             if P.O.save_u: plot.save_u(L,P,G)
             if P.O.save_s_bar: plot.save_s_bar(L,P,G)
         if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.store_p_q(P,G,L,P.tstep)
+        if P.mode == 'pouliquen_unit_test': P.O.store_mu(P,G,L,P.tstep)
 
         # Increment time
         P.t += P.dt
@@ -91,6 +92,7 @@ def main(params):
     if P.O.save_u: plot.save_u(L,P,G)
     if P.O.save_s_bar: plot.save_s_bar(L,P,G)
     if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.draw_p_q(P,G,L,plot,P.tstep)
+    if P.mode == 'pouliquen_unit_test': P.O.draw_mu(P,G,L,plot,P.tstep)
     print('')
     return 0
 

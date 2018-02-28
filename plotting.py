@@ -126,7 +126,7 @@ class Plotting:
                         plt.ylim(P.G.y_m,P.G.y_M)
                         plt.colorbar()
 
-                elif P.S[p].law == 'bingham' or (P.S[p].law == 'pouliquen' or P.S[p].law == 'HB'):
+                elif P.S[p].law == 'bingham' or P.S[p].law == 'pouliquen2D' or (P.S[p].law == 'pouliquen' or P.S[p].law == 'HB'):
                     plt.close()
                     fig, ax = plt.subplots(4,4,figsize=figsize)
                     ax = array(ax).flatten()
@@ -135,7 +135,7 @@ class Plotting:
                     ax[0].set_ylim(P.G.y_m,P.G.y_M)
                     ax[0].set_xlabel(r'$u$',rotation='horizontal')
                     ax[0].set_ylabel(r'$y$',rotation='horizontal')
-                    if P.mode == 'bi_seg_test' or P.mode == 'pouliquen_unit_test':
+                    if P.mode == 'bi_seg_test':
                         ax[0].set_title(r'$u_{max}^{pred} = ' + str(P.S[p].v_max) + '$\n$|u_{max}| = ' +
                                          str(amax(abs(nan_to_num(G.q[:,0]/G.m)))) + '$',
                                          rotation='horizontal')

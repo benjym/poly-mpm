@@ -44,7 +44,7 @@ class Particle():
         if P.initial_flow == 'steady':
             if P.S[0].law == 'viscous' or P.S[0].law == 'viscous_size':
                 self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.]) # VISCOUS FLOW DOWN A SLOPE
-            elif P.S[0].law == 'pouliquen':
+            elif P.S[0].law == 'pouliquen' or P.S[0].law == 'pouliquen2D':
                 s_bar = (P.G.s_m+P.G.s_M)/2.
                 self.v = array([sqrt(abs(P.max_g)*P.G.s_bar_0)*(2./3.)*P.S[p].I_0*
                                (tan(abs(P.theta))-P.S[p].mu_0)/(P.S[p].mu_1-tan(abs(P.theta)))*

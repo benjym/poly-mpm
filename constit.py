@@ -391,24 +391,23 @@ def pouliquen(MP,P,G,p):
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
 
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
-    # MP.gammadot = maximum(MP.gammadot,1e-5) # HACK: DON'T WANT TO DIVIDE BY SOMETHING TINY
 
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
     MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
-    eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    eta = minimum(eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
-    MP.dev_stress = eta*MP.de_ij/P.dt
+    MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
+    MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
     MP.dp = P.S[p].K*MP.de_kk # tension positive
     MP.pressure += MP.dp
-    # if MP.pressure > 0.: MP.pressure = 0. # can't go into tension
+    if MP.pressure > 0.: MP.pressure = 0. # can't go into tension - this is really important!!
 
     MP.stress = MP.pressure*eye(3) + MP.dev_stress
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r,P)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
-        # G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)*MP.m
-        G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
+        G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
+        # G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m

@@ -117,11 +117,11 @@ class Grid():
 
         self.damping_force = zeros((P.G.nx*P.G.ny,3)) # local non-viscous damping
         self.s_bar = zeros([P.G.nx*P.G.ny])
-
+        self.dphi = zeros([P.G.nx*P.G.ny,P.G.ns])
+        
         if P.segregate_grid:
             self.phim = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.phi = zeros([P.G.nx*P.G.ny,P.G.ns])
-            self.dphi = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.S = tile(P.G.s,[P.G.nx*P.G.ny,1])
             self.u_hat = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.v_hat = zeros([P.G.nx*P.G.ny,P.G.ns])
