@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,mode):
-        self.dt = 1e-3 # timestep (s)
+        self.dt = 1e-4 # timestep (s)
         self.t = 0. # physical time (s)
         self.tstep = 0
         self.savetime = .1
         self.t_f = 5.#100*self.dt # final time (s)
         self.nt = int(self.t_f/self.dt) # number of timesteps
-        self.save = 0 # save counter
+        self.grid_save = 0 # save counter
+        self.mp_save = 0 # save counter
         self.M_tol = 1e-10 # very small mass (kg)
         self.max_g = 0. # gravity (ms^-2)
         self.max_q = 600.
@@ -20,7 +21,7 @@ class Params():
         self.G = Grid_Params()
         self.B = Boundary_Params()
         self.O = Output_Params(self.nt)
-        self.S = Solid_Params()
+        self.S = [Solid_Params()]
         self.F = Fluid_Params()
         self.R = Fluid_Params()
         self.has_yielded = False
@@ -39,9 +40,10 @@ class Grid_Params():
         self.x_M = 1.0 # (m)
         self.y_m = 0.0 # (m)
         self.y_M = 1.0 # (m)
-        self.scale = 11
+        self.scale = 51
         self.nx = self.scale
         self.ny = self.scale
+        self.thickness = 1.
         
 class Boundary_Params():
     def __init__(self):
@@ -55,7 +57,9 @@ class Boundary_Params():
         self.vertical_force = True
         self.horizontal_force = False
         self.roughness = False
-
+        self.cyclic_lr = False
+        self.inlet_right = False
+        
 class Solid_Params():
     def __init__(self):
         self.X = []
@@ -66,7 +70,7 @@ class Solid_Params():
 #        self.law = 'von_mises'
         self.rho = 1000. # density (kg/m^3)
         
-        self.E = 1.e7 # elastic modulus (Pa)
+        self.E = 1e7 # elastic modulus (Pa)
         self.nu = 0. # poisson's ratio
         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
@@ -74,8 +78,8 @@ class Solid_Params():
         self.s = 2.5
         self.k = 100.
 
-        nr = 15 # particles in radial direction
-        nphi = 50 # particles around circumference
+        nr = 50 # particles in radial direction
+        nphi = 6*nr #50 # particles around circumference
         r = 0.45 # radius
         c = [0.5,.5] # centre
         
@@ -91,7 +95,7 @@ class Solid_Params():
 class Output_Params():
     def __init__(self,nt):
         self.measure_energy = True
-        self.plot_continuum = False
+        self.plot_continuum = True
         self.plot_material_points = True
         self.measure_stiffness = False
         self.check_positions = True
@@ -99,15 +103,16 @@ class Output_Params():
         self.energy = zeros((10*nt+1,4)) # energy
         
     def measure_E(self,P,L):
-        print 'Measuring macro and micro stress/strain for each material point... '
-        for i in xrange(P.S.n):
+        print('Measuring macro and micro stress/strain for each material point... ')
+        for i in range(P.S.n):
             original_position = array((P.S.X[i],P.S.Y[i],0))
             macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
             macro_stress = P.max_conf#/(P.S.L*P.S.W)
-            print 'From macroscopic stress/strain:'
-            print macro_stress/macro_strain/P.S.E
-            print 'From microscopic stress/strain:'
-            print L.S[i].dstress/L.S[i].dstrain/P.S.E
+            print('From macroscopic stress/strain:' +
+                  str(macro_stress/macro_strain/P.S.E) +
+                  'From microscopic stress/strain:' +
+                  str(L.S[i].dstress/L.S[i].dstrain/P.S.E)
+                  )
 
             
 class Fluid_Params():

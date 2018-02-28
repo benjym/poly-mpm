@@ -1,5 +1,0 @@
-This is a material point method implementation in 2 spatial dimensions for granular mechanics applications. Additionally, each material point contains a complete grainsize distribution defined by an additional internal coordinate, $s$.
-
-It will (eventually) be used for modelling of comminution, segregation and more generally flow problems of polydisperse granular materials.
-
-Contact me at benjy [at] benjymarks.com for more details or to get involved.

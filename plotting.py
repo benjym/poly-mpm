@@ -1,44 +1,74 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 import matplotlib.pyplot as plt
-from numpy import cumsum, zeros, sign, linspace, sum, abs, maximum, amax, nan_to_num
+from matplotlib.cm import viridis, bwr
+from matplotlib import colors
+from numpy import *
 from numpy.linalg import norm
 import os
+plt.viridis()
+
+# viridis.set_under('w')
+# viridis.set_over('w')
+# bwr.set_under('w')
+# bwr.set_over('w')
+bwr.set_bad('k')
 
 figs = {'backend': 'agg',
           'axes.labelsize': 10,
-          'xtick.labelsize': 6,
-          'ytick.labelsize': 6,
-          'text.usetex': True,
-          'text.usefont': 'serif'}
+          'xtick.labelsize':10,
+          'ytick.labelsize':10,
+#           'text.usetex': True,
+#           'font.serif' : 'serif',
+#           'font.sans-serif' : 'cm',
+#           'font.family' : 'sans-serif',
+          }
 plt.rcParams.update(figs)
 
 class Plotting:
+    """ Class containing all of the plotting functions.
+    """
+
     def savefig(self,P,name):
-        root_dir = '~/Documents/Python/mpm/'
+        """ A method for saving figures in the right place """
+#         root_dir = '~/Documents/poly-mpm/'
+        root_dir = ''
         root_dir = os.path.expanduser(root_dir)
-        try:
-            P.supername
-            save_dir = root_dir + P.supername + '/'
-        except:
-            save_dir = root_dir + 'im/' + P.mode + '/' + P.S[0].law + '/'
-        for p in range(P.phases):
-            save_dir_p = save_dir + str(p) + '/'
-            if not os.path.isdir(save_dir_p):
-                os.makedirs(save_dir_p)
-        plt.savefig(save_dir + name + '.png', dpi=100)
+        if hasattr(P, 'supername'): P.save_dir = root_dir + P.supername + '/'
+        else: P.save_dir = root_dir + 'im/' + P.mode + '/' + P.S[0].law + '/'
+        if P.O.plot_material_points:
+            for p in range(P.phases):
+                save_dir_p = P.save_dir + 'MP_' + str(p) + '/'
+                if not os.path.isdir(save_dir_p):
+                    os.makedirs(save_dir_p)
+        if P.O.plot_continuum:
+            if not os.path.isdir(P.save_dir + 'Continuum'):
+                os.makedirs(P.save_dir + 'Continuum/')
+        if P.O.plot_gsd_mp or P.O.plot_gsd_grid:
+            if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
+            for i in range(P.G.ns):
+                if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
+
+        plt.subplots_adjust(hspace=0.4,wspace=0.4)
+        plt.savefig(P.save_dir + name + '.png', dpi=150)
         plt.close()
-        print 'Saved "' + name + '.png"'
-        
+#         print('Saved "' + name + '.png"                     ',end='\r')
+
     def draw_grid(self,G):
+        """ Draw an overlay of the grid. Green for both directions, red crosses for horizontal boundaries and red plusses for vertical boundaries."""
         plt.plot(G.X*(1-G.boundary_tot),G.Y*(1-G.boundary_tot),'g+')
-        plt.plot(G.X*G.boundary_tot,G.Y*G.boundary_tot,'r+')
-    
+#         plt.plot(G.X*G.boundary_tot,G.Y*G.boundary_tot,'r+')
+        plt.plot(G.X*G.boundary_h,G.Y*G.boundary_h,'rx')
+        plt.plot(G.X*G.boundary_v,G.Y*G.boundary_v,'r+')
+
     def draw_gamma_dot(self,L,P,G):
         for p in range(P.phases):
             if P.S[p].law is not 'rigid':
                 x = zeros((P.S[p].n,3))
                 v = zeros((P.S[p].n,3))
                 gammadot = zeros((P.S[p].n))
-                for i in xrange(P.S[p].n):
+                for i in range(P.S[p].n):
                     x[i] = L.S[p][i].x
                     v[i] = L.S[p][i].v
                     gammadot[i] = L.S[p][i].gammadot/P.dt
@@ -50,99 +80,140 @@ class Plotting:
                 plt.colorbar()
                 self.savefig(P,str(P.save).zfill(5))
                 P.save += 1
-        
+
     def draw_continuum(self,G,P):
-        for p in range(P.phases):
+#         for p in range(P.phases):
+        for p in [0,]: # all phases have same continuum properties!
             if P.S[p].law is not 'rigid':
                 plt.clf()
-                try:
+                if hasattr(P.O, 'continuum_fig_size'):
                     figsize = P.O.continuum_fig_size
-                except AttributeError:
-                    scale = 6
+                else:
+                    scale = 3
                     figsize=[2.*scale*(P.G.x_M-P.G.x_m),scale*(P.G.y_M-P.G.y_m)]
-                plt.figure(figsize=figsize) 
-                
-                if P.S[p].law == 'viscous':
-                    plt.subplots_adjust(hspace=0.4,wspace=0.4)
-                    plt.subplot(231)
-                    plt.plot(P.G.y,(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))[P.G.nx/2::P.G.nx]
-                    plt.ylabel(r'$u$',rotation='horizontal')
-                    plt.xlabel(r'$y$',rotation='horizontal')
-                    plt.title(r'$|u_{max}| = ' + str(amax(abs(nan_to_num(G.q[:,0]/G.m)))) + '$',
+                plt.figure(figsize=figsize)
+
+                if P.S[p].law == 'viscous' or P.S[p].law == 'viscous_size' or P.S[p].law == 'shear_maxwell' or P.S[p].law == 'marks2012':
+                    plt.close()
+                    fig, ax = plt.subplots(2,4,figsize=figsize)
+                    ax = array(ax).flatten()
+
+                    ax[0].plot((G.q[:,0]/G.m)[P.G.nx//2::P.G.nx],G.y,'k')
+                    ax[0].plot(G.gammadot[P.G.nx//2::P.G.nx],G.y,'b')
+                    ax[0].set_ylim(P.G.y_m,P.G.y_M)
+                    ax[0].set_xlabel(r'$u$, $\dot\gamma$',rotation='horizontal')
+                    ax[0].set_ylabel(r'$y$',rotation='horizontal')
+                    ax[0].set_title(r'$|u_{max}| = ' + str(amax(abs(nan_to_num(G.q[:,0]/G.m)))) + '$',
                               rotation='horizontal')
-                    plt.subplot(232)
-                    plt.title(r'$u$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(233)
-                    plt.title(r'$v$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.q[:,1]/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(245)
-                    plt.title(r'$\rho$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,(G.m/G.V).reshape(P.G.ny,P.G.nx))#,
-        #                          levels=[P.S.rho-1,P.S.rho-0.5,P.S.rho+0.5,P.S.rho+1])
-                    plt.colorbar()
-                    plt.subplot(246)
-                    plt.title(r'$P$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.pressure/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(247)
-                    plt.title(r'$|\dot\gamma|$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.gammadot/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(248)
-                    plt.title(r'$||s_{ij}||$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.dev_stress/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
+
+                    titles = [r'$u$',r'$v$',r'$\bar s$',r'$\rho$',r'$|\dot\gamma|$',r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$']
+                    z = [G.q[:,0],
+                         G.q[:,1],
+                         G.s_bar*G.m,
+                         G.m*G.m/G.V,
+                         abs(G.gammadot)*G.m,
+                         G.grad_gammadot[:,0]*G.m,
+                         G.grad_gammadot[:,1]*G.m,
+                         ]
+
+                    for i in range(len(titles)):
+                        plt.sca(ax[i+1])
+                        cax = plt.pcolormesh(G.x,G.y,
+                                                   ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
+                                                   )
+                        plt.title(titles[i],rotation='horizontal')
+                        plt.xlim(P.G.x_m,P.G.x_M)
+                        plt.ylim(P.G.y_m,P.G.y_M)
+                        plt.colorbar()
+
                 elif P.S[p].law == 'bingham' or (P.S[p].law == 'pouliquen' or P.S[p].law == 'HB'):
-                    plt.subplots_adjust(hspace=0.4,wspace=0.4)
-                    plt.subplot(331)
-                    plt.plot(P.G.y,(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))[P.G.nx/2::P.G.nx]
-                    plt.ylabel(r'$u$',rotation='horizontal')
-                    plt.xlabel(r'$y$',rotation='horizontal')
-                    plt.title(r'$|u_{max}| = ' + str(amax(abs(G.q[:,0]/G.m))) + '$',
+                    plt.close()
+                    fig, ax = plt.subplots(4,4,figsize=figsize)
+                    ax = array(ax).flatten()
+
+                    ax[0].plot((G.q[:,0]/G.m)[P.G.nx//2::P.G.nx],G.y,'k')
+                    ax[0].set_ylim(P.G.y_m,P.G.y_M)
+                    ax[0].set_xlabel(r'$u$',rotation='horizontal')
+                    ax[0].set_ylabel(r'$y$',rotation='horizontal')
+                    if P.mode == 'bi_seg_test' or P.mode == 'pouliquen_unit_test':
+                        ax[0].set_title(r'$u_{max}^{pred} = ' + str(P.S[p].v_max) + '$\n$|u_{max}| = ' +
+                                         str(amax(abs(nan_to_num(G.q[:,0]/G.m)))) + '$',
+                                         rotation='horizontal')
+                        ax[0].plot(sqrt(abs(P.max_g)*P.G.s_bar_0)*(2./3.)*P.S[p].I_0*
+                                   (tan(abs(P.theta))-P.S[p].mu_0)/(P.S[p].mu_1-tan(abs(P.theta)))*
+                                   sqrt(P.S[p].packing*cos(abs(P.theta)))*
+                                   (P.G.y_M**1.5-(P.G.y_M-P.G.y)**1.5)/P.G.s_bar_0**1.5,
+                                   G.y,
+                                   'k--')
+                    else:
+                        ax[0].set_title(r'$|u_{max}| = ' + str(amax(abs(nan_to_num(G.q[:,0]/G.m)))) + '$',
                               rotation='horizontal')
-                    plt.subplot(332)
-                    plt.title(r'$u$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(333)
-                    plt.title(r'$v$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.q[:,1]/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(334)
-                    plt.title(r'$\rho$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,(G.m/G.V).reshape(P.G.ny,P.G.nx))#,
-        #                          levels=[P.S.rho-1,P.S.rho-0.5,P.S.rho+0.5,P.S.rho+1])
-                    plt.colorbar()
-                    plt.subplot(335)
-                    plt.title(r'$P$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.pressure/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(336)
-                    plt.title(r'$|\dot\gamma|$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.gammadot/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(337)
-                    plt.title(r'$||s_{ij}||$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.dev_stress/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
-                    plt.subplot(338)
-                    plt.title(r'$y$',rotation='horizontal')
-                    plt.contourf(G.x,G.y,
-                        (G.yieldfunction/G.m).reshape(P.G.ny,P.G.nx))
-                    plt.colorbar()
+
+                    ax[1].plot(G.gammadot[P.G.nx//2::P.G.nx],G.y,'b')
+                    ax[1].set_ylim(P.G.y_m,P.G.y_M)
+                    ax[1].set_xlabel(r'$\dot\gamma$',rotation='horizontal')
+                    ax[1].set_ylabel(r'$y$',rotation='horizontal')
+                    ax[1].set_title(r'$|\dot\gamma_{max}| = ' + str(amax(abs(nan_to_num(G.gammadot)))) + '$',
+                              rotation='horizontal')
+
+
+                    titles = [r'$\rho$',r'$\bar s$',
+                              r'$u$',r'$v$',r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
+                              r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
+                              r'$\mu$',r'$\log_{10}I$',r'$\Delta\phi^{m}$',r'$\Delta\phi^{M}$']
+                    z = [G.m*G.m/G.V,
+                         G.s_bar*G.m,
+                         G.q[:,0],
+                         G.q[:,1],
+                         G.grad_gammadot[:,0]*G.m,
+                         G.grad_gammadot[:,1]*G.m,
+                         abs(G.gammadot)*G.m,
+                         -G.pressure,
+                         G.dev_stress,
+                         abs(G.dev_stress/G.pressure)*G.m,
+                         G.mu,
+                         log10(G.I/G.m)*G.m,
+                         G.dphi[:,0]*G.m,
+                         G.dphi[:,-1]*G.m
+                         ]
+
+                    for i in range(len(titles)):
+                        plt.sca(ax[i+2])
+                        cax = plt.pcolormesh(G.x,
+                                             G.y,
+                                             ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
+                                             )
+                        plt.title(titles[i],rotation='horizontal')
+                        plt.xlim(P.G.x_m,P.G.x_M)
+                        plt.ylim(P.G.y_m,P.G.y_M)
+                        if P.segregate_grid:
+                            if i == 1:
+                                plt.clim(P.G.s_m,P.G.s_M)
+                                plt.set_cmap('bwr')
+                            elif i == 12:
+                                plt.clim(-amax(abs(G.dphi[:,0])),amax(abs(G.dphi[:,0])))
+                                plt.set_cmap('bwr')
+                            elif i == 13:
+                                plt.clim(-amax(abs(G.dphi[:,-1])),amax(abs(G.dphi[:,-1])))
+                                plt.set_cmap('bwr')
+                            else:
+                                plt.set_cmap('viridis')
+                        plt.colorbar()
+
+                elif P.S[p].law == 'dp' or P.S[p].law == 'dp_rate':
+                    plt.close()
+                    fig, ax = plt.subplots(2,4,figsize=figsize)
+                    ax = array(ax).flatten()
+
+                    titles = [r'$\rho$',r'$\bar s$',r'$u$',r'$v$',r'$p$',r'$q$',r'$|\dot\gamma|$',r'$q/p$']
+                    z = [G.m*G.m/G.V,G.s_bar*G.m,G.q[:,0],G.q[:,1],G.pressure,G.dev_stress,abs(G.gammadot),G.m*G.dev_stress/G.pressure]
+                    for i in range(8):
+                        plt.sca(ax[i])
+                        plt.pcolormesh(G.x,G.y,
+                                       ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
+                                       )
+                        plt.title(titles[i],rotation='horizontal')
+                        plt.colorbar()
                 else:
                     plt.subplot(331)
                     plt.xlabel(r'$\rho$',rotation='horizontal')
@@ -181,28 +252,35 @@ class Plotting:
                     plt.subplot(337)
                     plt.xlabel(r'$P$',rotation='horizontal')
                     plt.contourf(G.x,G.y,
-                        (G.pressure/G.m).reshape(P.G.ny,P.G.nx))
+                        (-G.pressure/G.m).reshape(P.G.ny,P.G.nx))
                     plt.colorbar()
                     plt.subplot(338)
-                    plt.xlabel(r'$|\sigma_{ij}|$',rotation='horizontal')
+                    plt.xlabel(r'$|s_{ij}|$',rotation='horizontal')
                     plt.contourf(G.x,G.y,
                         (G.dev_stress/G.m).reshape(P.G.ny,P.G.nx))
                     plt.colorbar()
                     plt.subplot(339)
-                    plt.xlabel(r'$|\dot\sigma_{ij}|$',rotation='horizontal')
+                    plt.xlabel(r'$|\dot s_{ij}|$',rotation='horizontal')
                     plt.contourf(G.x,G.y,
                         (G.dev_stress_dot/G.m).reshape(P.G.ny,P.G.nx))
                     plt.colorbar()
-        #        for i in xrange(6):
+        #        for i in range(6):
         #            plt.subplot(321 + i)
         #            plt.xticks([])
         #            plt.yticks([])
                     #plt.plot(G.X*G.boundary_tot,G.Y*G.boundary_tot,'r+')
-                self.savefig(P,str(p)+'/'+str(10000+P.grid_save).zfill(5))
+                self.savefig(P,'Continuum/'+str(P.grid_save).zfill(5))
         P.grid_save += 1
 
     def draw_material_points(self,L,P,G,name=False):
         plt.clf()
+        if hasattr(P.O, 'mp_fig_size'):
+            figsize = P.O.mp_fig_size
+        else:
+            scale = 3
+            figsize=[2.*scale*(P.G.x_M-P.G.x_m),scale*(P.G.y_M-P.G.y_m)]
+        plt.figure(figsize=figsize)
+
         for p in range(P.phases):
             if P.S[p].law == 'elastic':
                 x = zeros((P.S[p].n,3))
@@ -211,7 +289,7 @@ class Plotting:
                 pressure = zeros((P.S[p].n))
                 sigmah = zeros((P.S[p].n))
                 sigmav = zeros((P.S[p].n))
-                for i in xrange(P.S[p].n):
+                for i in range(P.S[p].n):
                     x[i] = L.S[p][i].x
                     v[i] = L.S[p][i].v
                     gammadot[i] = L.S[p][i].gammadot/P.dt
@@ -219,18 +297,14 @@ class Plotting:
                     sigmah[i] = L.S[p][i].sigmah
                     pressure[i] = L.S[p][i].pressure
                 size=25.
-                try:
-                    scale = P.G.scale
-                except AttributeError:
-                    scale = 3
-                plt.figure(figsize=[scale*(P.G.x_M-P.G.x_m),scale*(P.G.y_M-P.G.y_m)])    
+
                 plt.subplot(321)
                 self.draw_grid(G)
                 plt.xlabel(r"$MP's$")
                 plt.scatter(x[:,0],x[:,1],s=size,marker='s',
                             edgecolor='None',facecolor='b')
                 plt.subplot(322)
-                plt.xlabel(r'{\bf $u$}',rotation='horizontal')
+                plt.xlabel(r'${\bf u}$',rotation='horizontal')
                 plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
                 plt.subplot(323)
                 plt.xlabel(r'$\sigma_v$',rotation='horizontal')
@@ -258,7 +332,7 @@ class Plotting:
                 dev_stress_dot = zeros((P.S[p].n))
                 sigmah = zeros((P.S[p].n))
                 sigmav = zeros((P.S[p].n))
-                for i in xrange(P.S[p].n):
+                for i in range(P.S[p].n):
                     x[i] = L.S[p][i].x
                     v[i] = L.S[p][i].v
                     gammadot[i] = L.S[p][i].gammadot/P.dt
@@ -273,7 +347,7 @@ class Plotting:
                     scale = P.G.scale
                 except AttributeError:
                     scale = 10
-                plt.figure(figsize=[scale*(P.G.x_M-P.G.x_m),scale*(P.G.y_M-P.G.y_m)])    
+                plt.figure(figsize=[scale*(P.G.x_M-P.G.x_m),scale*(P.G.y_M-P.G.y_m)])
 
                 plt.subplot(331)
                 self.draw_grid(G)
@@ -281,7 +355,7 @@ class Plotting:
                 plt.scatter(x[:,0],x[:,1],s=size,marker='s',
                             edgecolor='None',facecolor='b')
                 plt.subplot(332)
-                plt.xlabel(r'{\bf $u$}',rotation='horizontal')
+                plt.xlabel(r'${\bf u}$',rotation='horizontal')
                 plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
                 plt.subplot(333)
                 plt.xlabel(r'$y_\Phi$',rotation='horizontal')
@@ -316,69 +390,77 @@ class Plotting:
             elif P.S[p].law == 'dp':
                 x = zeros((P.S[p].n,3))
                 v = zeros((P.S[p].n,3))
-                p = zeros((P.S[p].n))
+                pressure = zeros((P.S[p].n))
                 q = zeros((P.S[p].n))
-                y = zeros((P.S[p].n))
-                for i in xrange(P.S[p].n):
+                for i in range(P.S[p].n):
                     x[i] = L.S[p][i].x
                     v[i] = L.S[p][i].v
-                    p[i] = L.S[p][i].p
+                    pressure[i] = L.S[p][i].pressure
                     q[i] = L.S[p][i].q
-                    y[i] = L.S[p][i].y
                 size=25.
                 try:
                     figsize = P.O.mp_fig_size
                 except AttributeError:
                     figsize=[6,6]
-                plt.add_subplot(figsize=figsize)
+#                 plt.add_subplot(figsize=figsize)
                 plt.subplot(321)
                 self.draw_grid(G)
                 plt.xlabel(r"$MP's$")
                 plt.scatter(x[:,0],x[:,1],s=size,marker='s',
                             edgecolor='None',facecolor='b')
                 plt.subplot(322)
-                plt.xlabel(r'{\bf $u$}',rotation='horizontal')
+                plt.xlabel(r'${\bf u}$',rotation='horizontal')
                 plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
                 plt.subplot(323)
                 plt.xlabel(r'$p$',rotation='horizontal')
-                plt.scatter(x[:,0],x[:,1],s=size,c=p,marker='s',edgecolor='None')
+                plt.scatter(x[:,0],x[:,1],s=size,c=pressure,marker='s',edgecolor='None')
                 plt.colorbar()
                 plt.subplot(324)
                 plt.xlabel(r'$q$',rotation='horizontal')
                 plt.scatter(x[:,0],x[:,1],s=size,c=q,marker='s',edgecolor='None')
                 plt.colorbar()
-                plt.subplot(325)
-                plt.xlabel(r'$y$',rotation='horizontal')
-                plt.scatter(x[:,0],x[:,1],s=size,c=y,marker='s',edgecolor='None')
-                plt.colorbar()
             elif P.S[p].law == 'rigid':
-                pass
-            else:
+                # pass
                 x = zeros((P.S[p].n,3))
                 v = zeros((P.S[p].n,3))
-                for i in xrange(P.S[p].n):
+                for i in range(P.S[p].n):
                     x[i] = L.S[p][i].x
                     v[i] = L.S[p][i].v
                 size=15.
-                try:
-                    figsize = P.O.mp_fig_size
-                except AttributeError:
-                    figsize=[6,6]
-                plt.figure(figsize=figsize)    
-                plt.subplot(121)
+
+                plt.subplot(211)
                 self.draw_grid(G)
                 plt.xlabel(r"$MP's$")
-                plt.scatter(x[:,0],x[:,1],s=size,marker='s',edgecolor='None',facecolor='b')
-                plt.subplot(122)
-                plt.xlabel(r'{\bf $u$}',rotation='horizontal')
+                plt.scatter(x[:,0],x[:,1],s=size,marker='.',edgecolor='None',facecolor='b')
+                plt.xlim(P.G.x_m-G.dx/2,P.G.x_M+G.dx/2)
+                plt.ylim(P.G.y_m-G.dy/2,P.G.y_M+G.dy/2)
+                plt.subplot(212)
+                plt.xlabel(r'${\bf u}$',rotation='horizontal')
                 plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
-            if P.S[p].law is not 'rigid':
-                if name:
-                    self.savefig(P,str(p)+'/'+str(name).zfill(5))
-                else:
-                    self.savefig(P,str(p)+'/'+str(P.mp_save).zfill(5))
+            else:
+                x = zeros((P.S[p].n,3))
+                v = zeros((P.S[p].n,3))
+                for i in range(P.S[p].n):
+                    x[i] = L.S[p][i].x
+                    v[i] = L.S[p][i].v
+                size=15.
+
+                plt.subplot(211)
+                self.draw_grid(G)
+                plt.xlabel(r"$MP's$")
+                plt.scatter(x[:,0],x[:,1],s=size,marker='.',edgecolor='None',facecolor='b')
+                plt.xlim(P.G.x_m-G.dx/2,P.G.x_M+G.dx/2)
+                plt.ylim(P.G.y_m-G.dy/2,P.G.y_M+G.dy/2)
+                plt.subplot(212)
+                plt.xlabel(r'${\bf u}$',rotation='horizontal')
+                plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
+            # if P.S[p].law is not 'rigid':
+            if name:
+                self.savefig(P,'MP_'+str(p)+'/'+str(name).zfill(5))
+            else:
+                self.savefig(P,'MP_'+str(p)+'/'+str(P.mp_save).zfill(5))
         P.mp_save += 1
-        
+
     def draw_energy(self,P):
         plt.clf()
         t = P.O.energy[:,0]
@@ -391,50 +473,109 @@ class Plotting:
         plt.ylabel('Energy')
         self.savefig(P,'ns_' + str(P.S[0].n))
         plt.close()
-        
-    def draw_fluid(self,L,P,G):
-        x = zeros((P.F.n,3))
-        v = zeros((P.F.n,3))
-        for i in xrange(P.F.n):
-            x[i] = L.F[i].x
-            v[i] = L.F[i].v
-        size=25.
+
+    def draw_gsd_mp(self,L,P,G):
+        sizes = []
+        for p in range(P.phases): sizes.append(P.S[p].size)
         plt.clf()
-        plt.figure()
-        plt.subplot(121)
-        self.draw_grid(G)
-        plt.xlabel(r"$MP's$")
-        plt.scatter(x[:,0],x[:,1],s=size,marker='s',
-                    edgecolor='None',facecolor='b')
-        plt.subplot(122)
-        plt.xlabel(r'{\bf $u$}',rotation='horizontal')
-        plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
-        self.savefig(P,str(P.save).zfill(5))
-        P.save += 1
-        
-    def draw_gsd(self,L,P,G):
-        x = zeros((P.S[0].n,3))
-        v = zeros((P.S[0].n,3))
-        s = zeros((P.S[0].n))
-        for i in xrange(P.S[0].n):
-            x[i] = L.S[0][i].x
-            v[i] = L.S[0][i].v
-            s[i] = L.S[0][i].s_bar
-        size=25.
-        plt.clf()
-        plt.figure()
-        self.draw_grid(G)
-        plt.xlabel(r"$MP's$")
-        plt.scatter(x[:,0],x[:,1],s=size,c=s,marker='s',
-                    edgecolor='None')
+        plt.pcolormesh(G.x,G.y,G.s_bar.reshape(P.G.ny,P.G.nx),vmin=min(sizes),vmax=max(sizes))
         plt.colorbar()
-        self.savefig(P,str(20000+P.save).zfill(5))
-    
+        plt.title(r'$\bar s$')
+        self.savefig(P,'GSD/Continuum_'+str(P.grid_save).zfill(5))
+        for p in range(P.phases):
+            plt.clf()
+            x = zeros((P.S[p].n,3))
+            u_hat = zeros((P.S[p].n,3))
+            f = zeros((P.S[p].n))
+            s_bar = zeros((P.S[p].n))
+            for i in range(P.S[p].n):
+                x[i] = L.S[p][i].x
+                u_hat[i] = L.S[p][i].u_hat
+                f[i] = L.S[p][i].f
+                s_bar[i] = L.S[p][i].s_bar
+            plt.subplot(221)
+            self.draw_grid(G)
+            plt.scatter(x[:,0],x[:,1],s=20,c=f,marker='s',edgecolor='None')
+            plt.colorbar()
+            plt.title(r'$f$')
+            plt.subplot(222)
+            self.draw_grid(G)
+            plt.scatter(x[:,0],x[:,1],s=20,c=s_bar,marker='s',edgecolor='None',vmin=min(sizes),vmax=max(sizes))
+            plt.colorbar()
+            plt.title(r'$\bar s$')
+            plt.subplot(223)
+            self.draw_grid(G)
+            plt.scatter(x[:,0],x[:,1],s=20,c=u_hat[:,0],marker='s',edgecolor='None')
+            plt.title(r'$\hat{u}$')
+            plt.colorbar()
+            plt.subplot(224)
+            self.draw_grid(G)
+            plt.scatter(x[:,0],x[:,1],s=20,c=u_hat[:,1],marker='s',edgecolor='None')
+            plt.title(r'$\hat{v}$')
+            plt.colorbar()
+            self.savefig(P,'GSD/MP_'+str(p)+'_'+str(P.mp_save).zfill(5))
+
+    def save_s_bar(self,L,P,G):
+        if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+        save(P.save_dir + 'data/s_bar_' + str(P.grid_save).zfill(5)+'.npy',G.s_bar.reshape(P.G.ny,P.G.nx))
+
+    def save_u(self,L,P,G):
+        if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+        save(P.save_dir + 'data/u_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
+
+    def draw_gsd_grid(self,L,P,G):
+        plt.clf()
+        plt.pcolormesh(G.x,
+                       G.y,
+                       ma.masked_where(G.m<P.M_tol,G.s_bar).reshape(P.G.ny,P.G.nx),
+                       vmin=P.G.s[0],
+                       vmax=P.G.s[-1],
+                       cmap=bwr,
+                       )
+        plt.colorbar()
+        plt.xlim(P.G.x_m,P.G.x_M)
+        plt.ylim(P.G.y_m,P.G.y_M)
+        plt.title(r'$\bar s=$' + str(mean(G.s_bar)))
+        self.savefig(P,'GSD/s_bar/'+str(P.grid_save).zfill(5))
+
+        for i in range(P.G.ns):
+            plt.clf()
+            plt.pcolormesh(G.x,
+                           G.y,
+                           ma.masked_where(G.m<P.M_tol,G.phi[:,i]).reshape(P.G.ny,P.G.nx),
+                           vmin=0.0,
+                           vmax=1.0,
+                           )
+            plt.colorbar()
+            plt.title(mean(G.phi[:,i]))
+            self.savefig(P,'GSD/phi_' + str(i) + '/' +str(P.grid_save).zfill(5))
+#             if P.t > 0:
+#                 plt.clf()
+#                 U = sqrt(G.u_hat[:,i]**2 + G.v_hat[:,i]**2).reshape(P.G.ny,P.G.nx)
+#
+#                 plt.streamplot(G.x,
+#                                G.y,
+#                                G.u_hat[:,i].reshape(P.G.ny,P.G.nx),
+#                                G.v_hat[:,i].reshape(P.G.ny,P.G.nx),
+#                                linewidth = U
+#                                )
+#                 self.savefig(P,'GSD/phi_' + str(i) + '/u_' +str(P.grid_save).zfill(5))
+
+#         plt.clf()
+#         plt.pcolormesh(G.x,
+#                        G.y,
+#                        sum(G.phi,1).reshape(P.G.ny,P.G.nx),
+# #                            vmin=0.0,
+# #                            vmax=1.0,
+#                        )
+#         plt.colorbar()
+#         self.savefig(P,'GSD/phi_sum_' +str(P.grid_save).zfill(5))
+
     def draw_voronoi(self,P,G):
 #        plt.clf()
 #        plt.plot(G.xpt,G.ypt,'b.')
 #        plt.plot(G.x_list,G.y_list,'k-')
-#        plt.fill(G.x_list,G.y_list,'g',alpha=0.25,edgecolor='none')    
+#        plt.fill(G.x_list,G.y_list,'g',alpha=0.25,edgecolor='none')
 #        plt.axis([P.G.x_m-P.G.dx,P.G.x_M+P.G.dx,P.G.y_m-P.G.dy,P.G.y_M+P.G.dy])
 #        plt.axis([P.G.x_m,P.G.x_M,P.G.y_m,P.G.y_M])
 #        self.savefig(P,str(30000+P.save).zfill(5))

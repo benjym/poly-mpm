@@ -105,7 +105,7 @@ class Solid_Params():
         yp = linspace(G.y_m+gap[1],G.y_M-gap[1],self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
-        for i in xrange(self.x*self.y):
+        for i in range(self.x*self.y):
              self.X.append(X[i])
              self.Y.append(Y[i])
              self.n += 1

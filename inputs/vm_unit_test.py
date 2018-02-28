@@ -8,8 +8,8 @@ class Params():
         self.dt = 1e-3 # timestep (s)
         self.t = 0. # physical time (s)
         self.tstep = 0
-        self.savetime = 1.
-        self.t_f = 0.2#100*self.dt # final time (s)
+        self.savetime = 0.1
+        self.t_f = 1.#100*self.dt # final time (s)
         self.nt = int(self.t_f/self.dt) # number of timesteps
         self.save = 0 # save counter
         self.M_tol = 1e-10 # very small mass (kg)
@@ -22,10 +22,6 @@ class Params():
         self.B = Boundary_Params()
         self.O = Output_Params(self.nt)
         self.S = Solid_Params(self.G)
-        self.F = Fluid_Params()
-        self.R = Fluid_Params()
-        self.check_positions = False
-        self.has_yielded = False
         self.damping = True
         self.mode = mode
 
@@ -40,30 +36,20 @@ class Grid_Params():
         self.x_M = 1.0 # (m)
         self.y_m = 0.0 # (m)
         self.y_M = 1.0 # (m)
-        self.thickness = 1. # (m) into page
         self.nx = 2
         self.ny = 2
         
 class Boundary_Params():
     def __init__(self):
-        self.wall = False
-        self.has_top = False
-        self.has_bottom = False
-        self.has_right = False
-        self.has_left = False
-        self.outlet_left = False
-        self.outlet_bottom = False
         self.force_boundaries = True
-        self.vertical_force = False
         self.horizontal_force = True
-        self.roughness = False
 
 class Solid_Params():
     def __init__(self,G):
         self.X = []
         self.Y = []
-        self.x = 2#(10*2-1)*2 # particles in x direction
-        self.y = 2#(5*2-1)*2-4 # particles in y direction
+        self.x = 3#(10*2-1)*2 # particles in x direction
+        self.y = 3#(5*2-1)*2-4 # particles in y direction
         self.n = 0
 
 #        self.law = 'elastic'
@@ -76,7 +62,7 @@ class Solid_Params():
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
 
         self.s = 2.5
-        self.k = self.E/100.
+        self.k = self.E/100
 
         self.L = 0.9
         self.W = 0.9
@@ -90,30 +76,18 @@ class Solid_Params():
 
 class Output_Params():
     def __init__(self,nt):
-        self.measure_energy = True
         self.plot_continuum = False
-        self.plot_material_points = False
-        self.measure_stiffness = False
-        self.check_positions = False
-        self.plot_fluid = False
-        self.energy = zeros((nt+1,4)) # energy
-        
-    def measure_E(self,P,L):
-        print 'Measuring macro and micro stress/strain for each material point... '
-        for i in xrange(P.S.n):
-            original_position = array((P.S.X[i],P.S.Y[i],0))
-            macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
-            macro_stress = P.max_q/2.
-            print 'From macroscopic stress/strain:'
-            print macro_stress/macro_strain/P.S.E
-            print 'From microscopic stress/strain:'
-            print L.S[i].dstress/L.S[i].dstrain/P.S.E
-            
-class Fluid_Params():
-    def __init__(self):
-        self.n = 0
-        
-class Rigid_Params():
-    def __init__(self):
-        self.n = 0
+        self.plot_material_points = True
+        self.measure_energy = True
+        self.measure_stiffness = True
 
+    def measure_E(self,P,L):
+        print('Measuring macro and micro stress/strain for each material point... ')
+        for p in range(P.phases):
+            for i in range(P.S[p].n):
+                original_position = array((P.S[p].X[i],P.S[p].Y[i],0))
+                macro_stress = P.max_q/2.
+                macro_strain = (original_position-L.S[p][i].x)/array((P.S[p].L,P.S[p].W,1.)) #original_position
+                print('MP ' + str(i))
+                print('Macro response:' + str(macro_stress/macro_strain/P.S[p].E) + '*E')
+                print('Micro values:' + str(L.S[p][i].dstress/L.S[p][i].dstrain/P.S[p].E) + '*E')

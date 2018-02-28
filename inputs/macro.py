@@ -97,16 +97,17 @@ class Output_Params():
         self.energy = zeros((nt+1,3)) # energy
         
     def measure_E(self,P,L):
-        print 'Measuring macro and micro stress/strain for each material point... '
-        for i in xrange(P.S.n):
+        print('Measuring macro and micro stress/strain for each material point... ')
+        for i in range(P.S.n):
             original_position = array((P.S.X[i],P.S.Y[i],0))
             macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
             macro_stress = P.max_q/2.
-            print 'From macroscopic stress/strain:'
-            print macro_stress/macro_strain/P.S.E
-            print 'From microscopic stress/strain:'
-            print L.S[i].dstress/L.S[i].dstrain/P.S.E
-            
+            print('From macroscopic stress/strain:' +
+                  str(macro_stress/macro_strain/P.S.E) +
+                  'From microscopic stress/strain:' +
+                  str(L.S[i].dstress/L.S[i].dstrain/P.S.E)
+                  )
+                  
 class Fluid_Params():
     def __init__(self):
         self.n = 0
