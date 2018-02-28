@@ -1,0 +1,5 @@
+# Polydisperse material point method
+
+This code implements the material point method, with additional functionality to additionally calculate segregation during granular flow.
+
+For more information, contact Benjy at benjy.marks@sydney.edu.au
