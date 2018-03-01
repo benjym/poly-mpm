@@ -17,10 +17,10 @@ import MPM
 seterr(all='ignore')
 
 def main(params):
-    """This is the main loop which is repeated every timestep.
+    """This is the main loop which is repeated every timestep. Currently, this follows the Update Strain Last paradigm (does it?!?).
 
     :param mode: The name of the input file to use.
-    :type mode: str.
+    :type mode: str
     :returns: int -- The return code.
 
     """

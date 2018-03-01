@@ -2,6 +2,12 @@
 A set of methods for describing all of the constitutive models.
 
 Each model operates on an individual material point, updating its' properties. The relevant properties are also mapped to the grid for visualisation.
+
+The models which currently work reliably are:
+    - Rigid
+    - Elastic
+    - Von mises
+    - Newtonian viscosity
 """
 from numpy import linspace, sin, cos, pi, zeros, outer, array, dot
 from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot

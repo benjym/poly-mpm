@@ -160,12 +160,12 @@
 <dl class="function">
 <dt id="MPM.main">
 <code class="descclassname">MPM.</code><code class="descname">main</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#MPM.main" title="Permalink to this definition">¶</a></dt>
-<dd><p>This is the main loop which is repeated every timestep.</p>
+<dd><p>This is the main loop which is repeated every timestep. Currently, this follows the Update Strain Last paradigm (does it?!?).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mode</strong> (<em>str.</em>) &#8211; The name of the input file to use.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mode</strong> (<em>str</em>) &#8211; The name of the input file to use.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; The return code.</td>
 </tr>
@@ -912,6 +912,16 @@ on many material points.</p>
 <span id="id5"></span><span id="constitutive-models"></span><h2>Constitutive Models<a class="headerlink" href="#module-constit" title="Permalink to this headline">¶</a></h2>
 <p>A set of methods for describing all of the constitutive models.</p>
 <p>Each model operates on an individual material point, updating its&#8217; properties. The relevant properties are also mapped to the grid for visualisation.</p>
+<dl class="docutils">
+<dt>The models which currently work reliably are:</dt>
+<dd><ul class="first last simple">
+<li>Rigid</li>
+<li>Elastic</li>
+<li>Von mises</li>
+<li>Newtonian viscosity</li>
+</ul>
+</dd>
+</dl>
 <dl class="function">
 <dt id="constit.bingham">
 <code class="descclassname">constit.</code><code class="descname">bingham</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.bingham" title="Permalink to this definition">¶</a></dt>

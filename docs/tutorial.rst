@@ -9,15 +9,12 @@ Tutorial
 Looking at the input file
 =============================
 
-Load up the file :file:`inputs/ball.py` in your favourite text editor. I recommend the following text editors:
-    * Windows: notepad++
-    * OS X: TextWrangler
-    * Linux: gedit
+Load up the file :file:`inputs/ball.py` in your favourite text editor. I like `atom <https://atom.io/>`_.
 
 The Params class
 =============================
 
-This contains all of the parameters for controlling a single simulation. Some global information is stored here, such as timestepping and gravity values. Other information is stored in subclasses. A convenience method is also provided for updating gravity, as many simulations require a slow ramp up in gravity, rather than applying a step function.::
+This contains all of the parameters for controlling a single simulation. Some global information is stored here, such as timestepping and gravity values. Other information is stored in subclasses. A convenience method is also provided for updating gravity, or any other parameters, as many simulations require a slow ramp up in gravity, rather than applying a step function::
 
     class Params():
         def __init__(self,mode):
@@ -39,7 +36,7 @@ This contains all of the parameters for controlling a single simulation. Some gl
 The Grid_Params class
 =============================
 
-This describes the :math:`x` and :math:`y` extents of the grid, as well as their resolution. This is pretty inflexible at the moment, and only allows for regular cartesian grids on a rectangular domain.::
+This describes the :math:`x` and :math:`y` extents of the grid, as well as their resolution. This is pretty inflexible at the moment, and only allows for regular cartesian grids on a rectangular domain::
 
     class Grid_Params():
         def __init__(self):
@@ -49,7 +46,7 @@ This describes the :math:`x` and :math:`y` extents of the grid, as well as their
             self.y_M = 2.0 # (m)
             self.nx = 21 # number of grid edges in x direction
             self.ny = 21 # number of grid edges in y direction
-            
+
 The Boundary_Params class
 =============================
 
@@ -60,7 +57,7 @@ Here all of the boundaries of the grid are defined. For this example, only the b
             self.has_bottom = True
 
 The Solid_Params class
-=============================        
+=============================
 
 This defines the properties of each material point. The lists ``self.X`` and ``self.Y`` define initial positions of each material point, up to ``self.n`` points in total. The constitutive model to use is defined by ``self.law`` --- this needs to be the same as the class in :file:`constit.py`. In this example, material points are placed onto a set of ``nr`` concentric circles with centre at ``c``, largest radius ``r`` and ``nphi`` material points around the largest circle.::
 
@@ -75,7 +72,7 @@ This defines the properties of each material point. The lists ``self.X`` and ``s
     #         self.law = 'elastic'
             self.law = 'von_mises'
     #         self.law = 'dp'
-        
+
             self.E = 1.e6 # elastic modulus (Pa)
             self.nu = 0.3 # poisson's ratio
             self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
@@ -93,7 +90,7 @@ This defines the properties of each material point. The lists ``self.X`` and ``s
             nphi = 50 # particles around circumference
             r = 0.3 # radius
             c = [0.,1.] # centre
-        
+
             for i in linspace(0,r,nr):
                 dnphi = around(nphi*i/r) # number in this ring
                 for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
@@ -101,7 +98,7 @@ This defines the properties of each material point. The lists ``self.X`` and ``s
                     self.Y.append(c[1]+i*cos(j))
                     self.n += 1
             self.A = pi*0.2**2/self.n # area (m^2)
-        
+
 The Output_Params class
 =============================
 

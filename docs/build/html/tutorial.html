@@ -144,19 +144,11 @@
 <span id="id1"></span><h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="looking-at-the-input-file">
 <h2>Looking at the input file<a class="headerlink" href="#looking-at-the-input-file" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>Load up the file <code class="file docutils literal"><span class="pre">inputs/ball.py</span></code> in your favourite text editor. I recommend the following text editors:</dt>
-<dd><ul class="first last simple">
-<li>Windows: notepad++</li>
-<li>OS X: TextWrangler</li>
-<li>Linux: gedit</li>
-</ul>
-</dd>
-</dl>
+<p>Load up the file <code class="file docutils literal"><span class="pre">inputs/ball.py</span></code> in your favourite text editor. I like <a class="reference external" href="https://atom.io/">atom</a>.</p>
 </div>
 <div class="section" id="the-params-class">
 <h2>The Params class<a class="headerlink" href="#the-params-class" title="Permalink to this headline">¶</a></h2>
-<p>This contains all of the parameters for controlling a single simulation. Some global information is stored here, such as timestepping and gravity values. Other information is stored in subclasses. A convenience method is also provided for updating gravity, as many simulations require a slow ramp up in gravity, rather than applying a step function.:</p>
+<p>This contains all of the parameters for controlling a single simulation. Some global information is stored here, such as timestepping and gravity values. Other information is stored in subclasses. A convenience method is also provided for updating gravity, or any other parameters, as many simulations require a slow ramp up in gravity, rather than applying a step function:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Params</span><span class="p">():</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mode</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">4</span> <span class="c1"># timestep (s)</span>
@@ -178,7 +170,7 @@
 </div>
 <div class="section" id="the-grid-params-class">
 <h2>The Grid_Params class<a class="headerlink" href="#the-grid-params-class" title="Permalink to this headline">¶</a></h2>
-<p>This describes the <span class="math">\(x\)</span> and <span class="math">\(y\)</span> extents of the grid, as well as their resolution. This is pretty inflexible at the moment, and only allows for regular cartesian grids on a rectangular domain.:</p>
+<p>This describes the <span class="math">\(x\)</span> and <span class="math">\(y\)</span> extents of the grid, as well as their resolution. This is pretty inflexible at the moment, and only allows for regular cartesian grids on a rectangular domain:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Grid_Params</span><span class="p">():</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_m</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="c1"># (m)</span>
