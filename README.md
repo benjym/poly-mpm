@@ -29,7 +29,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-<!-- * **Benjy Marks** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth) -->
+* [Benjy Marks](www.benjymarks.com)
 
 <!-- See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project. -->
 
