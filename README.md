@@ -4,7 +4,7 @@ This code implements a basic two dimensional material point method, with additio
 
 ## Getting Started
 
-Just download a copy and follow the documentation in the docs folder!
+Just download a copy and follow the [documentation](http://benjym.github.io/poly-mpm/build/html/index.html)!
 
 ### Prerequisites
 
