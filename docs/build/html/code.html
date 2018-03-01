@@ -1,0 +1,1240 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Documentation &mdash; poly-mpm 1.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="poly-mpm 1.1 documentation" href="index.html"/>
+        <link rel="prev" title="Tutorial" href="tutorial.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> poly-mpm
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-MPM">Main Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#material-points">Material Points</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-mplist">Material Point Lists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-grid">Grid Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-constit">Constitutive Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-integrators">Integrators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-plotting">Plotting</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">poly-mpm</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/code.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<p>The code is made up of the following modules:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="#id1">Main Module</a></li>
+<li><a class="reference internal" href="#id2">Material Points</a></li>
+<li><a class="reference internal" href="#id3">Material Point Lists</a></li>
+<li><a class="reference internal" href="#id4">Grid Operators</a></li>
+<li><a class="reference internal" href="#id5">Constitutive Models</a></li>
+<li><a class="reference internal" href="#integrators">Integrators</a></li>
+<li><a class="reference internal" href="#plotting">Plotting</a></li>
+</ul>
+</div></blockquote>
+<div class="section" id="module-MPM">
+<span id="id1"></span><span id="main-module"></span><h2>Main Module<a class="headerlink" href="#module-MPM" title="Permalink to this headline">¶</a></h2>
+<p>The main module. This contains the loop which will be iterated over every timestep.</p>
+<dl class="function">
+<dt id="MPM.main">
+<code class="descclassname">MPM.</code><code class="descname">main</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#MPM.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the main loop which is repeated every timestep.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mode</strong> (<em>str.</em>) &#8211; The name of the input file to use.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">int &#8211; The return code.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="material-points">
+<span id="id2"></span><h2>Material Points<a class="headerlink" href="#material-points" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="particle.Particle">
+<em class="property">class </em><code class="descclassname">particle.</code><code class="descname">Particle</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class defining an individual material point together with functions for mapping to/from the grid</p>
+<dl class="method">
+<dt id="particle.Particle.add_to_boundary">
+<code class="descname">add_to_boundary</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.add_to_boundary" title="Permalink to this definition">¶</a></dt>
+<dd><p>I have no idea what this does.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.energy">
+<code class="descname">energy</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate energies of this material point for plotting purposes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.get_basis_functions">
+<code class="descname">get_basis_functions</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.get_basis_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the basis functions for this material point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.get_nodal_forces">
+<code class="descname">get_nodal_forces</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.get_nodal_forces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate nearby nodal internal forces and body forces. Tractions are ignored for now.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.get_nodal_mass_momentum">
+<code class="descname">get_nodal_mass_momentum</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.get_nodal_mass_momentum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass mass and momentum to nearby nodes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.get_reference_node">
+<code class="descname">get_reference_node</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.get_reference_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the reference node for this material point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.increment_gravity">
+<code class="descname">increment_gravity</code><span class="sig-paren">(</span><em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.increment_gravity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate gravity components for this material point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.map_gsd_to_mp">
+<code class="descname">map_gsd_to_mp</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.map_gsd_to_mp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the nodal grainsize information back to the material point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.map_phi_to_mp">
+<code class="descname">map_phi_to_mp</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.map_phi_to_mp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass the nodal grainsize information back to the material point.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.move_material_points">
+<code class="descname">move_material_points</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.move_material_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update material point position and velocity using nearby nodal mass and momentum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.move_rigid_points">
+<code class="descname">move_rigid_points</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.move_rigid_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update material point position and velocity for rigid particles with prescribed velocity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.recover_position">
+<code class="descname">recover_position</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.recover_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find out where this material point should be.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.update_nodal_gsd">
+<code class="descname">update_nodal_gsd</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.update_nodal_gsd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the grainsize distribution at a node.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.update_strain">
+<code class="descname">update_strain</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.update_strain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate incremental strain at the particle level from the nodal velocity. Also update the total strain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="particle.Particle.update_stress">
+<code class="descname">update_stress</code><span class="sig-paren">(</span><em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#particle.Particle.update_stress" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate incremental stress at the particle level using the relevant constitutive model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> &#8211; Which material phase</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mplist">
+<span id="id3"></span><span id="material-point-lists"></span><h2>Material Point Lists<a class="headerlink" href="#module-mplist" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="mplist.MatPointList">
+<em class="property">class </em><code class="descclassname">mplist.</code><code class="descname">MatPointList</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class of material points of a single size.
+Contains convenience functions for operating
+on many material points.</p>
+<dl class="method">
+<dt id="mplist.MatPointList.cyclic_lr">
+<code class="descname">cyclic_lr</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.cyclic_lr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Particles which leave the domain in the <span class="math">\(x\)</span> direction are placed back in the other side.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.get_basis_functions">
+<code class="descname">get_basis_functions</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.get_basis_functions" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, get its basis function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.get_nodal_forces">
+<code class="descname">get_nodal_forces</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.get_nodal_forces" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, get nodal forces. If cyclic boundaries are active, update the nodal cyclic forces.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.get_nodal_gsd">
+<code class="descname">get_nodal_gsd</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.get_nodal_gsd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measure the volume weighted average size at the node.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.get_nodal_mass_momentum">
+<code class="descname">get_nodal_mass_momentum</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.get_nodal_mass_momentum" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, map mass and momentum to the grid. Then, set momentum at boundaries to zero if applicable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.get_reference_node">
+<code class="descname">get_reference_node</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.get_reference_node" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, get its reference node.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.inlet_right">
+<code class="descname">inlet_right</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.inlet_right" title="Permalink to this definition">¶</a></dt>
+<dd><p>Particles are created at right boundary (<span class="math">\(+x\)</span> direction) of the domain.</p>
+<p>This is not physical at all. Needs reimplementation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.measure_elastic_energy">
+<code class="descname">measure_elastic_energy</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.measure_elastic_energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>I&#8217;ve forgotten what this does.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.move_grainsize_on_grid">
+<code class="descname">move_grainsize_on_grid</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.move_grainsize_on_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Advect grainsize distribution across grid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; A param.Param instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.move_material_points">
+<code class="descname">move_material_points</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.move_material_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, update the particle location.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.outlet_bottom">
+<code class="descname">outlet_bottom</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.outlet_bottom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Particles are deleted if they move downwards (<span class="math">\(-y\)</span> direction) out of the domain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.outlet_left">
+<code class="descname">outlet_left</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.outlet_left" title="Permalink to this definition">¶</a></dt>
+<dd><p>Particles are deleted if they move left (<span class="math">\(-x\)</span> direction) out of the domain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.recover_position">
+<code class="descname">recover_position</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.recover_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Just used for checking if the code is working. Checks that the particle mapping recovers the real particle position.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.update_forces">
+<code class="descname">update_forces</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.update_forces" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, update the value of the global gravity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.update_stress_strain">
+<code class="descname">update_stress_strain</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.update_stress_strain" title="Permalink to this definition">¶</a></dt>
+<dd><p>For every particle, firstly calculate the incremental strain from nearby nodal velocities. Then use the relevant constitutive law to update the stress at the material point. Finally, if cyclic boundaries are active, update the stress at the boundaries.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mplist.MatPointList.update_timestep">
+<code class="descname">update_timestep</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.update_timestep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check through every particle, and if any have yielded, reduce the timestep.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; A param.Param instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-grid">
+<span id="id4"></span><span id="grid-operators"></span><h2>Grid Operators<a class="headerlink" href="#module-grid" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="grid.Grid">
+<em class="property">class </em><code class="descclassname">grid.</code><code class="descname">Grid</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>This contains all of the methods which operate on the grid directly. The grid is assumed to be a regular lattice, numbered as:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="28%" />
+<col width="14%" />
+<col width="14%" />
+<col width="14%" />
+<col width="31%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>(ny-1)*nx</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>(ny*nx-1)</td>
+</tr>
+<tr class="row-even"><td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="row-odd"><td>2*nx</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>(3*nx-1)</td>
+</tr>
+<tr class="row-even"><td>nx</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>(2*nx-1)</td>
+</tr>
+<tr class="row-odd"><td>0</td>
+<td>1</td>
+<td>2</td>
+<td>...</td>
+<td>nx-1</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="grid.Grid.N">
+<code class="descname">N</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.N" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate shape functions and their derivatives for Lagrange 4-node system</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.boundary">
+<code class="descname">boundary</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.boundary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build the boundary.</p>
+<p>This consists of three masks, the same shape as the grid, <cite>boundary_v</cite>, <cite>boundary_h</cite> and <cite>boundary_tot</cite>. These are boundaries that restrain flow in the left/right and up/down directions, respectively. <cite>boundary_tot</cite> is the sum of the two other boundaries.</p>
+<dl class="docutils">
+<dt>This respects the following arguments which may be present in the input file:</dt>
+<dd><ul class="first last simple">
+<li>has_bottom</li>
+<li>has_top</li>
+<li>has_left</li>
+<li>has_right</li>
+<li>no_slip_bottom</li>
+<li>wall</li>
+<li>box</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.calculate_gammadot">
+<code class="descname">calculate_gammadot</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.calculate_gammadot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the bulk shear strain rate from the continuum measure of velocity.</p>
+<blockquote>
+<div><div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This does not perform well near mass discontinuities!!</p>
+</div>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; A param.Param instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.calculate_grad_gammadot">
+<code class="descname">calculate_grad_gammadot</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.calculate_grad_gammadot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the gradient of the shear strain rate using the built-in gradient method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; A param.Param instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.calculate_gradient">
+<code class="descname">calculate_gradient</code><span class="sig-paren">(</span><em>P</em>, <em>G</em>, <em>Z</em>, <em>smooth=False</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.calculate_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the gradient of any property. Deals with grid points that have no mass (that should&#8217;nt contribute to the gradient).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; <p>A param.Param instance.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This returns the gradient of the input field ... kind of ... sometimes</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.calculate_phi_increment">
+<code class="descname">calculate_phi_increment</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.calculate_phi_increment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the incremental change in phi across the grid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; <p>A param.Param instance.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This returns the gradient of the ABSOLUTE VALUE of the shear strain rate</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.update_momentum">
+<code class="descname">update_momentum</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.update_momentum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the momentum at every nodal location, as calculated from the nodal change in moment, <span class="math">\(\dot q\)</span>. This also...</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; A param.Param instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-constit">
+<span id="id5"></span><span id="constitutive-models"></span><h2>Constitutive Models<a class="headerlink" href="#module-constit" title="Permalink to this headline">¶</a></h2>
+<p>A set of methods for describing all of the constitutive models.</p>
+<p>Each model operates on an individual material point, updating its&#8217; properties. The relevant properties are also mapped to the grid for visualisation.</p>
+<dl class="function">
+<dt id="constit.bingham">
+<code class="descclassname">constit.</code><code class="descname">bingham</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.bingham" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bingham fluid.</p>
+<p>This material model has not been validated but may be functional. YMMV.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.dp">
+<code class="descclassname">constit.</code><code class="descname">dp</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.dp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drucker-Prager <span class="math">\(H^2\)</span> yield criterion.</p>
+<p>This material model is ONLY PARTIALLY WORKING - NOT YET VALIDATED!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.dp_rate">
+<code class="descclassname">constit.</code><code class="descname">dp_rate</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.dp_rate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drucker-Prager yield criterion with rate dependent behaviour.</p>
+<p>This material model is PROBALBLY WORKING - NOT YET VALIDATED!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.elastic">
+<code class="descclassname">constit.</code><code class="descname">elastic</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.elastic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear elasticity.</p>
+<p>This material model has been validated and is functional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.elastic_time">
+<code class="descclassname">constit.</code><code class="descname">elastic_time</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.elastic_time" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear elasticity that is time dependent.</p>
+<p>This material model has been validated and is functional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.ken_kamrin">
+<code class="descclassname">constit.</code><code class="descname">ken_kamrin</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.ken_kamrin" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math">\(\mu(I)\)</span> rheology implemented from Ken Kamrin&#8217;s MPM paper. Definitely _NOT_ functional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.pouliquen">
+<code class="descclassname">constit.</code><code class="descname">pouliquen</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.pouliquen" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math">\(\mu(I)\)</span> rheology implemented only for flowing regime.</p>
+<p>This material model has been validated and is PROBABLY functional. (needs more mileage)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.rigid">
+<code class="descclassname">constit.</code><code class="descname">rigid</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.rigid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perfectly rigid particles. No stresses are calculated.</p>
+<p>This material model has been validated and is functional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.viscous">
+<code class="descclassname">constit.</code><code class="descname">viscous</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.viscous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Linear viscosity.</p>
+<p>This material model has been validated and is functional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.von_mises">
+<code class="descclassname">constit.</code><code class="descname">von_mises</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.von_mises" title="Permalink to this definition">¶</a></dt>
+<dd><p>Von Mises <span class="math">\(H^2\)</span> yield criterion &#8212; see <a class="reference external" href="http://dx.doi.org/10.1016/j.ijsolstr.2012.02.003">http://dx.doi.org/10.1016/j.ijsolstr.2012.02.003</a> Eqs 7.11 - 7.15</p>
+<p>This material model has been validated and is functional.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-integrators">
+<span id="integrators"></span><span id="pde-integrators"></span><h2>Integrators<a class="headerlink" href="#module-integrators" title="Permalink to this headline">¶</a></h2>
+<p>A module containing functions for solving partial differential equations on a grid. So far only used for segregation equations.</p>
+<dl class="function">
+<dt id="integrators.div0">
+<code class="descclassname">integrators.</code><code class="descname">div0</code><span class="sig-paren">(</span><em>a</em>, <em>b</em><span class="sig-paren">)</span><a class="headerlink" href="#integrators.div0" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function replaces nans with zeros when dividing by zero.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> &#8211; array - Numerator</li>
+<li><strong>b</strong> &#8211; array - Demoniator</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">array - a/b, with infs and nans replaced by 0</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-plotting">
+<span id="plotting"></span><span id="custom-plotting"></span><h2>Plotting<a class="headerlink" href="#module-plotting" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="plotting.Plotting">
+<em class="property">class </em><code class="descclassname">plotting.</code><code class="descname">Plotting</code><a class="headerlink" href="#plotting.Plotting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class containing all of the plotting functions.</p>
+<dl class="method">
+<dt id="plotting.Plotting.draw_grid">
+<code class="descname">draw_grid</code><span class="sig-paren">(</span><em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.Plotting.draw_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw an overlay of the grid. Green for both directions, red crosses for horizontal boundaries and red plusses for vertical boundaries.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="plotting.Plotting.savefig">
+<code class="descname">savefig</code><span class="sig-paren">(</span><em>P</em>, <em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.Plotting.savefig" title="Permalink to this definition">¶</a></dt>
+<dd><p>A method for saving figures in the right place</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="tutorial.html" class="btn btn-neutral" title="Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Benjy Marks.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
