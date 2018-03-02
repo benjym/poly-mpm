@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-6 # timestep (s)
-        self.savetime = 0.001 #1e1*self.dt#0.01
+        self.dt = 1e-5 # timestep (s)
+        self.savetime = 0.01 #1e1*self.dt#0.01
         self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
@@ -17,7 +17,7 @@ class Params():
         self.segregate_grid = True
         self.c = 1e-3 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/'
+        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/'
         self.pressure = 'lithostatic'
         self.smooth_grad2 = True
         print(self.supername)
@@ -39,11 +39,15 @@ class Grid_Params():
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
         # self.s = array([0.5,1.0]) # s coordinate
-        self.s_m = 0.1
-        self.s_M = 1.0
+
+        self.R = float(args[2])
+        self.s_M = 0.003 # 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
+        # self.s_m = 0.1
+        self.s_m = self.s_M/self.R
         self.ns = 2
-        s_edges = linspace(0.1,1.0,self.ns+1)
-        self.s = (s_edges[1:] + s_edges[:-1])/2.
+        self.s = array([self.s_m,self.s_M])
+        # s_edges = linspace(self.s_m,self.s_M,self.ns+1)
+        # self.s = (s_edges[1:] + s_edges[:-1])/2.
         self.ds = self.s[1]-self.s[0]
 
 class Boundary_Params():

@@ -8,6 +8,7 @@ The models which currently work reliably are:
     - Elastic
     - Von mises
     - Newtonian viscosity
+    
 """
 from numpy import linspace, sin, cos, pi, zeros, outer, array, dot
 from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot

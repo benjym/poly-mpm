@@ -42,7 +42,7 @@ class Grid_Params():
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
-        self.s = array([0.5,1.0]) # s coordinate
+        self.s = array([0.001,0.002]) # s coordinate
         self.ds = self.s[1]-self.s[0]
         self.ns = len(self.s)
 

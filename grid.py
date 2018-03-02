@@ -31,6 +31,7 @@ class Grid():
         P : Params class
 
         """
+        # arrays to be called for actual locations of grid points
         self.x = linspace(P.G.x_m,P.G.x_M,P.G.nx)
         self.y = linspace(P.G.y_m,P.G.y_M,P.G.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
@@ -39,6 +40,10 @@ class Grid():
         self.Y = repeat(self.y,P.G.nx)
         self.boundary(P)
         self.volume(P)
+
+        # arrays to be used for plotting with pcolormesh - needs cell edges
+        self.x_plot = hstack([P.G.x_m - self.dx/2.,(self.x[1:] + self.x[:-1])/2.,P.G.x_M + self.dx/2.])
+        self.y_plot = hstack([P.G.y_m - self.dy/2.,(self.y[1:] + self.y[:-1])/2.,P.G.y_M + self.dy/2.])
 
     def boundary(self,P):
         """
@@ -118,13 +123,14 @@ class Grid():
         self.damping_force = zeros((P.G.nx*P.G.ny,3)) # local non-viscous damping
         self.s_bar = zeros([P.G.nx*P.G.ny])
         self.dphi = zeros([P.G.nx*P.G.ny,P.G.ns])
-        
+
         if P.segregate_grid:
             self.phim = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.phi = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.S = tile(P.G.s,[P.G.nx*P.G.ny,1])
             self.u_hat = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.v_hat = zeros([P.G.nx*P.G.ny,P.G.ns])
+
     def nearby_nodes(self,n_star,r,P):
         if (r == 0) or (r == 1):
             return n_star + r
@@ -176,12 +182,12 @@ class Grid():
 
     def BCs(self,P): # BCS directly affecting self.fe
         if P.B.vertical_force:
-            self.ext_f[:P.G.nx,1] += P.q_v*ones((P.G.nx)) # bottom
-            self.ext_f[(P.G.ny-1)*P.G.nx:,1] += -P.q_v*ones((P.G.nx)) # top
+            self.ext_f[:P.G.nx,1] += P.q_v # bottom
+            self.ext_f[(P.G.ny-1)*P.G.nx:,1] -= P.q_v # top
             self.fe[:,1] += 2.*self.ext_f[:,1]*self.m/P.S[0].rho/self.dy
         if P.B.horizontal_force:
-            self.ext_f[::P.G.nx,0] += P.q_h*ones((P.G.ny)) # left
-            self.ext_f[P.G.nx-1::P.G.nx,0] += -P.q_h*ones((P.G.ny)) # right
+            self.ext_f[::P.G.nx,0] += P.q_h # left
+            self.ext_f[P.G.nx-1::P.G.nx,0] -= P.q_h # right
             self.fe[:,0] += 2.*self.ext_f[:,0]*self.m/P.S[0].rho/self.dx
 
         if P.mode == 'anisotropy' and P.t == 0:
@@ -226,20 +232,16 @@ class Grid():
         dudy = gradu[:,1]
         dvdx = gradv[:,0]
         self.gammadot = (dudy + dvdx)#.flatten()
-        self.rate_of_shear = array([])
+        # self.rate_of_shear = array([])
 
     def calculate_grad_gammadot(self,P,G):
-        """Calculate the gradient of the shear strain rate using the built-in gradient method.
+        """Calculate the gradient of the absolute value of the shear strain rate using the built-in gradient method.
 
         :param P: A param.Param instance.
 
         """
         self.grad_gammadot = G.calculate_gradient(P,G,abs(G.gammadot),smooth=P.smooth_grad2)
-        # self.grad_gammadot = G.calculate_gradient(P,G,G.gammadot,smooth=P.smooth_grad2)
-        # g = abs(G.gammadot)
-        # g_mean = mean(g[G.m>P.M_tol])
-        # g = minimum(g,10 )
-        # self.grad_gammadot = G.calculate_gradient(P,G,g)
+
 
     def calculate_gradient(self,P,G,Z,smooth=False):
         """Calculate the gradient of any property. Deals with grid points that have no mass (that should'nt contribute to the gradient).

@@ -21,13 +21,13 @@ class Params():
 
     def update_forces(self):
         self.g = 0
-        t_c = self.t_f/4.
+        t_c = self.t_f/2.
         if self.t < t_c:
             self.q_h = self.t*self.max_q/t_c
             self.q_v = self.t*self.max_q/t_c
         else:
-            self.q_h = self.max_q + 1e3*self.max_q*((self.t-t_c)/t_c)**4
-            self.q_v = self.max_q
+            self.q_h = self.max_q + (self.t - t_c)*self.max_q/t_c #+ 1e2*self.max_q*((self.t-t_c))#**3#/(self.t_f-t_c))**3
+            self.q_v = self.max_q - (self.t - t_c)*self.max_q/t_c
             # self.q_v = 2*self.max_q - self.t/t_c*self.max_q
 #         self.q_h = self.t*self.max_q/t_c
 #         self.q_v = minimum(self.q_h,self.max_q)
@@ -71,11 +71,11 @@ class Solid_Params():
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
         self.mu_v = 0
-        self.E = 1e4
+        self.E = 1e6
         self.nu = 0.4 # poissons ratio
         self.K = self.E/(3.*(1.-2.*self.nu))
         self.G = self.E/(2.*(1.+self.nu))
-        self.eta_max = 1e3#*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+        self.eta_max = 1e5#*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction

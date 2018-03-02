@@ -118,7 +118,7 @@ class Plotting:
 
                     for i in range(len(titles)):
                         plt.sca(ax[i+1])
-                        cax = plt.pcolormesh(G.x,G.y,
+                        cax = plt.pcolormesh(G.x_plot,G.y_plot,
                                                    ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
                                                    )
                         plt.title(titles[i],rotation='horizontal')
@@ -179,8 +179,8 @@ class Plotting:
 
                     for i in range(len(titles)):
                         plt.sca(ax[i+2])
-                        cax = plt.pcolormesh(G.x,
-                                             G.y,
+                        cax = plt.pcolormesh(G.x_plot,
+                                             G.y_plot,
                                              ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
                                              )
                         plt.title(titles[i],rotation='horizontal')
@@ -209,7 +209,7 @@ class Plotting:
                     z = [G.m*G.m/G.V,G.s_bar*G.m,G.q[:,0],G.q[:,1],G.pressure,G.dev_stress,abs(G.gammadot),G.m*G.dev_stress/G.pressure]
                     for i in range(8):
                         plt.sca(ax[i])
-                        plt.pcolormesh(G.x,G.y,
+                        plt.pcolormesh(G.x_plot,G.y_plot,
                                        ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
                                        )
                         plt.title(titles[i],rotation='horizontal')
@@ -478,7 +478,7 @@ class Plotting:
         sizes = []
         for p in range(P.phases): sizes.append(P.S[p].size)
         plt.clf()
-        plt.pcolormesh(G.x,G.y,G.s_bar.reshape(P.G.ny,P.G.nx),vmin=min(sizes),vmax=max(sizes))
+        plt.pcolormesh(G.x_plot,G.y_plot,G.s_bar.reshape(P.G.ny,P.G.nx),vmin=min(sizes),vmax=max(sizes))
         plt.colorbar()
         plt.title(r'$\bar s$')
         self.savefig(P,'GSD/Continuum_'+str(P.grid_save).zfill(5))
@@ -525,8 +525,8 @@ class Plotting:
 
     def draw_gsd_grid(self,L,P,G):
         plt.clf()
-        plt.pcolormesh(G.x,
-                       G.y,
+        plt.pcolormesh(G.x_plot,
+                       G.y_plot,
                        ma.masked_where(G.m<P.M_tol,G.s_bar).reshape(P.G.ny,P.G.nx),
                        vmin=P.G.s[0],
                        vmax=P.G.s[-1],
@@ -540,8 +540,8 @@ class Plotting:
 
         for i in range(P.G.ns):
             plt.clf()
-            plt.pcolormesh(G.x,
-                           G.y,
+            plt.pcolormesh(G.x_plot,
+                           G.y_plot,
                            ma.masked_where(G.m<P.M_tol,G.phi[:,i]).reshape(P.G.ny,P.G.nx),
                            vmin=0.0,
                            vmax=1.0,
