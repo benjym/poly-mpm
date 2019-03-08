@@ -25,6 +25,7 @@ def get_parameters(params):
     if not hasattr(P, 'segregate_mp'): P.segregate_mp = False # NEVER USE THIS!!!
     if not hasattr(P, 'segregate_grid'): P.segregate_grid = False
     if not hasattr(P, 'initial_flow'): P.initial_flow = False # give initial velocities which correspond to 1D steady state
+    if not hasattr(P, 'smooth_gamma_dot'): P.smooth_gamma_dot = False # use artifical smoothing on calculation of the shear strain rate
     if not hasattr(P, 'smooth_grad2'): P.smooth_grad2 = False # use artifical smoothing on calculation of the gradient of the shear strain rate
 
 
@@ -58,6 +59,8 @@ def get_parameters(params):
     for p in range(P.phases):
         # if not hasattr(P.S[p], 'phi'): P.S[p].phi = [1.]
         if not hasattr(P.S[p], 'phi'): P.S[p].phi = ones([P.G.ns])/float(P.G.ns)
+        if not hasattr(P.S[p], 'heterogeneous'): P.S[p].heterogeneous = False
+
 
     if not hasattr(P.O, 'check_positions'): P.O.check_positions = False
     if not hasattr(P.O, 'measure_stiffness'): P.O.measure_stiffness = False

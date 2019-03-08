@@ -35,9 +35,9 @@ class Params():
 class Grid_Params():
     def __init__(self):
         self.x_m = 0.0 # (m)
-        self.x_M = 1.0 # (m)
+        self.x_M = 0.1 # (m)
         self.y_m = 0.0 # (m)
-        self.y_M = 1.0 # (m)
+        self.y_M = 0.1 # (m)
         self.nx = 2
         self.ny = 2
         self.x = linspace(self.x_m,self.x_M,self.nx)
@@ -71,11 +71,12 @@ class Solid_Params():
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
         self.mu_v = 0
-        self.E = 1e6
+        self.E = 1e8
         self.nu = 0.4 # poissons ratio
         self.K = self.E/(3.*(1.-2.*self.nu))
         self.G = self.E/(2.*(1.+self.nu))
-        self.eta_max = 1e5#*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+        self.eta_max = 1e12#*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+        # self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
@@ -91,6 +92,22 @@ class Solid_Params():
             self.n += 1
         self.A = (G.x_M-G.x_m)*(G.y_M-G.y_m)/self.n # area (m^2)
 
+        # Advective terms
+        elastic_wave_speed = sqrt(self.K/self.rho)
+        distance = minimum(G.dx,G.dy)
+        critical_adv_time = distance/elastic_wave_speed
+        # Diffusive terms
+        l_0 = xp[1] - xp[0] # initial distance between material points
+        critical_diff_time = l_0**2*self.rho/self.eta_max
+
+        critical_time = minimum(critical_adv_time,critical_diff_time)
+        CFL = critical_time/P.dt
+
+        if CFL < 2:
+            print('WARNING: STABILITY IS GUARANTEED TO BE POOR')
+        print('CFL from elastic wave speed: ' + str(critical_adv_time/P.dt))
+        print('CFL from momentum diffusion: ' + str(critical_diff_time/P.dt))
+        print('Current CFL: ' + str(CFL))
 
 class Output_Params():
     def __init__(self,nt,n):

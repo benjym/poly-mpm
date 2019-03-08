@@ -69,7 +69,7 @@ def main(params):
             if P.O.plot_continuum: plot.draw_continuum(G,P)
             if P.O.plot_material_points: plot.draw_material_points(L,P,G)
             if P.mode == 'anisotropy': plot.draw_gamma_dot(L,P,G)
-            if P.O.measure_energy: P.O.measure_E(P,L)
+            if P.O.measure_energy: P.O.measure_E(L,P,G)
             if P.O.save_u: plot.save_u(L,P,G)
             if P.O.save_s_bar: plot.save_s_bar(L,P,G)
         if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.store_p_q(P,G,L,P.tstep)
@@ -85,7 +85,7 @@ def main(params):
 
     # Final things to do
     if P.O.plot_material_points: plot.draw_material_points(L,P,G,'final')
-    if P.O.measure_stiffness: P.O.measure_E(P,L)
+    if P.O.measure_stiffness: P.O.measure_E(L,P,G)
     if P.O.measure_energy: plot.draw_energy(P)
     if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
     if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)

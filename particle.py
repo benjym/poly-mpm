@@ -4,7 +4,7 @@ from constit import *
 
 class Particle():
     """A class defining an individual material point together with functions for mapping to/from the grid"""
-    def __init__(self,x,y,P,G,p):
+    def __init__(self,x,y,P,G,p,phi=None):
         self.rho = P.S[p].rho # density (kg/m^3)
         self.x = array([x, y, 0.]) # position (m)
         try:
@@ -24,6 +24,10 @@ class Particle():
             self.strain = -1e-15*ones((3,3)) # mixed state compression
             self.stress = (P.S[p].K*trace(self.strain)*eye(3) +
                            2.*P.S[p].G*(self.strain - trace(self.strain)*eye(3)/3.))
+        elif P.pressure == 'temperature':
+            self.strain = -1e-5*eye(3) # pure compression everywhere
+            self.stress = (P.S[p].K*trace(self.strain)*eye(3) +
+                           2.*P.S[p].G*(self.strain - trace(self.strain)*eye(3)/3.))
         else:
             self.strain = zeros((3,3)) # corresponding strains
             self.stress = zeros((3,3))
@@ -40,7 +44,10 @@ class Particle():
         self.G = zeros((4,3)) # gradient of shape function
         self.N = zeros((4)) # basis function
         self.n_star = 0 # reference node
-        self.phi = array(P.S[p].phi)
+        if phi is not None:
+            self.phi = array(phi)
+        else:
+            self.phi = array(P.S[p].phi)
         if P.initial_flow == 'steady':
             if P.S[0].law == 'viscous' or P.S[0].law == 'viscous_size':
                 self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.]) # VISCOUS FLOW DOWN A SLOPE

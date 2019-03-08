@@ -4,16 +4,16 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-5 # timestep (s)
-        self.savetime = 1e-3 # (s)
+        self.dt = 1e-5#5e-8 # timestep (s)
+        self.savetime = 1e-2 # (s)
         self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.theta = -deg2rad(float(args[1])) # slope angle (degrees)
         self.pressure = 'lithostatic'
         self.initial_flow = 'steady'
 
-        self.segregate_grid = True
-        self.c = 1e-3 # inter-particle drag coefficient
+        self.segregate_grid = False
+        self.c = 1e-4 # inter-particle drag coefficient
         self.D = 0.#1e-2 # segregation diffusion coefficient
 
         self.G = Grid_Params(args)
@@ -22,7 +22,8 @@ class Params():
         self.S = [Solid_Params(self.G,self),]
 
         self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ns_' + str(self.G.ns) + '/'
-        self.smooth_grad2 = False
+        self.smooth_gamma_dot = True
+        self.smooth_grad2 = True
         print('Saving to ' + self.supername)
 
     def update_forces(self):
@@ -30,9 +31,9 @@ class Params():
 
 class Grid_Params():
     def __init__(self,args):
-        self.ny = 51
+        self.ny = 31
         self.y_m = 0.0 # (m)
-        self.y_M = 0.1 #0.1 # (m)
+        self.y_M = 0.1 # (m)
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
 
@@ -71,11 +72,11 @@ class Solid_Params():
         self.I_0 = 0.279
 
         self.mu_v = 0
-        self.E = 1e4
-        self.nu = 0.4 # poissons ratio
+        self.E = 1e8
+        self.nu = 0.3 # poissons ratio
         self.K = self.E/(3.*(1.-2.*self.nu))
         self.G = self.E/(2.*(1.+self.nu))
-        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3) # taken a paper somewhere
 
         G.s_bar_0 = (G.s_m+G.s_M)/2.
         self.v_max = ( sqrt(abs(P.max_g)*G.s_bar_0)*(2./3.)*self.I_0*(tan(abs(P.theta))-self.mu_0)/(self.mu_1-tan(abs(P.theta)))*
@@ -103,7 +104,6 @@ class Solid_Params():
         critical_adv_time = distance/elastic_wave_speed
         # Diffusive terms
         l_0 = xp[1] - xp[0] # initial distance between material points
-        # l_0 = distance
         critical_diff_time = l_0**2*self.rho/self.eta_max
 
         critical_time = minimum(critical_adv_time,critical_diff_time)
@@ -111,8 +111,8 @@ class Solid_Params():
 
         if CFL < 2:
             print('WARNING: STABILITY IS GUARANTEED TO BE POOR')
-            print(critical_adv_time)
-            print(critical_diff_time)
+        print('CFL from elastic wave speed: ' + str(critical_adv_time/P.dt))
+        print('CFL from momentum diffusion: ' + str(critical_diff_time/P.dt))
         print('Current CFL: ' + str(CFL))
 
 class Output_Params():

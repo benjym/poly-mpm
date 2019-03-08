@@ -5,6 +5,54 @@ from integrators import increment_grainsize
 from scipy.interpolate import RectBivariateSpline as interp2d
 from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel
 import sys
+
+# from numba import jitclass          # import the decorator
+# from numba import int32, float32, bool_    # import the types
+#
+# spec = [
+#     ('x', float32[:]),          # an array field
+#     ('y', float32[:]),          # an array field
+#     ('dx', float32),          # an array field
+#     ('dy', float32),          # an array field
+#     ('X', float32[:]),          # an array field
+#     ('Y', float32[:]),          # an array field
+#     ('x_plot', float32[:]),          # an array field
+#     ('y_plot', float32[:]),          # an array field
+#     ('boundary_v', bool_[:]),          # an array field
+#     ('boundary_h', bool_[:]),          # an array field
+#     ('boundary_tot', bool_[:]),          # an array field
+#     ('weighting', float32[:]),          # an array field
+#     ('V', float32[:]),          # an array field
+#     ('boundary_conveyor', bool_[:]),          # an array field
+#     ('boundary_conveyor_triple', bool_[:]),          # an array field
+#     ('fi', float32[:]),          # an array field
+#     ('fe', float32[:]),          # an array field
+#     ('m', float32[:]),          # an array field
+#     ('q', float32[:]),          # an array field
+#     ('q_dot', float32[:]),          # an array field
+#     ('ext_f', float32[:]),          # an array field
+#     ('gammadot', float32[:]),          # an array field
+#     ('grad_gammadot', float32[:]),          # an array field
+#     ('yieldfunction', float32[:]),          # an array field
+#     ('pressure', float32[:]),          # an array field
+#     ('sigmah', float32[:]),          # an array field
+#     ('sigmav', float32[:]),          # an array field
+#     ('dev_stress', float32[:]),          # an array field
+#     ('dev_stress_dot', float32[:]),          # an array field
+#     ('mu_s', float32[:]),          # an array field
+#     ('mu', float32[:]),          # an array field
+#     ('I', float32[:]),          # an array field
+#     ('damping_force', float32[:]),          # an array field
+#     ('s_bar', float32[:]),          # an array field
+#     ('dphi', float32[:]),          # an array field
+#     ('phim', float32[:]),          # an array field
+#     ('phi', float32[:]),          # an array field
+#     ('S', float32[:]),          # an array field
+#     ('u_hat', float32[:]),          # an array field
+#     ('v_hat', float32[:]),          # an array field
+# ]
+#
+# @jitclass(spec)
 class Grid():
     """
     This contains all of the methods which operate on the grid directly. The grid is assumed to be a regular lattice, numbered as:
@@ -199,8 +247,9 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        if P.damping: self.damping_force = 0.8*abs(self.fe - self.fi)*sign(self.q_dot)
-        self.q_dot = self.fe - self.fi - self.damping_force
+        # if P.damping: self.damping_force = 0.8*abs(self.fe - self.fi)*sign(self.q_dot)
+        self.q_dot = self.fe - self.fi #- self.damping_force
+        if P.damping: self.q_dot *= 0.7
 
         self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_v) # 0 at boundary
         self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_h) # 0 at boundary
@@ -211,7 +260,7 @@ class Grid():
 
         if P.B.conveyor: self.q[self.boundary_conveyor_triple] = P.v_0*self.m[self.boundary_conveyor] # conveyor momentum
 
-    def calculate_gammadot(self,P,G):
+    def calculate_gammadot(self,P,G,smooth=False):
         """Calculate the bulk shear strain rate from the continuum measure of velocity.
 
          .. warning::
@@ -227,8 +276,8 @@ class Grid():
         # v[isnan(v)] = 0.
         # dudy,dudx = gradient(u,G.dy,G.dx)
         # dvdy,dvdx = gradient(v,G.dy,G.dx)
-        gradu = self.calculate_gradient(P,G,u,smooth=False)
-        gradv = self.calculate_gradient(P,G,v,smooth=False)
+        gradu = self.calculate_gradient(P,G,u,smooth=P.smooth_gamma_dot)
+        gradv = self.calculate_gradient(P,G,v,smooth=P.smooth_gamma_dot)
         dudy = gradu[:,1]
         dvdx = gradv[:,0]
         self.gammadot = (dudy + dvdx)#.flatten()
@@ -253,51 +302,13 @@ class Grid():
              This returns the gradient of the input field ... kind of ... sometimes
         """
 
-        method = 'astropy'
-        if method == 'self_defined':
-            # SELF-DEFINED METHOD
-            # This should set any boundary grid points using first order gradients, and then set any interior grid points using the numpy gradient method
-            Z[isnan(Z)] = 0.
-            mask = (G.m<P.M_tol).reshape(P.G.ny,P.G.nx)
-            good_values = (G.m>P.M_tol).reshape(P.G.ny,P.G.nx)
-
-            Z = Z.reshape(P.G.ny,P.G.nx)
-            dZdy_nice,dZdx_nice = gradient(Z,G.dy,G.dx)
-
-            has_right = hstack([good_values[:,1:], zeros([P.G.ny,1],dtype=bool)])*good_values
-            has_left = hstack([zeros([P.G.ny,1],dtype=bool), good_values[:,:-1]])*good_values
-            has_down = vstack([good_values[1:], zeros([1,P.G.nx],dtype=bool)])*good_values
-            has_up = vstack([zeros([1,P.G.nx],dtype=bool), good_values[:-1]])*good_values
-
-            right_grad = hstack([(Z[:,1:] - Z[:,:-1])/G.dx, zeros([P.G.ny,1])])
-            up_grad = vstack([(Z[1:] - Z[:-1])/G.dy, zeros([1,P.G.nx])])
-
-            dZdx = zeros([P.G.ny,P.G.nx])
-            dZdx[has_right] = right_grad[has_right]
-            dZdx[has_left]  = right_grad[roll(has_left,-1,axis=1)]
-            dZdx[has_right*has_left] = dZdx_nice[has_right*has_left]
-
-            dZdy = zeros([P.G.ny,P.G.nx])
-            dZdy[has_up]   = up_grad[has_up]
-            dZdy[has_down] = up_grad[roll(has_down,-1,axis=0)]
-            dZdy[has_up*has_down] = dZdy_nice[has_up*has_down]
-        elif method == 'interp':
-            # INTERPOLATION METHOD
-            F = interp2d(G.X[good_values],G.Y[good_values],Z[good_values])
-            Z[mask] = F(G.X[mask],G.Y[mask])
-            Z = Z.reshape(P.G.ny,P.G.nx)
-            dZdy,dZdx = gradient(Z,G.dy,G.dx)
-        elif method == 'astropy': # see here: https://astropy.readthedocs.io/en/v0.3/convolution/index.html#using-convolve
-            Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-            # if smooth:
-            #     kernel = Box2DKernel(3) # smallest possible square kernel
-            #     Z = convolve(Z,kernel)
-            dZdy,dZdx = gradient(Z,G.dy,G.dx)
-            if smooth:
-                # kernel = Gaussian2DKernel(1) # smallest possible gaussian - maybe something even smaller?
-                kernel = Box2DKernel(3) # smallest possible square kernel
-                dZdy = convolve(dZdy,kernel)
-                dZdx = convolve(dZdx,kernel)
+        Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
+        dZdy,dZdx = gradient(Z,G.dy,G.dx)
+        if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
+            # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
+            kernel = Gaussian2DKernel(stddev=1)
+            dZdy = convolve(dZdy, kernel, boundary='extend')
+            dZdx = convolve(dZdx, kernel, boundary='extend')
 
         grad = array([dZdx.flatten(),
                       dZdy.flatten(),
@@ -315,9 +326,3 @@ class Grid():
         """
         self.dphi = increment_grainsize(P,self)
         self.dphi = nan_to_num(self.dphi)
-#         if sum(sum(isnan(self.dphi))):
-#             print('NaN found in G.dphi')
-#             print(self.dphi)
-#             sys.exit()
-#             G.dphi[:,i] *= (G.m > P.M_tol)
-#             G.dphi[:,i] *= (1 - G.boundary_tot) # zero flux at boundaries

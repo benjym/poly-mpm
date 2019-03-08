@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-5 # timestep (s)
-        self.savetime = 0.01 #1e1*self.dt#0.01
+        self.dt = 1e-4 # timestep (s)
+        self.savetime = 1e-2 #1e1*self.dt#0.01
         self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
@@ -13,13 +13,13 @@ class Params():
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params()#self.nt)
-        self.S = [Solid_Params(self.G,self),]
+        self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-3 # inter-particle drag coefficient
+        self.c = 1e-6 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/'
+        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/'
         self.pressure = 'lithostatic'
-        self.smooth_grad2 = True
+        self.smooth_grad2 = True # smooth the gradient of the shear strain rate
         print(self.supername)
 
     def update_forces(self):
@@ -28,12 +28,14 @@ class Params():
 
 class Grid_Params():
     def __init__(self,args):
-        self.x_m = 0.0 # (m)
-        self.x_M = 0.3 # (m)
+        self.L = 5 # aspect ratio of box
+        self.L_1 = 2.0 # aspect ratio of initial pile
         self.y_m = 0.0 # (m)
         self.y_M = 0.1 # (m)
+        self.x_m = 0.0 # (m)
+        self.x_M = self.y_M*self.L # (m)
         self.ny = int(args[1])
-        self.nx = (self.ny-1)*3 + 1
+        self.nx = (self.ny-1)*self.L + 1
         self.x = linspace(self.x_m,self.x_M,self.nx)
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
@@ -59,13 +61,15 @@ class Boundary_Params():
         self.no_slip_bottom = True
 
 class Solid_Params():
-    def __init__(self,G,P):
+    def __init__(self,G,P,args):
         self.X = []
         self.Y = []
         self.n = 0
         self.rho = 2700. # density (kg/m^3)
         self.packing = 0.6 # packing fraction
         self.rho_s = self.rho/self.packing # solid density
+        self.heterogeneous = True # non-uniform gsd in space
+        self.PHI = []
 
         self.law = 'pouliquen'
         self.mu_0 = tan(deg2rad(20.9)) #0.3
@@ -80,17 +84,27 @@ class Solid_Params():
         self.G = self.E/(2*(1+self.nu))
 
         self.pts_per_cell = 3
-        self.x = (G.nx-1)//3*self.pts_per_cell # particles in x direction
+        self.x = int((G.nx-1)//G.L/G.L_1)*self.pts_per_cell # particles in x direction
         self.y = (G.ny-1)*self.pts_per_cell # particles in y direction
         gap = array((G.dx,G.dy))/(2*self.pts_per_cell)
 
-        xp = linspace(G.x_m + 2./3.*(G.x_M - G.x_m) + gap[0],G.x_M - gap[0],self.x)
+        xp = linspace(G.x_m + (G.L - 1. + (G.L_1 - 1.)/G.L_1)/G.L*(G.x_M - G.x_m) + gap[0],G.x_M - gap[0],self.x)
         yp = linspace(G.y_m + gap[1],G.y_M - gap[1],self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
+
         for i in range(self.x*self.y):
             self.X.append(X[i])
             self.Y.append(Y[i])
+            if args[3] == 'top': # small on top
+                if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([1.,0.])
+                else:                        self.PHI.append([0.,1.])
+            elif args[3] == 'bot': # large on top
+                if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([0.,1.])
+                else:                        self.PHI.append([1.,0.])
+            elif args[3] == 'mix': # mixed
+                self.PHI.append(ones([G.ns])/float(G.ns))
+
             self.n += 1
         self.A = G.dx*G.dy/self.pts_per_cell**2
 

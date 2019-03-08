@@ -6,36 +6,18 @@ import matplotlib.pyplot as plt
 class Params():
     def __init__(self,mode):
         self.dt = 1e-3 # timestep (s)
-        self.t = 0. # physical time (s)
         self.tstep = 0
-        self.savetime = .1
+        self.savetime = 0.1
         self.t_f = 5.#100*self.dt # final time (s)
         self.nt = int(self.t_f/self.dt) # number of timesteps
-        self.save = 0 # save counter
-        self.M_tol = 1e-10 # very small mass (kg)
         self.max_g = 0. # gravity (ms^-2)
         self.max_q = 200.
-        self.update_forces()
         self.theta = 0.*pi/180. # slope angle (degrees)
-        self.thickness = 1. # (m) into page
         self.G = Grid_Params()
         self.B = Boundary_Params()
         self.O = Output_Params(self.nt)
         self.S = Solid_Params(self.G)
-        self.F = Fluid_Params()
-        self.R = Fluid_Params()
-        self.has_yielded = False
-        self.damping = False
-        self.mode = mode
-        
-    def savefig(self,name):
-        save_dir = './im/'+self.S.law+'/'+self.S.mode+'/'+str(self.G.scale)+'/'
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
-        plt.savefig(save_dir + name + '.png', dpi=100)
-        plt.close()
-        print 'Saved "' + name + '.png"'
-        
+
     def update_forces(self):
         t_c = .5
         self.g = self.max_g*(1.-exp(-3.*self.t**2/t_c**2))
@@ -55,22 +37,13 @@ class Grid_Params():
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
-        
 
 class Boundary_Params():
     def __init__(self):
-        self.wall = False
-        self.has_top = False
-        self.has_bottom = False
-        self.has_right = False
-        self.has_left = False
-        self.outlet_left = False
-        self.outlet_bottom = False
         self.force_boundaries = True
         self.vertical_force = True
         self.horizontal_force = False
         self.roughness = True
-
 
 class Solid_Params():
     def __init__(self,G):
@@ -84,8 +57,8 @@ class Solid_Params():
         self.law = 'von_mises'
 #        self.law = 'dp'
         self.rho = 2650. # density (kg/m^3)
-        
-        self.E = 1.e7 # elastic modulus (Pa)
+
+        self.E = 1.e5 # elastic modulus (Pa)
         self.nu = 0.3 # poisson's ratio
         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
@@ -101,7 +74,7 @@ class Solid_Params():
         yp = linspace(G.y_m+gap,G.y_M-gap,self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
-        for i in xrange(self.x*self.y):
+        for i in range(self.x*self.y):
             if i is not (G.scale)*self.x:
                 self.X.append(X[i])
                 self.Y.append(Y[i])
@@ -111,32 +84,20 @@ class Solid_Params():
 
 class Output_Params():
     def __init__(self,nt):
-        self.measure_energy = True
-        self.plot_continuum = False
+        # self.measure_energy = True
         self.plot_material_points = True
-        self.measure_stiffness = False
-        self.check_positions = True
-        self.plot_fluid = False
+        self.plot_continuum = True
+        self.measure_stiffness = True
+        # self.check_positions = True
         self.energy = zeros((10*nt+1,4)) # energy
-                
-    def measure_E(self,P,L):
-        print 'Measuring macro and micro stress/strain for each material point... '
-        for i in xrange(P.S.n):
-            original_position = array((P.S.X[i],P.S.Y[i],0))
-            macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
+
+    def measure_E(self,L,P,G):
+        print('Measuring macro and micro stress/strain for each material point... ')
+        for i in range(P.S[0].n):
+            original_position = array((P.S[0].X[i],P.S[0].Y[i],0))
+            macro_strain = (original_position-L.S[0][i].x)/array((P.G.x_M - P.G.x_m,P.G.y_M - P.G.y_m,1.)) #original_position
             macro_stress = P.max_q/2.
-            print 'From macroscopic stress/strain:'
-            print macro_stress/macro_strain/P.S.E
-            print 'From microscopic stress/strain:'
-            print L.S[i].dstress/L.S[i].dstrain/P.S.E
-            
-
-class Fluid_Params():
-    def __init__(self):
-        self.n = 0
-        
-
-class Rigid_Params():
-    def __init__(self):
-        self.n = 0
-
+            print('From macroscopic stress/strain:')
+            print(macro_stress/macro_strain/P.S[0].E)
+            print('From microscopic stress/strain:')
+            print(L.S[i].dstress/L.S[i].dstrain/P.S[0].E)

@@ -4,6 +4,7 @@ from particle import Particle
 # from voronoi import voronoi2D
 import matplotlib.cm as cm
 import sys
+# from numba import cuda
 
 class MatPointList():
     """
@@ -19,7 +20,10 @@ class MatPointList():
         for p in range(P.phases):
             self.S.append([]) # particles
             for i in range(P.S[p].n):
-                self.S[p].append(Particle(P.S[p].X[i],P.S[p].Y[i],P,G,p))
+                if P.S[p].heterogeneous:
+                    self.S[p].append(Particle(P.S[p].X[i],P.S[p].Y[i],P,G,p,phi=P.S[p].PHI[i]))
+                else:
+                    self.S[p].append(Particle(P.S[p].X[i],P.S[p].Y[i],P,G,p))
 
     def outlet_left(self,P,G):
         """Particles are deleted if they move left (:math:`-x` direction) out of the domain.
