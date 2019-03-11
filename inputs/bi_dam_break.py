@@ -9,7 +9,7 @@ class Params():
         self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
-        self.theta = 0.*pi/180. # slope angle (degrees)
+        self.theta = float(args[4])*pi/180. # slope angle (degrees)
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params()#self.nt)
@@ -17,8 +17,9 @@ class Params():
         self.segregate_grid = True
         self.c = 1e-6 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/'
+        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/theta_' + args[4] + '/'
         self.pressure = 'lithostatic'
+        self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.smooth_grad2 = True # smooth the gradient of the shear strain rate
         print(self.supername)
 
