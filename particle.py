@@ -74,8 +74,9 @@ class Particle():
                 v = G.q[n]/G.m[n]
             else:
                 v = array([0.,0.,0.])
-            self.dstrain += 0.5*(outer(v,self.G[r])
-                               + outer(self.G[r],v))*P.dt
+            self.L = outer(v,self.G[r])
+            self.L_T = outer(self.G[r],v)
+            self.dstrain += 0.5*(self.L + self.L_T)*P.dt
         self.strain += self.dstrain
 
     def update_stress(self,P,G,p):
@@ -87,6 +88,8 @@ class Particle():
 
         """
         exec(P.S[p].law + '(self,P,G,p)')
+        # self.stress += self.dstress # Cauchy stress rate
+        self.stress += self.dstress - (dot(self.L,self.stress) + dot(self.stress,self.L_T))*P.dt # Lie stress rate
 
     def get_reference_node(self,P,G):
         """Find the reference node for this material point.

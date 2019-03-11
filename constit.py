@@ -44,7 +44,6 @@ def elastic(MP,P,G,p):
     de_kk = trace(MP.dstrain)
     de_ij = MP.dstrain - de_kk*eye(3)/3.
     MP.dstress = P.S[p].K*de_kk*eye(3) + 2.*P.S[p].G*de_ij
-    MP.stress += MP.dstress
 
     # for visualisation
     MP.gammadot = sqrt(sum(sum(de_ij**2)))
@@ -89,7 +88,6 @@ def elastic_time(MP,P,G,p):
     de_kk = trace(MP.dstrain)
     de_ij = MP.dstrain - de_kk*eye(3)/3.
     MP.dstress = K_curr*de_kk*eye(3) + 2.*G_curr*de_ij
-    MP.stress += MP.dstress
 
     # for visualisation
     MP.gammadot = sqrt(sum(sum(de_ij**2)))
@@ -126,7 +124,6 @@ def von_mises(MP,P,G,p):
     MP.sigma_kk += dsigma_kk # scalar
     MP.dev_stress += MP.dev_dstress # matrix
     MP.dstress = (MP.dev_stress + MP.sigma_kk*eye(3)/3.) - MP.stress # matrix
-    MP.stress = MP.dev_stress + MP.sigma_kk*eye(3)/3. # matrix
 
     # for visualisation
     MP.yieldfunction = dev_stress_norm/(sqrt(2.)*P.S[p].k) - 1. # scalar
@@ -186,9 +183,7 @@ def dp(MP,P,G,p): # UNVALIDATED
 #     dstress = dp_guts(dstrain,stress)
 
     MP.dstress[:2,:2] = -dstress
-    MP.stress += MP.dstress
-#     print(MP.stress)
-#     print(MP.p)
+
     # For visualisation
     MP.gammadot = sqrt(sum(sum((dstrain - trace(dstrain)*eye(2)/2.)**2)))
     MP.pressure = trace(MP.stress)/2. # 3
@@ -257,7 +252,7 @@ def dp_rate(MP,P,G,p): # UNVALIDATED
     dstress = dp_guts(dstrain,stress)
 
     MP.dstress[:2,:2] = -dstress
-    MP.stress += MP.dstress
+
 #     print(MP.stress)
 #     print(MP.p,MP.q)
     # For visualisation
@@ -304,7 +299,8 @@ def viscous(MP,P,G,p):
     MP.dev_stress = 2.*P.S[p].mu_s*MP.de_ij/P.dt
 
     viscous_volumetric = P.S[p].mu_v*MP.de_kk*eye(3)/P.dt
-    MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
+    # MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
+    MP.dstress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric - MP.stress
     MP.gammadot = sqrt(sum(sum(MP.de_ij**2)))/P.dt
 
     for r in range(4):
@@ -371,7 +367,8 @@ def ken_kamrin(MP,P,G,p):
 
     MP.dev_stress = eta*MP.gammadot_ij
     viscous_volumetric = P.S[p].mu_v*MP.de_kk*eye(3)/P.dt
-    MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
+    # MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
+    MP.dstress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric - MP.stress
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r,P)
@@ -410,7 +407,8 @@ def pouliquen(MP,P,G,p):
     MP.pressure += MP.dp
     if MP.pressure > 0.: MP.pressure = 0. # can't go into tension - this is really important!!
 
-    MP.stress = MP.pressure*eye(3) + MP.dev_stress
+    # MP.stress = MP.pressure*eye(3) + MP.dev_stress
+    MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r,P)
