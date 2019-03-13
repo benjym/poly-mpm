@@ -57,7 +57,6 @@ def get_parameters(params):
     if type(P.S) is not list: P.S = [P.S] # if just one phase, still turn into a list
     P.phases = len(P.S)
     for p in range(P.phases):
-        # if not hasattr(P.S[p], 'phi'): P.S[p].phi = [1.]
         if not hasattr(P.S[p], 'phi'): P.S[p].phi = ones([P.G.ns])/float(P.G.ns)
         if not hasattr(P.S[p], 'heterogeneous'): P.S[p].heterogeneous = False
 
