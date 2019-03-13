@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 class Params():
     def __init__(self,args):
         self.dt = 1e-4 # timestep (s)
-        self.savetime = 1e-2 #1e1*self.dt#0.01
-        self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
+        self.savetime = 1e-1 #1e1*self.dt#0.01
+        self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
-        self.theta = 0*pi/180. # slope angle (degrees)
+        self.theta = 0*pi/180. # slope angle (radians)
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params()#self.nt)
@@ -26,8 +26,10 @@ class Params():
         print(self.supername)
 
     def update_forces(self):
-        t_c = 1. # time for a full rotation
-        self.theta = (self.t/t_c/2.)*pi/180. # slope angle (degrees)
+        t_c = 1.0 # time for a full rotation
+        self.theta = (self.t/t_c)*2.*pi # slope angle (radians)
+        print('\n')
+        print(degrees(self.theta))
         self.g = self.max_g
 
 class Grid_Params():
