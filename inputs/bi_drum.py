@@ -10,7 +10,9 @@ class Params():
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
         self.theta = 0*pi/180. # slope angle (radians)
-        self.G = Grid_Params(args)
+        self.Fr = float(args[2]) # Froude number
+        self.r = 0.1 # radius of drum
+        self.G = Grid_Params(self,args)
         self.B = Boundary_Params()
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
@@ -26,18 +28,16 @@ class Params():
         print(self.supername)
 
     def update_forces(self):
-        t_c = 1.0 # time for a full rotation
+        t_c = sqrt(4*pi**2*self.r/abs(self.max_g)*self.Fr) # rotation period
         self.theta = (self.t/t_c)*2.*pi # slope angle (radians)
-        print('\n')
-        print(degrees(self.theta))
         self.g = self.max_g
 
 class Grid_Params():
-    def __init__(self,args):
-        self.y_m = 0.0 # (m)
-        self.y_M = 0.1 # (m)
-        self.x_m = 0.0 # (m)
-        self.x_M = self.y_M # (m)
+    def __init__(self,P,args):
+        self.y_m = -P.r*1.1 # (m)
+        self.y_M = P.r*1.1 # (m)
+        self.x_m = -P.r*1.1 # (m)
+        self.x_M = P.r*1.1 # (m)
         self.ny = int(args[1])
         self.nx = self.ny
         self.x = linspace(self.x_m,self.x_M,self.nx)
@@ -88,8 +88,7 @@ class Solid_Params():
         self.K = self.E/(3*(1-2*self.nu))
         self.G = self.E/(2*(1+self.nu))
 
-        r = 0.9*(G.y_M - G.y_m)/2. # radius
-        c = [(G.x_M - G.x_m)/2.,(G.y_M - G.y_m)/2.] # centre
+        c = [0.,0.] # centre
         fill = 0.5 # filling fraction
 
         self.pts_per_cell = 3
@@ -102,13 +101,13 @@ class Solid_Params():
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
         for i in range(self.x*self.y):
-            if (X[i] - c[0])**2 + (Y[i] - c[1])**2 < r**2:
-                if ((Y[i]-c[1])/r + 1.)/2. < fill:
+            if (X[i] - c[0])**2 + (Y[i] - c[1])**2 < P.r**2:
+                if ((Y[i]-c[1])/P.r + 1.)/2. < fill:
                     self.X.append(X[i])
                     self.Y.append(Y[i])
                     self.n += 1
 
-        self.A = pi*r**2/self.n # area (m^2)
+        self.A = pi*P.r**2/self.n # area (m^2)
 
 class Drum_Params():
     def __init__(self,G,P):
@@ -123,9 +122,7 @@ class Drum_Params():
         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
 
-        r = 0.9*(G.y_M - G.y_m)/2. # radius
-        c = [(G.x_M - G.x_m)/2.,(G.y_M - G.y_m)/2.] # centre
-        fill = 0.5 # filling fraction
+        c = [0.,0.] # centre
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
@@ -138,13 +135,12 @@ class Drum_Params():
         Y = repeat(yp,self.x)
 
         for i in range(self.x*self.y):
-            if (X[i]-c[0])**2 + (Y[i]-c[1])**2 >= r**2:
+            if (X[i]-c[0])**2 + (Y[i]-c[1])**2 >= P.r**2:
                 self.X.append(X[i])
                 self.Y.append(Y[i])
                 self.n += 1
 
-        # self.A = pi*G.R**2/self.n # area (m^2)
-        self.A = G.dy*G.dx/self.pts_per_cell**2
+        self.A = G.dy*G.dx/self.pts_per_cell**2 # FIXME
 
 
 class Output_Params():
