@@ -163,10 +163,10 @@ class MatPointList():
 
         """
         for p in range(P.phases):
-            if p == 1: # HACK: ASSUMES SECOND MATERIAL IS TO BE CONTROLLED MANUALLY
+            if P.S[p].law is 'rigid':
                 for i in range(P.S[p].n):
                     self.S[p][i].move_rigid_points(P,G)
-            elif P.S[p].law is not 'rigid':
+            else:
                 for i in range(P.S[p].n):
                     self.S[p][i].move_material_points(P,G)
 

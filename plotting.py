@@ -126,7 +126,7 @@ class Plotting:
                         plt.ylim(P.G.y_m,P.G.y_M)
                         plt.colorbar()
 
-                elif P.S[p].law == 'bingham' or P.S[p].law == 'pouliquen2D' or (P.S[p].law == 'pouliquen' or P.S[p].law == 'HB'):
+                elif P.S[p].law == 'bingham' or P.S[p].law == 'pouliquen2D' or (P.S[p].law == 'pouliquen' or (P.S[p].law == 'HB' or P.S[p].law == 'linear_mu')):
                     plt.close()
                     fig, ax = plt.subplots(4,4,figsize=figsize)
                     ax = array(ax).flatten()

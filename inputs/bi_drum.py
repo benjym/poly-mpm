@@ -59,12 +59,11 @@ class Grid_Params():
 class Boundary_Params():
     def __init__(self):
         pass
-        # self.has_bottom = True
-        # self.has_right = True
-        # self.has_left = True
-        # self.outlet_left = True
-        # self.roughness = True
-        # self.no_slip_bottom = True
+        self.has_bottom = True
+        self.has_top = True
+        self.has_right = True
+        self.has_left = True
+        self.roughness = True
 
 class Solid_Params():
     def __init__(self,G,P,args):
@@ -116,8 +115,8 @@ class Drum_Params():
         self.n = 0
         self.rho = 2700.
 
-        self.law = 'elastic'
-        self.E = 1e6 # young's modulus (Pa)
+        self.law = 'rigid'
+        self.E = 1e7 # young's modulus (Pa)
         self.nu = 0.4 # poisson's ratio (-)
         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)

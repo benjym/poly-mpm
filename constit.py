@@ -417,3 +417,48 @@ def pouliquen(MP,P,G,p):
         # G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m
+
+def linear_mu(MP,P,G,p):
+    """:math:`\mu(I)` rheology implemented only for flowing regime.
+
+    This material model has been validated and is PROBABLY functional. (needs more mileage)
+
+    :param MP: A particle.Particle instance.
+    :param P: A param.Param instance.
+    :param G: A grid.Grid instance
+    :param p: The particle number.
+    :type p: int
+
+    """
+    s_bar = 0.
+    for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
+
+    MP.de_kk = trace(MP.dstrain)/3. # tension positive
+    MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
+
+    MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
+
+    MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
+    # MP.I = minimum(MP.I,10.) # HACK - IF I DO THIS DO I NEED TO FIDDLE WITH ETA LATER?
+    # MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+    MP.mu = P.S[p].mu_0 + P.S[p].b*MP.I
+
+    MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
+
+    MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.dev_stress = MP.eta*MP.de_ij/P.dt
+
+    MP.dp = P.S[p].K*MP.de_kk # tension positive
+    MP.pressure += MP.dp
+    if MP.pressure > 0.: MP.pressure = 0. # can't go into tension - this is really important!!
+
+    # MP.stress = MP.pressure*eye(3) + MP.dev_stress
+    MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+
+    for r in range(4):
+        n = G.nearby_nodes(MP.n_star,r,P)
+        G.pressure[n] += MP.N[r]*MP.pressure*MP.m
+        G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
+        # G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
+        G.mu[n] += MP.N[r]*MP.mu*MP.m
+        G.I[n] += MP.N[r]*MP.I*MP.m

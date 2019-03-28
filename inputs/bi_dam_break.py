@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-4 # timestep (s)
-        self.savetime = 1e-2 #1e1*self.dt#0.01
+        self.dt = 1e-5 # timestep (s)
+        self.savetime = 0.01 #1e1*self.dt#0.01
         self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
@@ -15,7 +15,7 @@ class Params():
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-6 # inter-particle drag coefficient
+        self.c = 1e-3 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
         self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/theta_' + args[4] + '/'
         self.pressure = 'lithostatic'
@@ -32,7 +32,7 @@ class Grid_Params():
         self.L = 5 # aspect ratio of box
         self.L_1 = 2.0 # aspect ratio of initial pile
         self.y_m = 0.0 # (m)
-        self.y_M = 0.1 # (m)
+        self.y_M = 5.0 # (m)
         self.x_m = 0.0 # (m)
         self.x_M = self.y_M*self.L # (m)
         self.ny = int(args[1])
@@ -44,7 +44,7 @@ class Grid_Params():
         # self.s = array([0.5,1.0]) # s coordinate
 
         self.R = float(args[2])
-        self.s_M = 0.003 # 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
+        self.s_M = 1.0 # 1m grains! 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
         # self.s_m = 0.1
         self.s_m = self.s_M/self.R
         self.ns = 2
@@ -72,12 +72,16 @@ class Solid_Params():
         self.heterogeneous = True # non-uniform gsd in space
         self.PHI = []
 
-        self.law = 'pouliquen'
-        self.mu_0 = tan(deg2rad(20.9)) #0.3
-        self.mu_1 = tan(deg2rad(32.76))
-        self.delta_mu = self.mu_1 - self.mu_0
-        self.I_0 = 0.279
+        # self.law = 'pouliquen'
+        # self.mu_0 = tan(deg2rad(20.9)) #0.3
+        # self.mu_1 = tan(deg2rad(32.76))
+        # self.delta_mu = self.mu_1 - self.mu_0
+        # self.I_0 = 0.279
         self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+
+        self.law = 'linear_mu'
+        self.mu_0 = 0.5
+        self.b = 0.5
 
         self.E = 1e6
         self.nu = 0.4 # poissons ratio
