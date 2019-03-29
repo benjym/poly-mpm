@@ -132,6 +132,7 @@ class Plotting:
                     ax = array(ax).flatten()
 
                     ax[0].plot((G.q[:,0]/G.m)[P.G.nx//2::P.G.nx],G.y,'k')
+                    ax[1].plot(G.gammadot[P.G.nx//2::P.G.nx],G.y,'b')
                     ax[0].set_ylim(P.G.y_m,P.G.y_M)
                     ax[0].set_xlabel(r'$u$',rotation='horizontal')
                     ax[0].set_ylabel(r'$y$',rotation='horizontal')
@@ -149,12 +150,12 @@ class Plotting:
                         ax[0].set_title(r'$|u_{max}| = ' + str(amax(abs(nan_to_num(G.q[:,0]/G.m)))) + '$',
                               rotation='horizontal')
 
-                    ax[1].plot(G.gammadot[P.G.nx//2::P.G.nx],G.y,'b')
-                    ax[1].set_ylim(P.G.y_m,P.G.y_M)
-                    ax[1].set_xlabel(r'$\dot\gamma$',rotation='horizontal')
-                    ax[1].set_ylabel(r'$y$',rotation='horizontal')
-                    ax[1].set_title(r'$|\dot\gamma_{max}| = ' + str(amax(abs(nan_to_num(G.gammadot)))) + '$',
-                              rotation='horizontal')
+                    # ax[1].plot(G.gammadot[P.G.nx//2::P.G.nx],G.y,'b')
+                    # ax[1].set_ylim(P.G.y_m,P.G.y_M)
+                    # ax[1].set_xlabel(r'$\dot\gamma$',rotation='horizontal')
+                    # ax[1].set_ylabel(r'$y$',rotation='horizontal')
+                    # ax[1].set_title(r'$|\dot\gamma_{max}| = ' + str(amax(abs(nan_to_num(G.gammadot)))) + '$',
+                    #           rotation='horizontal')
 
 
                     titles = [r'$\rho$',r'$\bar s$',

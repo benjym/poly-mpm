@@ -403,7 +403,8 @@ def pouliquen(MP,P,G,p):
     MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
-    MP.dp = P.S[p].K*MP.de_kk # tension positive
+    # MP.dp = P.S[p].K*MP.de_kk # tension positive
+    MP.dp = P.S[p].eta_max*MP.de_kk/P.dt # tension positive
     MP.pressure += MP.dp
     if MP.pressure > 0.: MP.pressure = 0. # can't go into tension - this is really important!!
 
@@ -448,7 +449,8 @@ def linear_mu(MP,P,G,p):
     MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
-    MP.dp = P.S[p].K*MP.de_kk # tension positive
+    MP.dp = P.S[p].eta_max*MP.de_kk*eye(3)/P.dt # tension positive
+    # MP.dp = P.S[p].K*MP.de_kk # tension positive
     MP.pressure += MP.dp
     if MP.pressure > 0.: MP.pressure = 0. # can't go into tension - this is really important!!
 

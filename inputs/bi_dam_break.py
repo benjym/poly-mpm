@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-5 # timestep (s)
-        self.savetime = 0.01 #1e1*self.dt#0.01
-        self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
+        self.dt = 1e-4 # timestep (s)
+        self.savetime = 1e3*self.dt # 0.1 (s)
+        self.t_f = 100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
         self.theta = float(args[4])*pi/180. # slope angle (degrees)
@@ -72,16 +72,16 @@ class Solid_Params():
         self.heterogeneous = True # non-uniform gsd in space
         self.PHI = []
 
-        # self.law = 'pouliquen'
-        # self.mu_0 = tan(deg2rad(20.9)) #0.3
-        # self.mu_1 = tan(deg2rad(32.76))
-        # self.delta_mu = self.mu_1 - self.mu_0
-        # self.I_0 = 0.279
+        self.law = 'pouliquen'
+        self.mu_0 = tan(deg2rad(20.9)) #0.3
+        self.mu_1 = tan(deg2rad(32.76))
+        self.delta_mu = self.mu_1 - self.mu_0
+        self.I_0 = 0.279
         self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
 
-        self.law = 'linear_mu'
-        self.mu_0 = 0.5
-        self.b = 0.5
+        # self.law = 'linear_mu'
+        # self.mu_0 = 0.5
+        # self.b = 0.5
 
         self.E = 1e6
         self.nu = 0.4 # poissons ratio
