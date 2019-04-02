@@ -10,7 +10,7 @@ import sys
 import matplotlib
 matplotlib.use('Agg')
 # import matplotlib.pyplot as plt
-from numpy import zeros, sum, seterr, mean
+from numpy import zeros, sum, seterr, mean, amax, amin, abs, nan_to_num, sqrt, minimum
 from plotting import Plotting
 import initialise
 import MPM
@@ -78,7 +78,10 @@ def main(params):
         # Increment time
         P.t += P.dt
         P.tstep += 1
-#         for p in range(P.phases):
+
+        if P.time_stepping == 'dynamic': P.S[0].update_timestep(P,G)
+
+        # for p in range(P.phases):
 #             if (P.S[p].law is 'von_mises' or P.S[p].law is 'dp') and not P.has_yielded:
 #             if P.S[p].law is 'von_mises' and not P.has_yielded:
 #                 L.update_timestep(P) # Check for yielding and reduce timestep

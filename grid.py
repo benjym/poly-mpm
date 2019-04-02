@@ -167,6 +167,7 @@ class Grid():
         self.mu_s = zeros_like(self.m) # shear viscosity, for plotting with viscous_size
         self.mu = zeros_like(self.m)
         self.I = zeros_like(self.m)
+        self.eta = zeros_like(self.m)
 
         self.damping_force = zeros((P.G.nx*P.G.ny,3)) # local non-viscous damping
         self.s_bar = zeros([P.G.nx*P.G.ny])

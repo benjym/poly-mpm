@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-4 # timestep (s)
-        self.savetime = 1e3*self.dt # 0.1 (s)
+        self.dt = 1e-3 # timestep (s)
+        self.savetime = 0.1 # 1e3*self.dt # 0.1 (s)
         self.t_f = 100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
@@ -17,10 +17,11 @@ class Params():
         self.segregate_grid = True
         self.c = 1e-3 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/theta_' + args[4] + '/'
+        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/theta_' + args[4] + '/H_' + args[5] + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.smooth_grad2 = True # smooth the gradient of the shear strain rate
+        self.time_stepping = 'dynamic'
         print(self.supername)
 
     def update_forces(self):
@@ -30,9 +31,9 @@ class Params():
 class Grid_Params():
     def __init__(self,args):
         self.L = 5 # aspect ratio of box
-        self.L_1 = 2.0 # aspect ratio of initial pile
+        self.L_1 = 1.0 # aspect ratio of initial pile
         self.y_m = 0.0 # (m)
-        self.y_M = 5.0 # (m)
+        self.y_M = float(args[5]) # 5.0 # (m)
         self.x_m = 0.0 # (m)
         self.x_M = self.y_M*self.L # (m)
         self.ny = int(args[1])
@@ -44,7 +45,7 @@ class Grid_Params():
         # self.s = array([0.5,1.0]) # s coordinate
 
         self.R = float(args[2])
-        self.s_M = 1.0 # 1m grains! 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
+        self.s_M = self.y_M/10. # 1.0 # 1m grains! 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
         # self.s_m = 0.1
         self.s_m = self.s_M/self.R
         self.ns = 2
@@ -77,13 +78,13 @@ class Solid_Params():
         self.mu_1 = tan(deg2rad(32.76))
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
-        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+        self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e4
 
         # self.law = 'linear_mu'
         # self.mu_0 = 0.5
         # self.b = 0.5
 
-        self.E = 1e6
+        self.E = 1e5
         self.nu = 0.4 # poissons ratio
         self.K = self.E/(3*(1-2*self.nu))
         self.G = self.E/(2*(1+self.nu))
@@ -112,7 +113,13 @@ class Solid_Params():
 
             self.n += 1
         self.A = G.dx*G.dy/self.pts_per_cell**2
-
+    def update_timestep(self,P,G):
+        distance = minimum(P.G.dx,P.G.dy)
+        t_vis = distance/amax(abs(nan_to_num(G.q[:,0]/G.m)))
+        t_ela = distance/sqrt(self.K/self.rho)
+        t_diff = distance**2/self.eta_max*self.rho
+        # print(P.dt, t_vis, t_ela, t_diff)
+        P.dt = 0.2*min([t_vis, t_ela, t_diff])
 
 class Output_Params():
     def __init__(self):

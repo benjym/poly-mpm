@@ -161,7 +161,8 @@ class Plotting:
                     titles = [r'$\rho$',r'$\bar s$',
                               r'$u$',r'$v$',r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
-                              r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
+                              # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
+                              r'$\mu$',r'$\eta/\eta_{max}$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
                     z = [G.m*G.m/G.V,
                          G.s_bar*G.m,
                          G.q[:,0],
@@ -173,7 +174,8 @@ class Plotting:
                          G.dev_stress,
                          abs(G.dev_stress/G.pressure)*G.m,
                          G.mu,
-                         log10(G.I/G.m)*G.m,
+                         # log10(G.I/G.m)*G.m,
+                         G.eta/G.m/P.S[0].eta_max,
                          G.dphi[:,0]/P.dt*G.m,
                          G.dphi[:,-1]/P.dt*G.m
                          ]
@@ -191,6 +193,8 @@ class Plotting:
                             if i == 1:
                                 plt.clim(P.G.s_m,P.G.s_M)
                                 plt.set_cmap('bwr')
+                            elif i == 11: # eta
+                                plt.clim(0,1)
                             elif i == 12:
                                 plt.clim(-amax(abs(G.dphi[:,0]))/P.dt,amax(abs(G.dphi[:,0]))/P.dt)
                                 plt.set_cmap('bwr')
