@@ -11,13 +11,13 @@ class Params():
         self.max_q = 0.
         self.theta = 0*pi/180. # slope angle (radians)
         self.Fr = float(args[2]) # Froude number
-        self.r = 0.1 # radius of drum
+        self.r = 1.0 # radius of drum
         self.G = Grid_Params(self,args)
         self.B = Boundary_Params()
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-4 # inter-particle drag coefficient
+        self.c = 1e-2 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
         self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         self.pressure = 'lithostatic'
@@ -35,9 +35,9 @@ class Params():
 class Grid_Params():
     def __init__(self,P,args):
         self.y_m = 0.0 # (m)
-        self.y_M = 1.0 # (m)
+        self.y_M = P.r # (m)
         self.x_m = 0.0 # (m)
-        self.x_M = 1.0 # (m)
+        self.x_M = P.r # (m)
         self.ny = int(args[1])
         self.nx = self.ny
         self.x = linspace(self.x_m,self.x_M,self.nx)
