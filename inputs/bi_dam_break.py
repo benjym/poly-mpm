@@ -15,13 +15,14 @@ class Params():
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-3 # inter-particle drag coefficient
+        self.c = 1e-4 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
         self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/R_' + str(self.G.R) + '/' + args[3] + '/theta_' + args[4] + '/H_' + args[5] + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.smooth_grad2 = True # smooth the gradient of the shear strain rate
-        self.time_stepping = 'dynamic'
+        self.time_stepping = 'dynamic' # dynamic or static time steps
+        self.CFL = 0.2 # stability criteria for determining timstep
         print(self.supername)
 
     def update_forces(self):
@@ -84,7 +85,7 @@ class Solid_Params():
         # self.mu_0 = 0.5
         # self.b = 0.5
 
-        self.E = 1e5
+        self.E = 1e7
         self.nu = 0.4 # poissons ratio
         self.K = self.E/(3*(1-2*self.nu))
         self.G = self.E/(2*(1+self.nu))
@@ -113,13 +114,15 @@ class Solid_Params():
 
             self.n += 1
         self.A = G.dx*G.dy/self.pts_per_cell**2
+
     def update_timestep(self,P,G):
         distance = minimum(P.G.dx,P.G.dy)
         t_vis = distance/amax(abs(nan_to_num(G.q[:,0]/G.m)))
         t_ela = distance/sqrt(self.K/self.rho)
         t_diff = distance**2/self.eta_max*self.rho
-        # print(P.dt, t_vis, t_ela, t_diff)
-        P.dt = 0.2*min([t_vis, t_ela, t_diff])
+        t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_gammadot)))) # NOTE: CHECK THIS
+        # print(P.dt, t_vis, t_ela, t_diff, t_seg)
+        P.dt = P.CFL*min([t_vis, t_ela, t_diff, t_seg])
 
 class Output_Params():
     def __init__(self):

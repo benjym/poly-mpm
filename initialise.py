@@ -27,7 +27,8 @@ def get_parameters(params):
     if not hasattr(P, 'initial_flow'): P.initial_flow = False # give initial velocities which correspond to 1D steady state
     if not hasattr(P, 'smooth_gamma_dot'): P.smooth_gamma_dot = False # use artifical smoothing on calculation of the shear strain rate
     if not hasattr(P, 'smooth_grad2'): P.smooth_grad2 = False # use artifical smoothing on calculation of the gradient of the shear strain rate
-    if not hasattr(P, 'time_stepping'): P.time_stepping = 'static' # do not update time stepping automatically - NOTE: ONLY WORKS FOR MU(I) NOW!!!
+    if not hasattr(P, 'time_stepping'): P.time_stepping = 'static' # do not update time stepping automatically - NOTE: ASSUMES A FUNCTION update_timestep() EXISTS FOR P.S[0]
+    if not hasattr(P, 'CFL'): P.CFL = 0.1 # default value of CFL conidition is quite conservative
 
 
     if not hasattr(P.B, 'wall'): P.B.wall = False
