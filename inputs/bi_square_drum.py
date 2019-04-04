@@ -17,7 +17,7 @@ class Params():
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-2 # inter-particle drag coefficient
+        self.c = 1e-3 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
         self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         self.pressure = 'lithostatic'
@@ -81,7 +81,7 @@ class Solid_Params():
         self.mu_1 = tan(deg2rad(32.76))
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
-        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e4
+        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e3
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio
