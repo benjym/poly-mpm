@@ -175,11 +175,10 @@ class Plotting:
                          abs(G.dev_stress/G.pressure)*G.m,
                          G.mu,
                          # log10(G.I/G.m)*G.m,
-                         G.eta/G.m/P.S[0].eta_max,
+                         G.eta/P.S[0].eta_max,
                          G.dphi[:,0]/P.dt*G.m,
                          G.dphi[:,-1]/P.dt*G.m
                          ]
-
                     for i in range(len(titles)):
                         plt.sca(ax[i+2])
                         cax = plt.pcolormesh(G.x_plot,

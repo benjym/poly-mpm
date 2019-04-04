@@ -444,7 +444,6 @@ def linear_mu(MP,P,G,p):
     MP.mu = P.S[p].mu_0 + P.S[p].b*MP.I
 
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-
     MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
