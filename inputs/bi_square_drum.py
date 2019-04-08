@@ -29,7 +29,7 @@ class Params():
 
     def update_forces(self):
         t_c = sqrt(4*pi**2*self.r/(abs(self.max_g)*self.Fr)) # rotation period
-        self.theta = (self.t/t_c)*2.*pi # slope angle (radians)
+        self.theta = -(self.t/t_c)*2.*pi # slope angle (radians)
         self.g = self.max_g
 
 class Grid_Params():

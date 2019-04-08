@@ -403,8 +403,8 @@ def pouliquen(MP,P,G,p):
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
     MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
-    # if ( MP.pressure + MP.dp ) > 0: # can't go into tension - this is really important!!
-        # MP.dp = -MP.pressure # set increment back to zero
+    if ( MP.pressure + MP.dp ) > 0: # can't go into tension - this is really important!!
+        MP.dp = -MP.pressure # set increment back to zero
     MP.pressure += MP.dp
 
     # MP.stress = MP.pressure*eye(3) + MP.dev_stress
