@@ -108,7 +108,7 @@ class Particle():
         :param G: A grid.Grid instance
 
         """
-        self.N, self.G = G.N(self.x-[G.X[self.n_star],G.Y[self.n_star],0.])
+        self.N, self.G = G.N(self.x-[G.X[self.n_star],G.Y[self.n_star],0.]) # linear basis function
 
     def get_nodal_mass_momentum(self,P,G):
         """Pass mass and momentum to nearby nodes.

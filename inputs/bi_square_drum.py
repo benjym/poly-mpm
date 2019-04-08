@@ -6,7 +6,7 @@ class Params():
     def __init__(self,args):
         self.dt = 1e-4 # timestep (s)
         self.savetime = 1e-1 #1e1*self.dt#0.01
-        self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
+        self.t_f = 100.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
         self.theta = 0*pi/180. # slope angle (radians)
@@ -64,7 +64,7 @@ class Boundary_Params():
         self.has_top = True
         self.has_right = True
         self.has_left = True
-        self.roughness = True
+        # self.roughness = True
 
 class Solid_Params():
     def __init__(self,G,P,args):
