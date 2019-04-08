@@ -64,7 +64,7 @@ class Boundary_Params():
         self.has_top = True
         self.has_right = True
         self.has_left = True
-        # self.roughness = True
+        self.roughness = False
 
 class Solid_Params():
     def __init__(self,G,P,args):
