@@ -255,18 +255,14 @@ class Grid():
         self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_v) # 0 at boundary
         self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_h) # 0 at boundary
         if P.B.roughness:
-                self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_v) # sidewalls
                 self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_h) # top/bottom
+                self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_v) # sidewalls
         self.q += self.q_dot*P.dt
 
         if P.B.conveyor: self.q[self.boundary_conveyor_triple] = P.v_0*self.m[self.boundary_conveyor] # conveyor momentum
 
     def calculate_gammadot(self,P,G,smooth=False):
         """Calculate the bulk shear strain rate from the continuum measure of velocity.
-
-         .. warning::
-
-            This does not perform well near mass discontinuities!!
 
         :param P: A param.Param instance.
 
