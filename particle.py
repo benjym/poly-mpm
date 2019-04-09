@@ -1,3 +1,4 @@
+import sys
 from numpy import *
 from numpy.linalg import norm
 from constit import *
@@ -68,15 +69,18 @@ class Particle():
 
         """
         self.dstrain = zeros((3,3))
+        self.L = self.L_T = zeros((3,3))
         for r in range(4):
             n = G.nearby_nodes(self.n_star,r,P)
             if G.m[n] > P.M_tol:
                 v = G.q[n]/G.m[n]
             else:
                 v = array([0.,0.,0.])
-            self.L = outer(v,self.G[r])
-            self.L_T = outer(self.G[r],v)
-            self.dstrain += 0.5*(self.L + self.L_T)*P.dt
+            L = outer(v,self.G[r])
+            L_T = outer(self.G[r],v)
+            self.L += L
+            self.L_T += L_T
+            self.dstrain += 0.5*(L + L_T)*P.dt
         self.strain += self.dstrain
 
     def update_stress(self,P,G,p):
@@ -98,8 +102,14 @@ class Particle():
         :param G: A grid.Grid instance
 
         """
-        self.n_star = int(trunc((self.x[0] - P.G.x_m)/G.dx)
-                          + trunc((self.x[1] - P.G.y_m)/G.dy)*P.G.nx)
+        try:
+            self.n_star = int(trunc((self.x[0] - P.G.x_m)/G.dx)
+                              + trunc((self.x[1] - P.G.y_m)/G.dy)*P.G.nx)
+        except ValueError:
+            print('Something went wrong! Particle is out of the box :(')
+            print(self.x)
+            print(self.v)
+
 
     def get_basis_functions(self,P,G):
         """Get the basis functions for this material point.

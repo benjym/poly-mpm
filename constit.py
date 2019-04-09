@@ -10,9 +10,10 @@ The models which currently work reliably are:
     - Newtonian viscosity
 
 """
+import sys
 from numpy import linspace, sin, cos, pi, zeros, outer, array, dot
 from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot
-from numpy import sqrt, abs, ones, minimum, maximum, exp
+from numpy import sqrt, abs, ones, minimum, maximum, exp, isfinite
 from numpy.linalg import norm
 
 def rigid(MP,P,G,p):
@@ -388,6 +389,13 @@ def pouliquen(MP,P,G,p):
     :type p: int
 
     """
+
+    # Issues with the mu(I) model in general:
+    # 1. gammadot = 0
+    # 2. pressure = 0
+    # 3. large eta
+    # 4. no feedback to density
+
     s_bar = 0.
     for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
 
@@ -397,9 +405,10 @@ def pouliquen(MP,P,G,p):
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
 
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
+    MP.I = nan_to_num(MP.I)
     MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
     MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
@@ -409,6 +418,21 @@ def pouliquen(MP,P,G,p):
         MP.pressure = 0.
 
     MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+
+    if not isfinite(MP.dstress).all():
+        print('THIS IS GOING TO BE A PROBLEM! FOUND SOMETHING NON-FINITE IN CONSTITUTIVE MODEL')
+        print(MP.de_kk)
+        print(MP.de_ij)
+        print(s_bar)
+        print(MP.gammadot)
+        print(MP.I)
+        print(MP.mu)
+        print(MP.eta)
+        print(MP.dev_stress)
+        print(MP.dp)
+        print(MP.pressure)
+        print(MP.dstress)
+        sys.exit()
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r,P)

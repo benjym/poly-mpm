@@ -81,7 +81,7 @@ class Solid_Params():
         self.mu_1 = tan(deg2rad(32.76))
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
-        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e3
+        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio
@@ -105,8 +105,8 @@ class Solid_Params():
 
     def update_timestep(self,P,G):
         distance = minimum(P.G.dx,P.G.dy)
-        eta = G.eta/G.m
-        eta_body = eta[G.m/G.V > self.rho/2.] # just the dense areas
+        # eta = G.eta/G.m
+        # eta_body = eta[G.m/G.V > self.rho/2.] # just the dense areas
         # self.eta_max = 10.*mean(mean(eta_body))
         # print(eta[~isnan(eta)])
         t_vis = distance/amax(abs(nan_to_num(G.q[:,0]/G.m))) # cell crossing condition
@@ -119,7 +119,7 @@ class Solid_Params():
 class Output_Params():
     def __init__(self):
         self.plot_continuum = True
-        self.plot_material_points = True
+        # self.plot_material_points = True
         # self.plot_gsd_grid = True
         self.save_s_bar = True
         self.save_u = True

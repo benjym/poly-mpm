@@ -303,7 +303,7 @@ class Grid():
         dZdy,dZdx = gradient(Z,G.dy,G.dx)
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
             # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
-            kernel = Gaussian2DKernel(stddev=1)
+            kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
             dZdy = convolve(dZdy, kernel, boundary='extend')
             dZdx = convolve(dZdx, kernel, boundary='extend')
 

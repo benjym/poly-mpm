@@ -526,6 +526,7 @@ class Plotting:
     def save_u(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
         save(P.save_dir + 'data/u_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
+        save(P.save_dir + 'data/v_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,1]/G.m).reshape(P.G.ny,P.G.nx))
 
     def draw_gsd_grid(self,L,P,G):
         plt.clf()
