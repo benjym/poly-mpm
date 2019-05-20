@@ -21,8 +21,7 @@ class Params():
         self.D = 0. # segregation diffusion coefficient
         self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         self.pressure = 'lithostatic'
-        self.smooth_gamma_dot = False # smooth calculation of gamma_dot
-        self.smooth_grad2 = True # smooth the gradient of the shear strain rate
+        self.smooth_gamma_dot = True # smooth calculation of gamma_dot
         self.time_stepping = 'dynamic' # dynamic or static time steps
         self.CFL = 0.2 # stability criteria for determining timstep
         print(self.supername)
@@ -103,18 +102,11 @@ class Solid_Params():
             self.n += 1
         self.A = (G.y_M - G.y_m - G.top_gap)*(G.x_M - G.x_m)/self.n # area (m^2)
 
-    def update_timestep(self,P,G):
+    def critical_time(self,P):
         distance = minimum(P.G.dx,P.G.dy)
-        # eta = G.eta/G.m
-        # eta_body = eta[G.m/G.V > self.rho/2.] # just the dense areas
-        # self.eta_max = 10.*mean(mean(eta_body))
-        # print(eta[~isnan(eta)])
-        t_vis = distance/amax(abs(nan_to_num(G.q[:,0]/G.m))) # cell crossing condition
         t_ela = distance/sqrt(self.K/self.rho) # elasticity
         t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
-        t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_gammadot)))) # NOTE: CHECK THIS
-        # print(P.dt, t_vis, t_ela, t_diff, t_seg)
-        P.dt = P.CFL*min([t_vis, t_ela, t_diff, t_seg])
+        return minimum(t_diff,t_ela)
 
 class Output_Params():
     def __init__(self):

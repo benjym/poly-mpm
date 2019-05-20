@@ -173,6 +173,11 @@ class Grid():
         self.s_bar = zeros([P.G.nx*P.G.ny])
         self.dphi = zeros([P.G.nx*P.G.ny,P.G.ns])
 
+        self.pk = zeros([P.G.nx*P.G.ny])
+        self.pkm = zeros([P.G.nx*P.G.ny])
+        self.pk_dot = zeros([P.G.nx*P.G.ny])
+        self.grad_pk = zeros((P.G.nx*P.G.ny,3))
+
         if P.segregate_grid:
             self.phim = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.phi = zeros([P.G.nx*P.G.ny,P.G.ns])
@@ -203,33 +208,20 @@ class Grid():
         G[3] = array([-x[1],(self.dx-x[0]),0.])/(self.dx*self.dy)
         return N, G
 
-#     def apply_cyclic_BCs(self,P): # DOES NOT WORK !!!!
-#         for param in [self.m, self.q]:#, self.s_bar]:#, self.q_dot]:
-#             temp_store = param[::P.G.nx].copy() # left boundary
-#             param[::P.G.nx] += param[P.G.nx-1::P.G.nx].copy() # add right to left boundary
-#             param[P.G.nx-1::P.G.nx] += temp_store
-# #         if P.B.cyclic_lr: self.s_bar /= self.m
-#
-#     def apply_cyclic_BCs_stress(self,P): # DOES NOT WORK !!!!
-#         for param in [self.pressure, self.gammadot, self.dev_stress, self.yieldfunction]:
-#             temp_store = param[::P.G.nx].copy() # left boundary
-#             param[::P.G.nx] += param[P.G.nx-1::P.G.nx].copy() # add right to left boundary
-#             param[P.G.nx-1::P.G.nx] += temp_store
-#
-#     def apply_cyclic_nodal_forces(self,P): # DOES NOT WORK !!!!
-#         for param in [self.fi, self.fe]:
-#             temp_store = param[::P.G.nx].copy() # left boundary
-#             param[::P.G.nx] += param[P.G.nx-1::P.G.nx].copy() # add right to left boundary
-#             param[P.G.nx-1::P.G.nx] += temp_store
-
-    def make_cyclic(self,P,G,params): # DOES NOT WORK !!!!
+    def make_cyclic(self,P,G,params):
+        """
+        WORKS (EXCEPT MAYBE WHEN nx < 3) !!!!
+        """
         for label in params:
             param = getattr(G, label) # get the right attribute
             temp_store = param[::P.G.nx].copy() # left boundary
             param[::P.G.nx] += param[P.G.nx-1::P.G.nx].copy() # add right to left boundary
             param[P.G.nx-1::P.G.nx] += temp_store # add left to right boundary
 
-    def BCs(self,P): # BCS directly affecting self.fe
+    def BCs(self,P):
+        """
+        Boundary conditions are applied directly to the external force G.fe
+        """
         if P.B.vertical_force:
             self.ext_f[:P.G.nx,1] += P.q_v # bottom
             self.ext_f[(P.G.ny-1)*P.G.nx:,1] -= P.q_v # top
@@ -238,7 +230,6 @@ class Grid():
             self.ext_f[::P.G.nx,0] += P.q_h # left
             self.ext_f[P.G.nx-1::P.G.nx,0] -= P.q_h # right
             self.fe[:,0] += 2.*self.ext_f[:,0]*self.m/P.S[0].rho/self.dx
-
         if P.mode == 'anisotropy' and P.t == 0:
             self.fe[P.G.nx*P.G.ny/2,2] = 1.
 
@@ -267,18 +258,13 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        u = (self.q[:,0]/self.m)#.reshape(P.G.ny,P.G.nx)
-        v = (self.q[:,1]/self.m)#.reshape(P.G.ny,P.G.nx)
-        # u[isnan(u)] = 0.
-        # v[isnan(v)] = 0.
-        # dudy,dudx = gradient(u,G.dy,G.dx)
-        # dvdy,dvdx = gradient(v,G.dy,G.dx)
+        u = (self.q[:,0]/self.m)
+        v = (self.q[:,1]/self.m)
         gradu = self.calculate_gradient(P,G,u,smooth=P.smooth_gamma_dot)
         gradv = self.calculate_gradient(P,G,v,smooth=P.smooth_gamma_dot)
         dudy = gradu[:,1]
         dvdx = gradv[:,0]
-        self.gammadot = (dudy + dvdx)#.flatten()
-        # self.rate_of_shear = array([])
+        self.gammadot = (dudy + dvdx)
 
     def calculate_grad_gammadot(self,P,G):
         """Calculate the gradient of the absolute value of the shear strain rate using the built-in gradient method.
@@ -300,12 +286,16 @@ class Grid():
         """
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-        dZdy,dZdx = gradient(Z,G.dy,G.dx)
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
             # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
             kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
-            dZdy = convolve(dZdy, kernel, boundary='extend')
-            dZdx = convolve(dZdx, kernel, boundary='extend')
+            Z = convolve(Z, kernel, boundary='extend')
+        dZdy,dZdx = gradient(Z,G.dy,G.dx)
+        # if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
+        #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
+        #     kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
+        #     dZdy = convolve(dZdy, kernel, boundary='extend')
+        #     dZdx = convolve(dZdx, kernel, boundary='extend')
 
         grad = array([dZdx.flatten(),
                       dZdy.flatten(),
@@ -323,3 +313,27 @@ class Grid():
         """
         self.dphi = increment_grainsize(P,self)
         self.dphi = nan_to_num(self.dphi)
+
+    def update_pk(self,P,G):
+        """Placeholder method until Ebrahim's model is finished.
+
+        :param P: A param.Param instance.
+
+        """
+        pk = ma.masked_where(G.m<P.M_tol,self.pk).reshape(P.G.ny,P.G.nx)
+        # I NEED TO IMPLEMENT BOUNDARY CONDITIONS FOR DIFFUSION PART
+        #   1. At a boundary, reflection boundary?
+        #   2. At a periodic boundary, use the other side
+        #   3. At a free surface, it should be high!....
+        pk_pad_x = hstack([pk[:,0,newaxis], pk,  pk[:,-1, newaxis]])
+        pk_pad_y = vstack([pk[newaxis,0,:], pk,  pk[newaxis,-1,:]])
+        d2pk_dx2 = (roll(pk_pad_x,1,axis=1) - 2*pk_pad_x + roll(pk_pad_x,-1,axis=1))/P.G.dx**2
+        d2pk_dy2 = (roll(pk_pad_y,1,axis=0) - 2*pk_pad_y + roll(pk_pad_y,-1,axis=0))/P.G.dy**2
+        diff_term = (d2pk_dx2[:,1:-1] + d2pk_dy2[1:-1,:]).flatten()
+        decay_time = 0.1
+        D = 1e3 # 10 particle diameters for diffusion length scale????
+        self.pk_dot = 0.01*decay_time*abs(self.pressure/self.m)*abs(self.gammadot) - decay_time*self.pk + D*diff_term
+        # self.pk_dot = sign(self.pk_dot)*minimum(abs(self.pk_dot),10.) # HACK: CHEATING!!!!!!!
+        self.pk += self.pk_dot*P.dt
+
+        self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)

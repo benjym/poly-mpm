@@ -37,19 +37,20 @@ def main(params):
         L.get_basis_functions(P,G) # Make basis functions
         if P.O.check_positions: L.recover_position(P,G) # check basis functions
         L.get_nodal_mass_momentum(P,G) # Initialise from grid state
-        if P.B.cyclic_lr:
-#             G.apply_cyclic_BCs(P)
-            G.make_cyclic(P,G,['m','q'])
+        if P.B.cyclic_lr: G.make_cyclic(P,G,['m','q'])
         L.update_stress_strain(P,G) # Update stress and strain
         L.get_nodal_forces(P,G) # Compute internal and external forces
         G.BCs(P) # Add external forces from BCs
         G.update_momentum(P) # Compute rate of momentum and update nodes
         G.calculate_gammadot(P,G)
         if P.segregate_grid:
+            G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
+            #if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
+            if P.B.cyclic_lr: G.make_cyclic(P,G,['pk'])
             G.calculate_grad_gammadot(P,G)
             G.calculate_phi_increment(P)
             L.move_grainsize_on_grid(P,G)
-
+            G.make_cyclic(P,G,['eta','dphi'])
         L.move_material_points(P,G) # Update material points (position and velocity)
         # Move/Remove any particles that have left the grid
         if P.B.outlet_left: L.outlet_left(P,G)
@@ -79,7 +80,7 @@ def main(params):
         P.t += P.dt
         P.tstep += 1
 
-        if P.time_stepping == 'dynamic': P.S[0].update_timestep(P,G)
+        if P.time_stepping == 'dynamic': P.update_timestep(P,G)
 
         # for p in range(P.phases):
 #             if (P.S[p].law is 'von_mises' or P.S[p].law is 'dp') and not P.has_yielded:

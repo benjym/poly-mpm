@@ -16,11 +16,22 @@ class Particle():
         self.m = self.rho*self.V # mass (kg)
         self.b = array([P.g*sin(P.theta),P.g*cos(P.theta),0.]) # body forces
         if P.pressure == 'lithostatic':
+            K_0 = 1.
             if hasattr(P.G, 'top_gap'):
-                self.stress = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - P.G.top_gap - y)*eye(3) # build in a pressure gradient
+                # self.stress = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - P.G.top_gap - y)*eye(3) # build in a pressure gradient
+                sigma_yy = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - P.G.top_gap - y) # build in a pressure gradient
+                sigma_xy = sin(P.theta)*self.rho*P.max_g*(P.G.y_M - P.G.top_gap - y) # build in a pressure gradient
+                sigma_xx = K_0*sigma_yy # build in a pressure gradient
+                sigma_zz = K_0*sigma_yy # build in a pressure gradient
             else:
-                self.stress = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - y)*eye(3) # build in a pressure gradient
-            self.strain = zeros((3,3)) # strain-free
+                # self.stress = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - y)*eye(3) # build in a pressure gradient
+                sigma_yy = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - y) # build in a pressure gradient
+                sigma_xy = sin(P.theta)*self.rho*P.max_g*(P.G.y_M - y) # build in a pressure gradient
+                sigma_xx = K_0*sigma_yy # build in a pressure gradient
+                sigma_zz = K_0*sigma_yy # build in a pressure gradient
+            self.stress = array([[sigma_xx,sigma_xy,0],[sigma_xy,sigma_yy,0],[0,0,sigma_zz]])
+            # self.strain = zeros((3,3)) # strain-free
+            self.strain = eye(3)*trace(self.stress)/(9.*P.S[p].K) + (self.stress - eye(3)*trace(self.stress)/3.)/(2.*P.S[p].G)
         elif P.pressure == 'non-zero':
             self.strain = -1e-15*ones((3,3)) # mixed state compression
             self.stress = (P.S[p].K*trace(self.strain)*eye(3) +
@@ -45,6 +56,7 @@ class Particle():
         self.G = zeros((4,3)) # gradient of shape function
         self.N = zeros((4)) # basis function
         self.n_star = 0 # reference node
+        self.pk = 0. # kinetic pressure
         if phi is not None:
             self.phi = array(phi)
         else:
@@ -132,7 +144,9 @@ class Particle():
             n = G.nearby_nodes(self.n_star,r,P)
             G.m[n] += self.N[r]*self.m
             G.q[n] += self.N[r]*self.m*self.v
-            if P.segregate_grid: G.phim[n] += self.N[r]*self.m*self.phi
+            if P.segregate_grid:
+                G.phim[n] += self.N[r]*self.m*self.phi
+                G.pkm[n]  += self.N[r]*self.m*self.pk
 
     def add_to_boundary(self,P,G):
         """I have no idea what this does.
@@ -191,6 +205,7 @@ class Particle():
             n = G.nearby_nodes(self.n_star,r,P)
             if G.m[n] > P.M_tol:
                 self.phi += self.N[r]*G.dphi[n]
+                self.pk  += self.N[r]*G.pk[n]
 
     def move_material_points(self,P,G):
         """Update material point position and velocity using nearby nodal mass and momentum.

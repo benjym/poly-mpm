@@ -117,12 +117,13 @@ class MatPointList():
             if P.segregate_grid:
                 for j in range(P.G.ns):
                     G.phi[:,j] = G.phim[:,j]/G.m
+                G.pk = G.pk/G.m
         if P.segregate_grid:
             G.phi = nan_to_num(G.phi)
             G.s_bar = sum(G.S*G.phi,1)
-#             print(G.phi)
+            # print(G.phi)
 #             print(G.S)
-#             print(G.s_bar)
+            # print(G.s_bar)
 
         G.q[:,0] = G.q[:,0]*(1.-G.boundary_v) # 0 at boundary
         G.q[:,1] = G.q[:,1]*(1.-G.boundary_h) # 0 at boundary
@@ -193,8 +194,9 @@ class MatPointList():
             for i in range(P.S[p].n):
                 self.S[p][i].update_nodal_gsd(P,G)
         if P.segregate_grid or P.segregate_mp:
-            if not P.B.cyclic_lr: G.s_bar /= G.m
-
+            # if not P.B.cyclic_lr: G.s_bar /= G.m
+            G.s_bar /= G.m
+            # print(G.s_bar)
 #     def get_mp_gsd(self,P,G):
 #         """Map mass weighted average size back to the material points.
 #

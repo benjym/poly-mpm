@@ -179,7 +179,8 @@ def KT2_flux(phi,G,P,ax):
 
     if ax == 0:
         pad = (phi.shape[0] - P.G.nx)//2
-        g = G.grad_gammadot[:,ax].reshape(P.G.ny,P.G.nx).T.flatten() # P.G.nx*P.G.ny
+        #g = G.grad_gammadot[:,ax].reshape(P.G.ny,P.G.nx).T.flatten() # P.G.nx*P.G.ny NOTE: THIS WORKS!!!!!
+        g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
         for i in range(pad):
             g = hstack([g[:P.G.ny], g,  g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
@@ -190,7 +191,8 @@ def KT2_flux(phi,G,P,ax):
 
     elif ax == 1:
         pad = (phi.shape[0] - P.G.ny)//2
-        g = G.grad_gammadot[:,ax] # P.G.ny,P.G.nx
+        # g = G.grad_gammadot[:,ax] # P.G.ny,P.G.nx NOTE: THIS WORKS!!!!!
+        g = G.grad_pk[:,ax] # P.G.ny,P.G.nx
         g = tile(g,[P.G.ns,1]).T # P.G.ny*P.G.nx,P.G.ns
         g = g.reshape(-1,P.G.ns) # P.G.ny*P.G.nx,P.G.ns
         for i in range(pad):

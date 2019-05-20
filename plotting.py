@@ -1,14 +1,32 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
+import colorcet as cc
 import matplotlib.pyplot as plt
 from matplotlib.cm import viridis, bwr
-from matplotlib import colors
+from matplotlib.colors import LinearSegmentedColormap, Normalize, LogNorm
 from numpy import *
 from numpy.linalg import norm
 import os
 plt.viridis()
 
+# cdict = {'red': ((0.0, 1.0, 1.0),
+#                  (0.25, 1.0, 1.0),
+#                  (0.5, 1.0, 1.0),
+#                  (0.75, 0.902, 0.902),
+#                  (1.0, 0.0, 0.0)),
+#          'green': ((0.0, 0.708, 0.708),
+#                    (0.25, 0.302, 0.302),
+#                    (0.5, 0.2392, 0.2392),
+#                    (0.75, 0.1412, 0.1412),
+#                    (1.0, 0.0, 0.0)),
+#          'blue': ((0.0, 0.4, 0.4),
+#                   (0.25, 0.3569, 0.3569),
+#                   (0.5, 0.6078, 0.6078),
+#                   (0.75, 1., 1.),
+#                   (1.0, 1., 1.))}
+# orange_blue = LinearSegmentedColormap('orange_blue',cdict,256)
+# orange_blue.set_bad('w',1.0)
+# print(orange_blue)
 # viridis.set_under('w')
 # viridis.set_over('w')
 # bwr.set_under('w')
@@ -162,7 +180,9 @@ class Plotting:
                               r'$u$',r'$v$',r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
-                              r'$\mu$',r'$\eta/\eta_{max}$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
+                              r'$\mu$',r'$\eta/\eta_{max}$',r'$p_k$',r'$\dot\phi^{M}$']
+                    norm = [Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize()]
+                    cmap = [viridis,cc.cm.bmy_r,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,'bwr']
                     z = [G.m*G.m/G.V,
                          G.s_bar*G.m,
                          G.q[:,0],
@@ -176,7 +196,8 @@ class Plotting:
                          G.mu,
                          # log10(G.I/G.m)*G.m,
                          G.eta/P.S[0].eta_max,
-                         G.dphi[:,0]/P.dt*G.m,
+                         # G.dphi[:,0]/P.dt*G.m,
+                         G.pk*G.m,
                          G.dphi[:,-1]/P.dt*G.m
                          ]
                     for i in range(len(titles)):
@@ -184,6 +205,8 @@ class Plotting:
                         cax = plt.pcolormesh(G.x_plot,
                                              G.y_plot,
                                              ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
+                                             norm=norm[i],
+                                             cmap=cmap[i]
                                              )
                         plt.title(titles[i],rotation='horizontal')
                         plt.xlim(P.G.x_m,P.G.x_M)
@@ -191,17 +214,18 @@ class Plotting:
                         if P.segregate_grid:
                             if i == 1:
                                 plt.clim(P.G.s_m,P.G.s_M)
-                                plt.set_cmap('bwr')
+                                # plt.set_cmap('bwr')
+                                # plt.set_cmap(cc.cm.bmy)
                             elif i == 11: # eta
                                 plt.clim(0,1)
-                            elif i == 12:
-                                plt.clim(-amax(abs(G.dphi[:,0]))/P.dt,amax(abs(G.dphi[:,0]))/P.dt)
-                                plt.set_cmap('bwr')
+                            # elif i == 12:
+                                # plt.clim(-amax(abs(G.dphi[:,0]))/P.dt,amax(abs(G.dphi[:,0]))/P.dt)
+                                # plt.set_cmap('bwr')
                             elif i == 13:
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
-                                plt.set_cmap('bwr')
-                            else:
-                                plt.set_cmap('viridis')
+                                # plt.set_cmap('bwr')
+                            # else:
+                                # plt.set_cmap('viridis')
                         plt.colorbar()
 
                 elif P.S[p].law == 'dp' or P.S[p].law == 'dp_rate':

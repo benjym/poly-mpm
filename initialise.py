@@ -1,6 +1,6 @@
 from grid import Grid
 from mplist import MatPointList
-from numpy import array, pi, zeros, ones
+from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
 
 def get_parameters(params):
     input_file = 'from inputs.' + params[0] +' import Params'
@@ -62,7 +62,6 @@ def get_parameters(params):
         if not hasattr(P.S[p], 'phi'): P.S[p].phi = ones([P.G.ns])/float(P.G.ns)
         if not hasattr(P.S[p], 'heterogeneous'): P.S[p].heterogeneous = False
 
-
     if not hasattr(P.O, 'check_positions'): P.O.check_positions = False
     if not hasattr(P.O, 'measure_stiffness'): P.O.measure_stiffness = False
     if not hasattr(P.O, 'measure_energy'): P.O.measure_energy = False
@@ -78,6 +77,20 @@ def get_parameters(params):
     P.update_forces()
     G = Grid(P) # Initialise grid
     L = MatPointList(P,G) # Initialise material point list storage
+
+    if not hasattr(P, 'update_timestep'):
+        def update_timestep(P,G):
+            distance = minimum(P.G.dx,P.G.dy)
+            t_c = [0.1*distance/amax(abs([nan_to_num(G.q[:,0]/G.m),nan_to_num(G.q[:,1]/G.m)]))] # cell crossing condition
+            if P.segregate_grid:
+                t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_gammadot)))) # NOTE: CHECK THIS
+                t_c.append(t_seg)
+            for p in range(P.phases):
+                if hasattr(P.S[p], 'critical_time'): t_c.append(P.S[p].critical_time(P))
+            P.dt = P.CFL*min(t_c)
+            # print(t_c)
+            # print(P.dt)
+    P.update_timestep = update_timestep
     return P,G,L
 
 if __name__ == '__main__':
