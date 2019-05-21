@@ -200,7 +200,7 @@ class Particle():
         :param G: A grid.Grid instance
 
         """
-
+        self.pk = 0.
         for r in range(4):
             n = G.nearby_nodes(self.n_star,r,P)
             if G.m[n] > P.M_tol:

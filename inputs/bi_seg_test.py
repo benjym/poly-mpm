@@ -33,7 +33,7 @@ class Params():
 
 class Grid_Params():
     def __init__(self,args):
-        self.ny = 51
+        self.ny = 21
         self.y_m = 0.0 # (m)
         self.y_M = 1.0 # (m)
         self.y = linspace(self.y_m,self.y_M,self.ny)

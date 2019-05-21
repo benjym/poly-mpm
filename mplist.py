@@ -117,10 +117,12 @@ class MatPointList():
             if P.segregate_grid:
                 for j in range(P.G.ns):
                     G.phi[:,j] = G.phim[:,j]/G.m
-                G.pk = G.pk/G.m
+
         if P.segregate_grid:
             G.phi = nan_to_num(G.phi)
             G.s_bar = sum(G.S*G.phi,1)
+            G.pk = G.pkm/G.m
+            # print(G.pk)
             # print(G.phi)
 #             print(G.S)
             # print(G.s_bar)

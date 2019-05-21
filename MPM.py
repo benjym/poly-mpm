@@ -46,7 +46,7 @@ def main(params):
         if P.segregate_grid:
             G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
             #if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
-            if P.B.cyclic_lr: G.make_cyclic(P,G,['pk'])
+            # if P.B.cyclic_lr: G.make_cyclic(P,G,['pk'])
             G.calculate_grad_gammadot(P,G)
             G.calculate_phi_increment(P)
             L.move_grainsize_on_grid(P,G)
