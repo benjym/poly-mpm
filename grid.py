@@ -331,18 +331,18 @@ class Grid():
         # d2pk_dy2 = (roll(pk_pad_y,1,axis=0) - 2*pk_pad_y + roll(pk_pad_y,-1,axis=0))/P.G.dy**2
         # diff_term = (d2pk_dx2[:,1:-1] + d2pk_dy2[1:-1,:]).flatten()
 
-#        grad_pk  = self.calculate_gradient(P,G,self.pk,smooth=True)
-#        grad2_pk_dx = self.calculate_gradient(P,G,grad_pk[:,0],smooth=False)[:,0]
-#        grad2_pk_dy = self.calculate_gradient(P,G,grad_pk[:,1],smooth=False)[:,1]
-#        diff_term = grad2_pk_dx + grad2_pk_dy
+        # grad_pk  = self.calculate_gradient(P,G,self.pk,smooth=False)
+        # grad2_pk_dx = self.calculate_gradient(P,G,grad_pk[:,0],smooth=False)[:,0]
+        # grad2_pk_dy = self.calculate_gradient(P,G,grad_pk[:,1],smooth=False)[:,1]
+        # diff_term = grad2_pk_dx + grad2_pk_dy
 
-        decay_time = 1.0 # seconds
+        decay_time = 0.01 # seconds
         growth_time = 0.01 # result in p_k=0.01p at a shear rate of 1
-#        D = 1e3 # 10 particle diameters for diffusion length scale????
+        # D = 1e-3 # 10 particle diameters for diffusion length scale????
 
         self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
         # self.pk_dot = sign(self.pk_dot)*minimum(abs(self.pk_dot),10.) # HACK: CHEATING!!!!!!!
         self.pk += self.pk_dot*P.dt
 
         # print(P.dt)
-        #self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
+        self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
