@@ -338,11 +338,13 @@ class Grid():
 
         decay_time = 0.01 # seconds
         growth_time = 0.01 # result in p_k=0.01p at a shear rate of 1
+        length_scale = 0.01 # m
         # D = 1e-3 # 10 particle diameters for diffusion length scale????
 
-        self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
-        # self.pk_dot = sign(self.pk_dot)*minimum(abs(self.pk_dot),10.) # HACK: CHEATING!!!!!!!
-        self.pk += self.pk_dot*P.dt
+        # p_k_steady = t_c*gamma_dot*P
+        # self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
+        # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS???
+        self.pk_dot = (length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
 
-        # print(P.dt)
+        self.pk += self.pk_dot*P.dt
         self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
