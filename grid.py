@@ -320,6 +320,10 @@ class Grid():
         :param P: A param.Param instance.
 
         """
+        decay_time = 0.1 # seconds
+        D = 0 #1e-3 # 10 particle diameters for diffusion length scale????
+
+
         # I NEED TO IMPLEMENT BOUNDARY CONDITIONS FOR DIFFUSION PART
         #   1. At a boundary, reflection boundary?
         #   2. At a periodic boundary, use the other side
@@ -331,20 +335,22 @@ class Grid():
         # d2pk_dy2 = (roll(pk_pad_y,1,axis=0) - 2*pk_pad_y + roll(pk_pad_y,-1,axis=0))/P.G.dy**2
         # diff_term = (d2pk_dx2[:,1:-1] + d2pk_dy2[1:-1,:]).flatten()
 
-        # grad_pk  = self.calculate_gradient(P,G,self.pk,smooth=False)
-        # grad2_pk_dx = self.calculate_gradient(P,G,grad_pk[:,0],smooth=False)[:,0]
-        # grad2_pk_dy = self.calculate_gradient(P,G,grad_pk[:,1],smooth=False)[:,1]
-        # diff_term = grad2_pk_dx + grad2_pk_dy
+        if D > 0:
+            grad_pk  = self.calculate_gradient(P,G,self.pk,smooth=False)
+            grad2_pk_dx = self.calculate_gradient(P,G,grad_pk[:,0],smooth=False)[:,0]
+            grad2_pk_dy = self.calculate_gradient(P,G,grad_pk[:,1],smooth=False)[:,1]
+            diff_term = grad2_pk_dx + grad2_pk_dy
 
-        decay_time = 0.01 # seconds
-        growth_time = 0.01 # result in p_k=0.01p at a shear rate of 1
-        length_scale = 0.01 # m
-        # D = 1e-3 # 10 particle diameters for diffusion length scale????
 
         # p_k_steady = t_c*gamma_dot*P
+        # growth_time = 0.01 # result in p_k=0.01p at a shear rate of 1
         # self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
-        # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS???
+
+        # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS (OR AT LEAST FEWER)
+        length_scale = 0.01 # m
         self.pk_dot = (length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
+
+
 
         self.pk += self.pk_dot*P.dt
         self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)

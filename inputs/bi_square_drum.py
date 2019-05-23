@@ -115,5 +115,6 @@ class Output_Params():
         # self.plot_gsd_grid = True
         self.save_s_bar = True
         self.save_u = True
+        self.save_density = True
         self.continuum_fig_size = [24,8]
         self.mp_fig_size = [18,4]

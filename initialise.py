@@ -70,6 +70,7 @@ def get_parameters(params):
     if not hasattr(P.O, 'plot_material_points'): P.O.plot_material_points = False
     if not hasattr(P.O, 'plot_continuum'): P.O.plot_continuum = False
     if not hasattr(P.O, 'save_s_bar'): P.O.save_s_bar = False
+    if not hasattr(P.O, 'save_density'): P.O.save_density = False
     if not hasattr(P.O, 'save_u'): P.O.save_u = False
 
     if P.O.measure_energy: P.O.energy = zeros((P.nt+1,4)) # energy
@@ -83,11 +84,13 @@ def get_parameters(params):
             distance = minimum(P.G.dx,P.G.dy)
             t_c = [0.1*distance/amax(abs([nan_to_num(G.q[:,0]/G.m),nan_to_num(G.q[:,1]/G.m)]))] # cell crossing condition
             if P.segregate_grid:
-                t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_gammadot)))) # NOTE: CHECK THIS
+                t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_pk)))) # NOTE: CHECK THIS
                 t_c.append(t_seg)
             for p in range(P.phases):
                 if hasattr(P.S[p], 'critical_time'): t_c.append(P.S[p].critical_time(P))
             P.dt = P.CFL*min(t_c)
+            if t_seg == min(t_c):
+                print('\nTimestep limited by segregation',end='\n')
             # print(t_c)
             # print(P.dt)
     P.update_timestep = update_timestep

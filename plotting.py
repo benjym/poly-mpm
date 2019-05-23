@@ -177,18 +177,26 @@ class Plotting:
 
 
                     titles = [r'$\rho$',r'$\bar s$',
-                              r'$u$',r'$v$',r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
+                              r'$u$',r'$v$',#r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
                               r'$\mu$',r'$\eta/\eta_{max}$',r'$p_k$',r'$\dot\phi^{M}$']
-                    norm = [Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize(),Normalize()]
-                    cmap = [viridis,cc.cm.bmy_r,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,viridis,'bwr']
+                    norm = [Normalize(),Normalize(),
+                            Normalize(),Normalize(),#Normalize(),Normalize(),
+                            Normalize(),Normalize(),Normalize(),Normalize(),
+                            Normalize(),Normalize(),Normalize(),Normalize()
+                            ]
+                    cmap = [viridis,cc.cm.bmy_r,
+                            viridis,viridis,#viridis,viridis,
+                            viridis,viridis,viridis,viridis,
+                            viridis,viridis,viridis,'bwr'
+                            ]
                     z = [G.m*G.m/G.V,
                          G.s_bar*G.m,
                          G.q[:,0],
                          G.q[:,1],
-                         G.grad_gammadot[:,0]*G.m,
-                         G.grad_gammadot[:,1]*G.m,
+                         #G.grad_gammadot[:,0]*G.m,
+                         #G.grad_gammadot[:,1]*G.m,
                          abs(G.gammadot)*G.m,
                          -G.pressure,
                          G.dev_stress,
@@ -216,12 +224,12 @@ class Plotting:
                                 plt.clim(P.G.s_m,P.G.s_M)
                                 # plt.set_cmap('bwr')
                                 # plt.set_cmap(cc.cm.bmy)
-                            elif i == 11: # eta
+                            elif i == len(titles)-3: # eta
                                 plt.clim(0,1)
                             # elif i == 12:
                                 # plt.clim(-amax(abs(G.dphi[:,0]))/P.dt,amax(abs(G.dphi[:,0]))/P.dt)
                                 # plt.set_cmap('bwr')
-                            elif i == 13:
+                            elif i == len(titles)-1:
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
                                 # plt.set_cmap('bwr')
                             # else:
@@ -546,6 +554,10 @@ class Plotting:
     def save_s_bar(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
         save(P.save_dir + 'data/s_bar_' + str(P.grid_save).zfill(5)+'.npy',G.s_bar.reshape(P.G.ny,P.G.nx))
+
+    def save_density(self,L,P,G):
+        if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+        save(P.save_dir + 'data/density_' + str(P.grid_save).zfill(5)+'.npy',(G.m/G.V).reshape(P.G.ny,P.G.nx))
 
     def save_u(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')

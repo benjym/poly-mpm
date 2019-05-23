@@ -47,7 +47,7 @@ def main(params):
             G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
             #if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
             # if P.B.cyclic_lr: G.make_cyclic(P,G,['pk'])
-            G.calculate_grad_gammadot(P,G)
+            # G.calculate_grad_gammadot(P,G)
             G.calculate_phi_increment(P)
             L.move_grainsize_on_grid(P,G)
             G.make_cyclic(P,G,['eta','dphi'])
@@ -60,6 +60,7 @@ def main(params):
 
         # Output related things
         if P.O.measure_energy: P.O.energy[P.tstep] = L.measure_elastic_energy(P,G) # measure energy
+
         print('{0:.4f}'.format(P.t*100./P.t_f) + '% Complete, t = ' +
               '{0:.4f}'.format(P.t) + ', g = ' + str(P.g), end='\r')
 
@@ -73,6 +74,7 @@ def main(params):
             if P.O.measure_energy: P.O.measure_E(L,P,G)
             if P.O.save_u: plot.save_u(L,P,G)
             if P.O.save_s_bar: plot.save_s_bar(L,P,G)
+            if P.O.save_density: plot.save_density(L,P,G)
         if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.store_p_q(P,G,L,P.tstep)
         if P.mode == 'pouliquen_unit_test': P.O.store_mu(P,G,L,P.tstep)
 
