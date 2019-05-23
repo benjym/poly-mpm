@@ -89,10 +89,7 @@ def get_parameters(params):
             for p in range(P.phases):
                 if hasattr(P.S[p], 'critical_time'): t_c.append(P.S[p].critical_time(P))
             P.dt = P.CFL*min(t_c)
-            if t_seg == min(t_c):
-                print('\nTimestep limited by segregation',end='\n')
-            # print(t_c)
-            # print(P.dt)
+            # if t_seg == min(t_c): print('\nTimestep limited by segregation', end='\n')
     P.update_timestep = update_timestep
     return P,G,L
 

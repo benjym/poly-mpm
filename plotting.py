@@ -180,16 +180,18 @@ class Plotting:
                               r'$u$',r'$v$',#r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
-                              r'$\mu$',r'$\eta/\eta_{max}$',r'$p_k$',r'$\dot\phi^{M}$']
+                              r'$\mu$',r'$\eta/\eta_{max}$',
+                              r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$']
                     norm = [Normalize(),Normalize(),
-                            Normalize(),Normalize(),#Normalize(),Normalize(),
+                            Normalize(),Normalize(),Normalize(),#Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize()
                             ]
                     cmap = [viridis,cc.cm.bmy_r,
                             viridis,viridis,#viridis,viridis,
                             viridis,viridis,viridis,viridis,
-                            viridis,viridis,viridis,'bwr'
+                            viridis,viridis,
+                            viridis,viridis,'bwr'
                             ]
                     z = [G.m*G.m/G.V,
                          G.s_bar*G.m,
@@ -206,6 +208,7 @@ class Plotting:
                          G.eta/P.S[0].eta_max,
                          # G.dphi[:,0]/P.dt*G.m,
                          G.pk*G.m,
+                         sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m,
                          G.dphi[:,-1]/P.dt*G.m
                          ]
                     for i in range(len(titles)):
@@ -224,12 +227,12 @@ class Plotting:
                                 plt.clim(P.G.s_m,P.G.s_M)
                                 # plt.set_cmap('bwr')
                                 # plt.set_cmap(cc.cm.bmy)
-                            elif i == len(titles)-3: # eta
+                            elif titles[i] == r'$\eta/\eta_{max}$': # eta
                                 plt.clim(0,1)
                             # elif i == 12:
                                 # plt.clim(-amax(abs(G.dphi[:,0]))/P.dt,amax(abs(G.dphi[:,0]))/P.dt)
                                 # plt.set_cmap('bwr')
-                            elif i == len(titles)-1:
+                            elif titles[i] == r'$\dot\phi^{M}$':
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
                                 # plt.set_cmap('bwr')
                             # else:

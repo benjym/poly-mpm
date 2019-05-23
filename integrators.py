@@ -202,7 +202,7 @@ def KT2_flux(phi,G,P,ax):
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         dCdx,tt,tt1 = gradient(phi,P.G.dy)
 
-    f_c = 1./(S_1_bar*S) - 1.
+    f_c = 1. - 1./(S_1_bar*S)
     flux = P.c*f_c*g - P.D*dCdx
     flux[boundary] = 0
     return flux#, boundary
