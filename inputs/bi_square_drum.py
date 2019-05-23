@@ -14,7 +14,7 @@ class Params():
         self.r = 1.0 # radius of drum
         self.G = Grid_Params(self,args)
         self.B = Boundary_Params()
-        self.O = Output_Params()#self.nt)
+        self.O = Output_Params(self.G)#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
         self.c = 1e-3 # inter-particle drag coefficient
@@ -109,7 +109,7 @@ class Solid_Params():
         return minimum(t_diff,t_ela)
 
 class Output_Params():
-    def __init__(self):
+    def __init__(self,G):
         self.plot_continuum = True
         # self.plot_material_points = True
         # self.plot_gsd_grid = True
@@ -118,3 +118,4 @@ class Output_Params():
         self.save_density = True
         self.continuum_fig_size = [24,8]
         self.mp_fig_size = [18,4]
+        # self.save_fields = [[G.s_bar,'s_bar'],[G.m/G.V,'density'],[G.q[:,0]/G.m,'u'],[G.q[:,1]/G.m],'v']

@@ -564,6 +564,10 @@ class Plotting:
         save(P.save_dir + 'data/u_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
         save(P.save_dir + 'data/v_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,1]/G.m).reshape(P.G.ny,P.G.nx))
 
+    # def save_field(self,L,P,G,field,fieldname):
+    #     if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+    #     save(P.save_dir + 'data/' + fieldname + '_' + str(P.grid_save).zfill(5)+'.npy',field.reshape(P.G.ny,P.G.nx))
+
     def draw_gsd_grid(self,L,P,G):
         plt.clf()
         plt.pcolormesh(G.x_plot,
