@@ -43,6 +43,7 @@ def get_parameters(params):
     if not hasattr(P.B, 'outlet_left'): P.B.outlet_left = False
     if not hasattr(P.B, 'outlet_bottom'): P.B.outlet_bottom = False
     if not hasattr(P.B, 'inlet_right'): P.B.inlet_right = False
+    if not hasattr(P.B, 'inlet_top'): P.B.inlet_top = False
     if not hasattr(P.B, 'force_boundaries'): P.B.force_boundaries = False
     if not hasattr(P.B, 'vertical_force'): P.B.vertical_force = False
     if not hasattr(P.B, 'horizontal_force'): P.B.horizontal_force = False

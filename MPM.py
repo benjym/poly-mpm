@@ -56,6 +56,7 @@ def main(params):
         if P.B.outlet_left: L.outlet_left(P,G)
         if P.B.outlet_bottom: L.outlet_bottom(P,G)
         if P.B.inlet_right: L.inlet_right(P,G)
+        if P.B.inlet_top: L.inlet_top(P,G)
         if P.B.cyclic_lr: L.cyclic_lr(P,G)
 
         # Output related things

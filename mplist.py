@@ -68,6 +68,22 @@ class MatPointList():
                         self.S[p].append(Particle(P.G.x_M - P.S[p].gap[0],y,P,G,p))
                         P.S[p].n += 1
 
+    def inlet_top(self,P,G):
+        """Particles are created at the top (:math:`+y` direction) in the middle of the domain.
+
+        This is not physical at all. Needs reimplementation.
+
+        :param P: A param.Param instance.
+        :param G: A grid.Grid instance.
+
+        """
+        for p in range(P.phases):
+                if P.t%P.S[p].inlet_rate < P.dt and P.t:
+                    # for y in P.S[p].yp:
+    #                         self.S[p].append(Particle(P.S[p].xp[-1],y,P,G,p))
+                    self.S[p].append(Particle((P.G.x_M - P.G.x_m)/2.,P.G.y_M-P.S[p].gap[1],P,G,p))
+                    P.S[p].n += 1
+
     def cyclic_lr(self,P,G):
         """Particles which leave the domain in the :math:`x` direction are placed back in the other side.
 

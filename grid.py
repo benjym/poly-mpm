@@ -320,7 +320,7 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        decay_time = 0.1 # seconds
+        decay_time = 1.0 # seconds
         D = 0 #1e-3 # 10 particle diameters for diffusion length scale????
 
 
