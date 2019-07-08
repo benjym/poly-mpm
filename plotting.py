@@ -4,6 +4,7 @@ import colorcet as cc
 import matplotlib.pyplot as plt
 from matplotlib.cm import viridis, bwr
 from matplotlib.colors import LinearSegmentedColormap, Normalize, LogNorm
+import matplotlib.patches as patches
 from numpy import *
 from numpy.linalg import norm
 import os
@@ -48,7 +49,7 @@ class Plotting:
     """ Class containing all of the plotting functions.
     """
 
-    def savefig(self,P,name):
+    def savefig(self,P,name,dpi=150):
         """ A method for saving figures in the right place """
 #         root_dir = '~/Documents/poly-mpm/'
         root_dir = ''
@@ -64,12 +65,13 @@ class Plotting:
             if not os.path.isdir(P.save_dir + 'Continuum'):
                 os.makedirs(P.save_dir + 'Continuum/')
         if P.O.plot_gsd_mp or P.O.plot_gsd_grid:
-            if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
-            for i in range(P.G.ns):
-                if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
+            if not os.path.isdir(P.save_dir + 'GSD/'): os.makedirs(P.save_dir + 'GSD/')
+            # if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
+            # for i in range(P.G.ns):
+                # if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
 
         plt.subplots_adjust(hspace=0.4,wspace=0.4)
-        plt.savefig(P.save_dir + name + '.png', dpi=150)
+        plt.savefig(P.save_dir + name + '.png', dpi=dpi)
         plt.close()
 #         print('Saved "' + name + '.png"                     ',end='\r')
 
@@ -79,6 +81,12 @@ class Plotting:
 #         plt.plot(G.X*G.boundary_tot,G.Y*G.boundary_tot,'r+')
         plt.plot(G.X*G.boundary_h,G.Y*G.boundary_h,'rx')
         plt.plot(G.X*G.boundary_v,G.Y*G.boundary_v,'r+')
+
+    def draw_pretty_grid(self,G):
+        """ Draw an overlay of the grid that looks vaguely nice."""
+        plt.plot(G.X*(1-G.boundary_tot),G.Y*(1-G.boundary_tot),'ko',alpha=0.5,markersize=1)
+        plt.plot(G.X*G.boundary_h,G.Y*G.boundary_h,'ko',markersize=1)
+        plt.plot(G.X*G.boundary_v,G.Y*G.boundary_v,'ko',markersize=1)
 
     def draw_gamma_dot(self,L,P,G):
         for p in range(P.phases):
@@ -514,45 +522,38 @@ class Plotting:
         plt.close()
 
     def draw_gsd_mp(self,L,P,G):
-        sizes = []
-        for p in range(P.phases): sizes.append(P.S[p].size)
-        plt.clf()
-        plt.pcolormesh(G.x_plot,G.y_plot,G.s_bar.reshape(P.G.ny,P.G.nx),vmin=min(sizes),vmax=max(sizes))
-        plt.colorbar()
-        plt.title(r'$\bar s$')
-        self.savefig(P,'GSD/Continuum_'+str(P.grid_save).zfill(5))
+        w = 0.1/P.G.nx
         for p in range(P.phases):
             plt.clf()
-            x = zeros((P.S[p].n,3))
-            u_hat = zeros((P.S[p].n,3))
-            f = zeros((P.S[p].n))
-            s_bar = zeros((P.S[p].n))
+            aspect_ratio = P.G.ny/P.G.nx
+            fig = plt.figure(figsize=[6,6*aspect_ratio])
+            ax = plt.subplot(111)
+            self.draw_pretty_grid(G)
             for i in range(P.S[p].n):
-                x[i] = L.S[p][i].x
-                u_hat[i] = L.S[p][i].u_hat
-                f[i] = L.S[p][i].f
-                s_bar[i] = L.S[p][i].s_bar
-            plt.subplot(221)
-            self.draw_grid(G)
-            plt.scatter(x[:,0],x[:,1],s=20,c=f,marker='s',edgecolor='None')
-            plt.colorbar()
-            plt.title(r'$f$')
-            plt.subplot(222)
-            self.draw_grid(G)
-            plt.scatter(x[:,0],x[:,1],s=20,c=s_bar,marker='s',edgecolor='None',vmin=min(sizes),vmax=max(sizes))
-            plt.colorbar()
-            plt.title(r'$\bar s$')
-            plt.subplot(223)
-            self.draw_grid(G)
-            plt.scatter(x[:,0],x[:,1],s=20,c=u_hat[:,0],marker='s',edgecolor='None')
-            plt.title(r'$\hat{u}$')
-            plt.colorbar()
-            plt.subplot(224)
-            self.draw_grid(G)
-            plt.scatter(x[:,0],x[:,1],s=20,c=u_hat[:,1],marker='s',edgecolor='None')
-            plt.title(r'$\hat{v}$')
-            plt.colorbar()
-            self.savefig(P,'GSD/MP_'+str(p)+'_'+str(P.mp_save).zfill(5))
+                phi_prev = 0.
+                for s in range(P.G.ns):
+                # for s in [1]:
+                    # rectangle
+                    # rect = patches.Rectangle(L.S[p][i].x + array([w*(phi_prev-0.5),-0.5*w,0.]),
+                    #                          w*L.S[p][i].phi[s],w,
+                    #                          edgecolor='none',
+                    #                          facecolor=cc.cm.bmy_r(P.G.s[s]/P.G.s[-1])
+                    #                          )
+                    # circular wedge
+                    rect = patches.Wedge(L.S[p][i].x[:2], # center
+                                         w, # radius
+                                         phi_prev*360., # theta1
+                                         (phi_prev + L.S[p][i].phi[s])*360., # theta2
+                                         edgecolor='none',
+                                         facecolor=cc.cm.bmy_r(P.G.s[s]/P.G.s[-1])
+                                         )
+                    ax.add_patch(rect)
+                    phi_prev += L.S[p][i].phi[s]
+            plt.axis('equal')
+            ax.set_axis_off()
+            plt.subplots_adjust(left=0.,right=1.,bottom=0.,top=1.)
+            self.savefig(P,'GSD/MP_'+str(p)+'_'+str(P.mp_save).zfill(5),dpi=500)
+        P.mp_save += 1
 
     def save_s_bar(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
@@ -566,6 +567,14 @@ class Plotting:
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
         save(P.save_dir + 'data/u_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
         save(P.save_dir + 'data/v_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,1]/G.m).reshape(P.G.ny,P.G.nx))
+
+    def save_phi_MP(self,L,P,G):
+        if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+        phi = []
+        for p in range(P.phases):
+            for i in range(P.S[p].n):
+                phi.append(hstack([L.S[p][i].x[0],L.S[p][i].x[1],L.S[p][i].phi]))
+        save(P.save_dir + 'data/MP_phi_' + str(P.mp_save).zfill(5)+'.npy',array(phi))
 
     # def save_field(self,L,P,G,field,fieldname):
     #     if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')

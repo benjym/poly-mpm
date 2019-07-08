@@ -243,11 +243,22 @@ class Grid():
         self.q_dot = self.fe - self.fi #- self.damping_force
         if P.damping: self.q_dot *= 0.7
 
-        self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_v) # 0 at boundary
-        self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_h) # 0 at boundary
+        # Impose orthogonal BCs
         if P.B.roughness:
+            if P.B.wall_mu:
+                stuck_h = abs(self.q_dot[:,0]/self.q_dot[:,1]) < P.B.wall_mu
+                stuck_v = abs(self.q_dot[:,1]/self.q_dot[:,0]) < P.B.wall_mu
+                # print(sum(sum(stuck_h[self.boundary_h])),sum(sum(stuck_v[self.boundary_h])),abs(self.q_dot[:,0]/self.q_dot[:,1])[self.boundary_h],end='    ')
+                self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_h*stuck_h) # top/bottom
+                self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_v*stuck_v) # sidewalls
+            else:
                 self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_h) # top/bottom
                 self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_v) # sidewalls
+
+        # Impose normal BCs
+        self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_v) # 0 at boundary
+        self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_h) # 0 at boundary
+
         self.q += self.q_dot*P.dt
 
         if P.B.conveyor: self.q[self.boundary_conveyor_triple] = P.v_0*self.m[self.boundary_conveyor] # conveyor momentum
@@ -320,7 +331,7 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        decay_time = 1.0 # seconds
+        decay_time = 0.1 # seconds
         D = 0 #1e-3 # 10 particle diameters for diffusion length scale????
 
 

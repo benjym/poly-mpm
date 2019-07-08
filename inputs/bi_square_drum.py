@@ -17,12 +17,13 @@ class Params():
         self.O = Output_Params(self.G)#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-2 # inter-particle drag coefficient
+        self.c = 1e-1 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
+        self.supername = 'im/drum/wall_mu_' + str(P.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = True # smooth calculation of gamma_dot
         self.time_stepping = 'dynamic' # dynamic or static time steps
+        self.normalise_phi = True
         self.CFL = 0.2 # stability criteria for determining timstep
         print(self.supername)
 
@@ -50,10 +51,10 @@ class Grid_Params():
         self.s_M = 0.003 # 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
         # self.s_m = 0.1
         self.s_m = self.s_M/self.R
-        self.ns = 2
-        self.s = array([self.s_m,self.s_M])
-        # s_edges = linspace(self.s_m,self.s_M,self.ns+1)
-        # self.s = (s_edges[1:] + s_edges[:-1])/2.
+        self.ns = 5
+        # self.s = array([self.s_m,self.s_M])
+        s_edges = linspace(self.s_m,self.s_M,self.ns+1)
+        self.s = (s_edges[1:] + s_edges[:-1])/2.
         self.ds = self.s[1]-self.s[0]
 
 class Boundary_Params():
@@ -63,7 +64,10 @@ class Boundary_Params():
         self.has_top = True
         self.has_right = True
         self.has_left = True
-        self.roughness = False
+        # self.roughness = False
+
+        self.roughness = True
+        self.wall_mu = 0.4
 
 class Solid_Params():
     def __init__(self,G,P,args):
@@ -76,6 +80,7 @@ class Solid_Params():
         self.PHI = []
 
         self.law = 'pouliquen'
+        # self.law = 'ken_simple'
         self.mu_0 = tan(deg2rad(20.9)) #0.3
         self.mu_1 = tan(deg2rad(32.76))
         self.delta_mu = self.mu_1 - self.mu_0
@@ -112,10 +117,12 @@ class Output_Params():
     def __init__(self,G):
         self.plot_continuum = True
         # self.plot_material_points = True
+        self.plot_gsd_mp = True
         # self.plot_gsd_grid = True
         self.save_s_bar = True
         self.save_u = True
         self.save_density = True
+        self.save_phi_MP = True
         self.continuum_fig_size = [24,8]
         self.mp_fig_size = [18,4]
         # self.save_fields = [[G.s_bar,'s_bar'],[G.m/G.V,'density'],[G.q[:,0]/G.m,'u'],[G.q[:,1]/G.m],'v']

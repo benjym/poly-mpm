@@ -27,12 +27,14 @@ def get_parameters(params):
     if not hasattr(P, 'initial_flow'): P.initial_flow = False # give initial velocities which correspond to 1D steady state
     if not hasattr(P, 'smooth_gamma_dot'): P.smooth_gamma_dot = False # use artifical smoothing on calculation of the shear strain rate
     if not hasattr(P, 'smooth_grad2'): P.smooth_grad2 = False # use artifical smoothing on calculation of the gradient of the shear strain rate
+    if not hasattr(P, 'normalise_phi'): P.normalise_phi = False # normalise phi every time step HACK: THIS IS CHEATING!!! or is it?
     if not hasattr(P, 'time_stepping'): P.time_stepping = 'static' # do not update time stepping automatically - NOTE: ASSUMES A FUNCTION update_timestep() EXISTS FOR P.S[0]
     if not hasattr(P, 'CFL'): P.CFL = 0.1 # default value of CFL conidition is quite conservative
 
 
     if not hasattr(P.B, 'wall'): P.B.wall = False
     if not hasattr(P.B, 'roughness'): P.B.roughness = False
+    if not hasattr(P.B, 'wall_mu'): P.B.wall_mu = False
     if not hasattr(P.B, 'no_slip_bottom'): P.B.no_slip_bottom = False
     if not hasattr(P.B, 'cyclic_lr'): P.B.cyclic_lr = False
     if not hasattr(P.B, 'has_top'): P.B.has_top = False
@@ -73,6 +75,7 @@ def get_parameters(params):
     if not hasattr(P.O, 'save_s_bar'): P.O.save_s_bar = False
     if not hasattr(P.O, 'save_density'): P.O.save_density = False
     if not hasattr(P.O, 'save_u'): P.O.save_u = False
+    if not hasattr(P.O, 'save_phi_MP'): P.O.save_phi_MP = False
 
     if P.O.measure_energy: P.O.energy = zeros((P.nt+1,4)) # energy
     P.mode = params[0]

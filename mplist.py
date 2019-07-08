@@ -143,6 +143,7 @@ class MatPointList():
 #             print(G.S)
             # print(G.s_bar)
 
+        # NOTE: WHY IS THIS HERE??????????? SHOULD ALREADY BE SET BY SETTING q_dot = 0???
         G.q[:,0] = G.q[:,0]*(1.-G.boundary_v) # 0 at boundary
         G.q[:,1] = G.q[:,1]*(1.-G.boundary_h) # 0 at boundary
         if P.B.roughness:
@@ -297,8 +298,10 @@ class MatPointList():
             for i in range(P.S[p].n):
                 self.S[p][i].map_phi_to_mp(P,G)
 
-#         for p in range(P.phases): # CHEATING!!!!!!!
-#             for i in range(P.S[p].n):
-#                 self.S[p][i].phi[self.S[p][i].phi<0] = 0
-#                 self.S[p][i].phi[self.S[p][i].phi>1] = 1
-#                 self.S[p][i].phi /= sum(self.S[p][i].phi)
+        # re-normalise phi to account for `rounding erors`
+        if P.normalise_phi: # HACK: CHEATING!!!!!!!
+            for p in range(P.phases):
+                for i in range(P.S[p].n):
+                    self.S[p][i].phi[self.S[p][i].phi<0] = 0
+                    self.S[p][i].phi[self.S[p][i].phi>1] = 1
+                    self.S[p][i].phi /= sum(self.S[p][i].phi)

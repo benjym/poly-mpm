@@ -486,3 +486,57 @@ def linear_mu(MP,P,G,p):
         # G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m
+
+def ken_simple(MP,P,G,p):
+    """:math: constant `\mu` rheology with stress = 0 when rho < rho_c.
+
+    This material model is UNVALIDATED and is DEFINITELY NOT WORKING.
+
+    :param MP: A particle.Particle instance.
+    :param P: A param.Param instance.
+    :param G: A grid.Grid instance
+    :param p: The particle number.
+    :type p: int
+
+    """
+
+    s_bar = 0.
+    for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
+
+    MP.de_kk = trace(MP.dstrain)/3. # tension positive
+    MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
+
+    MP.eta = 2.*sqrt(2)*P.S[p].mu_0*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
+    MP.eta = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+
+
+    MP.dev_stress = MP.eta*MP.de_ij/P.dt
+
+    MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
+    MP.pressure += MP.dp
+    if MP.pressure > 0: # can't go into tension - this is really important!!
+        MP.dp -= MP.pressure # set increment back to zero
+        MP.pressure = 0.
+
+    if MP.rho > 2500:
+        MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+    else:
+        MP.dstress = -MP.stress
+
+    if not isfinite(MP.dstress).all():
+        print('THIS IS GOING TO BE A PROBLEM! FOUND SOMETHING NON-FINITE IN CONSTITUTIVE MODEL')
+        print(MP.de_kk)
+        print(MP.de_ij)
+        print(s_bar)
+        print(MP.eta)
+        print(MP.dev_stress)
+        print(MP.dp)
+        print(MP.pressure)
+        print(MP.dstress)
+        sys.exit()
+
+    for r in range(4):
+        n = G.nearby_nodes(MP.n_star,r,P)
+        G.pressure[n] += MP.N[r]*MP.pressure*MP.m
+        G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
+        G.eta[n] += MP.N[r]*MP.eta*MP.m

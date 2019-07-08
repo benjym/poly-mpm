@@ -221,6 +221,12 @@ class Particle():
                 self.x += P.dt*self.N[r]*G.q[n]/G.m[n]
                 self.v += P.dt*self.N[r]*G.q_dot[n]/G.m[n]
 
+        # HACK!!!!! THIS SHOULDN'T BE HERE!
+        self.rho = 0.
+        for r in range(4):
+            n = G.nearby_nodes(self.n_star,r,P)
+            if G.m[n] > P.M_tol:
+                self.rho += self.N[r]*G.m[n]/G.V[n]
 
     def move_rigid_points(self,P,G):
         """Update material point position and velocity for rigid particles with prescribed velocity.
