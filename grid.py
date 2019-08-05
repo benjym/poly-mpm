@@ -246,11 +246,11 @@ class Grid():
         # Impose orthogonal BCs
         if P.B.roughness:
             if P.B.wall_mu:
-                stuck_h = abs(self.q_dot[:,0]/self.q_dot[:,1]) < P.B.wall_mu
-                stuck_v = abs(self.q_dot[:,1]/self.q_dot[:,0]) < P.B.wall_mu
-                # print(sum(sum(stuck_h[self.boundary_h])),sum(sum(stuck_v[self.boundary_h])),abs(self.q_dot[:,0]/self.q_dot[:,1])[self.boundary_h],end='    ')
-                self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_h*stuck_h) # top/bottom
-                self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_v*stuck_v) # sidewalls
+                # TODO: JUST OPERATE WHEN NORMAL FORCE IS POINTING TOWARDS THE BOUNDARY
+                Ff_h = self.boundary_h*minimum(abs(self.q_dot[:,0]),P.B.wall_mu*abs(self.q_dot[:,1])) # min of tangential force and mu*normal force
+                Ff_v = self.boundary_v*minimum(abs(self.q_dot[:,1]),P.B.wall_mu*abs(self.q_dot[:,0]))
+                self.q_dot[:,0] -= sign(self.q_dot[:,0])*Ff_h # opposite in sign to the applied tangential force
+                self.q_dot[:,1] -= sign(self.q_dot[:,1])*Ff_v
             else:
                 self.q_dot[:,0] = self.q_dot[:,0]*(1.-self.boundary_h) # top/bottom
                 self.q_dot[:,1] = self.q_dot[:,1]*(1.-self.boundary_v) # sidewalls

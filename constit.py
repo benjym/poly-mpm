@@ -417,7 +417,8 @@ def pouliquen(MP,P,G,p):
         MP.dp -= MP.pressure # set increment back to zero
         MP.pressure = 0.
 
-    MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+    if MP.rho < 2200: MP.dstress = - MP.stress # ADDED BY BENJY - CANNOT SUPPORT LOAD IF DENSITY LESS THAN CUTOFF
+    else: MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
 
     if not isfinite(MP.dstress).all():
         print('THIS IS GOING TO BE A PROBLEM! FOUND SOMETHING NON-FINITE IN CONSTITUTIVE MODEL')
@@ -438,7 +439,6 @@ def pouliquen(MP,P,G,p):
         n = G.nearby_nodes(MP.n_star,r,P)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
-        # G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m
         G.eta[n] += MP.N[r]*MP.eta*MP.m

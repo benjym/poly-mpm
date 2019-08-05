@@ -13,42 +13,49 @@
 
   
   
+  
+  
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'./',
+              VERSION:'1.1',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="poly-mpm 1.1 documentation" href="index.html"/>
-        <link rel="prev" title="Tutorial" href="tutorial.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Tutorial" href="tutorial.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
+   
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -83,7 +90,10 @@
           
             
             
-                <ul class="current">
+              
+            
+            
+              <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Documentation</a><ul>
@@ -107,34 +117,54 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">poly-mpm</a>
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">poly-mpm</a>
+        
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
- 
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 <div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Documentation</li>
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Documentation</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
         
-          
+            
             <a href="_sources/code.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
@@ -590,6 +620,25 @@ on many material points.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="mplist.MatPointList.inlet_top">
+<code class="descname">inlet_top</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.inlet_top" title="Permalink to this definition">¶</a></dt>
+<dd><p>Particles are created at the top (<span class="math">\(+y\)</span> direction) in the middle of the domain.</p>
+<p>This is not physical at all. Needs reimplementation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="mplist.MatPointList.measure_elastic_energy">
 <code class="descname">measure_elastic_energy</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#mplist.MatPointList.measure_elastic_energy" title="Permalink to this definition">¶</a></dt>
 <dd><p>I&#8217;ve forgotten what this does.</p>
@@ -794,6 +843,12 @@ on many material points.</p>
 </tbody>
 </table>
 <dl class="method">
+<dt id="grid.Grid.BCs">
+<code class="descname">BCs</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.BCs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Boundary conditions are applied directly to the external force G.fe</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="grid.Grid.N">
 <code class="descname">N</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.N" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate shape functions and their derivatives for Lagrange 4-node system</p>
@@ -823,12 +878,6 @@ on many material points.</p>
 <dt id="grid.Grid.calculate_gammadot">
 <code class="descname">calculate_gammadot</code><span class="sig-paren">(</span><em>P</em>, <em>G</em>, <em>smooth=False</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.calculate_gammadot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the bulk shear strain rate from the continuum measure of velocity.</p>
-<blockquote>
-<div><div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">This does not perform well near mass discontinuities!!</p>
-</div>
-</div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -892,9 +941,29 @@ on many material points.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="grid.Grid.make_cyclic">
+<code class="descname">make_cyclic</code><span class="sig-paren">(</span><em>P</em>, <em>G</em>, <em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.make_cyclic" title="Permalink to this definition">¶</a></dt>
+<dd><p>WORKS (EXCEPT MAYBE WHEN nx &lt; 3) !!!!</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="grid.Grid.update_momentum">
 <code class="descname">update_momentum</code><span class="sig-paren">(</span><em>P</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.update_momentum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update the momentum at every nodal location, as calculated from the nodal change in moment, <span class="math">\(\dot q\)</span>. This also...</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>P</strong> &#8211; A param.Param instance.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="grid.Grid.update_pk">
+<code class="descname">update_pk</code><span class="sig-paren">(</span><em>P</em>, <em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#grid.Grid.update_pk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Placeholder method until Ebrahim&#8217;s model is finished.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1048,6 +1117,55 @@ on many material points.</p>
 </dd></dl>
 
 <dl class="function">
+<dt id="constit.ken_simple">
+<code class="descclassname">constit.</code><code class="descname">ken_simple</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.ken_simple" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Math:</th><td class="field-body">constant <cite>mu</cite> rheology with stress = 0 when rho &lt; rho_c.</td>
+</tr>
+</tbody>
+</table>
+<p>This material model is UNVALIDATED and is DEFINITELY NOT WORKING.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="constit.linear_mu">
+<code class="descclassname">constit.</code><code class="descname">linear_mu</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.linear_mu" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math">\(\mu(I)\)</span> rheology implemented only for flowing regime.</p>
+<p>This material model has been validated and is PROBABLY functional. (needs more mileage)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>MP</strong> &#8211; A particle.Particle instance.</li>
+<li><strong>P</strong> &#8211; A param.Param instance.</li>
+<li><strong>G</strong> &#8211; A grid.Grid instance</li>
+<li><strong>p</strong> (<em>int</em>) &#8211; The particle number.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
 <dt id="constit.pouliquen">
 <code class="descclassname">constit.</code><code class="descname">pouliquen</code><span class="sig-paren">(</span><em>MP</em>, <em>P</em>, <em>G</em>, <em>p</em><span class="sig-paren">)</span><a class="headerlink" href="#constit.pouliquen" title="Permalink to this definition">¶</a></dt>
 <dd><p><span class="math">\(\mu(I)\)</span> rheology implemented only for flowing regime.</p>
@@ -1170,8 +1288,14 @@ on many material points.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="plotting.Plotting.draw_pretty_grid">
+<code class="descname">draw_pretty_grid</code><span class="sig-paren">(</span><em>G</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.Plotting.draw_pretty_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw an overlay of the grid that looks vaguely nice.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="plotting.Plotting.savefig">
-<code class="descname">savefig</code><span class="sig-paren">(</span><em>P</em>, <em>name</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.Plotting.savefig" title="Permalink to this definition">¶</a></dt>
+<code class="descname">savefig</code><span class="sig-paren">(</span><em>P</em>, <em>name</em>, <em>dpi=150</em><span class="sig-paren">)</span><a class="headerlink" href="#plotting.Plotting.savefig" title="Permalink to this definition">¶</a></dt>
 <dd><p>A method for saving figures in the right place</p>
 </dd></dl>
 
@@ -1182,13 +1306,14 @@ on many material points.</p>
 
 
            </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="tutorial.html" class="btn btn-neutral" title="Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="tutorial.html" class="btn btn-neutral float-left" title="Tutorial" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1197,11 +1322,11 @@ on many material points.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Benjy Marks.
+        &copy; Copyright 2018, Benjy Marks
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -1214,36 +1339,15 @@ on many material points.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.1',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

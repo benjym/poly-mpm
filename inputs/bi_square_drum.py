@@ -19,7 +19,7 @@ class Params():
         self.segregate_grid = True
         self.c = 1e-1 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/drum/wall_mu_' + str(P.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
+        self.supername = 'im/drum/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = True # smooth calculation of gamma_dot
         self.time_stepping = 'dynamic' # dynamic or static time steps
@@ -67,7 +67,7 @@ class Boundary_Params():
         # self.roughness = False
 
         self.roughness = True
-        self.wall_mu = 0.4
+        self.wall_mu = 0.1
 
 class Solid_Params():
     def __init__(self,G,P,args):

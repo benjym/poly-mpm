@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import colorcet as cc
+# import colorcet as cc
 import matplotlib.pyplot as plt
 from matplotlib.cm import viridis, bwr
 from matplotlib.colors import LinearSegmentedColormap, Normalize, LogNorm
@@ -10,23 +10,23 @@ from numpy.linalg import norm
 import os
 plt.viridis()
 
-# cdict = {'red': ((0.0, 1.0, 1.0),
-#                  (0.25, 1.0, 1.0),
-#                  (0.5, 1.0, 1.0),
-#                  (0.75, 0.902, 0.902),
-#                  (1.0, 0.0, 0.0)),
-#          'green': ((0.0, 0.708, 0.708),
-#                    (0.25, 0.302, 0.302),
-#                    (0.5, 0.2392, 0.2392),
-#                    (0.75, 0.1412, 0.1412),
-#                    (1.0, 0.0, 0.0)),
-#          'blue': ((0.0, 0.4, 0.4),
-#                   (0.25, 0.3569, 0.3569),
-#                   (0.5, 0.6078, 0.6078),
-#                   (0.75, 1., 1.),
-#                   (1.0, 1., 1.))}
-# orange_blue = LinearSegmentedColormap('orange_blue',cdict,256)
-# orange_blue.set_bad('w',1.0)
+cdict = {'red': ((0.0, 1.0, 1.0),
+                 (0.25, 1.0, 1.0),
+                 (0.5, 1.0, 1.0),
+                 (0.75, 0.902, 0.902),
+                 (1.0, 0.0, 0.0)),
+         'green': ((0.0, 0.708, 0.708),
+                   (0.25, 0.302, 0.302),
+                   (0.5, 0.2392, 0.2392),
+                   (0.75, 0.1412, 0.1412),
+                   (1.0, 0.0, 0.0)),
+         'blue': ((0.0, 0.4, 0.4),
+                  (0.25, 0.3569, 0.3569),
+                  (0.5, 0.6078, 0.6078),
+                  (0.75, 1., 1.),
+                  (1.0, 1., 1.))}
+orange_blue = LinearSegmentedColormap('orange_blue',cdict,256)
+orange_blue.set_bad('w',1.0)
 # print(orange_blue)
 # viridis.set_under('w')
 # viridis.set_over('w')
@@ -195,7 +195,7 @@ class Plotting:
                             Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize()
                             ]
-                    cmap = [viridis,cc.cm.bmy_r,
+                    cmap = [viridis,orange_blue,#cc.cm.bmy_r,
                             viridis,viridis,#viridis,viridis,
                             viridis,viridis,viridis,viridis,
                             viridis,viridis,
@@ -545,7 +545,9 @@ class Plotting:
                                          phi_prev*360., # theta1
                                          (phi_prev + L.S[p][i].phi[s])*360., # theta2
                                          edgecolor='none',
-                                         facecolor=cc.cm.bmy_r(P.G.s[s]/P.G.s[-1])
+                                         # facecolor=cc.cm.bmy_r(P.G.s[s]/P.G.s[-1])
+                                         facecolor=orange_blue(P.G.s[s]/P.G.s[-1])
+
                                          )
                     ax.add_patch(rect)
                     phi_prev += L.S[p][i].phi[s]
