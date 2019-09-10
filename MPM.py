@@ -45,7 +45,7 @@ def main(params):
         G.calculate_gammadot(P,G)
         if P.segregate_grid:
             G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
-            #if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
+            # if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
             # if P.B.cyclic_lr: G.make_cyclic(P,G,['pk'])
             # G.calculate_grad_gammadot(P,G)
             G.calculate_phi_increment(P)
@@ -65,7 +65,7 @@ def main(params):
         print('{0:.4f}'.format(P.t*100./P.t_f) + '% Complete, t = ' +
               '{0:.4f}'.format(P.t) + ', g = ' + str(P.g), end='\r')
 
-        if P.t%P.savetime < P.dt:
+        if (P.t%P.savetime < P.dt) and (P.t != P.dt): # ignore first timestep
             if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
             if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
 #             plot.draw_voronoi(P,G)

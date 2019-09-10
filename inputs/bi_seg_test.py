@@ -5,15 +5,15 @@ import matplotlib.pyplot as plt
 class Params():
     def __init__(self,args):
         self.dt = 1e-8#5e-8 # timestep (s)
-        self.savetime = 1e-2 # (s)
-        self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
+        self.savetime = 1e-3 # (s)
+        self.t_f = 1.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.theta = -deg2rad(float(args[1])) # slope angle (degrees)
         self.pressure = 'lithostatic'
         self.initial_flow = 'steady'
 
         self.segregate_grid = True
-        self.c = 1e-2 # inter-particle drag coefficient
+        self.c = 1e-1 # inter-particle drag coefficient
         self.D = 0.#1e-2 # segregation diffusion coefficient
 
         self.G = Grid_Params(args)
@@ -21,10 +21,10 @@ class Params():
         self.O = Output_Params(self)#self.nt)
         self.S = [Solid_Params(self.G,self),]
 
-        self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ns_' + str(self.G.ns) + '/'
+        self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/'
         self.smooth_gamma_dot = False
-        self.smooth_grad2 = True
         self.time_stepping = 'dynamic' # dynamic or static time steps
+        self.CFL = 0.2
 
         print('Saving to ' + self.supername)
 
@@ -33,9 +33,9 @@ class Params():
 
 class Grid_Params():
     def __init__(self,args):
-        self.ny = 21
+        self.ny = int(args[3])
         self.y_m = 0.0 # (m)
-        self.y_M = 1.0 # (m)
+        self.y_M = 0.1 # (m)
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
 
@@ -45,8 +45,9 @@ class Grid_Params():
         self.x = linspace(self.x_m,self.x_M,self.nx)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
 
-        self.s_m = 1e-2 # 100 micron
-        self.s_M = 1e-1 # 1 mm
+        self.R = 10.#float(args[3])
+        self.s_M = 3e-3 # 3 mm
+        self.s_m = self.s_M/self.R
         self.ns = int(args[2])
         s_edges = linspace(self.s_m,self.s_M,self.ns+1)
         self.s = (s_edges[1:] + s_edges[:-1])/2.
@@ -74,7 +75,7 @@ class Solid_Params():
         self.mu_1 = tan(deg2rad(32.76))
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
-        self.eta_max = 3*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
+        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio
@@ -131,7 +132,11 @@ class Output_Params():
         self.plot_continuum = True
         # self.plot_material_points = True
         # self.plot_gsd_grid = True
-        self.save_u = True
+        self.plot_gsd_mp = True
+        # self.plot_gsd_grid = True
         self.save_s_bar = True
+        self.save_u = True
+        self.save_density = True
+        self.save_phi_MP = True
         self.continuum_fig_size = [12,8]
         self.mp_fig_size = [6,6]
