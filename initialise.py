@@ -94,7 +94,7 @@ def get_parameters(params):
                 if hasattr(P.S[p], 'critical_time'): t_c.append(P.S[p].critical_time(P))
             P.dt = P.CFL*min(t_c)
             # if t_seg == min(t_c): print('\nTimestep limited by segregation', end='\n')
-    P.update_timestep = update_timestep
+        P.update_timestep = update_timestep
     return P,G,L
 
 if __name__ == '__main__':

@@ -116,7 +116,7 @@ class Particle():
         """
         try:
             self.n_star = int(trunc((self.x[0] - P.G.x_m)/G.dx)
-                              + trunc((self.x[1] - P.G.y_m)/G.dy)*P.G.nx)
+                            + trunc((self.x[1] - P.G.y_m)/G.dy)*P.G.nx)
         except ValueError:
             print('Something went wrong! Particle is out of the box :(')
             print(self.x)

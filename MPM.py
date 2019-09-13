@@ -46,11 +46,9 @@ def main(params):
         if P.segregate_grid:
             G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
             # if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
-            # if P.B.cyclic_lr: G.make_cyclic(P,G,['pk'])
-            # G.calculate_grad_gammadot(P,G)
             G.calculate_phi_increment(P)
             L.move_grainsize_on_grid(P,G)
-            G.make_cyclic(P,G,['eta','dphi'])
+            G.make_cyclic(P,G,['eta'])
         L.move_material_points(P,G) # Update material points (position and velocity)
         # Move/Remove any particles that have left the grid
         if P.B.outlet_left: L.outlet_left(P,G)

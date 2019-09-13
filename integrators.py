@@ -183,8 +183,12 @@ def KT2_flux(phi,G,P,ax):
         g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
         for i in range(pad):
-            g = hstack([g[:P.G.ny], g,  g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-            boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
+            if P.B.cyclic_lr:
+                g        = hstack([g[-P.G.ny:],        g,         g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                boundary = hstack([boundary[-P.G.ny:], boundary,  boundary[:P.G.ny]])
+            else:
+                g        = hstack([g[:P.G.ny],        g,         g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
         g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         dCdx,tt,tt1 = gradient(phi,P.G.dx)

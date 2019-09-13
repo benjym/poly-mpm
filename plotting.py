@@ -189,9 +189,9 @@ class Plotting:
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
                               r'$\mu$',r'$\eta/\eta_{max}$',
-                              r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$']
+                              r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$',r'$\phi^{M}$']
                     norm = [Normalize(),Normalize(),
-                            Normalize(),Normalize(),Normalize(),#Normalize(),
+                            Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize()
                             ]
@@ -199,14 +199,12 @@ class Plotting:
                             viridis,viridis,#viridis,viridis,
                             viridis,viridis,viridis,viridis,
                             viridis,viridis,
-                            viridis,viridis,'bwr'
+                            viridis,viridis,'bwr',viridis
                             ]
                     z = [G.m*G.m/G.V,
                          G.s_bar*G.m,
                          G.q[:,0],
                          G.q[:,1],
-                         #G.grad_gammadot[:,0]*G.m,
-                         #G.grad_gammadot[:,1]*G.m,
                          abs(G.gammadot)*G.m,
                          -G.pressure,
                          G.dev_stress,
@@ -217,7 +215,10 @@ class Plotting:
                          # G.dphi[:,0]/P.dt*G.m,
                          G.pk*G.m,
                          sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m,
-                         G.dphi[:,-1]/P.dt*G.m
+                         # G.grad_pk[:,0]*G.m,
+                         # G.grad_pk[:,1]*G.m,
+                         G.dphi[:,-1]/P.dt*G.m,
+                         G.phi[:,-1]*G.m
                          ]
                     for i in range(len(titles)):
                         plt.sca(ax[i+2])
@@ -231,17 +232,16 @@ class Plotting:
                         plt.xlim(P.G.x_m,P.G.x_M)
                         plt.ylim(P.G.y_m,P.G.y_M)
                         if P.segregate_grid:
-                            if i == 1:
+                            if titles[i] == r'$\bar s$':
                                 plt.clim(P.G.s_m,P.G.s_M)
                                 # plt.set_cmap('bwr')
                                 # plt.set_cmap(cc.cm.bmy)
-                            elif titles[i] == r'$\eta/\eta_{max}$': # eta
+                            elif titles[i] == r'$\eta/\eta_{max}$':
                                 plt.clim(0,1)
-                            # elif i == 12:
-                                # plt.clim(-amax(abs(G.dphi[:,0]))/P.dt,amax(abs(G.dphi[:,0]))/P.dt)
-                                # plt.set_cmap('bwr')
                             elif titles[i] == r'$\dot\phi^{M}$':
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
+                            elif titles[i] == r'$\phi^{M}$':
+                                plt.clim(0,1)
                                 # plt.set_cmap('bwr')
                             # else:
                                 # plt.set_cmap('viridis')
