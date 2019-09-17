@@ -301,7 +301,7 @@ class Grid():
         """
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-        print(Z.shape)
+        # print(Z.shape)
         dZdy,dZdx = gradient(Z,G.dy,G.dx)
         # dZdy,dZdx = gradient(Z,G.y,G.x)
 

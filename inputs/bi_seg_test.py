@@ -13,7 +13,7 @@ class Params():
         self.initial_flow = 'steady'
 
         self.segregate_grid = True
-        self.c = 1e-2 # inter-particle drag coefficient
+        self.c = 1e-3 # inter-particle drag coefficient
         self.D = 0.#1e-2 # segregation diffusion coefficient
 
         self.G = Grid_Params(args)
