@@ -192,13 +192,13 @@ class Plotting:
                               r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$',r'$\phi^{M}$']
                     norm = [Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize(),
-                            Normalize(),Normalize(),Normalize(),Normalize(),
+                            Normalize(),Normalize(),Normalize(),LogNorm(),
                             Normalize(),Normalize(),Normalize(),Normalize()
                             ]
                     cmap = [viridis,orange_blue,#cc.cm.bmy_r,
                             viridis,viridis,#viridis,viridis,
                             viridis,viridis,viridis,viridis,
-                            viridis,viridis,
+                            viridis,'bwr',
                             viridis,viridis,'bwr',viridis
                             ]
                     z = [G.m*G.m/G.V,
@@ -211,7 +211,7 @@ class Plotting:
                          abs(G.dev_stress/G.pressure)*G.m,
                          G.mu,
                          # log10(G.I/G.m)*G.m,
-                         G.eta/P.S[0].eta_max,
+                         ma.masked_less_equal(G.eta/P.S[0].eta_max,0.), # just for log scaling nicely
                          # G.dphi[:,0]/P.dt*G.m,
                          G.pk*G.m,
                          sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m,
@@ -237,7 +237,8 @@ class Plotting:
                                 # plt.set_cmap('bwr')
                                 # plt.set_cmap(cc.cm.bmy)
                             elif titles[i] == r'$\eta/\eta_{max}$':
-                                plt.clim(0,1)
+                                # plt.clim(0,1)
+                                plt.clim(1e-1,1e1)
                             elif titles[i] == r'$\dot\phi^{M}$':
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
                             elif titles[i] == r'$\phi^{M}$':

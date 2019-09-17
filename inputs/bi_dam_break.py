@@ -79,7 +79,7 @@ class Solid_Params():
         self.mu_1 = 2.*tan(deg2rad(32.76)) # double glass beads
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
-        self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e4
+        self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2
         # print(self.eta_max)
         # self.law = 'linear_mu'
         # self.mu_0 = 0.5

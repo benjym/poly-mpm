@@ -408,8 +408,8 @@ def pouliquen(MP,P,G,p):
     MP.I = nan_to_num(MP.I)
     MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
-    MP.dev_stress = MP.eta*MP.de_ij/P.dt
+    MP.eta_limited = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.dev_stress = MP.eta_limited*MP.de_ij/P.dt
 
     MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
     MP.pressure += MP.dp
