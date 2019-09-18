@@ -413,12 +413,17 @@ def pouliquen(MP,P,G,p):
 
     MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
     MP.pressure += MP.dp
-    if MP.pressure > 0: # can't go into tension - this is really important!!
-        MP.dp -= MP.pressure # set increment back to zero
-        MP.pressure = 0.
+    # if MP.pressure > 0: # can't go into tension - this is really important!!
+    #     MP.dp -= MP.pressure # set increment back to zero
+    #     MP.pressure = 0.
 
-    if MP.rho < 2200: MP.dstress = - MP.stress # ADDED BY BENJY - CANNOT SUPPORT LOAD IF DENSITY LESS THAN CUTOFF
+    if MP.rho < 2200:
+        MP.dstress = - MP.stress # ADDED BY BENJY - CANNOT SUPPORT LOAD IF DENSITY LESS THAN CUTOFF
+        MP.pressure = 0.
     else: MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+
+    # MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+
 
     if not isfinite(MP.dstress).all():
         print('THIS IS GOING TO BE A PROBLEM! FOUND SOMETHING NON-FINITE IN CONSTITUTIVE MODEL')

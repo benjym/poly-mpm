@@ -6,7 +6,7 @@ class Params():
     def __init__(self,args):
         self.dt = 1e-8#5e-8 # timestep (s)
         self.savetime = 1e-3 # (s)
-        self.t_f = 0.5 #100.0 # 3*self.dt # final time (s)
+        self.t_f = 5.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.theta = -deg2rad(float(args[1])) # slope angle (degrees)
         self.pressure = 'lithostatic'
