@@ -75,7 +75,7 @@ class Solid_Params():
         self.PHI = []
 
         self.law = 'pouliquen'
-        self.mu_0 = 2.*tan(deg2rad(20.90)) # double glass beads
+        self.mu_0 = 2.*tan(deg2rad(20.90)) # double glass beads - about 37.5 deg
         self.mu_1 = 2.*tan(deg2rad(32.76)) # double glass beads
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
