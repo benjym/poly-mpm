@@ -33,6 +33,7 @@ def get_parameters(params):
 
 
     if not hasattr(P.B, 'wall'): P.B.wall = False
+    if not hasattr(P.B, 'two_walls'): P.B.two_walls = False
     if not hasattr(P.B, 'roughness'): P.B.roughness = False
     if not hasattr(P.B, 'wall_mu'): P.B.wall_mu = False
     if not hasattr(P.B, 'no_slip_bottom'): P.B.no_slip_bottom = False

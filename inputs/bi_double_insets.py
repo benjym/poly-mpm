@@ -9,9 +9,7 @@ class Params():
         self.t_f = 100.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
-        self.theta = 0*pi/180. # slope angle (radians)
-        self.Fr = float(args[2]) # Froude number
-        self.r = 1.0 # radius of drum
+        self.theta = 90.*pi/180. # slope angle (radians)
         self.G = Grid_Params(self,args)
         self.B = Boundary_Params()
         self.O = Output_Params(self.G)#self.nt)
@@ -20,7 +18,7 @@ class Params():
         self.c = 1e-1 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
         # self.supername = 'im/drum/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
-        self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
+        self.supername = 'im/double_inset/ny_' + str(self.G.ny) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = True # smooth calculation of gamma_dot
         self.time_stepping = 'dynamic' # dynamic or static time steps
@@ -29,16 +27,14 @@ class Params():
         print(self.supername)
 
     def update_forces(self):
-        t_c = sqrt(4*pi**2*self.r/(abs(self.max_g)*self.Fr)) # rotation period
-        self.theta = -(self.t/t_c)*2.*pi # slope angle (radians)
         self.g = self.max_g
 
 class Grid_Params():
     def __init__(self,P,args):
         self.y_m = 0.0 # (m)
-        self.y_M = P.r # (m)
+        self.y_M = 10.0 # (m)
         self.x_m = 0.0 # (m)
-        self.x_M = P.r # (m)
+        self.x_M = 10.0 # (m)
         self.ny = int(args[1])
         self.nx = self.ny
         self.x = linspace(self.x_m,self.x_M,self.nx)
@@ -46,7 +42,6 @@ class Grid_Params():
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
         # self.s = array([0.5,1.0]) # s coordinate
-        self.top_gap = 0.5*(self.y_M - self.y_m)
 
         self.R = 10.#float(args[2])
         self.s_M = 0.003 # 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
@@ -62,12 +57,8 @@ class Boundary_Params():
     def __init__(self):
         self.has_bottom = True
         self.has_top = True
-        self.has_right = True
-        self.has_left = True
-        self.roughness = False
-
-        # self.roughness = True
-        # self.wall_mu = 0.1
+        self.cyclic_lr = True
+        self.two_walls = True
 
 class Solid_Params():
     def __init__(self,G,P,args):
@@ -85,7 +76,7 @@ class Solid_Params():
         self.mu_1 = tan(deg2rad(32.76))
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
-        self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2
+        self.eta_max = 10.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio
@@ -94,18 +85,18 @@ class Solid_Params():
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
-        self.y = (G.ny-1)//2*self.pts_per_cell # particles in y direction
+        self.y = (G.ny-1)*self.pts_per_cell # particles in y direction
         gap = array((G.dx,G.dy))/(2*self.pts_per_cell)
 
         xp = linspace(G.x_m+gap[0],G.x_M-gap[0],self.x)
-        yp = linspace(G.y_m+gap[1],G.y_M-gap[1] - G.top_gap,self.y)
+        yp = linspace(G.y_m+gap[1],G.y_M-gap[1],self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
         for i in range(self.x*self.y):
             self.X.append(X[i])
             self.Y.append(Y[i])
             self.n += 1
-        self.A = (G.y_M - G.y_m - G.top_gap)*(G.x_M - G.x_m)/self.n # area (m^2)
+        self.A = (G.y_M - G.y_m)*(G.x_M - G.x_m)/self.n # area (m^2)
 
     def critical_time(self,P):
         distance = minimum(P.G.dx,P.G.dy)
@@ -116,7 +107,7 @@ class Solid_Params():
 class Output_Params():
     def __init__(self,G):
         self.plot_continuum = True
-        # self.plot_material_points = True
+        self.plot_material_points = True
         self.plot_gsd_mp = True
         # self.plot_gsd_grid = True
         self.save_s_bar = True

@@ -120,6 +120,9 @@ class Grid():
         if P.B.has_left: self.boundary_v[::P.G.nx] = 1 # left
         if P.B.has_right: self.boundary_v[P.G.nx-1::P.G.nx] = 1 # right
         if P.B.wall: self.boundary_v[(P.G.nx-1)//2:(P.G.ny*P.G.nx-1)//2:P.G.nx] = 1 # wall at centre
+        if P.B.two_walls:
+            self.boundary_v[(P.G.nx-1)//4:(P.G.ny*P.G.nx-1)//2:P.G.nx] = 1 # low wall at left
+            self.boundary_v[(P.G.ny//2)*P.G.nx+(3*(P.G.nx-1))//4::P.G.nx] = 1 # upper wall at right
         if P.B.silo_left:
             self.boundary_v[1:(P.G.ny//2-3)*P.G.nx:P.G.nx] = 1 # wall at outlet
             self.boundary_v[(P.G.ny//2+3)*P.G.nx+1:-1:P.G.nx] = 1 # wall at outlet
@@ -363,7 +366,7 @@ class Grid():
         # self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
 
         # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS (OR AT LEAST FEWER)
-        self.pk_dot = (length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
+        self.pk_dot = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
 
         self.pk += self.pk_dot*P.dt
         self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
