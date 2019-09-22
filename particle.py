@@ -40,6 +40,12 @@ class Particle():
             self.strain = -1e-5*eye(3) # pure compression everywhere
             self.stress = (P.S[p].K*trace(self.strain)*eye(3) +
                            2.*P.S[p].G*(self.strain - trace(self.strain)*eye(3)/3.))
+        elif P.pressure == 'compression':
+            self.stress = array([[-P.initial_pressure,0,0],
+                                 [0,-P.initial_pressure,0],
+                                 [0,0,-P.initial_pressure]])
+            # self.strain = zeros((3,3)) # strain-free
+            self.strain = eye(3)*trace(self.stress)/(9.*P.S[p].K) + (self.stress - eye(3)*trace(self.stress)/3.)/(2.*P.S[p].G)
         else:
             self.strain = zeros((3,3)) # corresponding strains
             self.stress = zeros((3,3))

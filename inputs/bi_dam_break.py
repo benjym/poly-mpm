@@ -15,7 +15,7 @@ class Params():
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
-        self.c = 1e-3 # inter-particle drag coefficient
+        self.c = 1e-2 # inter-particle drag coefficient
         self.D = 0. # segregation diffusion coefficient
         self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/' + args[2] + '/theta_' + args[3] + '/'
         self.pressure = 'lithostatic'
