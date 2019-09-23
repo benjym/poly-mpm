@@ -183,7 +183,6 @@ class Plotting:
                     # ax[1].set_title(r'$|\dot\gamma_{max}| = ' + str(amax(abs(nan_to_num(G.gammadot)))) + '$',
                     #           rotation='horizontal')
 
-
                     titles = [r'$\rho$',r'$\bar s$',
                               r'$u$',r'$v$',#r'$\nabla(|\dot\gamma|)_{x}$',r'$\nabla(|\dot\gamma|)_{y}$',
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',

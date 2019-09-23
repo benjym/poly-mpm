@@ -414,7 +414,7 @@ def pouliquen(MP,P,G,p):
     MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
     MP.pressure += MP.dp
 
-    if (MP.pressure > 0) or (MP.rho < 2200): # can't go into tension - this is really important!!
+    if (MP.pressure > 0) or (MP.rho < P.S[p].rho*0.8): # can't go into tension - this is really important!!
         MP.dp -= MP.pressure # set increment back to zero
         MP.pressure = 0.
 

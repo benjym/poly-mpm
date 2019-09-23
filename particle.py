@@ -77,8 +77,30 @@ class Particle():
                                sqrt(P.S[p].packing*cos(abs(P.theta)))*
                                (P.G.y_M**1.5 - (P.G.y_M - y)**1.5)/P.G.s_bar_0**1.5,
                                0.,0.])
-            # elif P.S[0].law == 'marks2012': self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.])
+        elif P.initial_flow == 'steady_poiseulle': # https://link.springer.com/content/pdf/10.1007%2Fs10035-013-0447-3.pdf
+            H = P.G.y_M - P.G.y_m
+            y_star = y/H
+            if y_star > 0.5: y_star = 0.5 - abs(y_star - 0.5) # y_star only defined on LHS
+            K = abs(P.S[0].rho*P.max_g)
+            Lambda = H/P.G.s_bar_0
+            beta = sqrt(abs(K*H/P.initial_pressure))
+            y_star_c = 0.5 - P.S[p].mu_0/(beta**2)
+            if y_star < y_star_c:
+                u_star = (Lambda*P.S[p].I_0)/(beta**3)*\
+                        ((beta**2)*y_star + (P.S[p].mu_0 - P.S[p].mu_1)*log(-(2.*(beta**2)*y_star + 2*P.S[p].mu_1 - beta**2)/(beta**2 - 2*P.S[p].mu_1)))
+            else:
+                u_star = (Lambda*P.S[p].I_0)/(beta**3)*\
+                         ((beta**2)/2. - P.S[p].mu_0 + (P.S[p].mu_0 - P.S[p].mu_1)*log((P.S[p].mu_1-P.S[p].mu_0)/(P.S[p].mu_1-(beta**2)/2.)))
+            self.v = array([-u_star*sqrt(K*H/P.S[p].rho_s),0.,0.])
 
+            stable = beta<sqrt(2*P.S[p].mu_1) # if True, this should work
+            if not stable:
+                print('WARNING: THIS SETUP WILL ACCELERATE FOREVER')
+            print(sqrt(2*P.S[p].mu_0),beta,sqrt(2*P.S[p].mu_1))
+            # print(beta)
+            # print(H,y_star,K,Lambda,beta,u_star)
+            # elif P.S[0].law == 'marks2012': self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.])
+        # print(self.stress)
     def update_strain(self,P,G):
         """Calculate incremental strain at the particle level from the nodal velocity. Also update the total strain.
 
