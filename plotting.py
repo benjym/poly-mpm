@@ -188,17 +188,12 @@ class Plotting:
                               r'$|\dot\gamma|$',r'$P$',r'$\sigma_{xy}$',r'$|\sigma_{xy}/P|$',
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
                               r'$\mu$',r'$\eta/\eta_{max}$',
-                              r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$',r'$\phi^{M}$']
+                              # r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$',r'$\phi^{M}$'] # THIS
+                              r'$p_k$',r'$\dot p_k$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
                     norm = [Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),LogNorm(),
                             Normalize(),Normalize(),Normalize(),Normalize()
-                            ]
-                    cmap = [viridis,orange_blue,#cc.cm.bmy_r,
-                            viridis,viridis,#viridis,viridis,
-                            viridis,viridis,viridis,viridis,
-                            viridis,'bwr',
-                            viridis,viridis,'bwr',viridis
                             ]
                     z = [G.m*G.m/G.V,
                          G.s_bar*G.m,
@@ -213,11 +208,12 @@ class Plotting:
                          ma.masked_less_equal(G.eta/P.S[0].eta_max,0.), # just for log scaling nicely
                          # G.dphi[:,0]/P.dt*G.m,
                          G.pk*G.m,
-                         sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m,
+                         # sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m, # THIS
                          # G.grad_pk[:,0]*G.m,
-                         # G.grad_pk[:,1]*G.m,
+                         G.pk_dot*G.m, # NOT THIS
+                         G.grad_pk[:,1]*G.m, # NOT THIS
                          G.dphi[:,-1]/P.dt*G.m,
-                         G.phi[:,-1]*G.m
+                         # G.phi[:,-1]*G.m # THIS
                          ]
                     for i in range(len(titles)):
                         plt.sca(ax[i+2])
@@ -225,7 +221,6 @@ class Plotting:
                                              G.y_plot,
                                              ma.masked_invalid(z[i]/G.m).reshape(P.G.ny,P.G.nx),
                                              norm=norm[i],
-                                             cmap=cmap[i]
                                              )
                         plt.title(titles[i],rotation='horizontal')
                         plt.xlim(P.G.x_m,P.G.x_M)
@@ -238,10 +233,14 @@ class Plotting:
                             elif titles[i] == r'$\eta/\eta_{max}$':
                                 # plt.clim(0,1)
                                 plt.clim(1e-1,1e1)
+                                plt.set_cmap('bwr')
                             elif titles[i] == r'$\dot\phi^{M}$':
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
+                                plt.set_cmap('bwr')
                             elif titles[i] == r'$\phi^{M}$':
                                 plt.clim(0,1)
+                            else:
+                                plt.set_cmap('viridis')
                                 # plt.set_cmap('bwr')
                             # else:
                                 # plt.set_cmap('viridis')

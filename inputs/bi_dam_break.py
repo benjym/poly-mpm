@@ -16,8 +16,8 @@ class Params():
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
         self.c = 1e-2 # inter-particle drag coefficient
-        self.D = 0. # segregation diffusion coefficient
-        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/' + args[2] + '/theta_' + args[3] + '/'
+        self.D = 1e-3 # segregation diffusion coefficient
+        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/' + args[2] + '/theta_' + args[3] + '/c_' + str(self.c) + '/D_' + str(self.D) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.smooth_grad2 = True # smooth the gradient of the shear strain rate

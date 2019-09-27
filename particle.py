@@ -96,9 +96,29 @@ class Particle():
             stable = beta<sqrt(2*P.S[p].mu_1) # if True, this should work
             if not stable:
                 print('WARNING: THIS SETUP WILL ACCELERATE FOREVER')
-            print(sqrt(2*P.S[p].mu_0),beta,sqrt(2*P.S[p].mu_1))
-            # print(beta)
-            # print(H,y_star,K,Lambda,beta,u_star)
+                print(sqrt(2*P.S[p].mu_0),beta,sqrt(2*P.S[p].mu_1))
+
+
+        # elif P.initial_flow == 'steady_poiseulle': # TOTALLY FAKE
+        #         H = P.G.y_M - P.G.y_m
+        #         y_star = y/H
+        #         if y_star > 0.5: y_star = 0.5 - abs(y_star - 0.5) # y_star only defined on LHS
+        #         K = abs(P.S[0].rho*P.max_g)
+        #         Lambda = H/P.G.s_bar_0
+        #         beta = sqrt(abs(K*H/P.initial_pressure))
+        #         y_star_c = 0.3
+        #         # LINEAR
+        #         # if y_star < y_star_c: u_star = -1.0/y_star_c*y_star
+        #         # else:                 u_star = -1.0
+        #         # PARABOLA
+        #         # if y_star < y_star_c: u_star = 1.0*((y_star - 0.5)**2 - 1./4.)
+        #         # else:                 u_star = 1.0*((y_star_c - 0.5)**2 - 1./4.)
+        #         # CUBIC
+        #         if y_star < y_star_c: u_star = 1.0*((y_star - 0.5)**4 - 0.5**4)
+        #         else:                 u_star = 1.0*((y_star_c - 0.5)**4 - 0.5**4)
+        #
+        #         self.v = array([-u_star,0.,0.])
+
             # elif P.S[0].law == 'marks2012': self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.])
         # print(self.stress)
     def update_strain(self,P,G):

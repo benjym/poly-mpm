@@ -93,6 +93,11 @@ class Grid():
         self.x_plot = hstack([P.G.x_m - self.dx/2.,(self.x[1:] + self.x[:-1])/2.,P.G.x_M + self.dx/2.])
         self.y_plot = hstack([P.G.y_m - self.dy/2.,(self.y[1:] + self.y[:-1])/2.,P.G.y_M + self.dy/2.])
 
+        # self.dx_plot = self.x_plot[1:] - self.x_plot[:-1]
+        # self.dy_plot = self.y_plot[1:] - self.y_plot[:-1]
+        self.dx_plot = hstack([self.dx/2.,self.dx*ones(P.G.nx-2),self.dx/2.])
+        self.dy_plot = hstack([self.dy/2.,self.dy*ones(P.G.ny-2),self.dy/2.])
+
         # if P.B.cyclic_lr: self.DX = P.G.dx*ones([P.G.nx-1])
         # else: self.DX = hstack([P.G.dx/2.,P.G.dx*ones([P.G.nx-3]),P.G.dx/2.])
         # self.DY = hstack([P.G.dy/2.,P.G.dy*ones([P.G.ny-3]),P.G.dy/2.])
@@ -304,9 +309,7 @@ class Grid():
         """
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-        # print(Z.shape)
         dZdy,dZdx = gradient(Z,G.dy,G.dx)
-        # dZdy,dZdx = gradient(Z,G.y,G.x)
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
@@ -339,8 +342,8 @@ class Grid():
         """
         decay_time = 0.1 # seconds
         length_scale = 0.01 # m
-        D = 0 #1e-3 # 10 particle diameters for diffusion length scale????
-        # D = (length_scale**2)/(2.*decay_time) # definition of diffusivity?
+        # D = 0 #1e-3 # 10 particle diameters for diffusion length scale????
+        D = (length_scale**2)/(2.*decay_time) # definition of diffusivity?
 
 
         # I NEED TO IMPLEMENT BOUNDARY CONDITIONS FOR DIFFUSION PART
@@ -367,6 +370,9 @@ class Grid():
 
         # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS (OR AT LEAST FEWER)
         self.pk_dot = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
+
+        # ADD p_k AT BOUNDARIES?
+        # self.pk_dot[self.boundary_tot] *= 2. # VERY ARBITRARY
 
         self.pk += self.pk_dot*P.dt
         self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)

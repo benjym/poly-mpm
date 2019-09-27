@@ -22,7 +22,7 @@ class Params():
         self.O = Output_Params(self)#self.nt)
         self.S = [Solid_Params(self.G,self),]
 
-        self.supername = 'im/vert_chute/lin/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/'
+        self.supername = 'im/vert_chute/lin/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/c_' + str(self.c) + '/D_' + str(self.D) + '/'
         self.smooth_gamma_dot = False
         self.time_stepping = 'dynamic' # dynamic or static time steps
         self.CFL = 0.2
