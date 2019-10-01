@@ -66,9 +66,10 @@ class Plotting:
                 os.makedirs(P.save_dir + 'Continuum/')
         if P.O.plot_gsd_mp or P.O.plot_gsd_grid:
             if not os.path.isdir(P.save_dir + 'GSD/'): os.makedirs(P.save_dir + 'GSD/')
-            # if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
-            # for i in range(P.G.ns):
-                # if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
+        if P.O.plot_gsd_debug:
+            if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
+            for i in range(P.G.ns):
+                if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
 
         plt.subplots_adjust(hspace=0.4,wspace=0.4)
         plt.savefig(P.save_dir + name + '.png', dpi=dpi)

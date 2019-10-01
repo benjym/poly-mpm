@@ -171,35 +171,36 @@ def KT2_flux(phi,G,P,ax):
 
     boundary = G.boundary_tot.astype(bool) # true boundaries
     boundary[G.m < P.M_tol] = True # empty cells
-    boundary[:P.G.nx] = True # bottom
-    boundary[(P.G.ny-1)*P.G.nx:] = True # top
+    # boundary[:P.G.nx] = True # bottom
+    # boundary[(P.G.ny-1)*P.G.nx:] = True # top
 
     for i in range(P.G.ns): S[:,:,i] = P.G.s[i]
     for i in range(P.G.ns): S_1_bar[:,:,i] = sum(phi*(1./S),axis=2) # INVERSE OF HARMONIC MEAN!
 
-    if ax == 0:
+    if ax == 0: # x direction
         pad = (phi.shape[0] - P.G.nx)//2
         g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
         for i in range(pad):
             if P.B.cyclic_lr:
                 g        = hstack([g[-P.G.ny:],        g,         g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-                boundary = hstack([boundary[-P.G.ny:], boundary,  boundary[:P.G.ny]])
             else:
                 g        = hstack([g[:P.G.ny],        g,         g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-                boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
+        # boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
+        boundary = hstack([boundary[:boundary.shape[0]//2], zeros([P.G.ny*pad*2],dtype=bool), boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         dCdx,tt,tt1 = gradient(phi,P.G.dx)
 
-    elif ax == 1:
+    elif ax == 1: # y direction
         pad = (phi.shape[0] - P.G.ny)//2
-        g = G.grad_pk[:,ax] # P.G.ny,P.G.nx
+        g = G.grad_pk[:,ax] # P.G.ny*P.G.nx
+        # print(P.G.nx,P.G.ny,P.G.nx*P.G.ny,g.shape)
         g = tile(g,[P.G.ns,1]).T # P.G.ny*P.G.nx,P.G.ns
         g = g.reshape(-1,P.G.ns) # P.G.ny*P.G.nx,P.G.ns
-        for i in range(pad):
-            g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-            boundary = hstack([boundary[:P.G.nx], boundary,  boundary[-P.G.nx:]])
+        # print(g.shape)
+        for i in range(pad): g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+        boundary = hstack([boundary[:boundary.shape[0]//2], zeros([P.G.nx*pad*2],dtype=bool), boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         dCdx,tt,tt1 = gradient(phi,P.G.dy)
@@ -217,14 +218,19 @@ if __name__ == "__main__":
     import initialise
     from numpy import random, maximum, ones
     from plotting import Plotting
+    import matplotlib.pyplot as plt
+
     plot = Plotting()
-    P,G,L = initialise.get_parameters(['bi_seg_test','22','2'])
+    P,G,L = initialise.get_parameters(['bi_seg_test','22','2','31'])
     G.wipe(P)
     L.get_reference_node(P,G) # Find node down and left
     L.get_basis_functions(P,G) # Make basis functions
     L.get_nodal_mass_momentum(P,G) # Initialise from grid state
+    P.O.plot_gsd_debug = True
     plot.draw_gsd_grid(L,P,G)
-    G.grad_gammadot = -1.*ones([P.G.ny*P.G.nx,3])
+    G.grad_pk = -100.*ones([P.G.ny*P.G.nx,3])
+    G.grad_pk[:,0] = 0.
+    #G.grad_gammadot = -1.*ones([P.G.ny*P.G.nx,3])
     # G.grad_gammadot[:,1] = 0
 #     P.dt *= 10
 #     G.phi = zeros_like(G.phi)
@@ -236,12 +242,14 @@ if __name__ == "__main__":
     while P.t <= P.t_f:
 #         G.phi += NT(P,G,0) + NT(P,G,1)
         # G.phi += KT(P,G,0) + KT(P,G,1)
+
         G.phi += increment_grainsize(P,G)
+        # G.phi += KT(P,G,1) # just in vertical direction
         G.s_bar = G.phi[:,0]*P.G.s[0] + G.phi[:,1]*P.G.s[1]
 
         P.t += P.dt
         P.tstep += 1
-        if P.tstep%1000 == 0:
+        if P.tstep%10000 == 0:
             P.grid_save += 1
             plot.draw_gsd_grid(L,P,G)
             print(' t = ' + str(P.t), end='\r')

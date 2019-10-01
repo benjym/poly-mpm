@@ -4,25 +4,24 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,mode):
-#         self.supername = 'viscous_unit_test'
-        self.t = 0.
-        self.dt = 1e-2 # timestep (s) --- TRY 1./mu_s
+        self.dt = 1e-8 # timestep (s)
         self.savetime = 10*self.dt # 0.1
         self.t_f = 100.0 # 100*self.dt # final time (s)
-        self.nt = int(self.t_f/self.dt) # number of timesteps
-        self.max_g = -1. # gravity (ms^-2)
-        self.max_q = 0.
-        self.update_forces()
+        self.max_g = -9.81 # gravity (ms^-2)
+
         self.G = Grid_Params()
         self.B = Boundary_Params()
         self.O = Output_Params(self.nt)
         self.S = [Solid_Params(self.G,self)]
-        self.F = Fluid_Params()
-        self.R = Fluid_Params()
-        self.mode = mode
-        self.segregate = True
-        self.c_0 = 0 #1. # inter-particle drag coefficient
-        self.c_1 = 0 #1e-6 # shear strain rate to kinetic stress constant
+
+        self.segregate_grid = True
+        self.c = 1e-3 #1. # inter-particle drag coefficient
+        self.D = 1e-3 #1e-6 # shear strain rate to kinetic stress constant
+
+        self.supername = 'im/seg_unit_test/' + '/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/c_' + str(self.c) + '/D_' + str(self.D) + '/'
+        self.smooth_gamma_dot = False
+        self.time_stepping = 'dynamic' # dynamic or static time steps
+        self.CFL = 0.2
 
     def update_forces(self):
         t_c = 0.1
@@ -43,19 +42,12 @@ class Grid_Params():
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
         self.thickness = 1. # (m)
-        
+
 class Boundary_Params():
     def __init__(self):
-        self.wall = False
         self.has_top = True
         self.has_bottom = True
-        self.has_right = False
-        self.has_left = False
-        self.outlet_left = False
         self.cyclic_lr = True
-        self.force_boundaries = False
-        self.vertical_force = False
-        self.horizontal_force = False
         self.roughness = True
 
 class Solid_Params():
@@ -66,11 +58,11 @@ class Solid_Params():
 
         self.law = 'viscous'
         self.rho = 1000. # density (kg/m^3)
-        
+
         self.mu_s = 1e5 # shear viscosity
         self.mu_v = 1e5
         self.K = 0. # pressure viscosity
-        
+
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
         self.y = (G.ny-1)*self.pts_per_cell # particles in y direction
@@ -91,13 +83,3 @@ class Output_Params():
         self.plot_gsd = True
         self.plot_continuum = True
         self.continuum_fig_size = [10,6]
-            
-class Fluid_Params():
-    def __init__(self):
-        self.n = 0
-
-        
-class Rigid_Params():
-    def __init__(self):
-        self.n = 0
-
