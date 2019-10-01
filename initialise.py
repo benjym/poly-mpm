@@ -71,6 +71,7 @@ def get_parameters(params):
     if not hasattr(P.O, 'measure_energy'): P.O.measure_energy = False
     if not hasattr(P.O, 'plot_gsd_mp'): P.O.plot_gsd_mp = False
     if not hasattr(P.O, 'plot_gsd_grid'): P.O.plot_gsd_grid = False
+    if not hasattr(P.O, 'plot_gsd_debug'): P.O.plot_gsd_debug = False
     if not hasattr(P.O, 'plot_material_points'): P.O.plot_material_points = False
     if not hasattr(P.O, 'plot_continuum'): P.O.plot_continuum = False
     if not hasattr(P.O, 'save_s_bar'): P.O.save_s_bar = False

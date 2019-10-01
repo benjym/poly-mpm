@@ -206,7 +206,10 @@ def KT2_flux(phi,G,P,ax):
         dCdx,tt,tt1 = gradient(phi,P.G.dy)
 
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
-    flux = P.c*f_c*g - P.D*dCdx
+    # diffusion_term = P.D*dCdx
+    # I = G.gamma_dot*
+    diffusion_term = P.D*dCdx
+    flux = P.c*f_c*g - diffusion_term
     flux[boundary] = 0
     return flux#, boundary
 
