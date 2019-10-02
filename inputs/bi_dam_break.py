@@ -126,9 +126,9 @@ class Solid_Params():
 class Output_Params():
     def __init__(self):
         self.plot_continuum = True
-        # self.plot_material_points = True
-        # self.plot_gsd_grid = True
         self.save_s_bar = True
         self.save_u = True
+        self.save_density = True
+        self.save_phi_MP = True
         self.continuum_fig_size = [24,8]
         self.mp_fig_size = [18,4]
