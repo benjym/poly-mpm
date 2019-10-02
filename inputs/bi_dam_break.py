@@ -21,7 +21,6 @@ class Params():
         self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/' + args[2] + '/theta_' + args[3] + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = False # smooth calculation of gamma_dot
-        self.smooth_grad2 = True # smooth the gradient of the shear strain rate
         self.time_stepping = 'dynamic' # dynamic or static time steps
         self.CFL = 0.2 # stability criteria for determining timstep
         print(self.supername)
