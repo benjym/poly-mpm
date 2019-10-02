@@ -341,11 +341,12 @@ class Grid():
 
         """
         decay_time = 0.1 # seconds
-        length_scale = 10.*self.s_bar # m
-        # print(length_scale)
-        # D = 0 #1e-3 # 10 particle diameters for diffusion length scale????
-        diffusivity = (length_scale)/(2.*decay_time) # definition of diffusivity?
+        length_scale = P.l*self.s_bar # m
 
+        if (P.tstep == 0) and P.initial_flow: self.pk = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
+
+
+        # diffusivity = (length_scale**2)/(2.*decay_time) # definition of diffusivity?
 
         # I NEED TO IMPLEMENT BOUNDARY CONDITIONS FOR DIFFUSION PART
         #   1. At a boundary, reflection boundary?
@@ -359,22 +360,12 @@ class Grid():
         # diff_term = (d2pk_dx2[:,1:-1] + d2pk_dy2[1:-1,:]).flatten()
 
         # if D > 0:
-        grad_pk  = self.calculate_gradient(P,G,self.pk,smooth=False)
-        grad2_pk_dx = self.calculate_gradient(P,G,grad_pk[:,0],smooth=False)[:,0]
-        grad2_pk_dy = self.calculate_gradient(P,G,grad_pk[:,1],smooth=False)[:,1]
-        diff_term = grad2_pk_dx + grad2_pk_dy
+        # grad_pk  = self.calculate_gradient(P,G,self.pk,smooth=False)
+        # grad2_Dpk_dx = self.calculate_gradient(P,G,diffusivity*grad_pk[:,0],smooth=False)[:,0]
+        # grad2_Dpk_dy = self.calculate_gradient(P,G,diffusivity*grad_pk[:,1],smooth=False)[:,1]
+        # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
-
-        # p_k_steady = t_c*gamma_dot*P
-        # growth_time = 0.01 # result in p_k=0.01p at a shear rate of 1
-        # self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
-
-        # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS (OR AT LEAST FEWER)
-        self.pk_dot = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time - nan_to_num(diffusivity*diff_term)
-        # print('\n')
-        # print(sum(isinf(self.pk_dot)),sum(isnan(self.pk_dot)))
-        # ADD p_k AT BOUNDARIES?
-        # self.pk_dot[self.boundary_tot] *= 2. # VERY ARBITRARY
+        self.pk_dot = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #- nan_to_num(diff_term)
 
         self.pk += self.pk_dot*P.dt
         self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)

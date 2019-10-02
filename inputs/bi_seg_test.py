@@ -14,15 +14,15 @@ class Params():
 
         self.segregate_grid = True
         self.c = 1e-3 # inter-particle drag coefficient
-        # self.l = 10. # number of particle diameters for diffusion coeff
-        self.D = 1e-3 # segregation diffusion coefficient
+        self.l = 10. # number of particle diameters for seg diffusion coeff
+        # self.D = 1e-3 # segregation diffusion coefficient
 
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params(self)#self.nt)
         self.S = [Solid_Params(self.G,self),]
 
-        self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/c_' + str(self.c) + '/D_' + str(self.D) + '/'
+        self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.smooth_gamma_dot = False
         self.time_stepping = 'dynamic' # dynamic or static time steps
         self.CFL = 0.2

@@ -177,20 +177,28 @@ def KT2_flux(phi,G,P,ax):
     for i in range(P.G.ns): S[:,:,i] = P.G.s[i]
     for i in range(P.G.ns): S_1_bar[:,:,i] = sum(phi*(1./S),axis=2) # INVERSE OF HARMONIC MEAN!
 
+    # D = P.D
+    D = 10.*(G.s_bar**3.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10*d
+
     if ax == 0: # x direction
         pad = (phi.shape[0] - P.G.nx)//2
         g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
+        D = D.reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
         for i in range(pad):
             if P.B.cyclic_lr:
-                g        = hstack([g[-P.G.ny:],        g,         g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                g = hstack([g[-P.G.ny:], g, g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                D = hstack([D[-P.G.ny:], D, D[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
             else:
-                g        = hstack([g[:P.G.ny],        g,         g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                g = hstack([g[:P.G.ny],  g, g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                D = hstack([D[:P.G.ny],  D, D[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
         # boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
         boundary = hstack([boundary[:boundary.shape[0]//2], zeros([P.G.ny*pad*2],dtype=bool), boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
+        D = tile(D,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         dCdx,tt,tt1 = gradient(phi,P.G.dx)
+        # print(g.shape,boundary.shape,D.shape)
 
     elif ax == 1: # y direction
         pad = (phi.shape[0] - P.G.ny)//2
@@ -199,17 +207,20 @@ def KT2_flux(phi,G,P,ax):
         g = tile(g,[P.G.ns,1]).T # P.G.ny*P.G.nx,P.G.ns
         g = g.reshape(-1,P.G.ns) # P.G.ny*P.G.nx,P.G.ns
         # print(g.shape)
-        for i in range(pad): g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+        D = tile(D,[P.G.ns,1]).T.reshape(-1,P.G.ns)
+        for i in range(pad):
+            g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+            D = vstack([D[:P.G.nx], D,  D[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
         boundary = hstack([boundary[:boundary.shape[0]//2], zeros([P.G.nx*pad*2],dtype=bool), boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
+        D = D.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         dCdx,tt,tt1 = gradient(phi,P.G.dy)
+        # print(g.shape,boundary.shape,D.shape)
 
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
-    # diffusion_term = P.D*dCdx
-    # I = G.gamma_dot*
-    diffusion_term = P.D*dCdx
-    flux = P.c*f_c*g - diffusion_term
+
+    flux = P.c*f_c*g - D*dCdx
     flux[boundary] = 0
     return flux#, boundary
 
