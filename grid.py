@@ -370,8 +370,9 @@ class Grid():
         # self.pk_dot = (growth_time*abs(self.pressure /self.m)*abs(self.gammadot) - self.pk)/decay_time #+ D*diff_term
 
         # p_k_steady = l*gamma_dot*sqrt(P*rho) # ADDED BONUS OF NO DIVIDE BY ZERO ERRORS (OR AT LEAST FEWER)
-        self.pk_dot = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time - diffusivity*diff_term
-
+        self.pk_dot = nan_to_num(length_scale*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time - nan_to_num(diffusivity*diff_term)
+        # print('\n')
+        # print(sum(isinf(self.pk_dot)),sum(isnan(self.pk_dot)))
         # ADD p_k AT BOUNDARIES?
         # self.pk_dot[self.boundary_tot] *= 2. # VERY ARBITRARY
 
