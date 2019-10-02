@@ -341,7 +341,7 @@ class Grid():
 
         """
         decay_time = 0.1 # seconds
-        non_dim_coeff = 10.0
+        non_dim_coeff = 1.0
 
         if (P.tstep == 0) and P.initial_flow:
             self.pk = nan_to_num(non_dim_coeff*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)

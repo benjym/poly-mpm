@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-3 # timestep (s)
+        self.dt = 1e-2 # timestep (s)
         self.savetime = 0.1 # 1e3*self.dt # 0.1 (s)
         self.t_f = 100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
