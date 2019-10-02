@@ -341,10 +341,9 @@ class Grid():
 
         """
         decay_time = 0.1 # seconds
-        non_dim_coeff = 1.0
 
         if (P.tstep == 0) and P.initial_flow:
-            self.pk = nan_to_num(non_dim_coeff*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
+            self.pk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
             print('\n\n\n\n\nhi!\n\n\n\n\n')
 
 
@@ -367,7 +366,7 @@ class Grid():
         # grad2_Dpk_dy = self.calculate_gradient(P,G,diffusivity*grad_pk[:,1],smooth=False)[:,1]
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
-        self.pk_dot = nan_to_num(non_dim_coeff*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #- nan_to_num(diff_term)
+        self.pk_dot = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time #- nan_to_num(diff_term)
         # print(amax(self.s_bar),amax(abs(self.pressure/self.V)),amax(abs(nan_to_num(self.gammadot))),amax(nan_to_num(self.pk)))
 
         self.pk += self.pk_dot*P.dt
