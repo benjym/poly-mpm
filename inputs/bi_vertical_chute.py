@@ -110,23 +110,6 @@ class Solid_Params():
         # self.A = (G.x_M-G.x_m)*(G.y_M-G.y_m)/self.n # area (m^2)
         self.A = G.dx*G.dy/self.pts_per_cell**2
 
-        # # Advective terms
-        # elastic_wave_speed = sqrt(self.K/self.rho)
-        # distance = minimum(G.dx,G.dy)
-        # critical_adv_time = distance/elastic_wave_speed
-        # # Diffusive terms
-        # l_0 = xp[1] - xp[0] # initial distance between material points
-        # critical_diff_time = l_0**2*self.rho/self.eta_max
-        #
-        # critical_time = minimum(critical_adv_time,critical_diff_time)
-        # CFL = critical_time/P.dt
-        #
-        # if CFL < 2:
-        #     print('WARNING: STABILITY IS GUARANTEED TO BE POOR')
-        # print('CFL from elastic wave speed: ' + str(critical_adv_time/P.dt))
-        # print('CFL from momentum diffusion: ' + str(critical_diff_time/P.dt))
-        # print('Current CFL: ' + str(CFL))
-
     def critical_time(self,P):
         distance = minimum(P.G.dx,P.G.dy)
         t_ela = distance/sqrt(self.K/self.rho) # elasticity

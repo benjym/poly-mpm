@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,args):
-        self.dt = 1e-2 # timestep (s)
+        self.dt = 1e-8 # timestep (s)
         self.savetime = 0.1 # 1e3*self.dt # 0.1 (s)
         self.t_f = 100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
@@ -114,6 +114,12 @@ class Solid_Params():
 
             self.n += 1
         self.A = G.dx*G.dy/self.pts_per_cell**2
+
+    def critical_time(self,P):
+        distance = minimum(P.G.dx,P.G.dy)
+        t_ela = distance/sqrt(self.K/self.rho) # elasticity
+        t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
+        return minimum(t_diff,t_ela)
 
 
 
