@@ -344,7 +344,7 @@ class Grid():
 
         if (P.tstep == 0) and P.initial_flow:
             self.pk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
-            print('\n\n\n\n\nhi!\n\n\n\n\n')
+            # print('\n\n\n\n\nhi!\n\n\n\n\n')
 
 
         # diffusivity = (length_scale**2)/(2.*decay_time) # definition of diffusivity?

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 class Params():
     def __init__(self,args):
         self.dt = 1e-6 # timestep (s)
-        self.savetime = 0.001
+        self.savetime = 0.01
         self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.theta = 0.*pi/180. # slope angle (degrees)
@@ -14,35 +14,36 @@ class Params():
         self.segregate_grid = True
 #         self.segregate_grid = False
         self.c = 1e-3 # inter-particle drag coefficient
-        self.D = 0 # segregation diffusion coefficient
+        self.l = 10. # number of particle diameters for seg diffusion coeff
 
-        self.supername = 'im/silo/'
-        print(self.supername)
-
-        self.G = Grid_Params()
+        self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params(self)
         self.S = [Solid_Params(self.G,self),]
 
-    def update_forces(self):
-        t_c = 0.05
-        # self.g = self.max_g*(1.-exp(-3.*self.t**2/t_c**2))
-        self.g = self.max_g
-#         self.g = 0.
+        self.supername = 'im/silo/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/' + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
+        print(self.supername)
+
+    def update_forces(self): pass
 
 class Grid_Params():
-    def __init__(self):
-        self.x_m = -0.25 # (m)
-        self.x_M =  0.25 # (m)
+    def __init__(self,args):
+        self.x_m = -0.5 # (m)
+        self.x_M =  0.5 # (m)
         self.y_m = 0.0 # (m)
-        self.y_M = 1. # (m)
-        self.nx = 11
-        self.ny = 21
+        self.y_M = 2. # (m)
+        self.ny = int(args[1])
+        self.nx = (self.ny-1)//2 + 1
+
         self.x = linspace(self.x_m,self.x_M,self.nx)
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
-        self.s = array([0.001,0.002]) # s coordinate
+
+        self.R = 10.
+        self.s_M = 0.003 # 3mm
+        self.s_m = self.s_M/self.R
+        self.s = array([self.s_m,self.s_M]) # s coordinate
         self.ds = self.s[1]-self.s[0]
         self.ns = len(self.s)
 
@@ -90,18 +91,20 @@ class Solid_Params():
             self.n += 1
         self.A = G.dx*G.dy/self.pts_per_cell**2 # area (m^2)
 
-        elastic_wave_speed = sqrt(self.K/self.rho)
-        distance = minimum(G.dx,G.dy)
-        critical_time = distance/elastic_wave_speed
-        critical_time /= 2. # safety
-        if critical_time < P.dt:
-#             P.dt = critical_time
-            print('WARNING: timestep should be dt = ' + str(critical_time))
+    def critical_time(self,P):
+        distance = minimum(P.G.dx,P.G.dy)
+        t_ela = distance/sqrt(self.K/self.rho) # elasticity
+        t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
+        return minimum(t_diff,t_ela)
 
 class Output_Params():
     def __init__(self,P):
         self.plot_continuum = True
-        self.plot_material_points = True
+        # self.plot_material_points = True
         # self.plot_gsd_grid = True
+        self.save_s_bar = True
+        self.save_u = True
+        self.save_density = True
+        self.save_phi_MP = True
         self.continuum_fig_size = [10,10]
         self.mp_fig_size = [10,8]

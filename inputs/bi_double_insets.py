@@ -21,7 +21,7 @@ class Params():
         # self.supername = 'im/drum/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         self.supername = 'im/double_inset/ny_' + str(self.G.ny) + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.pressure = 'lithostatic'
-        self.smooth_gamma_dot = True # smooth calculation of gamma_dot
+        self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.time_stepping = 'dynamic' # dynamic or static time steps
         self.normalise_phi = True
         self.CFL = 0.2 # stability criteria for determining timstep
