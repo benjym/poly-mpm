@@ -53,10 +53,10 @@ class Grid_Params():
         self.s_M = 0.003 # 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
         # self.s_m = 0.1
         self.s_m = self.s_M/self.R
-        self.ns = 5
-        # self.s = array([self.s_m,self.s_M])
-        s_edges = linspace(self.s_m,self.s_M,self.ns+1)
-        self.s = (s_edges[1:] + s_edges[:-1])/2.
+        self.ns = 2
+        self.s = array([self.s_m,self.s_M])
+        # s_edges = linspace(self.s_m,self.s_M,self.ns+1)
+        # self.s = (s_edges[1:] + s_edges[:-1])/2.
         self.ds = self.s[1]-self.s[0]
 
 class Boundary_Params():

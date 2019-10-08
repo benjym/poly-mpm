@@ -46,7 +46,7 @@ class Grid_Params():
         # self.s = array([0.5,1.0]) # s coordinate
 
         self.R = 10.
-        self.s_M = 0.1 # 10 cm aggregate, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
+        self.s_M = 0.1 # 10 cm aggregate
         # self.s_m = 0.1
         self.s_m = self.s_M/self.R
         self.ns = 2
