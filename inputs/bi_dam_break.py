@@ -47,12 +47,12 @@ class Grid_Params():
 
         self.R = 10.
         self.s_M = 0.1 # 10 cm aggregate
-        # self.s_m = 0.1
         self.s_m = self.s_M/self.R
-        self.ns = 2
-        self.s = array([self.s_m,self.s_M])
+        self.ns = int(args[4])
+        # self.s = array([self.s_m,self.s_M])
         # s_edges = linspace(self.s_m,self.s_M,self.ns+1)
         # self.s = (s_edges[1:] + s_edges[:-1])/2.
+        self.s = linspace(self.s_m,self.s_M,self.ns)
         self.ds = self.s[1]-self.s[0]
 
 class Boundary_Params():
