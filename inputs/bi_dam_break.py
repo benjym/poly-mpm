@@ -105,14 +105,23 @@ class Solid_Params():
             self.X.append(X[i])
             self.Y.append(Y[i])
             if args[2] == 'top': # small on top
-                if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([1.,0.])
-                else:                        self.PHI.append([0.,1.])
+                # if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([1.,0.])
+                # else:                        self.PHI.append([0.,1.])
+                this_phi = zeros([G.ns])
+                H = (G.y_M - G.y_m)
+                this_phi_arg = int(floor((H-Y[i])/H*G.ns))
+                this_phi[this_phi_arg] = 1.
+                self.PHI.append(this_phi)
             elif args[2] == 'bot': # large on top
-                if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([0.,1.])
-                else:                        self.PHI.append([1.,0.])
+                # if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([0.,1.])
+                # else:                        self.PHI.append([1.,0.])
+                this_phi = zeros([G.ns])
+                H = (G.y_M - G.y_m)
+                this_phi_arg = int(floor(Y[i]/H*G.ns))
+                this_phi[this_phi_arg] = 1.
+                self.PHI.append(this_phi)
             elif args[2] == 'mix': # mixed
                 self.PHI.append(ones([G.ns])/float(G.ns))
-
             self.n += 1
         self.A = G.dx*G.dy/self.pts_per_cell**2
 
