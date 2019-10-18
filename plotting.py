@@ -559,24 +559,32 @@ class Plotting:
 
     def save_s_bar(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
-        save(P.save_dir + 'data/s_bar_' + str(P.grid_save).zfill(5)+'.npy',G.s_bar.reshape(P.G.ny,P.G.nx))
+        if not hasattr(P,'s_bar_save'): P.s_bar_save = 0
+        save(P.save_dir + 'data/s_bar_' + str(P.s_bar_save).zfill(5)+'.npy',G.s_bar.reshape(P.G.ny,P.G.nx))
+        P.s_bar_save += 1
 
     def save_density(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
-        save(P.save_dir + 'data/density_' + str(P.grid_save).zfill(5)+'.npy',(G.m/G.V).reshape(P.G.ny,P.G.nx))
+        if not hasattr(P,'density_save'): P.density_save = 0
+        save(P.save_dir + 'data/density_' + str(P.density_save).zfill(5)+'.npy',(G.m/G.V).reshape(P.G.ny,P.G.nx))
+        P.density_save += 1
 
     def save_u(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+        if not hasattr(P,'u_save'): P.u_save = 0
         save(P.save_dir + 'data/u_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,0]/G.m).reshape(P.G.ny,P.G.nx))
         save(P.save_dir + 'data/v_' + str(P.grid_save).zfill(5)+'.npy',(G.q[:,1]/G.m).reshape(P.G.ny,P.G.nx))
+        P.u_save += 1
 
     def save_phi_MP(self,L,P,G):
         if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')
+        if not hasattr(P,'mp_phi_save'): P.mp_phi_save = 0
         phi = []
         for p in range(P.phases):
             for i in range(P.S[p].n):
                 phi.append(hstack([L.S[p][i].x[0],L.S[p][i].x[1],L.S[p][i].phi]))
-        save(P.save_dir + 'data/MP_phi_' + str(P.mp_save).zfill(5)+'.npy',array(phi))
+        save(P.save_dir + 'data/MP_phi_' + str(P.mp_phi_save).zfill(5)+'.npy',array(phi))
+        P.mp_phi_save += 1
 
     # def save_field(self,L,P,G,field,fieldname):
     #     if not os.path.isdir(P.save_dir + 'data/'): os.makedirs(P.save_dir + 'data/')

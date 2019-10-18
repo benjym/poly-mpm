@@ -18,7 +18,7 @@ class Params():
         self.c = 1e-3 # inter-particle drag coefficient
         # self.D = 1e-3 # segregation diffusion coefficient
         self.l = 10. # number of particle diameters for seg diffusion coeff
-        self.supername = 'im/dam_break/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/' + args[2] + '/theta_' + args[3] + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
+        self.supername = 'im/dam_break/ny_' + args[1] + '/ns_' + args[4] + '/' + args[2] + '/theta_' + args[3] + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.normalise_phi = True
