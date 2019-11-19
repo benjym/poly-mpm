@@ -1,4 +1,5 @@
-# import os, jsonpickle
+import os
+# import jsonpickle
 from grid import Grid
 from mplist import MatPointList
 from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
@@ -68,7 +69,7 @@ def get_parameters(params):
         if not hasattr(P.S[p], 'heterogeneous'): P.S[p].heterogeneous = False
 
 #         root_dir = '~/Documents/poly-mpm/'
-    root_dir = ''
+    # root_dir = ''
     root_dir = os.path.expanduser(root_dir)
     if hasattr(P, 'supername'): P.save_dir = root_dir + P.supername + '/'
     else: P.save_dir = root_dir + 'im/' + P.mode + '/' + P.S[0].law + '/'
