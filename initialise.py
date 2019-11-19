@@ -1,3 +1,4 @@
+# import os, jsonpickle
 from grid import Grid
 from mplist import MatPointList
 from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
@@ -66,6 +67,13 @@ def get_parameters(params):
         if not hasattr(P.S[p], 'phi'): P.S[p].phi = ones([P.G.ns])/float(P.G.ns)
         if not hasattr(P.S[p], 'heterogeneous'): P.S[p].heterogeneous = False
 
+#         root_dir = '~/Documents/poly-mpm/'
+    root_dir = ''
+    root_dir = os.path.expanduser(root_dir)
+    if hasattr(P, 'supername'): P.save_dir = root_dir + P.supername + '/'
+    else: P.save_dir = root_dir + 'im/' + P.mode + '/' + P.S[0].law + '/'
+
+
     if not hasattr(P.O, 'check_positions'): P.O.check_positions = False
     if not hasattr(P.O, 'measure_stiffness'): P.O.measure_stiffness = False
     if not hasattr(P.O, 'measure_energy'): P.O.measure_energy = False
@@ -97,6 +105,16 @@ def get_parameters(params):
             P.dt = P.CFL*min(t_c)
             # if t_seg == min(t_c): print('\nTimestep limited by segregation', end='\n')
         P.update_timestep = update_timestep
+
+    # Save input params
+    # with open(P.save_dir + 'ini.json', 'w') as f:
+    #     out = jsonpickle.encode(P)
+    #     print(out)
+    # print(P.G.__dict__)
+    # print(P.B.__dict__)
+    # print(P.O.__dict__)
+    # print(P.S.__dict__)
+
     return P,G,L
 
 if __name__ == '__main__':

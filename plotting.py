@@ -51,11 +51,6 @@ class Plotting:
 
     def savefig(self,P,name,dpi=150):
         """ A method for saving figures in the right place """
-#         root_dir = '~/Documents/poly-mpm/'
-        root_dir = ''
-        root_dir = os.path.expanduser(root_dir)
-        if hasattr(P, 'supername'): P.save_dir = root_dir + P.supername + '/'
-        else: P.save_dir = root_dir + 'im/' + P.mode + '/' + P.S[0].law + '/'
         if P.O.plot_material_points:
             for p in range(P.phases):
                 save_dir_p = P.save_dir + 'MP_' + str(p) + '/'
