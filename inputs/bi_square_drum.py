@@ -21,7 +21,7 @@ class Params():
         self.l = 10. # number of particle diameters for seg diffusion coeff
         # self.D = 1e-3 # segregation diffusion coefficient
         # self.supername = 'im/drum/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
-        self.supername = 'im/drum_no_smoothing/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
+        self.supername = 'im/drum_rough/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.pressure = 'lithostatic'
         # self.smooth_gamma_dot = True # smooth calculation of gamma_dot
         self.time_stepping = 'dynamic' # dynamic or static time steps
@@ -65,10 +65,10 @@ class Boundary_Params():
         self.has_top = True
         self.has_right = True
         self.has_left = True
-        self.roughness = False
+        # self.roughness = False
 
-        # self.roughness = True
-        # self.wall_mu = 0.1
+        self.roughness = True
+        self.wall_mu = 0.3
 
 class Solid_Params():
     def __init__(self,G,P,args):
