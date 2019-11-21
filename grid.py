@@ -258,35 +258,20 @@ class Grid():
         # Impose orthogonal BCs
         if P.B.roughness:
             if P.B.wall_mu:
-                # bottom = self.boundary_h[:P.G.nx] = 1 # bottom
-                # top = self.boundary_h[(P.G.ny-1)*P.G.nx:] = 1 # top
-                # left = self.boundary_v[::P.G.nx] = 1 # left
-                # right = self.boundary_v[P.G.nx-1::P.G.nx] = 1 # right
-                # activated_wall = zeros_like(self.boundary_tot)
-                #
-                # if sin(P.theta) >= 0 and cos(P.theta) >= 0: # 0-90 deg
-                #     activated_wall[bottom] = 1 # bottom wall ACTIVE
-                #     activated_wall[top]    = 0 # top wall DEACTIVE
-                #     activated_wall[left]   = 1
-                #     activated_wall[right]  = 1
-                # elif sin(P.theta) >= 0 and cos(P.theta) < 0: # 90-180 deg
-                #     activated_wall[bottom] = 1
-                #     activated_wall[top]    = 1
-                #     activated_wall[left]   = 1 #0
-                #     activated_wall[right]  = 0
-                # elif sin(P.theta) < 0 and cos(P.theta) >= 0: # 180-270 deg
-                #     activated_wall[bottom] = 0 # bottom wall ACTIVE
-                #     activated_wall[top]    = 1 # top wall DEACTIVE
-                #     activated_wall[left]   = 1
-                #     activated_wall[right]  = 1
-                # else: # 270-360 deg
-                #     activated_wall[bottom] = 1
-                #     activated_wall[top]    = 1
-                #     activated_wall[left]   = 1
-                #     activated_wall[right]  = 1 #0
-                # TODO: JUST OPERATE WHEN NORMAL FORCE IS POINTING TOWARDS THE BOUNDARY
+                bottom = self.boundary_h[:P.G.nx] = 1 # bottom
+                top = self.boundary_h[(P.G.ny-1)*P.G.nx:] = 1 # top
+                left = self.boundary_v[::P.G.nx] = 1 # left
+                right = self.boundary_v[P.G.nx-1::P.G.nx] = 1 # right
+
                 Ff_h = self.boundary_h*minimum(abs(self.q_dot[:,0]),P.B.wall_mu*abs(self.q_dot[:,1])) # min of tangential force and mu*normal force
                 Ff_v = self.boundary_v*minimum(abs(self.q_dot[:,1]),P.B.wall_mu*abs(self.q_dot[:,0]))
+
+                # JUST OPERATE WHEN NORMAL FORCE IS POINTING TOWARDS THE BOUNDARY
+                Ff_v[left]   *= self.q_dot[:,0][left]   < 0
+                Ff_v[right]  *= self.q_dot[:,0][right]  > 0
+                Ff_h[top]    *= self.q_dot[:,1][top]    > 0
+                Ff_h[bottom] *= self.q_dot[:,1][bottom] < 0
+
                 self.q_dot[:,0] -= sign(self.q_dot[:,0])*Ff_h#*activated_wall # opposite in sign to the applied tangential force
                 self.q_dot[:,1] -= sign(self.q_dot[:,1])*Ff_v#*activated_wall
             else:
