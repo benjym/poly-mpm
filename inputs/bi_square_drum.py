@@ -18,7 +18,7 @@ class Params():
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
         self.c = 1e-3 # inter-particle drag coefficient
-        self.l = 10. # number of particle diameters for seg diffusion coeff
+        self.l = 1. # number of particle diameters for seg diffusion coeff
         # self.D = 1e-3 # segregation diffusion coefficient
         self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         # self.supername = 'im/drum_rough/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/c_' +
