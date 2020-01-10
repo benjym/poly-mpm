@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,mode):
-        self.dt = 1e-3 # timestep (s)
+        self.dt = 2e-5 # timestep (s)
         self.savetime = 0.1
-        self.t_f = 5 # final time (s)
+        self.t_f = 1 # final time (s)
         self.nt = int(self.t_f/self.dt) # number of timesteps
         self.max_q = 1.
         self.max_g = 0.
@@ -15,8 +15,8 @@ class Params():
         self.theta = 0.*pi/180. # slope angle (degrees)
         self.G = Grid_Params()
         self.B = Boundary_Params()
-        self.S = Solid_Params(self.G)
-        self.O = Output_Params(self.nt,self.S.n)
+        self.S = [Solid_Params(self.G),]
+        self.O = Output_Params(self.nt,self.S[0].n)
         self.supername = 'im/dp_unit_test'
 #         self.damping = True
 
@@ -30,7 +30,7 @@ class Params():
             self.q_v = 2*self.max_q - self.t/t_c*self.max_q
 #         self.q_h = self.t*self.max_q/t_c
 #         self.q_v = minimum(self.q_h,self.max_q)
-        
+
 class Grid_Params():
     def __init__(self):
         self.x_m = 0.0 # (m)
@@ -58,19 +58,25 @@ class Solid_Params():
         self.x = 3#(10*2-1)*2 # particles in x direction
         self.y = 3#(5*2-1)*2-4 # particles in y direction
         self.n = 0
-        
+
         self.law = 'dp'
 #         self.law = 'rigid'
         self.rho = 2650. # density (kg/m^3)
-        
+        self.packing = 0.6 # packing fraction
+        self.rho_s = self.rho/self.packing # solid density
+
         self.E = 1e7 # elastic modulus (Pa)
         self.nu = 0.0 # poisson's ratio
         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
 
-        self.mu = 1.
-        self.beta = 1.*self.mu
-        self.s = 1.
+        # self.mu = 1.
+        self.mu_0 = 0.5
+        self.mu_1 = 1.
+        self.delta_mu = self.mu_1 - self.mu_0
+        self.I_0 = 1e-3
+        self.beta = 0 #1.*self.mu
+        self.s = 2.
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
@@ -91,7 +97,7 @@ class Solid_Params():
 class Output_Params():
     def __init__(self,nt,n):
 #         self.plot_continuum = True
-#         self.plot_material_points = True
+        self.plot_material_points = True
         self.energy = zeros((nt*10+1,4)) # energy
         self.p = zeros((nt*10+10,n))
         self.q = zeros((nt*10+10,n))
@@ -100,7 +106,7 @@ class Output_Params():
         for i in range(P.S[0].n):
             self.p[tstep,i] = L.S[0][i].p
             self.q[tstep,i] = L.S[0][i].q
-            
+
     def draw_p_q(self,P,G,L,plot,tstep):
 #         x = zeros((P.S[0].n,3))
 #         v = zeros((P.S[0].n,3))
@@ -109,7 +115,8 @@ class Output_Params():
             plt.clf()
             plt.xlabel(r"$p$")
             plt.ylabel(r"$q$",rotation='horizontal')
-            plt.plot([0,amax(self.p)],[0,P.S[0].mu*amax(self.p)],'k--')
+            plt.plot([0,amax(self.p)],[0,P.S[0].mu_0*amax(self.p)],'r--')
+            plt.plot([0,amax(self.p)],[0,P.S[0].mu_1*amax(self.p)],'g--')
             plt.plot(self.p[:tstep-1,i],self.q[:tstep-1,i],'b-')
             plot.savefig(P,str(i))
         #print (self.q[tstep-1,0]-self.q[1,0])/(self.p[tstep-1,0]-self.p[1,0])

@@ -164,23 +164,35 @@ def dp(MP,P,G,p): # UNVALIDATED
 
         if MP.p > 0: K = P.S[p].K
         else: K = 0
+        # K = P.S[p].K
 
         lambda_2 = ((3.*P.S[p].G*MP.p*sum(sum(s_ij*de_ij)) - K*MP.q**2.*de_kk)/
-                    (3.*P.S[p].G*P.S[p].mu*MP.p**2 + K*P.S[p].beta*MP.q**2))
-        Gamma_2 = lambda_2*(lambda_2>0) # Macauley bracket
-        dstress = (2.*P.S[p].G*(de_ij - 3./2.*s_ij/MP.q*Gamma_2*(MP.q/(P.S[p].mu*MP.p))**(P.S[p].s-1.)) +
-                   K*eye(2)*(de_kk + P.S[p].beta*Gamma_2*(MP.q/(P.S[p].mu*MP.p))**P.S[p].s))
+                    (3.*P.S[p].G*MP.mu*MP.p**2 + K*P.S[p].beta*MP.q**2))
+        # Gamma_2 = lambda_2*(lambda_2>0) # Macauley bracket
+        Gamma_2 = abs(nan_to_num(lambda_2)) # absolute value
+        dstress = (2.*P.S[p].G*(de_ij - 3./2.*s_ij/MP.q*Gamma_2*(MP.q/(MP.mu*MP.p))**(P.S[p].s-1.)) +
+                   K*eye(2)*(de_kk + P.S[p].beta*Gamma_2*(MP.q/(MP.mu*MP.p))**P.S[p].s))
+        dstress = nan_to_num(dstress)
+        # print(dstress)
         return dstress
 
     dstrain = -MP.dstrain[:2,:2] # convert from fluid mechanics to soil mechanics convention, just 2d
     stress = -MP.stress[:2,:2]   # convert from fluid mechanics to soil mechanics convention, just 2d
 
+    s_bar = 0.
+    for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
+    MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
+    MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
+    MP.I = nan_to_num(MP.I)
+    MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+
+    # RK4
     dstress1 = dp_guts(dstrain,stress)
     dstress2 = dp_guts(dstrain,stress + 0.5*dstress1)
     dstress3 = dp_guts(dstrain,stress + 0.5*dstress2)
     dstress4 = dp_guts(dstrain,stress + dstress3)
     dstress = (dstress1 + 2.*dstress2 + 2.*dstress3 + dstress4)/6.
-
+    # Euler
 #     dstress = dp_guts(dstrain,stress)
 
     MP.dstress[:2,:2] = -dstress
@@ -193,7 +205,7 @@ def dp(MP,P,G,p): # UNVALIDATED
     MP.sigmav = MP.stress[1,1]
     MP.sigmah = MP.stress[0,0]
 #     MP.yieldfunction = MP.q/(P.S[p].beta*MP.p - (P.S[p].mu-P.S[p].beta)*K*trace(strain)) - 1
-    MP.yieldfunction = MP.q/(P.S[p].mu*MP.p) - 1. # Associated flow only!
+    # MP.yieldfunction = MP.q/(P.S[p].mu*MP.p) - 1. # Associated flow only!
 
 #     MP.p = -(MP.stress[0,0]+MP.stress[1,1])/2. # pressure, positive for compression
 #     s_ij = -MP.stress[:2,:2] - eye(2)*MP.p # shear stress

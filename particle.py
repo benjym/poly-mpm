@@ -178,6 +178,7 @@ class Particle():
         :param G: A grid.Grid instance
 
         """
+
         self.N, self.G = G.N(self.x-[G.X[self.n_star],G.Y[self.n_star],0.]) # linear basis function
 
     def get_nodal_mass_momentum(self,P,G):
@@ -248,12 +249,11 @@ class Particle():
         :param G: A grid.Grid instance
 
         """
-        self.pk = 0.
         for r in range(4):
             n = G.nearby_nodes(self.n_star,r,P)
             if G.m[n] > P.M_tol:
                 self.phi += self.N[r]*G.dphi[n]
-                self.pk  += self.N[r]*G.pk[n]
+                self.pk  += self.N[r]*G.dpk[n]
 
     def move_material_points(self,P,G):
         """Update material point position and velocity using nearby nodal mass and momentum.

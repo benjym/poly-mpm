@@ -206,7 +206,7 @@ class Plotting:
                          G.pk*G.m,
                          # sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m, # THIS
                          # G.grad_pk[:,0]*G.m,
-                         G.pk_dot*G.m, # NOT THIS
+                         G.dpk/P.dt*G.m, # NOT THIS
                          G.grad_pk[:,1]*G.m, # NOT THIS
                          G.dphi[:,-1]/P.dt*G.m,
                          # G.phi[:,-1]*G.m # THIS
