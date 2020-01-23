@@ -11,12 +11,9 @@ The models which currently work reliably are:
 
 """
 import sys
-from numpy import linspace, sin, cos, pi, zeros, outer, array, dot
-from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot
-from numpy import sqrt, abs, ones, minimum, maximum, exp, isfinite
-from numpy.linalg import norm
+import numpy as np
 
-def rigid(MP,P,G,p):
+def rigid(MP,P,G):
     """Perfectly rigid particles. No stresses are calculated.
 
     This material model has been validated and is functional.
@@ -30,7 +27,7 @@ def rigid(MP,P,G,p):
     """
     pass
 
-def elastic(MP,P,G,p):
+def elastic(MP,P,G): # UPDATED TO ARRAY FORMAT
     """Linear elasticity.
 
     This material model has been validated and is functional.
@@ -42,23 +39,25 @@ def elastic(MP,P,G,p):
     :type p: int
 
     """
-    de_kk = trace(MP.dstrain)
-    de_ij = MP.dstrain - de_kk*eye(3)/3.
-    MP.dstress = P.S[p].K*de_kk*eye(3) + 2.*P.S[p].G*de_ij
+
+    de_kk = np.trace(MP.dstrain,axis1=1,axis2=2)
+    de_kk_ij = np.repeat(np.repeat(np.expand_dims(de_kk,(1,2)),3,axis=1),3,axis=2) # FIXME - MUST BE A BETTE WAY!
+    de_ij = MP.dstrain - de_kk_ij*MP.eye/3.
+    MP.dstress = P.S.K*de_kk_ij*MP.eye + 2.*P.S.G*de_ij
 
     # for visualisation
-    MP.gammadot = sqrt(sum(sum(de_ij**2)))
-    MP.pressure = trace(MP.stress)/3.
-    MP.sigmav = MP.stress[1,1]
-    MP.sigmah = MP.stress[0,0]
-    for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
-        G.pressure[n] += MP.N[r]*MP.pressure*MP.m
-        G.gammadot[n] += MP.N[r]*MP.gammadot/P.dt*MP.m
-        G.sigmav[n] += MP.N[r]*MP.sigmav*MP.m
-        G.sigmah[n] += MP.N[r]*MP.sigmah*MP.m
+    MP.gammadot = np.sqrt(np.sum(de_ij**2,axis=(1,2)))
+    MP.pressure = np.trace(MP.stress,axis1=1,axis2=2)/3.
+    MP.sigmav = MP.stress[:,1,1]
+    MP.sigmah = MP.stress[:,0,0]
 
-def elastic_time(MP,P,G,p):
+    for r in range(4):
+        G.pressure[MP.n[:,r]] += MP.N[:,r]*MP.pressure*MP.m
+        G.gammadot[MP.n[:,r]] += MP.N[:,r]*MP.gammadot/P.dt*MP.m
+        G.sigmav[MP.n[:,r]]   += MP.N[:,r]*MP.sigmav*MP.m
+        G.sigmah[MP.n[:,r]]   += MP.N[:,r]*MP.sigmah*MP.m
+
+def elastic_time(MP,P,G):
     """Linear elasticity that is time dependent.
 
     This material model has been validated and is functional.
@@ -71,19 +70,19 @@ def elastic_time(MP,P,G,p):
 
     """
 
-    if (p == 0) and (P.t > P.S[p].t_0):
-        if MP.m > P.S[p].rho_f*MP.V:
+    if (p == 0) and (P.t > P.S.t_0):
+        if MP.m > P.S.rho_f*MP.V:
             MP.m *= 0.95
 
-    K_curr = P.S[p].E_0/(3*(1-2*P.S[p].nu))
-    G_curr = P.S[p].E_0/(2*(1+P.S[p].nu))
+    K_curr = P.S.E_0/(3*(1-2*P.S.nu))
+    G_curr = P.S.E_0/(2*(1+P.S.nu))
 
 #     if p == 0:
-#         if P.t < P.S[p].t_0: E = P.S[p].E_0
-#         else: E = P.S[p].E_f + (P.S[p].E_0-P.S[p].E_f)*exp(-3.*(P.t-P.S[p].t_0)**2/P.S[p].t_c**2)
-#     else: E = P.S[p].E_0
-#     K_curr = E/(3*(1-2*P.S[p].nu))
-#     G_curr = E/(2*(1+P.S[p].nu))
+#         if P.t < P.S.t_0: E = P.S.E_0
+#         else: E = P.S.E_f + (P.S.E_0-P.S.E_f)*exp(-3.*(P.t-P.S.t_0)**2/P.S.t_c**2)
+#     else: E = P.S.E_0
+#     K_curr = E/(3*(1-2*P.S.nu))
+#     G_curr = E/(2*(1+P.S.nu))
 
 
     de_kk = trace(MP.dstrain)
@@ -96,14 +95,14 @@ def elastic_time(MP,P,G,p):
     MP.sigmav = -MP.stress[1,1]
     MP.sigmah = -MP.stress[0,0]
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.gammadot[n] += MP.N[r]*MP.gammadot/P.dt*MP.m
         G.sigmav[n] += MP.N[r]*MP.sigmav*MP.m
         G.sigmah[n] += MP.N[r]*MP.sigmah*MP.m
 
 
-def von_mises(MP,P,G,p):
+def von_mises(MP,P,G):
     """Von Mises :math:`H^2` yield criterion --- see http://dx.doi.org/10.1016/j.ijsolstr.2012.02.003 Eqs 7.11 - 7.15
 
     This material model has been validated and is functional.
@@ -117,24 +116,24 @@ def von_mises(MP,P,G,p):
     """
     de_kk = trace(MP.dstrain) # scalar
     de_ij = MP.dstrain - de_kk*eye(3)/3. # matrix
-    dsigma_kk = 3.*P.S[p].K*de_kk # scalar
+    dsigma_kk = 3.*P.S.K*de_kk # scalar
     dev_work_norm = abs(sum(sum(MP.dev_stress*de_ij))) # scalar
     dev_stress_norm = sqrt(sum(sum(MP.dev_stress**2))) # scalar
-    MP.dev_dstress = 2.*P.S[p].G*(de_ij - dev_work_norm/(2.*(P.S[p].k**2))*
-                  ((dev_stress_norm/(sqrt(2.)*P.S[p].k))**(P.S[p].s-2.))*MP.dev_stress) # matrix
+    MP.dev_dstress = 2.*P.S.G*(de_ij - dev_work_norm/(2.*(P.S.k**2))*
+                  ((dev_stress_norm/(sqrt(2.)*P.S.k))**(P.S.s-2.))*MP.dev_stress) # matrix
     MP.sigma_kk += dsigma_kk # scalar
     MP.dev_stress += MP.dev_dstress # matrix
     MP.dstress = (MP.dev_stress + MP.sigma_kk*eye(3)/3.) - MP.stress # matrix
 
     # for visualisation
-    MP.yieldfunction = dev_stress_norm/(sqrt(2.)*P.S[p].k) - 1. # scalar
+    MP.yieldfunction = dev_stress_norm/(sqrt(2.)*P.S.k) - 1. # scalar
     MP.gammadot = sqrt(sum(sum(de_ij**2)))
     MP.pressure = trace(MP.stress)/3.
     MP.sigmav = MP.stress[1,1]
     MP.sigmah = MP.stress[0,0]
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.yieldfunction[n] += MP.N[r]*MP.yieldfunction*MP.m
         G.gammadot[n] += MP.N[r]*MP.gammadot/P.dt*MP.m
@@ -143,7 +142,7 @@ def von_mises(MP,P,G,p):
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)*MP.m
         G.dev_stress_dot[n] += MP.N[r]*norm(MP.dev_dstress)/P.dt*MP.m
 
-def dp(MP,P,G,p): # UNVALIDATED
+def dp(MP,P,G): # UNVALIDATED
     """Drucker-Prager :math:`H^2` yield criterion.
 
     This material model is ONLY PARTIALLY WORKING - NOT YET VALIDATED!
@@ -162,16 +161,16 @@ def dp(MP,P,G,p): # UNVALIDATED
         s_ij = stress2d - eye(2)*MP.p # shear stress
         MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
-        if MP.p > 0: K = P.S[p].K
+        if MP.p > 0: K = P.S.K
         else: K = 0
-        # K = P.S[p].K
+        # K = P.S.K
 
-        lambda_2 = ((3.*P.S[p].G*MP.p*sum(sum(s_ij*de_ij)) - K*MP.q**2.*de_kk)/
-                    (3.*P.S[p].G*MP.mu*MP.p**2 + K*P.S[p].beta*MP.q**2))
+        lambda_2 = ((3.*P.S.G*MP.p*sum(sum(s_ij*de_ij)) - K*MP.q**2.*de_kk)/
+                    (3.*P.S.G*MP.mu*MP.p**2 + K*P.S.beta*MP.q**2))
         # Gamma_2 = lambda_2*(lambda_2>0) # Macauley bracket
         Gamma_2 = abs(nan_to_num(lambda_2)) # absolute value
-        dstress = (2.*P.S[p].G*(de_ij - 3./2.*s_ij/MP.q*Gamma_2*(MP.q/(MP.mu*MP.p))**(P.S[p].s-1.)) +
-                   K*eye(2)*(de_kk + P.S[p].beta*Gamma_2*(MP.q/(MP.mu*MP.p))**P.S[p].s))
+        dstress = (2.*P.S.G*(de_ij - 3./2.*s_ij/MP.q*Gamma_2*(MP.q/(MP.mu*MP.p))**(P.S.s-1.)) +
+                   K*eye(2)*(de_kk + P.S.beta*Gamma_2*(MP.q/(MP.mu*MP.p))**P.S.s))
         dstress = nan_to_num(dstress)
         # print(dstress)
         return dstress
@@ -182,9 +181,9 @@ def dp(MP,P,G,p): # UNVALIDATED
     s_bar = 0.
     for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
-    MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
+    MP.I = MP.gammadot*s_bar*sqrt(P.S.rho_s/abs(MP.pressure))
     MP.I = nan_to_num(MP.I)
-    MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+    MP.mu = P.S.mu_0 + P.S.delta_mu/(P.S.I_0/MP.I + 1.)
 
     # RK4
     dstress1 = dp_guts(dstrain,stress)
@@ -204,15 +203,15 @@ def dp(MP,P,G,p): # UNVALIDATED
 #     MP.dev_stress_dot = MP.dstress - eye(3)*trace(MP.dstress)/2. # 3
     MP.sigmav = MP.stress[1,1]
     MP.sigmah = MP.stress[0,0]
-#     MP.yieldfunction = MP.q/(P.S[p].beta*MP.p - (P.S[p].mu-P.S[p].beta)*K*trace(strain)) - 1
-    # MP.yieldfunction = MP.q/(P.S[p].mu*MP.p) - 1. # Associated flow only!
+#     MP.yieldfunction = MP.q/(P.S.beta*MP.p - (P.S.mu-P.S.beta)*K*trace(strain)) - 1
+    # MP.yieldfunction = MP.q/(P.S.mu*MP.p) - 1. # Associated flow only!
 
 #     MP.p = -(MP.stress[0,0]+MP.stress[1,1])/2. # pressure, positive for compression
 #     s_ij = -MP.stress[:2,:2] - eye(2)*MP.p # shear stress
 #     MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.m*MP.p
 #         G.yieldfunction[n] += MP.N[r]*MP.yieldfunction*MP.m
         G.gammadot[n] += MP.N[r]*MP.gammadot/P.dt*MP.m
@@ -221,7 +220,7 @@ def dp(MP,P,G,p): # UNVALIDATED
         G.dev_stress[n] += MP.N[r]*MP.q*MP.m
 #         G.dev_stress_dot[n] += MP.N[r]*norm(MP.dev_stress_dot)/P.dt*MP.m
 
-def dp_rate(MP,P,G,p): # UNVALIDATED
+def dp_rate(MP,P,G): # UNVALIDATED
     """Drucker-Prager yield criterion with rate dependent behaviour.
 
     This material model is PROBALBLY WORKING - NOT YET VALIDATED!
@@ -275,15 +274,15 @@ def dp_rate(MP,P,G,p): # UNVALIDATED
 #     MP.dev_stress_dot = MP.dstress - eye(3)*trace(MP.dstress)/2. # 3
     MP.sigmav = MP.stress[1,1]
     MP.sigmah = MP.stress[0,0]
-#     MP.yieldfunction = MP.q/(P.S[p].beta*MP.p - (P.S[p].mu-P.S[p].beta)*K*trace(strain)) - 1
-    MP.yieldfunction = MP.q/(P.S[p].mu*MP.p) - 1. # Associated flow only!
+#     MP.yieldfunction = MP.q/(P.S.beta*MP.p - (P.S.mu-P.S.beta)*K*trace(strain)) - 1
+    MP.yieldfunction = MP.q/(P.S.mu*MP.p) - 1. # Associated flow only!
 
     MP.p = -(MP.stress[0,0]+MP.stress[1,1])/2. # pressure, positive for compression
     s_ij = -MP.stress[:2,:2] - eye(2)*MP.p # shear stress
     MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.m*MP.p
 #         G.yieldfunction[n] += MP.N[r]*MP.yieldfunction*MP.m
         G.gammadot[n] += MP.N[r]*MP.gammadot/P.dt*MP.m
@@ -292,7 +291,7 @@ def dp_rate(MP,P,G,p): # UNVALIDATED
         G.dev_stress[n] += MP.N[r]*MP.q*MP.m
 #         G.dev_stress_dot[n] += MP.N[r]*norm(MP.dev_stress_dot)/P.dt*MP.m
 
-def viscous(MP,P,G,p):
+def viscous(MP,P,G):
     """Linear viscosity.
 
     This material model has been validated and is functional.
@@ -306,23 +305,23 @@ def viscous(MP,P,G,p):
     """
     MP.de_kk = trace(MP.dstrain)/3.
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3)
-    MP.dp = P.S[p].K*MP.de_kk
+    MP.dp = P.S.K*MP.de_kk
 
     MP.pressure += MP.dp
-    MP.dev_stress = 2.*P.S[p].mu_s*MP.de_ij/P.dt
+    MP.dev_stress = 2.*P.S.mu_s*MP.de_ij/P.dt
 
-    viscous_volumetric = P.S[p].mu_v*MP.de_kk*eye(3)/P.dt
+    viscous_volumetric = P.S.mu_v*MP.de_kk*eye(3)/P.dt
     # MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
     MP.dstress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric - MP.stress
     MP.gammadot = sqrt(sum(sum(MP.de_ij**2)))/P.dt
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
 #         G.gammadot[n] += MP.N[r]*MP.gammadot*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)*MP.m
 
-def bingham(MP,P,G,p):
+def bingham(MP,P,G):
     """Bingham fluid.
 
     This material model has not been validated but may be functional. YMMV.
@@ -336,21 +335,21 @@ def bingham(MP,P,G,p):
     """
     MP.de_kk = trace(MP.dstrain)/3.
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3)
-    MP.dp = P.S[p].K*MP.de_kk
+    MP.dp = P.S.K*MP.de_kk
     MP.gammadot = sqrt(sum(sum(MP.de_ij**2)))/P.dt
     MP.pressure += MP.dp
-    if MP.gammadot <= P.S[p].gamma_c: MP.dev_stress = 2.*P.S[p].mu_0*MP.de_ij/P.dt
-    else: MP.dev_stress = 2.*(P.S[p].mu_s + P.S[p].tau_0/MP.gammadot)*MP.de_ij/P.dt
-    viscous_volumetric = P.S[p].mu_v*MP.de_kk*eye(3)/P.dt
+    if MP.gammadot <= P.S.gamma_c: MP.dev_stress = 2.*P.S.mu_0*MP.de_ij/P.dt
+    else: MP.dev_stress = 2.*(P.S.mu_s + P.S.tau_0/MP.gammadot)*MP.de_ij/P.dt
+    viscous_volumetric = P.S.mu_v*MP.de_kk*eye(3)/P.dt
     MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
 #         G.gammadot[n] += MP.N[r]*MP.gammadot*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)*MP.m
 
-def ken_kamrin(MP,P,G,p):
+def ken_kamrin(MP,P,G):
     """:math:`\mu(I)` rheology implemented from Ken Kamrin's MPM paper. Definitely _NOT_ functional.
 
     :param MP: A particle.Particle instance.
@@ -364,14 +363,14 @@ def ken_kamrin(MP,P,G,p):
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3)
 
 #     MP.pressure = trace(MP.stress)/3.
-    MP.pressure += P.S[p].K*MP.de_kk
+    MP.pressure += P.S.K*MP.de_kk
 
     MP.gammadot_ij = 2.*MP.de_ij/P.dt
     MP.gammadot = sqrt(0.5*sum(sum(MP.gammadot_ij**2))) # second invariant of strain rate tensor
     MP.gammadot = maximum(MP.gammadot,1e-5) # no zero
     d = 1. # MEAN DIAMETER
     I = sqrt(2)*d*MP.gammadot/sqrt(abs(MP.pressure)/MP.rho)
-    mu = nan_to_num(P.S[p].mu_s + (P.S[p].mu_2 - P.S[p].mu_s)/(nan_to_num(P.S[p].I_0/I) + 1.))
+    mu = nan_to_num(P.S.mu_s + (P.S.mu_2 - P.S.mu_s)/(nan_to_num(P.S.I_0/I) + 1.))
     eta = nan_to_num(mu*MP.pressure/(sqrt(2)*MP.gammadot)) # does this make sense for negative pressures???
     eta = maximum(eta,0)
     eta_max = 250.*MP.rho*P.max_g*(P.G.y_M-P.G.y_m)**3 # missing a g*H^3 !!
@@ -379,17 +378,17 @@ def ken_kamrin(MP,P,G,p):
 #    print MP.gammadot, mu, eta, eta_max
 
     MP.dev_stress = eta*MP.gammadot_ij
-    viscous_volumetric = P.S[p].mu_v*MP.de_kk*eye(3)/P.dt
+    viscous_volumetric = P.S.mu_v*MP.de_kk*eye(3)/P.dt
     # MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
     MP.dstress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric - MP.stress
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.gammadot[n] += MP.N[r]*MP.gammadot/P.dt*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)*MP.m
 
-def pouliquen(MP,P,G,p):
+def pouliquen(MP,P,G):
     """:math:`\mu(I)` rheology implemented only for flowing regime.
 
     This material model has been validated and is PROBABLY functional. (needs more mileage)
@@ -416,17 +415,17 @@ def pouliquen(MP,P,G,p):
 
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
 
-    MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
+    MP.I = MP.gammadot*s_bar*sqrt(P.S.rho_s/abs(MP.pressure))
     MP.I = nan_to_num(MP.I)
-    MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+    MP.mu = P.S.mu_0 + P.S.delta_mu/(P.S.I_0/MP.I + 1.)
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta_limited = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta_limited = minimum(nan_to_num(MP.eta),P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta_limited*MP.de_ij/P.dt
 
-    MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
+    MP.dp = P.S.K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
     MP.pressure += MP.dp
 
-    if (MP.pressure > 0) or (MP.rho < P.S[p].rho*0.8): # can't go into tension - this is really important!!
+    if (MP.pressure > 0) or (MP.rho < P.S.rho*0.8): # can't go into tension - this is really important!!
         MP.dp -= MP.pressure # set increment back to zero
         MP.pressure = 0.
 
@@ -454,14 +453,14 @@ def pouliquen(MP,P,G,p):
         sys.exit()
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m
         G.eta[n] += MP.N[r]*MP.eta*MP.m
 
-def linear_mu(MP,P,G,p):
+def linear_mu(MP,P,G):
     """:math:`\mu(I)` rheology implemented only for flowing regime.
 
     This material model has been validated and is PROBABLY functional. (needs more mileage)
@@ -481,16 +480,16 @@ def linear_mu(MP,P,G,p):
 
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
 
-    MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
+    MP.I = MP.gammadot*s_bar*sqrt(P.S.rho_s/abs(MP.pressure))
     # MP.I = minimum(MP.I,10.) # HACK - IF I DO THIS DO I NEED TO FIDDLE WITH ETA LATER?
-    # MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
-    MP.mu = P.S[p].mu_0 + P.S[p].b*MP.I
+    # MP.mu = P.S.mu_0 + P.S.delta_mu/(P.S.I_0/MP.I + 1.)
+    MP.mu = P.S.mu_0 + P.S.b*MP.I
 
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta = minimum(MP.eta,P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta = minimum(MP.eta,P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
-    MP.dp = P.S[p].K*MP.de_kk # tension positive
+    MP.dp = P.S.K*MP.de_kk # tension positive
     MP.pressure += MP.dp
     if MP.pressure > 0.: MP.pressure = 0. # can't go into tension - this is really important!!
 
@@ -498,14 +497,14 @@ def linear_mu(MP,P,G,p):
     MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
         # G.dev_stress[n] += MP.N[r]*MP.dev_stress[0,1]*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m
 
-def ken_simple(MP,P,G,p):
+def ken_simple(MP,P,G):
     """:math: constant `\mu` rheology with stress = 0 when rho < rho_c.
 
     This material model is UNVALIDATED and is DEFINITELY NOT WORKING.
@@ -524,13 +523,13 @@ def ken_simple(MP,P,G,p):
     MP.de_kk = trace(MP.dstrain)/3. # tension positive
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
 
-    MP.eta = 2.*sqrt(2)*P.S[p].mu_0*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta = 2.*sqrt(2)*P.S.mu_0*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
+    MP.eta = minimum(nan_to_num(MP.eta),P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
 
 
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
-    MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
+    MP.dp = P.S.K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
     MP.pressure += MP.dp
     if MP.pressure > 0: # can't go into tension - this is really important!!
         MP.dp -= MP.pressure # set increment back to zero
@@ -554,7 +553,7 @@ def ken_simple(MP,P,G,p):
         sys.exit()
 
     for r in range(4):
-        n = G.nearby_nodes(MP.n_star,r,P)
+        n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
         G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
         G.eta[n] += MP.N[r]*MP.eta*MP.m

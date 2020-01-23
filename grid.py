@@ -190,7 +190,7 @@ class Grid():
         self.pkm = zeros([P.G.nx*P.G.ny])
         self.grad_pk = zeros((P.G.nx*P.G.ny,3))
 
-        if P.segregate_grid:
+        if P.segregate:
             self.phim = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.phi = zeros([P.G.nx*P.G.ny,P.G.ns])
             self.S = tile(P.G.s,[P.G.nx*P.G.ny,1])
@@ -219,6 +219,9 @@ class Grid():
         G[2] = array([x[1],x[0],0.])/(self.dx*self.dy)
         G[3] = array([-x[1],(self.dx-x[0]),0.])/(self.dx*self.dy)
         return N, G
+
+    def get_valid_nodes(self,P):
+        self.valid_nodes = self.m > P.M_tol
 
     def make_cyclic(self,P,G,params):
         """

@@ -10,11 +10,11 @@ import sys
 import matplotlib
 matplotlib.use('Agg')
 # import matplotlib.pyplot as plt
-from numpy import zeros, sum, seterr, mean, amax, amin, abs, nan_to_num, sqrt, minimum
+import numpy as np
 from plotting import Plotting
 import initialise
 import MPM
-seterr(all='ignore')
+np.seterr(all='ignore')
 
 def main(params):
     """This is the main loop which is repeated every timestep. Currently, this follows the Update Strain Last paradigm (does it?!?).
@@ -32,33 +32,24 @@ def main(params):
     while P.t <= P.t_f:# Time march
         G.wipe(P) # Discard previous grid
         P.update_forces() # update time dependent gravity
-        L.update_forces(P,G) # pass body forces to material points
-        L.get_reference_node(P,G) # Find node down and left
+        L.get_reference_nodes(P,G) # Find nearby nodes for each material point
         L.get_basis_functions(P,G) # Make basis functions
-        if P.O.check_positions: L.recover_position(P,G) # check basis functions
         L.get_nodal_mass_momentum(P,G) # Initialise from grid state
+        G.get_valid_nodes(P) # get nodes with mass near them
         if P.B.cyclic_lr: G.make_cyclic(P,G,['m','q'])
         L.update_stress_strain(P,G) # Update stress and strain
         L.get_nodal_forces(P,G) # Compute internal and external forces
         G.BCs(P) # Add external forces from BCs
         G.update_momentum(P) # Compute rate of momentum and update nodes
         G.calculate_gammadot(P,G)
-        if P.segregate_grid:
-            G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
+        if P.segregate:
+            G.update_pk(P,G)
             # if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
             G.calculate_phi_increment(P)
             L.move_grainsize_on_grid(P,G)
             G.make_cyclic(P,G,['eta'])
         L.move_material_points(P,G) # Update material points (position and velocity)
-        # Move/Remove any particles that have left the grid
-        if P.B.outlet_left: L.outlet_left(P,G)
-        if P.B.outlet_bottom: L.outlet_bottom(P,G)
-        if P.B.inlet_right: L.inlet_right(P,G)
-        if P.B.inlet_top: L.inlet_top(P,G)
         if P.B.cyclic_lr: L.cyclic_lr(P,G)
-
-        # Output related things
-        if P.O.measure_energy: P.O.energy[P.tstep] = L.measure_elastic_energy(P,G) # measure energy
 
         print('{0:.4f}'.format(P.t*100./P.t_f) + '% Complete, t = ' +
               '{0:.4f}'.format(P.t) + ', g = ' + str(P.g), end='\r')
@@ -84,11 +75,6 @@ def main(params):
         P.tstep += 1
 
         if P.time_stepping == 'dynamic': P.update_timestep(P,G)
-
-        # for p in range(P.phases):
-#             if (P.S[p].law is 'von_mises' or P.S[p].law is 'dp') and not P.has_yielded:
-#             if P.S[p].law is 'von_mises' and not P.has_yielded:
-#                 L.update_timestep(P) # Check for yielding and reduce timestep
 
     # Final things to do
     if P.O.plot_material_points: plot.draw_material_points(L,P,G,'final')

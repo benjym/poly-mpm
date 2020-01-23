@@ -1,7 +1,8 @@
 import os
 # import jsonpickle
 from grid import Grid
-from mplist import MatPointList
+# from mplist import MatPointList
+from particle_arrays import Particles
 from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
 
 def get_parameters(params):
@@ -24,8 +25,7 @@ def get_parameters(params):
     if not hasattr(P, 'damping'): P.damping = False
     if not hasattr(P, 'theta'): P.theta = 0. # vertical
     if not hasattr(P, 'pressure'): P.pressure = None # lithostatic
-    if not hasattr(P, 'segregate_mp'): P.segregate_mp = False # NEVER USE THIS!!!
-    if not hasattr(P, 'segregate_grid'): P.segregate_grid = False
+    if not hasattr(P, 'segregate'): P.segregate = False
     if not hasattr(P, 'initial_flow'): P.initial_flow = False # give initial velocities which correspond to 1D steady state
     if not hasattr(P, 'smooth_gamma_dot'): P.smooth_gamma_dot = False # use artifical smoothing on calculation of the shear strain rate
     if not hasattr(P, 'smooth_grad2'): P.smooth_grad2 = False # use artifical smoothing on calculation of the gradient of the shear strain rate
@@ -62,17 +62,11 @@ def get_parameters(params):
     if not hasattr(P.G, 's_m'): P.G.s_m = min(P.G.s)
     if not hasattr(P.G, 's_M'): P.G.s_M = max(P.G.s)
 
-    if type(P.S) is not list: P.S = [P.S] # if just one phase, still turn into a list
-    P.phases = len(P.S)
-    for p in range(P.phases):
-        if not hasattr(P.S[p], 'phi'): P.S[p].phi = ones([P.G.ns])/float(P.G.ns)
-        if not hasattr(P.S[p], 'heterogeneous'): P.S[p].heterogeneous = False
-
 #         root_dir = '~/Documents/poly-mpm/'
     root_dir = ''
     # root_dir = os.path.expanduser(root_dir)
     if hasattr(P, 'supername'): P.save_dir = root_dir + P.supername + '/'
-    else: P.save_dir = root_dir + 'im/' + P.mode + '/' + P.S[0].law + '/'
+    else: P.save_dir = root_dir + 'im/' + params[0] + '/' + P.S.law + '/'
 
 
     if not hasattr(P.O, 'check_positions'): P.O.check_positions = False
@@ -92,7 +86,8 @@ def get_parameters(params):
     P.mode = params[0]
     P.update_forces()
     G = Grid(P) # Initialise grid
-    L = MatPointList(P,G) # Initialise material point list storage
+    # L = MatPointList(P,G) # Initialise material point list storage
+    L = Particles(P,G)
 
     if not hasattr(P, 'update_timestep'):
         def update_timestep(P,G):

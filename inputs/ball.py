@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,mode):
-        self.dt = 1e-3 # timestep (s)
+        self.dt = 1e-5 # timestep (s)
         self.savetime = 0.1
         self.t_f = 5.#100*self.dt # final time (s)
         self.nt = int(self.t_f/self.dt) # number of timesteps
@@ -63,11 +63,12 @@ class Solid_Params():
         c = [0.,1.] # centre
 
         for i in linspace(0,r,nr):
-            dnphi = around(nphi*i/r) # number in this ring
-            for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
-                self.X.append(c[0]+i*sin(j))
-                self.Y.append(c[1]+i*cos(j))
-                self.n += 1
+            dnphi = int(around(nphi*i/r)) # number in this ring
+            if dnphi > 0:
+                for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
+                    self.X.append(c[0]+i*sin(j))
+                    self.Y.append(c[1]+i*cos(j))
+                    self.n += 1
         self.A = pi*r**2/self.n # area (m^2)
 
 
