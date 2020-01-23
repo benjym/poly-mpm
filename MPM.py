@@ -27,7 +27,7 @@ def main(params):
 
     P,G,L = initialise.get_parameters(params)
     plot = Plotting()
-#     if P.O.plot_material_points: plot.draw_material_points(L,P,G,'initial')
+    P.O.at_start()
 
     while P.t <= P.t_f:# Time march
         G.wipe(P) # Discard previous grid
@@ -55,39 +55,13 @@ def main(params):
               '{0:.4f}'.format(P.t) + ', g = ' + str(P.g), end='\r')
 
         if (P.t%P.savetime < P.dt) and (P.t != P.dt): # ignore first timestep
-            if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
-            if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
-#             plot.draw_voronoi(P,G)
-            if P.O.plot_continuum: plot.draw_continuum(G,P)
-            if P.O.plot_material_points: plot.draw_material_points(L,P,G)
-            if P.mode == 'anisotropy': plot.draw_gamma_dot(L,P,G)
-            if P.O.measure_energy: P.O.measure_E(L,P,G)
-            # for [field,fieldname] in P.O.save_fields: P.O.save_field(L,P,G,field,fieldname)
-            if P.O.save_u: plot.save_u(L,P,G)
-            if P.O.save_s_bar: plot.save_s_bar(L,P,G)
-            if P.O.save_density: plot.save_density(L,P,G)
-            if P.O.save_phi_MP: plot.save_phi_MP(L,P,G)
-        if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.store_p_q(P,G,L,P.tstep)
-        if P.mode == 'pouliquen_unit_test': P.O.store_mu(P,G,L,P.tstep)
+            P.O.after_every_savetime(L,P,G)
+        P.O.after_ever_timestep(L,P,G)
 
-        # Increment time
-        P.t += P.dt
+        P.t += P.dt # Increment time
         P.tstep += 1
-
         if P.time_stepping == 'dynamic': P.update_timestep(P,G)
-
-    # Final things to do
-    if P.O.plot_material_points: plot.draw_material_points(L,P,G,'final')
-    if P.O.measure_stiffness: P.O.measure_E(L,P,G)
-    if P.O.measure_energy: plot.draw_energy(P)
-    if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
-    if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
-    if P.O.save_u: plot.save_u(L,P,G)
-    if P.O.save_s_bar: plot.save_s_bar(L,P,G)
-    if P.O.save_density: plot.save_density(L,P,G)
-    if P.O.save_phi_MP: plot.save_phi_MP(L,P,G)
-    if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.draw_p_q(P,G,L,plot,P.tstep)
-    if P.mode == 'pouliquen_unit_test': P.O.draw_mu(P,G,L,plot,P.tstep)
+    P.O.at_end(L,P,G)
     print('')
     return 0
 

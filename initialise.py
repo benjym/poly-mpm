@@ -1,7 +1,5 @@
 import os
-# import jsonpickle
 from grid import Grid
-# from mplist import MatPointList
 from particles import Particles
 from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
 
@@ -30,9 +28,8 @@ def get_parameters(params):
     if not hasattr(P, 'smooth_gamma_dot'): P.smooth_gamma_dot = False # use artifical smoothing on calculation of the shear strain rate
     if not hasattr(P, 'smooth_grad2'): P.smooth_grad2 = False # use artifical smoothing on calculation of the gradient of the shear strain rate
     if not hasattr(P, 'normalise_phi'): P.normalise_phi = False # normalise phi every time step HACK: THIS IS CHEATING!!! or is it?
-    if not hasattr(P, 'time_stepping'): P.time_stepping = 'static' # do not update time stepping automatically - NOTE: ASSUMES A FUNCTION update_timestep() EXISTS FOR P.S[0]
-    if not hasattr(P, 'CFL'): P.CFL = 0.1 # default value of CFL conidition is quite conservative
-
+    if not hasattr(P, 'time_stepping'): P.time_stepping = 'static' # do not update time stepping automatically - NOTE: ASSUMES A FUNCTION update_timestep() EXISTS FOR P.S
+    if not hasattr(P, 'CFL'): P.CFL = 0.1 # default value of CFL condition is quite conservative
 
     if not hasattr(P.B, 'wall'): P.B.wall = False
     if not hasattr(P.B, 'two_walls'): P.B.two_walls = False
@@ -68,7 +65,6 @@ def get_parameters(params):
     if hasattr(P, 'supername'): P.save_dir = root_dir + P.supername + '/'
     else: P.save_dir = root_dir + 'im/' + params[0] + '/' + P.S.law + '/'
 
-
     if not hasattr(P.O, 'check_positions'): P.O.check_positions = False
     if not hasattr(P.O, 'measure_stiffness'): P.O.measure_stiffness = False
     if not hasattr(P.O, 'measure_energy'): P.O.measure_energy = False
@@ -81,23 +77,25 @@ def get_parameters(params):
     if not hasattr(P.O, 'save_density'): P.O.save_density = False
     if not hasattr(P.O, 'save_u'): P.O.save_u = False
     if not hasattr(P.O, 'save_phi_MP'): P.O.save_phi_MP = False
+    if not hasattr(P.O, 'at_start'): P.O.at_start = null_func
+    if not hasattr(P.O, 'at_end'): P.O.at_end = null_func
+    if not hasattr(P.O, 'after_ever_timestep'): P.O.after_ever_timestep = null_func
+    if not hasattr(P.O, 'after_every_savetime'): P.O.after_every_savetime = null_func
 
     if P.O.measure_energy: P.O.energy = zeros((P.nt+1,4)) # energy
     P.mode = params[0]
     P.update_forces()
     G = Grid(P) # Initialise grid
-    # L = MatPointList(P,G) # Initialise material point list storage
     L = Particles(P,G)
 
     if not hasattr(P, 'update_timestep'):
         def update_timestep(P,G):
             distance = minimum(P.G.dx,P.G.dy)
             t_c = [0.1*distance/amax(abs([nan_to_num(G.q[:,0]/G.m),nan_to_num(G.q[:,1]/G.m)]))] # cell crossing condition
-            if P.segregate_grid:
+            if P.segregate:
                 t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_pk)))) # NOTE: CHECK THIS
                 t_c.append(t_seg)
-            for p in range(P.phases):
-                if hasattr(P.S[p], 'critical_time'): t_c.append(P.S[p].critical_time(P))
+            if hasattr(P.S, 'critical_time'): t_c.append(P.S.critical_time(P))
             P.dt = P.CFL*min(t_c)
             # if t_seg == min(t_c): print('\nTimestep limited by segregation', end='\n')
         P.update_timestep = update_timestep
@@ -112,6 +110,9 @@ def get_parameters(params):
     # print(P.S.__dict__)
 
     return P,G,L
+
+def null_func(*argv):
+    pass
 
 if __name__ == '__main__':
     P,G,L = get_parameters(params)

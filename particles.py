@@ -240,10 +240,11 @@ class Particles():
         :param G: A grid.Grid instance.
 
         """
+
         for r in range(4):
             for i in range(2):
-                self.x[:,i] += P.dt*self.N[:,r]*G.q[self.n[:,r],i]    /G.m[self.n[:,r]]*G.valid_nodes[self.n[:,r]]
-                self.v[:,i] += P.dt*self.N[:,r]*G.q_dot[self.n[:,r],i]/G.m[self.n[:,r]]*G.valid_nodes[self.n[:,r]]
+                self.x[:,i][G.valid_nodes[self.n[:,r]]] += P.dt*self.N[:,r][G.valid_nodes[self.n[:,r]]]*G.q[self.n[:,r],i][G.valid_nodes[self.n[:,r]]]    /G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
+                self.v[:,i][G.valid_nodes[self.n[:,r]]] += P.dt*self.N[:,r][G.valid_nodes[self.n[:,r]]]*G.q_dot[self.n[:,r],i][G.valid_nodes[self.n[:,r]]]/G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
 
         # HACK!!!!! THIS SHOULDN'T BE HERE!
         self.rho = 0.

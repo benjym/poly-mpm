@@ -41,7 +41,7 @@ def elastic(MP,P,G): # UPDATED TO ARRAY FORMAT
     """
 
     de_kk = np.trace(MP.dstrain,axis1=1,axis2=2)
-    de_kk_ij = np.repeat(np.repeat(np.expand_dims(de_kk,(1,2)),3,axis=1),3,axis=2) # FIXME - MUST BE A BETTE WAY!
+    de_kk_ij = np.repeat(np.repeat(np.expand_dims(de_kk,(1,2)),3,axis=1),3,axis=2) # FIXME - MUST BE A BETTER WAY!
     de_ij = MP.dstrain - de_kk_ij*MP.eye/3.
     MP.dstress = P.S.K*de_kk_ij*MP.eye + 2.*P.S.G*de_ij
 

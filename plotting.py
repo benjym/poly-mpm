@@ -320,13 +320,6 @@ class Plotting:
         plt.figure(figsize=figsize)
 
         if P.S.law == 'elastic':
-            x = zeros((P.S.n,3))
-            v = zeros((P.S.n,3))
-            gammadot = zeros((P.S.n))
-            pressure = zeros((P.S.n))
-            sigmah = zeros((P.S.n))
-            sigmav = zeros((P.S.n))
-
             size=25.
 
             plt.subplot(321)
@@ -343,7 +336,7 @@ class Plotting:
             plt.colorbar()
             plt.subplot(324)
             plt.xlabel(r'$\sigma_h$',rotation='horizontal')
-            plt.scatter(x[:,0],x[:,1],s=size,c=L.sigmah,marker='s',edgecolor='None')
+            plt.scatter(L.x[:,0],L.x[:,1],s=size,c=L.sigmah,marker='s',edgecolor='None')
             plt.colorbar()
             plt.subplot(325)
             plt.xlabel(r'$P$',rotation='horizontal')
