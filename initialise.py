@@ -2,7 +2,7 @@ import os
 # import jsonpickle
 from grid import Grid
 # from mplist import MatPointList
-from particle_arrays import Particles
+from particles import Particles
 from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
 
 def get_parameters(params):
