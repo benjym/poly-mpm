@@ -122,7 +122,7 @@ class Particles():
         self.x[self.x[:,0]<P.G.x_m,0] += P.G.x_M - P.G.x_m
         self.x[self.x[:,0]>P.G.x_M,0] -= P.G.x_M - P.G.x_m
 
-    def get_reference_nodes(self,P,G):
+    def get_reference_nodes(self,P,G): # TESTED AND WORKING
         """For every particle, get its reference node (n_star) and nearby nodes (n).
 
         :param P: A param.Param instance.
@@ -137,8 +137,10 @@ class Particles():
         self.n[:,2] = self.n_star + P.G.nx + 1
         self.n[:,3] = self.n_star + P.G.nx
 
+        # self.n3 = np.repeat(self.n.flatten()[:,np.newaxis],3,axis=1)
 
-    def get_basis_functions(self,P,G):
+
+    def get_basis_functions(self,P,G): # TESTED AND WORKING
         """For every particle, get its basis function.
 
         :param P: A param.Param instance.
@@ -152,10 +154,12 @@ class Particles():
         self.N[:,1] = (rel_pos[:,0])*(G.dy-rel_pos[:,1])/(G.dx*G.dy)
         self.N[:,2] = (rel_pos[:,0])*(rel_pos[:,1])/(G.dx*G.dy)
         self.N[:,3] = (G.dx-rel_pos[:,0])*(rel_pos[:,1])/(G.dx*G.dy)
-        self.G[:,0,:] = np.array([-(G.dy-rel_pos[:,1]),-(G.dx-rel_pos[:,0]),[0]*P.S.n]).T/(G.dx*G.dy)
-        self.G[:,1,:] = np.array([ (G.dy-rel_pos[:,1]),-rel_pos[:,0],       [0]*P.S.n]).T/(G.dx*G.dy)
-        self.G[:,2,:] = np.array([ rel_pos[:,1],        rel_pos[:,0],       [0]*P.S.n]).T/(G.dx*G.dy)
-        self.G[:,3,:] = np.array([-rel_pos[:,1],        (G.dx-rel_pos[:,0]),[0]*P.S.n]).T/(G.dx*G.dy)
+        self.G[:,0] = np.array([-(G.dy-rel_pos[:,1]),-(G.dx-rel_pos[:,0]),[0]*P.S.n]).T/(G.dx*G.dy)
+        self.G[:,1] = np.array([ (G.dy-rel_pos[:,1]),-rel_pos[:,0],       [0]*P.S.n]).T/(G.dx*G.dy)
+        self.G[:,2] = np.array([ rel_pos[:,1],        rel_pos[:,0],       [0]*P.S.n]).T/(G.dx*G.dy)
+        self.G[:,3] = np.array([-rel_pos[:,1],        (G.dx-rel_pos[:,0]),[0]*P.S.n]).T/(G.dx*G.dy)
+
+        # self.N3 = np.repeat(self.N.flatten()[:,np.newaxis],3,axis=1)
 
     def get_nodal_mass_momentum(self,P,G):
         """For every particle, map mass and momentum to the grid. Then, set momentum at boundaries to zero if applicable.
@@ -164,20 +168,20 @@ class Particles():
         :param G: A grid.Grid instance.
 
         """
-        for r in range(4):
-            G.m[self.n[:,r]] += self.N[:,r]*self.m
-            for i in range(2): G.q[self.n[:,r],i] += self.N[:,r]*self.m*self.v[:,i]
-            if P.segregate:
-                G.phim[self.n[:,r]] += self.N[:,r]*self.m*self.phi
-                G.pkm[self.n[:,r]]  += self.N[:,r]*self.m*self.pk
-
-        if P.segregate:
+        # np.add.at(G.m,self.n,self.N*self.m)
+        G.m += np.bincount(self.n.flatten(), weights=self.N.flatten()*self.m,minlength=P.G.nx*P.G.ny) # NOTE: SHOULD BE FASTER BUT NEEDS FLATTENED ARRAY???
+        # v2 = np.repeat(self.v[:,:,np.newaxis],4,axis=2)
+        # NOTE: try cupyx.scatter_add
+        for i in range(2):
+            # np.add.at(G.q[:,i],self.n,self.N*self.m*v2[:,i,:])
+            G.q[:,i] += np.bincount(self.n.flatten(), weights=self.N.flatten()*self.m*np.repeat(self.v[:,i].flatten(),4,axis=0),minlength=P.G.nx*P.G.ny)
+        if P.segregate: # TOTALLY UNTESTED AND DEFINITELY BROKEN
+            np.add.at(G.phim,self.n,self.N*self.m*self.phi)
+            np.add.at(G.pkm,self.n,self.N*self.m*self.pk)
             for j in range(P.G.ns):
                 G.phi[:,j] = G.phim[:,j]/G.m
-
-        if P.segregate:
-            G.phi = nan_to_num(G.phi)
-            G.s_bar = sum(G.S*G.phi,1)
+            G.phi = np.nan_to_num(G.phi)
+            G.s_bar = np.sum(G.S*G.phi,1)
             G.pk = G.pkm/G.m
 
         # NOTE: WHY IS THIS HERE??????????? SHOULD ALREADY BE SET BY SETTING q_dot = 0???
@@ -200,7 +204,7 @@ class Particles():
         for r in range(4):
             v = np.zeros([P.S.n,3])
             for j in range(3):
-                v[:,j] = G.q[self.n[:,r],j]/G.m[self.n[:,r]]*G.valid_nodes[self.n[:,r]]
+                v[:,j][G.valid_nodes[self.n[:,r]]] = G.q[self.n[:,r],j][G.valid_nodes[self.n[:,r]]]/G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
             for i in range(P.S.n): # FIXME - NEED TO REMOVE THIS LOOP
                 L = np.outer(v[i],self.G[i,r])
                 L_T = np.outer(self.G[i,r],v[i])
@@ -217,7 +221,7 @@ class Particles():
 
         if P.B.cyclic_lr: G.make_cyclic(P,G,['pressure', 'gammadot', 'dev_stress', 'yieldfunction', 'mu_s', 'mu', 'I'])
 
-    def get_nodal_forces(self,P,G):
+    def get_nodal_forces(self,P,G): # fe is working, NOT fi
         """For every particle, get nodal forces. If cyclic boundaries are active, update the nodal cyclic forces.
 
         :param P: A param.Param instance.
@@ -225,11 +229,16 @@ class Particles():
 
         """
         b = np.array([P.g*np.sin(P.theta),P.g*np.cos(P.theta),0.]) # body force
-        bn = np.repeat(np.expand_dims(b,0),P.S.n,axis=0) # body force copied for each MP
-
-        for r in range(4):
-            for i in range(P.G.ns): G.fi[self.n[:,r]] += self.V*np.dot(self.stress[i],self.G[i,r]) # FIXME
-            for j in range(2): G.fe[self.n[:,r],j] += self.N[:,r]*self.m*bn[:,j]
+        print(self.stress.shape)
+        print(self.G.shape)
+        print(G.fi.shape)
+        print(self.n.shape)
+        print(np.einsum('ijk,ilk->il',self.stress,self.G).shape)
+        np.add.at(G.fi,self.n,self.V*np.einsum('ijk,ilk->il',self.stress,self.G))  # NOTE: einsum IS VERY SLOW (ALLEGEDLY)
+        for i in range(2):
+            G.fe[:,i] += np.bincount(self.n.flatten(),
+                                     weights=self.N.flatten()*self.m*b[i],
+                                     minlength=P.G.nx*P.G.ny)
 
         if P.B.cyclic_lr: G.make_cyclic(P,G,['fi','fe'])
 
@@ -247,9 +256,9 @@ class Particles():
                 self.v[:,i][G.valid_nodes[self.n[:,r]]] += P.dt*self.N[:,r][G.valid_nodes[self.n[:,r]]]*G.q_dot[self.n[:,r],i][G.valid_nodes[self.n[:,r]]]/G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
 
         # HACK!!!!! THIS SHOULDN'T BE HERE!
-        self.rho = 0.
-        for r in range(4):
-            self.rho += self.N[:,r]*G.m[self.n[:,r]]/G.V[self.n[:,r]]
+        # self.rho = 0.
+        # for r in range(4):
+            # self.rho += self.N[:,r]*G.m[self.n[:,r]]/G.V[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
 
     def get_nodal_gsd(self,P,G):
         """Measure the volume weighted average size at the node.
@@ -260,7 +269,7 @@ class Particles():
         """
 
         for r in range(4):
-            G.s_bar[self.valid_nodes[:,r]] += self.N[:,r]*self.m*self.size # mass weighted size
+            G.s_bar[self.n[:,r]][self.valid_nodes[:,r]] += self.N[:,r][G.valid_nodes[self.n[:,r]]]*self.m*self.size # mass weighted size
         if P.segregate:
             G.s_bar /= G.m
 

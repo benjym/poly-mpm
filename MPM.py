@@ -38,7 +38,12 @@ def main(params):
         G.get_valid_nodes(P) # get nodes with mass near them
         if P.B.cyclic_lr: G.make_cyclic(P,G,['m','q'])
         L.update_stress_strain(P,G) # Update stress and strain
+        # if P.tstep == 1:
+        #     print(L.stress[0])
+        #     sys.exit()
         L.get_nodal_forces(P,G) # Compute internal and external forces
+        print(G.fe)
+        sys.exit()
         G.BCs(P) # Add external forces from BCs
         G.update_momentum(P) # Compute rate of momentum and update nodes
         G.calculate_gammadot(P,G)

@@ -8,7 +8,7 @@ class Params():
     def __init__(self,mode):
         self.dt = 1e-3 # timestep (s)
         self.savetime = 0.1
-        self.t_f = 5.#100*self.dt # final time (s)
+        self.t_f = 1. #self.dt
         self.nt = int(self.t_f/self.dt) # number of timesteps
         self.max_g = -10. # gravity (ms^-2)
         self.theta = 0.*np.pi/180. # slope angle (degrees)
@@ -16,7 +16,7 @@ class Params():
         self.B = Boundary_Params()
         self.O = Output_Params()
         self.S = Solid_Params()
-        self.time_stepping = 'dynamic'
+        # self.time_stepping = 'dynamic'
 
     def update_forces(self):
         self.g=self.max_g
@@ -27,8 +27,8 @@ class Grid_Params():
         self.x_M = 1.0 # (m)
         self.y_m = 0.0 # (m)
         self.y_M = 2.0 # (m)
-        self.nx = 21 # number of grid edges in x direction
-        self.ny = 21 # number of grid edges in y direction
+        self.nx = 6 # number of grid edges in x direction
+        self.ny = 6 # number of grid edges in y direction
         self.x = np.linspace(self.x_m,self.x_M,self.nx)
         self.y = np.linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
@@ -66,7 +66,7 @@ class Solid_Params():
         nr = 20 # particles in radial direction
         nphi = 50 # particles around circumference
         r = 0.3 # radius
-        c = [0.,0.6] # centre
+        c = [0.,1.0] # centre
 
         for i in np.linspace(0,r,nr):
             dnphi = int(np.around(nphi*i/r)) # number in this ring

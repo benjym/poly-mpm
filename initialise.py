@@ -1,7 +1,8 @@
 import os
+import numpy as np
 from grid import Grid
 from particles import Particles
-from numpy import array, pi, zeros, ones, minimum, amax, nan_to_num, abs, min
+
 
 def get_parameters(params):
     input_file = 'from inputs.' + params[0] +' import Params'
@@ -56,8 +57,8 @@ def get_parameters(params):
     if not hasattr(P.G, 'thickness'): P.G.thickness = 1. # (m) into page
     if not hasattr(P.G, 'ns'): P.G.ns = 1 # number of grain sizes
     if not hasattr(P.G, 's'): P.G.s = [0.001] # 1mm grain size by default (m)
-    if not hasattr(P.G, 's_m'): P.G.s_m = min(P.G.s)
-    if not hasattr(P.G, 's_M'): P.G.s_M = max(P.G.s)
+    if not hasattr(P.G, 's_m'): P.G.s_m = np.min(P.G.s)
+    if not hasattr(P.G, 's_M'): P.G.s_M = np.max(P.G.s)
 
 #         root_dir = '~/Documents/poly-mpm/'
     root_dir = ''
@@ -82,7 +83,6 @@ def get_parameters(params):
     if not hasattr(P.O, 'after_ever_timestep'): P.O.after_ever_timestep = null_func
     if not hasattr(P.O, 'after_every_savetime'): P.O.after_every_savetime = null_func
 
-    if P.O.measure_energy: P.O.energy = zeros((P.nt+1,4)) # energy
     P.mode = params[0]
     P.update_forces()
     G = Grid(P) # Initialise grid
@@ -90,13 +90,13 @@ def get_parameters(params):
 
     if not hasattr(P, 'update_timestep'):
         def update_timestep(P,G):
-            distance = minimum(P.G.dx,P.G.dy)
-            t_c = [0.1*distance/amax(abs([nan_to_num(G.q[:,0]/G.m),nan_to_num(G.q[:,1]/G.m)]))] # cell crossing condition
+            distance = np.minimum(P.G.dx,P.G.dy)
+            t_c = [0.1*distance/np.amax(np.abs([np.nan_to_num(G.q[:,0]/G.m),np.nan_to_num(G.q[:,1]/G.m)]))] # cell crossing condition
             if P.segregate:
-                t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_pk)))) # NOTE: CHECK THIS
+                t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*np.amax(np.abs(np.nan_to_num(G.grad_pk)))) # NOTE: CHECK THIS
                 t_c.append(t_seg)
             if hasattr(P.S, 'critical_time'): t_c.append(P.S.critical_time(P))
-            P.dt = P.CFL*min(t_c)
+            P.dt = P.CFL*np.min(t_c)
             # if t_seg == min(t_c): print('\nTimestep limited by segregation', end='\n')
         P.update_timestep = update_timestep
 
