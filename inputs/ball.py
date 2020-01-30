@@ -25,8 +25,8 @@ class Grid_Params():
         self.x_M = 1.0 # (m)
         self.y_m = 0.0 # (m)
         self.y_M = 2.0 # (m)
-        self.nx = 21 # number of grid edges in x direction
-        self.ny = 21 # number of grid edges in y direction
+        self.nx = 6 # number of grid edges in x direction
+        self.ny = 6 # number of grid edges in y direction
 
 class Boundary_Params():
     def __init__(self):
@@ -60,14 +60,15 @@ class Solid_Params():
         nr = 20 # particles in radial direction
         nphi = 50 # particles around circumference
         r = 0.3 # radius
-        c = [0.,1.] # centre
+        c = [0.,1.0] # centre
 
         for i in linspace(0,r,nr):
-            dnphi = around(nphi*i/r) # number in this ring
-            for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
-                self.X.append(c[0]+i*sin(j))
-                self.Y.append(c[1]+i*cos(j))
-                self.n += 1
+            dnphi = int(around(nphi*i/r)) # number in this ring
+            if dnphi > 0:
+                for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
+                    self.X.append(c[0]+i*sin(j))
+                    self.Y.append(c[1]+i*cos(j))
+                    self.n += 1
         self.A = pi*r**2/self.n # area (m^2)
 
 

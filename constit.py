@@ -16,6 +16,14 @@ from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot
 from numpy import sqrt, abs, ones, minimum, maximum, exp, isfinite
 from numpy.linalg import norm
 
+def RK4(func,dstrain,stress):
+    dstress1 = func(dstrain,stress)
+    dstress2 = func(dstrain,stress + 0.5*dstress1)
+    dstress3 = func(dstrain,stress + 0.5*dstress2)
+    dstress4 = func(dstrain,stress + dstress3)
+    dstress = (dstress1 + 2.*dstress2 + 2.*dstress3 + dstress4)/6.
+    return dstress
+
 def rigid(MP,P,G,p):
     """Perfectly rigid particles. No stresses are calculated.
 
@@ -167,11 +175,11 @@ def dp(MP,P,G,p): # UNVALIDATED
         # K = P.S[p].K
 
         lambda_2 = ((3.*P.S[p].G*MP.p*sum(sum(s_ij*de_ij)) - K*MP.q**2.*de_kk)/
-                    (3.*P.S[p].G*MP.mu*MP.p**2 + K*P.S[p].beta*MP.q**2))
+                    (3.*P.S[p].G*MP.mu*MP.p**2 + beta*MP.q**2))
         # Gamma_2 = lambda_2*(lambda_2>0) # Macauley bracket
         Gamma_2 = abs(nan_to_num(lambda_2)) # absolute value
         dstress = (2.*P.S[p].G*(de_ij - 3./2.*s_ij/MP.q*Gamma_2*(MP.q/(MP.mu*MP.p))**(P.S[p].s-1.)) +
-                   K*eye(2)*(de_kk + P.S[p].beta*Gamma_2*(MP.q/(MP.mu*MP.p))**P.S[p].s))
+                   K*eye(2)*(de_kk + beta*Gamma_2*(MP.q/(MP.mu*MP.p))**P.S[p].s))
         dstress = nan_to_num(dstress)
         # print(dstress)
         return dstress
@@ -184,16 +192,16 @@ def dp(MP,P,G,p): # UNVALIDATED
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
     MP.I = nan_to_num(MP.I)
-    MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+    mu_target = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+    # MP.eta = mu_target*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
+    # MP.eta_limited = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    # MP.mu = nan_to_num(abs(MP.pressure)/(MP.eta_limited*MP.gammadot))
+    # MP.dev_stress = MP.eta_limited*MP.de_ij/P.dt
+    # beta = P.S[p].beta
+    beta = MP.mu
 
-    # RK4
-    dstress1 = dp_guts(dstrain,stress)
-    dstress2 = dp_guts(dstrain,stress + 0.5*dstress1)
-    dstress3 = dp_guts(dstrain,stress + 0.5*dstress2)
-    dstress4 = dp_guts(dstrain,stress + dstress3)
-    dstress = (dstress1 + 2.*dstress2 + 2.*dstress3 + dstress4)/6.
-    # Euler
-#     dstress = dp_guts(dstrain,stress)
+    dstress = RK4(dp_guts,dstrain,stress) # RK4
+#     dstress = dp_guts(dstrain,stress) # Euler
 
     MP.dstress[:2,:2] = -dstress
 

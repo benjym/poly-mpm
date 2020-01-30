@@ -178,7 +178,7 @@ def KT2_flux(phi,G,P,ax):
     for i in range(P.G.ns): S_1_bar[:,:,i] = sum(phi*(1./S),axis=2) # INVERSE OF HARMONIC MEAN!
 
     # D = P.D
-    D = 10.*(G.s_bar**3.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10*d
+    D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
 
     if ax == 0: # x direction
         pad = (phi.shape[0] - P.G.nx)//2

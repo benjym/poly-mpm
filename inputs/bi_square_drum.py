@@ -82,7 +82,7 @@ class Solid_Params():
         self.rho_s = self.rho/self.packing # solid density
         self.PHI = []
 
-        self.law = 'pouliquen'
+        # self.law = 'pouliquen'
         # # self.law = 'ken_simple'
         self.mu_0 = tan(deg2rad(20.9)) #0.3
         self.mu_1 = tan(deg2rad(32.76))
@@ -90,9 +90,9 @@ class Solid_Params():
         self.I_0 = 0.279
         self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2 # 10x WORKS BETTER
 
-        # self.law = 'dp'
-        # self.beta = 0.0
-        # self.s = 2.0
+        self.law = 'dp'
+        # self.beta = 0.5
+        self.s = 2.0
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio
@@ -114,16 +114,16 @@ class Solid_Params():
             self.n += 1
         self.A = (G.y_M - G.y_m - G.top_gap)*(G.x_M - G.x_m)/self.n # area (m^2)
 
-    def critical_time(self,P): # pouliquen
-        distance = minimum(P.G.dx,P.G.dy)
-        t_ela = distance/sqrt(self.K/self.rho) # elasticity
-        t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
-        return minimum(t_diff,t_ela)
-
-    # def critical_time(self,P): # dp
+    # def critical_time(self,P): # pouliquen
     #     distance = minimum(P.G.dx,P.G.dy)
     #     t_ela = distance/sqrt(self.K/self.rho) # elasticity
-    #     return t_ela/10.
+    #     t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
+    #     return minimum(t_diff,t_ela)
+
+    def critical_time(self,P): # dp
+        distance = minimum(P.G.dx,P.G.dy)
+        t_ela = distance/sqrt(self.K/self.rho) # elasticity
+        return t_ela
 
 class Output_Params():
     def __init__(self,G):

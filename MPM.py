@@ -39,7 +39,12 @@ def main(params):
         L.get_nodal_mass_momentum(P,G) # Initialise from grid state
         if P.B.cyclic_lr: G.make_cyclic(P,G,['m','q'])
         L.update_stress_strain(P,G) # Update stress and strain
+        # if P.tstep == 1:
+        #     print(L.S[0][0].stress)
+        #     sys.exit()
         L.get_nodal_forces(P,G) # Compute internal and external forces
+        # print(G.fi)
+        # sys.exit()
         G.BCs(P) # Add external forces from BCs
         G.update_momentum(P) # Compute rate of momentum and update nodes
         G.calculate_gammadot(P,G)

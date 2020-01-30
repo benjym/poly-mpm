@@ -353,10 +353,6 @@ class Grid():
         """
         decay_time = 0.1 # seconds
 
-        if (P.tstep == 0) and P.initial_flow:
-            self.pk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
-            # print('\n\n\n\n\nhi!\n\n\n\n\n')
-
 
         # diffusivity = (length_scale**2)/(2.*decay_time) # definition of diffusivity?
 
@@ -377,16 +373,14 @@ class Grid():
         # grad2_Dpk_dy = self.calculate_gradient(P,G,diffusivity*grad_pk[:,1],smooth=False)[:,1]
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
-        self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #- nan_to_num(diff_term)
-        # if P.t == 0:
-            # print('Setting pk initial condition')
-            # self.dpk[15] = 30
-
-        # print(amax(self.s_bar),amax(abs(self.pressure/self.V)),amax(abs(nan_to_num(self.gammadot))),amax(nan_to_num(self.pk)))
-
-        # self.pk += self.dpk_dot
+        self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #-
         self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+        grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
+        grad_p = self.calculate_gradient(P,G,self.pressure.copy(),smooth=False)
+        grad_p_mag = sqrt(grad_p[:,0]**2 + grad_p[:,1]**2)
+        # print(self.grad_pk.shape)
+        # sys.exit()
 
-        # NOTE: THIS IS TOTALLY UNTESTED AND APPEARS TO BE RANDOM!!!!
-        # self.grad_p = self.calculate_gradient(P,G,self.p.copy(),smooth=False)
-        # self.grad_pk = abs(self.grad_pk)*sign(self.grad_p)
+        # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
+        self.grad_pk[:,0] = -grad_pk_mag*grad_p[:,0]/grad_p_mag
+        self.grad_pk[:,1] = -grad_pk_mag*grad_p[:,1]/grad_p_mag
