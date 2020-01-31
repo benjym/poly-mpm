@@ -82,7 +82,7 @@ class Solid_Params():
         self.rho_s = self.rho/self.packing # solid density
         self.PHI = []
 
-        # self.law = 'pouliquen'
+        self.law = 'pouliquen'
         # # self.law = 'ken_simple'
         self.mu_0 = tan(deg2rad(20.9)) #0.3
         self.mu_1 = tan(deg2rad(32.76))
@@ -90,9 +90,9 @@ class Solid_Params():
         self.I_0 = 0.279
         self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2 # 10x WORKS BETTER
 
-        self.law = 'dp'
-        # self.beta = 0.5
-        self.s = 2.0
+        # self.law = 'dp'
+        # # self.beta = 0.5
+        # self.s = 2.0
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio

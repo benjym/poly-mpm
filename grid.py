@@ -373,14 +373,16 @@ class Grid():
         # grad2_Dpk_dy = self.calculate_gradient(P,G,diffusivity*grad_pk[:,1],smooth=False)[:,1]
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
-        self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #-
-        self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
-        grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
-        grad_p = self.calculate_gradient(P,G,self.pressure.copy(),smooth=False)
-        grad_p_mag = sqrt(grad_p[:,0]**2 + grad_p[:,1]**2)
-        # print(self.grad_pk.shape)
-        # sys.exit()
+        # self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #-
+        self.dpk = (P.l*self.s_bar**2*nan_to_num(self.gammadot)**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
 
-        # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
-        self.grad_pk[:,0] = -grad_pk_mag*grad_p[:,0]/grad_p_mag
-        self.grad_pk[:,1] = -grad_pk_mag*grad_p[:,1]/grad_p_mag
+        # print(self.I)
+
+        self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+
+        # # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
+        # grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
+        # grad_p = self.calculate_gradient(P,G,self.pressure.copy(),smooth=False)
+        # grad_p_mag = sqrt(grad_p[:,0]**2 + grad_p[:,1]**2)
+        # self.grad_pk[:,0] = -grad_pk_mag*grad_p[:,0]/grad_p_mag
+        # self.grad_pk[:,1] = -grad_pk_mag*grad_p[:,1]/grad_p_mag

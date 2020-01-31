@@ -14,6 +14,7 @@ import sys
 from numpy import linspace, sin, cos, pi, zeros, outer, array, dot
 from numpy import trunc, arctan, eye, trace, nan_to_num, tensordot
 from numpy import sqrt, abs, ones, minimum, maximum, exp, isfinite
+from numpy import inf
 from numpy.linalg import norm
 
 def RK4(func,dstrain,stress):
@@ -425,7 +426,8 @@ def pouliquen(MP,P,G,p):
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
 
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
-    MP.I = nan_to_num(MP.I)
+    if MP.I == inf: MP.I = 1e10
+    if MP.I < 1e-10: MP.I = 1e-10 # HACK
     MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
     MP.eta_limited = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
