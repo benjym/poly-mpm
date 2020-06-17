@@ -374,12 +374,14 @@ class Grid():
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
         # self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #-
-        max_gamma_dot_allowable = 100.0
-        sanitised_gamma_dot = minimum(abs(nan_to_num(self.gammadot)),max_gamma_dot_allowable)
-        self.dpk = (P.l*self.s_bar**2*sanitised_gamma_dot**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
-        # print(self.I)
 
-        self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+        # LATEST AND BEST WORKING EVOLUTION EQUATION:
+        # max_gamma_dot_allowable = 100.0
+        # sanitised_gamma_dot = minimum(abs(nan_to_num(self.gammadot)),max_gamma_dot_allowable)
+        # self.dpk = (P.l*self.s_bar**2*sanitised_gamma_dot**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
+        # self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+
+        self.grad_pk = self.calculate_gradient(P,G,self.pressure*self.I/self.m,smooth=False)
 
         # # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
         # grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
