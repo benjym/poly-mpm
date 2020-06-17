@@ -381,8 +381,13 @@ class Grid():
         # self.dpk = (P.l*self.s_bar**2*sanitised_gamma_dot**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
         # self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
 
-        self.grad_pk = self.calculate_gradient(P,G,self.pressure*self.I/self.m,smooth=False)
 
+        # JUST ASSUME THAT p_k = I*p
+        self.grad_pk = self.calculate_gradient(P,G,-self.pressure*self.I/self.m/self.m,smooth=False) # "pressure" is tension positive and also multiplied by mass
+
+        #print(self.pressure/self.m)
+        #print(self.I)
+        #print(self.pressure*self.I/self.m)
         # # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
         # grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
         # grad_p = self.calculate_gradient(P,G,self.pressure.copy(),smooth=False)
