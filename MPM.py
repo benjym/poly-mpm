@@ -48,7 +48,7 @@ def main(params):
         G.BCs(P) # Add external forces from BCs
         G.update_momentum(P) # Compute rate of momentum and update nodes
         G.calculate_gammadot(P,G)
-        if P.segregate_grid:
+        if P.segregate_grid and (P.tstep != 0): # ignore first time step
             G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
             # if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
             G.calculate_phi_increment(P)

@@ -374,8 +374,9 @@ class Grid():
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
         # self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #-
-        self.dpk = (P.l*self.s_bar**2*nan_to_num(self.gammadot)**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
-
+        max_gamma_dot_allowable = 100.0
+        sanitised_gamma_dot = minimum(abs(nan_to_num(self.gammadot)),max_gamma_dot_allowable)
+        self.dpk = (P.l*self.s_bar**2*sanitised_gamma_dot**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
         # print(self.I)
 
         self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
