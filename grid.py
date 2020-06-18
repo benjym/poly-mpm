@@ -380,11 +380,21 @@ class Grid():
         # sanitised_gamma_dot = minimum(abs(nan_to_num(self.gammadot)),max_gamma_dot_allowable)
         # self.dpk = (P.l*self.s_bar**2*sanitised_gamma_dot**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
         # self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+<<<<<<< HEAD
         # self.I = maximum(minimum(self.I/self.m,1.0),1e-6)*self.m
         # self.I[G.m<P.M_tol] = nan
         self.pk = nan_to_num(-(self.pressure/self.m)*(self.I/self.m)) # tension positive!!
         self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
+=======
 
+>>>>>>> 07b7079106b4a09b522355e8f42f26f550f7c960
+
+        # JUST ASSUME THAT p_k = I*p
+        self.grad_pk = self.calculate_gradient(P,G,-self.pressure*self.I/self.m/self.m,smooth=False) # "pressure" is tension positive and also multiplied by mass
+
+        #print(self.pressure/self.m)
+        #print(self.I)
+        #print(self.pressure*self.I/self.m)
         # # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
         # grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
         # grad_p = self.calculate_gradient(P,G,self.pressure.copy(),smooth=False)
