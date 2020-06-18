@@ -185,7 +185,8 @@ class Plotting:
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
                               r'$\mu$',r'$\eta/\eta_{max}$',
                               # r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$',r'$\phi^{M}$'] # THIS
-                              r'$p_k$',r'$\dot p_k$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
+                              # r'$p_k$',r'$\dot p_k$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
+                              r'$p_k$',r'$I$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
                     norm = [Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),LogNorm(),
@@ -204,9 +205,10 @@ class Plotting:
                          ma.masked_less_equal(G.eta/P.S[0].eta_max,0.), # just for log scaling nicely
                          # G.dphi[:,0]/P.dt*G.m,
                          G.pk*G.m,
+                         G.I,
                          # sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m, # THIS
                          # G.grad_pk[:,0]*G.m,
-                         G.dpk/P.dt*G.m, # NOT THIS
+                         # G.dpk/P.dt*G.m, # NOT THIS
                          G.grad_pk[:,1]*G.m, # NOT THIS
                          G.dphi[:,-1]/P.dt*G.m,
                          # G.phi[:,-1]*G.m # THIS

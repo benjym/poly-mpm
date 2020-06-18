@@ -9,7 +9,7 @@ def get_parameters(params):
     exec(input_file, globals())
     P = Params(params) # Initialise parameters from input file
     P.mode = params[0]
-    
+
     if not hasattr(P, 't'): P.t = 0. # physical time (s)
     if not hasattr(P, 'tstep'): P.tstep = 0
     if not hasattr(P, 'grid_save'): P.grid_save = 0 # save counter
@@ -99,9 +99,9 @@ def get_parameters(params):
         def update_timestep(P,G):
             distance = minimum(P.G.dx,P.G.dy)
             t_c = [0.1*distance/amax(abs([nan_to_num(G.q[:,0]/G.m),nan_to_num(G.q[:,1]/G.m)]))] # cell crossing condition
-            if P.segregate_grid:
-                t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_pk)))) # NOTE: CHECK THIS
-                t_c.append(t_seg)
+            # if P.segregate_grid:
+                # t_seg = distance/(P.c*(P.G.s_M/P.G.s_m - 1.)*amax(abs(nan_to_num(G.grad_pk)))) # NOTE: CHECK THIS
+                # t_c.append(t_seg)
             for p in range(P.phases):
                 if hasattr(P.S[p], 'critical_time'): t_c.append(P.S[p].critical_time(P))
             P.dt = P.CFL*min(t_c)
