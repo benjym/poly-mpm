@@ -85,12 +85,12 @@ def elastic_time(MP,P,G):
 #     G_curr = E/(2*(1+P.S.nu))
 
 
-    de_kk = trace(MP.dstrain)
+    de_kk = np.trace(MP.dstrain)
     de_ij = MP.dstrain - de_kk*eye(3)/3.
     MP.dstress = K_curr*de_kk*eye(3) + 2.*G_curr*de_ij
 
     # for visualisation
-    MP.gammadot = sqrt(sum(sum(de_ij**2)))
+    MP.gammadot = np.sqrt(sum(sum(de_ij**2)))
     MP.pressure = -trace(MP.stress)/3.
     MP.sigmav = -MP.stress[1,1]
     MP.sigmah = -MP.stress[0,0]
@@ -114,11 +114,11 @@ def von_mises(MP,P,G):
     :type p: int
 
     """
-    de_kk = trace(MP.dstrain) # scalar
+    de_kk = np.trace(MP.dstrain) # scalar
     de_ij = MP.dstrain - de_kk*eye(3)/3. # matrix
     dsigma_kk = 3.*P.S.K*de_kk # scalar
     dev_work_norm = abs(sum(sum(MP.dev_stress*de_ij))) # scalar
-    dev_stress_norm = sqrt(sum(sum(MP.dev_stress**2))) # scalar
+    dev_stress_norm = np.sqrt(sum(sum(MP.dev_stress**2))) # scalar
     MP.dev_dstress = 2.*P.S.G*(de_ij - dev_work_norm/(2.*(P.S.k**2))*
                   ((dev_stress_norm/(sqrt(2.)*P.S.k))**(P.S.s-2.))*MP.dev_stress) # matrix
     MP.sigma_kk += dsigma_kk # scalar
@@ -127,8 +127,8 @@ def von_mises(MP,P,G):
 
     # for visualisation
     MP.yieldfunction = dev_stress_norm/(sqrt(2.)*P.S.k) - 1. # scalar
-    MP.gammadot = sqrt(sum(sum(de_ij**2)))
-    MP.pressure = trace(MP.stress)/3.
+    MP.gammadot = np.sqrt(sum(sum(de_ij**2)))
+    MP.pressure = np.trace(MP.stress)/3.
     MP.sigmav = MP.stress[1,1]
     MP.sigmah = MP.stress[0,0]
 
@@ -155,11 +155,11 @@ def dp(MP,P,G): # UNVALIDATED
 
     """
     def dp_guts(dstrain2d,stress2d):
-        de_kk = trace(dstrain2d)
+        de_kk = np.trace(dstrain2d)
         de_ij = dstrain2d - de_kk*eye(2)/2. # shear strain
-        MP.p = trace(stress2d)/2. # pressure, positive for compression
+        MP.p = np.trace(stress2d)/2. # pressure, positive for compression
         s_ij = stress2d - eye(2)*MP.p # shear stress
-        MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
+        MP.q = np.sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
         if MP.p > 0: K = P.S.K
         else: K = 0
@@ -171,7 +171,7 @@ def dp(MP,P,G): # UNVALIDATED
         Gamma_2 = abs(nan_to_num(lambda_2)) # absolute value
         dstress = (2.*P.S.G*(de_ij - 3./2.*s_ij/MP.q*Gamma_2*(MP.q/(MP.mu*MP.p))**(P.S.s-1.)) +
                    K*eye(2)*(de_kk + P.S.beta*Gamma_2*(MP.q/(MP.mu*MP.p))**P.S.s))
-        dstress = nan_to_num(dstress)
+        dstress = np.nan_to_num(dstress)
         # print(dstress)
         return dstress
 
@@ -180,9 +180,9 @@ def dp(MP,P,G): # UNVALIDATED
 
     s_bar = 0.
     for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
-    MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
+    MP.gammadot = np.sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
     MP.I = MP.gammadot*s_bar*sqrt(P.S.rho_s/abs(MP.pressure))
-    MP.I = nan_to_num(MP.I)
+    MP.I = np.nan_to_num(MP.I)
     MP.mu = P.S.mu_0 + P.S.delta_mu/(P.S.I_0/MP.I + 1.)
 
     # RK4
@@ -197,8 +197,8 @@ def dp(MP,P,G): # UNVALIDATED
     MP.dstress[:2,:2] = -dstress
 
     # For visualisation
-    MP.gammadot = sqrt(sum(sum((dstrain - trace(dstrain)*eye(2)/2.)**2)))
-    MP.pressure = trace(MP.stress)/2. # 3
+    MP.gammadot = np.sqrt(sum(sum((dstrain - np.trace(dstrain)*eye(2)/2.)**2)))
+    MP.pressure = np.trace(MP.stress)/2. # 3
 #     MP.dev_stress = MP.stress - eye(3)*MP.pressure
 #     MP.dev_stress_dot = MP.dstress - eye(3)*trace(MP.dstress)/2. # 3
     MP.sigmav = MP.stress[1,1]
@@ -208,7 +208,7 @@ def dp(MP,P,G): # UNVALIDATED
 
 #     MP.p = -(MP.stress[0,0]+MP.stress[1,1])/2. # pressure, positive for compression
 #     s_ij = -MP.stress[:2,:2] - eye(2)*MP.p # shear stress
-#     MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
+#     MP.q = np.sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r)
@@ -234,13 +234,13 @@ def dp_rate(MP,P,G): # UNVALIDATED
     """
     def dp_guts(dstrain,stress):
         # calculate strain components
-        de_kk = trace(dstrain)
+        de_kk = np.trace(dstrain)
         de_ij = dstrain - de_kk*eye(2)/2.
 
         # calculate stress components
-        MP.p = trace(stress)/2.
+        MP.p = np.trace(stress)/2.
         s_ij = stress - eye(2)*MP.p
-        MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
+        MP.q = np.sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
         # find plasticity multiplier
         lambda_2 = MP.q - P.S[0].mu*MP.p
@@ -268,8 +268,8 @@ def dp_rate(MP,P,G): # UNVALIDATED
 #     print(MP.stress)
 #     print(MP.p,MP.q)
     # For visualisation
-    MP.gammadot = sqrt(sum(sum((dstrain - trace(dstrain)*eye(2)/2.)**2)))
-    MP.pressure = trace(MP.stress)/2. # 3
+    MP.gammadot = np.sqrt(sum(sum((dstrain - np.trace(dstrain)*eye(2)/2.)**2)))
+    MP.pressure = np.trace(MP.stress)/2. # 3
 #     MP.dev_stress = MP.stress - eye(3)*MP.pressure
 #     MP.dev_stress_dot = MP.dstress - eye(3)*trace(MP.dstress)/2. # 3
     MP.sigmav = MP.stress[1,1]
@@ -279,7 +279,7 @@ def dp_rate(MP,P,G): # UNVALIDATED
 
     MP.p = -(MP.stress[0,0]+MP.stress[1,1])/2. # pressure, positive for compression
     s_ij = -MP.stress[:2,:2] - eye(2)*MP.p # shear stress
-    MP.q = sqrt(3.*sum(sum(s_ij*s_ij))/2.)
+    MP.q = np.sqrt(3.*sum(sum(s_ij*s_ij))/2.)
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r)
@@ -303,7 +303,7 @@ def viscous(MP,P,G):
     :type p: int
 
     """
-    MP.de_kk = trace(MP.dstrain)/3.
+    MP.de_kk = np.trace(MP.dstrain)/3.
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3)
     MP.dp = P.S.K*MP.de_kk
 
@@ -313,7 +313,7 @@ def viscous(MP,P,G):
     viscous_volumetric = P.S.mu_v*MP.de_kk*eye(3)/P.dt
     # MP.stress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric
     MP.dstress = MP.pressure*eye(3) + MP.dev_stress - viscous_volumetric - MP.stress
-    MP.gammadot = sqrt(sum(sum(MP.de_ij**2)))/P.dt
+    MP.gammadot = np.sqrt(sum(sum(MP.de_ij**2)))/P.dt
 
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r)
@@ -333,10 +333,10 @@ def bingham(MP,P,G):
     :type p: int
 
     """
-    MP.de_kk = trace(MP.dstrain)/3.
+    MP.de_kk = np.trace(MP.dstrain)/3.
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3)
     MP.dp = P.S.K*MP.de_kk
-    MP.gammadot = sqrt(sum(sum(MP.de_ij**2)))/P.dt
+    MP.gammadot = np.sqrt(sum(sum(MP.de_ij**2)))/P.dt
     MP.pressure += MP.dp
     if MP.gammadot <= P.S.gamma_c: MP.dev_stress = 2.*P.S.mu_0*MP.de_ij/P.dt
     else: MP.dev_stress = 2.*(P.S.mu_s + P.S.tau_0/MP.gammadot)*MP.de_ij/P.dt
@@ -359,22 +359,22 @@ def ken_kamrin(MP,P,G):
     :type p: int
 
     """
-    MP.de_kk = trace(MP.dstrain)/3.
+    MP.de_kk = np.trace(MP.dstrain)/3.
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3)
 
-#     MP.pressure = trace(MP.stress)/3.
+#     MP.pressure = np.trace(MP.stress)/3.
     MP.pressure += P.S.K*MP.de_kk
 
     MP.gammadot_ij = 2.*MP.de_ij/P.dt
-    MP.gammadot = sqrt(0.5*sum(sum(MP.gammadot_ij**2))) # second invariant of strain rate tensor
+    MP.gammadot = np.sqrt(0.5*sum(sum(MP.gammadot_ij**2))) # second invariant of strain rate tensor
     MP.gammadot = maximum(MP.gammadot,1e-5) # no zero
     d = 1. # MEAN DIAMETER
-    I = sqrt(2)*d*MP.gammadot/sqrt(abs(MP.pressure)/MP.rho)
-    mu = nan_to_num(P.S.mu_s + (P.S.mu_2 - P.S.mu_s)/(nan_to_num(P.S.I_0/I) + 1.))
-    eta = nan_to_num(mu*MP.pressure/(sqrt(2)*MP.gammadot)) # does this make sense for negative pressures???
+    I = np.sqrt(2)*d*MP.gammadot/sqrt(abs(MP.pressure)/MP.rho)
+    mu = np.nan_to_num(P.S.mu_s + (P.S.mu_2 - P.S.mu_s)/(nan_to_num(P.S.I_0/I) + 1.))
+    eta = np.nan_to_num(mu*MP.pressure/(sqrt(2)*MP.gammadot)) # does this make sense for negative pressures???
     eta = maximum(eta,0)
     eta_max = 250.*MP.rho*P.max_g*(P.G.y_M-P.G.y_m)**3 # missing a g*H^3 !!
-    eta = minimum(eta,eta_max)
+    eta = np.minimum(eta,eta_max)
 #    print MP.gammadot, mu, eta, eta_max
 
     MP.dev_stress = eta*MP.gammadot_ij
@@ -410,16 +410,16 @@ def pouliquen(MP,P,G):
     s_bar = 0.
     for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
 
-    MP.de_kk = trace(MP.dstrain)/3. # tension positive
-    MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
+    MP.de_kk = np.trace(MP.dstrain)/3. # tension positive
+    MP.de_ij = MP.dstrain - MP.de_kk*np.eye(3) # shear strain increment
 
-    MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
+    MP.gammadot = np.sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
 
-    MP.I = MP.gammadot*s_bar*sqrt(P.S.rho_s/abs(MP.pressure))
-    MP.I = nan_to_num(MP.I)
+    MP.I = MP.gammadot*s_bar*np.sqrt(P.S.rho_s/abs(MP.pressure))
+    MP.I = np.nan_to_num(MP.I)
     MP.mu = P.S.mu_0 + P.S.delta_mu/(P.S.I_0/MP.I + 1.)
-    MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta_limited = minimum(nan_to_num(MP.eta),P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta = 2.*np.sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
+    MP.eta_limited = np.minimum(np.nan_to_num(MP.eta),P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta_limited*MP.de_ij/P.dt
 
     MP.dp = P.S.K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
@@ -434,7 +434,7 @@ def pouliquen(MP,P,G):
     #     MP.pressure = 0.
     # else: MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
 
-    MP.dstress = MP.pressure*eye(3) + MP.dev_stress - MP.stress
+    MP.dstress = MP.pressure*np.eye(3) + MP.dev_stress - MP.stress
 
 
     if not isfinite(MP.dstress).all():
@@ -455,7 +455,7 @@ def pouliquen(MP,P,G):
     for r in range(4):
         n = G.nearby_nodes(MP.n_star,r)
         G.pressure[n] += MP.N[r]*MP.pressure*MP.m
-        G.dev_stress[n] += MP.N[r]*norm(MP.dev_stress)/sqrt(2.)*MP.m
+        G.dev_stress[n] += MP.N[r]*np.linalg.norm(MP.dev_stress)/np.sqrt(2.)*MP.m
         G.mu[n] += MP.N[r]*MP.mu*MP.m
         G.I[n] += MP.N[r]*MP.I*MP.m
         G.eta[n] += MP.N[r]*MP.eta*MP.m
@@ -475,18 +475,18 @@ def linear_mu(MP,P,G):
     s_bar = 0.
     for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
 
-    MP.de_kk = trace(MP.dstrain)/3. # tension positive
+    MP.de_kk = np.trace(MP.dstrain)/3. # tension positive
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
 
-    MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
+    MP.gammadot = np.sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
 
     MP.I = MP.gammadot*s_bar*sqrt(P.S.rho_s/abs(MP.pressure))
-    # MP.I = minimum(MP.I,10.) # HACK - IF I DO THIS DO I NEED TO FIDDLE WITH ETA LATER?
+    # MP.I = np.minimum(MP.I,10.) # HACK - IF I DO THIS DO I NEED TO FIDDLE WITH ETA LATER?
     # MP.mu = P.S.mu_0 + P.S.delta_mu/(P.S.I_0/MP.I + 1.)
     MP.mu = P.S.mu_0 + P.S.b*MP.I
 
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta = minimum(MP.eta,P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta = np.minimum(MP.eta,P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta*MP.de_ij/P.dt
 
     MP.dp = P.S.K*MP.de_kk # tension positive
@@ -520,11 +520,11 @@ def ken_simple(MP,P,G):
     s_bar = 0.
     for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
 
-    MP.de_kk = trace(MP.dstrain)/3. # tension positive
+    MP.de_kk = np.trace(MP.dstrain)/3. # tension positive
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
 
     MP.eta = 2.*sqrt(2)*P.S.mu_0*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
-    MP.eta = minimum(nan_to_num(MP.eta),P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
+    MP.eta = np.minimum(nan_to_num(MP.eta),P.S.eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
 
 
     MP.dev_stress = MP.eta*MP.de_ij/P.dt

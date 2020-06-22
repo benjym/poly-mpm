@@ -6,7 +6,7 @@ from constit import *
 class Particles():
     def __init__(self,P,G):
         """
-        This constructor initialises material point arrays from the  input file as necessary.
+        This constructor initialises material point arrays from the input file as necessary.
         """
 
         self.x = np.zeros([P.S.n,3])

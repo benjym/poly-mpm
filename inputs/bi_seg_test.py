@@ -20,7 +20,7 @@ class Params():
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
         self.O = Output_Params(self)#self.nt)
-        self.S = [Solid_Params(self.G,self),]
+        self.S = Solid_Params(self.G,self)
 
         self.supername = 'im/seg/lin/theta_' + str(-rad2deg(self.theta)) + '/ny_' + str(self.G.ny) + '/ns_' + str(self.G.ns) + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.smooth_gamma_dot = False

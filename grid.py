@@ -354,10 +354,10 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        decay_time = 0.1 # seconds
+        # decay_time = 0.1 # seconds
 
-        if (P.tstep == 0) and P.initial_flow:
-            self.pk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
+        # if (P.tstep == 0) and P.initial_flow:
+            # self.pk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
             # print('\n\n\n\n\nhi!\n\n\n\n\n')
 
 
@@ -380,7 +380,7 @@ class Grid():
         # grad2_Dpk_dy = self.calculate_gradient(P,G,diffusivity*grad_pk[:,1],smooth=False)[:,1]
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
-        self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #- nan_to_num(diff_term)
+        # self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #- nan_to_num(diff_term)
         # if P.t == 0:
             # print('Setting pk initial condition')
             # self.dpk[15] = 30
@@ -388,8 +388,11 @@ class Grid():
         # print(amax(self.s_bar),amax(abs(self.pressure/self.V)),amax(abs(nan_to_num(self.gammadot))),amax(nan_to_num(self.pk)))
 
         # self.pk += self.dpk_dot
-        self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+        # self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
 
         # NOTE: THIS IS TOTALLY UNTESTED AND APPEARS TO BE RANDOM!!!!
         # self.grad_p = self.calculate_gradient(P,G,self.p.copy(),smooth=False)
         # self.grad_pk = abs(self.grad_pk)*sign(self.grad_p)
+
+        self.pk = nan_to_num(-(self.pressure/self.m)*(self.I/self.m)) # tension positive!!
+        self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
