@@ -101,11 +101,11 @@ class Solid_Params():
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
-        self.y = (G.ny-1)//2*self.pts_per_cell # particles in y direction
+        self.y = (G.ny-1)//2*self.pts_per_cell + 2 # particles in y direction
         gap = array((G.dx,G.dy))/(2*self.pts_per_cell)
 
         xp = linspace(G.x_m+gap[0],G.x_M-gap[0],self.x)
-        yp = linspace(G.y_m+gap[1],G.y_M-gap[1] - G.top_gap,self.y)
+        yp = linspace(G.y_m+gap[1],(G.y_M+G.y_m)/2.-gap[1]/2.,self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
         for i in range(self.x*self.y):
