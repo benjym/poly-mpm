@@ -425,7 +425,7 @@ def pouliquen(MP,P,G,p):
 
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
-    if MP.I == inf: MP.I = 1.0#1e10 # HACK
+    if MP.I == inf: MP.I = 1e10 # HACK
     # if MP.I < 1e-6: MP.I = 1e-6 # HACK
     MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
