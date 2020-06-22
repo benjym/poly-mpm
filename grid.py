@@ -9,6 +9,9 @@ import sys
 sobel_h = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]))
 sobel_v = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]).T)
 
+kernel_grad_h = CustomKernel(array([[0,0,0],[0.5,0,-0.5],[0,0,0]]))
+kernel_grad_v = CustomKernel(array([[0,0,0],[0.5,0,-0.5],[0,0,0]]).T)
+
 
 # from numba import jitclass          # import the decorator
 # from numba import int32, float32, bool_    # import the types
@@ -324,12 +327,17 @@ class Grid():
         """
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-        dZdy,dZdx = gradient(Z,G.dy,G.dx)
+        # dZdy,dZdx = gradient(Z,G.dy,G.dx)
 
         # print(Z.shape)
+        # # Use astropy to do a sobel filter - this adds some smoothing already!
+        # dZdy = convolve(Z, sobel_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
+        # dZdx = convolve(Z, sobel_h, boundary='extend', normalize_kernel=False, nan_treatment='fill')
         # Use astropy to do a sobel filter - this adds some smoothing already!
-        dZdy = convolve(Z, sobel_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
-        dZdx = convolve(Z, sobel_h, boundary='extend', normalize_kernel=False, nan_treatment='fill')
+        dZdy = convolve(Z, kernel_grad_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
+        dZdx = convolve(Z, kernel_grad_h, boundary='extend', normalize_kernel=False, nan_treatment='fill')
+
+
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
