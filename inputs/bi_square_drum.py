@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 class Params():
     def __init__(self,args):
         self.dt = 1e-4 # timestep (s)
-        self.savetime = 1e-4 # (s)
+        self.savetime = 1e-2 # (s)
         self.t_f = 100.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
@@ -129,7 +129,7 @@ class Output_Params():
     def __init__(self,G):
         self.plot_continuum = True
         # self.plot_material_points = True
-        # self.plot_gsd_mp = True
+        self.plot_gsd_mp = True
         # self.plot_gsd_grid = True
         self.save_s_bar = True
         self.save_u = True
