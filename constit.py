@@ -425,8 +425,8 @@ def pouliquen(MP,P,G,p):
 
     MP.gammadot = sqrt(sum(sum((2.*MP.de_ij/P.dt)**2))) # norm of shear strain rate
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
-    if MP.I == inf: MP.I = 1.0#1e10
-    if MP.I < 1e-6: MP.I = 1e-6 # HACK
+    # if MP.I == inf: MP.I = 1.0#1e10
+    # if MP.I < 1e-6: MP.I = 1e-6 # HACK
     MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
     MP.eta_limited = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
@@ -435,7 +435,7 @@ def pouliquen(MP,P,G,p):
     MP.dp = P.S[p].K*MP.de_kk # tension positive # FIXME do I need to multiply this by 3??
     MP.pressure += MP.dp
 
-    min_pressure = -1.0 # 1 Pa in compression
+    min_pressure = 0.0 # 1 Pa in compression
 
     if (MP.pressure > min_pressure) or (MP.rho < P.S[p].rho*0.8): # can't go into tension - this is really important!!
         MP.dp -= MP.pressure + min_pressure # set increment back to zero

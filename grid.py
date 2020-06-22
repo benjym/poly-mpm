@@ -351,7 +351,7 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        decay_time = 0.1 # seconds
+        # decay_time = 0.1 # seconds
 
 
         # diffusivity = (length_scale**2)/(2.*decay_time) # definition of diffusivity?
@@ -383,7 +383,8 @@ class Grid():
 
         # self.I = maximum(minimum(self.I/self.m,1.0),1e-6)*self.m
         # self.I[G.m<P.M_tol] = nan
-        self.pk = nan_to_num(-(self.pressure/self.m)*(self.I/self.m)) # tension positive!!
+        self.pk = self.gammadot*self.s_bar*sqrt(P.S[0].rho_s*abs(self.pressure/self.m)) # p*I without dividing by p
+        # self.pk = nan_to_num(-(self.pressure/self.m)*(self.I/self.m)) # tension positive!!
         self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
 
         # # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
