@@ -6,6 +6,10 @@ from scipy.interpolate import RectBivariateSpline as interp2d
 from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel
 import sys
 
+sobel_h = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]))
+sobel_v = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]).T)
+
+
 # from numba import jitclass          # import the decorator
 # from numba import int32, float32, bool_    # import the types
 #
@@ -322,8 +326,6 @@ class Grid():
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
         dZdy,dZdx = gradient(Z,G.dy,G.dx)
 
-        sobel_h = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]))
-        sobel_v = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]).T)
         # print(Z.shape)
         # Use astropy to do a sobel filter - this adds some smoothing already!
         dZdy = convolve(Z, sobel_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
@@ -390,7 +392,7 @@ class Grid():
 
         # self.I = maximum(minimum(self.I/self.m,1.0),1e-6)*self.m
         # self.I[G.m<P.M_tol] = nan
-        self.pk = self.gammadot*self.s_bar*sqrt(P.S[0].rho_s*abs(self.pressure/self.m)) # p*I without dividing by p
+        self.pk = abs(self.gammadot)*self.s_bar*sqrt(P.S[0].rho_s*abs(self.pressure/self.m)) # p*I without dividing by p
         # self.pk = nan_to_num(-(self.pressure/self.m)*(self.I/self.m)) # tension positive!!
         self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
 
