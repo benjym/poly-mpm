@@ -3,7 +3,7 @@ from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
 from integrators import increment_grainsize
 from scipy.interpolate import RectBivariateSpline as interp2d
-from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel
+from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel
 import sys
 
 # from numba import jitclass          # import the decorator
@@ -321,6 +321,13 @@ class Grid():
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
         dZdy,dZdx = gradient(Z,G.dy,G.dx)
+
+        sobel_h = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]))
+        sobel_v = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]).T)
+        # print(Z.shape)
+        # Use astropy to do a sobel filter - this adds some smoothing already!
+        dZdy = convolve(Z, sobel_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
+        dZdx = convolve(Z, sobel_h, boundary='extend', normalize_kernel=False, nan_treatment='fill')
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
