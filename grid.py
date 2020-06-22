@@ -6,11 +6,6 @@ from scipy.interpolate import RectBivariateSpline as interp2d
 from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel
 import sys
 
-sobel_h = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]))
-sobel_v = CustomKernel(array([[1,0,-1],[2,0,-2],[1,0,-1]]).T)
-
-kernel_grad_h = CustomKernel(array([[0,0,0],[0.5,0,-0.5],[0,0,0]]))
-kernel_grad_v = CustomKernel(array([[0,0,0],[0.5,0,-0.5],[0,0,0]]).T)
 
 
 # from numba import jitclass          # import the decorator
@@ -108,6 +103,11 @@ class Grid():
         # if P.B.cyclic_lr: self.DX = P.G.dx*ones([P.G.nx-1])
         # else: self.DX = hstack([P.G.dx/2.,P.G.dx*ones([P.G.nx-3]),P.G.dx/2.])
         # self.DY = hstack([P.G.dy/2.,P.G.dy*ones([P.G.ny-3]),P.G.dy/2.])
+
+        # Central difference kernels for convolution operations
+        self.kernel_grad_x = CustomKernel(array([[0,0,0],[1.0/(2*self.dx),0,-1.0/(2*self.dx)],[0,0,0]]))
+        self.kernel_grad_y = CustomKernel(array([[0,0,0],[1.0/(2*self.dy),0,-1.0/(2*self.dy)],[0,0,0]]).T)
+
 
     def boundary(self,P):
         """
@@ -328,16 +328,9 @@ class Grid():
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
         # dZdy,dZdx = gradient(Z,G.dy,G.dx)
-
-        # print(Z.shape)
-        # # Use astropy to do a sobel filter - this adds some smoothing already!
-        # dZdy = convolve(Z, sobel_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
-        # dZdx = convolve(Z, sobel_h, boundary='extend', normalize_kernel=False, nan_treatment='fill')
-        # Use astropy to do a sobel filter - this adds some smoothing already!
-        dZdy = convolve(Z, kernel_grad_v, boundary='extend', normalize_kernel=False, nan_treatment='fill')
-        dZdx = convolve(Z, kernel_grad_h, boundary='extend', normalize_kernel=False, nan_treatment='fill')
-
-
+        # Use astropy to do the gradient calculation - still works near nans
+        dZdy = convolve(Z, self.kernel_grad_y, boundary='extend', normalize_kernel=False, nan_treatment='fill')
+        dZdx = convolve(Z, self.kernel_grad_x, boundary='extend', normalize_kernel=False, nan_treatment='fill')
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
