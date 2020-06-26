@@ -332,6 +332,14 @@ class Grid():
         dZdy = convolve(Z, self.kernel_grad_y, boundary='extend', normalize_kernel=False, nan_treatment='fill')
         dZdx = convolve(Z, self.kernel_grad_x, boundary='extend', normalize_kernel=False, nan_treatment='fill')
 
+        # Fix boundaries where convolution doesn't work nicely
+        # TODO: Enforce actual boundaries
+        dZdy[ 0] = (Z[ 1] - Z[ 0])/P.G.dy
+        dZdy[-1] = (Z[-1] - Z[-2])/P.G.dy
+
+        dZdx[:, 0] = (Z[:, 1] - Z[:, 0])/P.G.dx
+        dZdx[:,-1] = (Z[:,-1] - Z[:,-2])/P.G.dx
+
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
             kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)

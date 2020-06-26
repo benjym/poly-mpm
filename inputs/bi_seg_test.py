@@ -6,14 +6,14 @@ class Params():
     def __init__(self,args):
         self.dt = 1e-8#5e-8 # timestep (s)
         self.savetime = 1e-3 # (s)
-        self.t_f = 5.0 #100.0 # 3*self.dt # final time (s)
+        self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.theta = -deg2rad(float(args[1])) # slope angle (degrees)
         self.pressure = 'lithostatic'
         self.initial_flow = 'steady'
 
         self.segregate_grid = True
-        self.c = 1e-4 # inter-particle drag coefficient
+        self.c = 1e-3 # inter-particle drag coefficient
         self.l = 10. # number of particle diameters for seg diffusion coeff
         # self.D = 1e-3 # segregation diffusion coefficient
 
