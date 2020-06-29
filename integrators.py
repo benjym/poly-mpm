@@ -197,7 +197,7 @@ def KT2_flux(phi,G,P,ax):
     for i in range(P.G.ns): S[:,:,i] = P.G.s[i]
     for i in range(P.G.ns): S_1_bar[:,:,i] = sum(phi*(1./S),axis=2) # INVERSE OF HARMONIC MEAN!
 
-    D = 1e-1 #P.D
+    # D = P.D
     # D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
 
     if ax == 0: # x direction
@@ -217,7 +217,7 @@ def KT2_flux(phi,G,P,ax):
         g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         # D = tile(D,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
-        dCdx,tt,tt1 = gradient(phi,P.G.dx)
+        # dCdx,tt,tt1 = gradient(phi,P.G.dx)
         # print(g.shape,boundary.shape,D.shape)
 
     elif ax == 1: # y direction
@@ -235,12 +235,12 @@ def KT2_flux(phi,G,P,ax):
         g = g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         # D = D.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
-        dCdx,tt,tt1 = gradient(phi,P.G.dy)
+        # dCdx,tt,tt1 = gradient(phi,P.G.dy)
         # print(g.shape,boundary.shape,D.shape)
 
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
 
-    flux = P.c*f_c*g - D*dCdx
+    flux = P.c*f_c*g #- D*dCdx
     flux[boundary] = 0
 
     return flux#, boundary
@@ -267,12 +267,12 @@ def apply_fixed_BC(P,G): # NEVER USE THIS! JUST FOR TESTING!
 def normalise_phi_increment(P,G,dphi): # NEVER USE THIS! JUST FOR TESTING!
     d = dphi.copy()
     for i in range(P.G.ns):
-        phi = G.phi[:,i] + dphi[:,i]
+        phi = ma.masked_invalid(G.phi[:,i] + dphi[:,i])
         phi_tot = sum(sum(phi))
         phi[phi<0] = 0.0
         phi[phi>1] = 1.0
         phi *= phi_tot/sum(sum(phi)) # end up with same amount
-        d[:,i] = phi - G.phi[:,i]
+        d[:,i] = (phi - G.phi[:,i]).filled(nan)
     return d
 
 if __name__ == "__main__":
