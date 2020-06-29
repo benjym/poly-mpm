@@ -607,8 +607,8 @@ class Plotting:
             plt.pcolormesh(G.x_plot,
                            G.y_plot,
                            ma.masked_where(G.m<P.M_tol,G.phi[:,i]).reshape(P.G.ny,P.G.nx),
-                           vmin=0.0,
-                           vmax=1.0,
+                           # vmin=0.0,
+                           # vmax=1.0,
                            )
             plt.colorbar()
             plt.title(mean(G.phi[:,i]))
