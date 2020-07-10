@@ -207,31 +207,25 @@ def KT_flux(phi,G,P,ax):
     for i in range(P.G.ns): S_1_bar[:,:,i] = sum(phi*(1./S),axis=2) # INVERSE OF HARMONIC MEAN!
     for i in range(P.G.ns): S_bar[:,:,i] = sum(phi*S,axis=2) # INVERSE OF HARMONIC MEAN!
 
-    # D = P.D
-    D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
-
-##########################################################################################
-    D *= 1e6 # WHY DO I NEED THIS!????
-##########################################################################################
 
     if ax == 0: # x direction
         pad = (phi.shape[0] - P.G.nx)//2
         g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
-        D = D.reshape(P.G.ny,P.G.nx).T.flatten()
+        # D = D.reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
         for i in range(pad):
             if P.B.cyclic_lr:
                 g = hstack([g[-P.G.ny:], g, g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-                D = hstack([D[-P.G.ny:], D, D[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                # D = hstack([D[-P.G.ny:], D, D[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
             else:
                 g = hstack([g[:P.G.ny],  g, g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-                D = hstack([D[:P.G.ny],  D, D[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+                # D = hstack([D[:P.G.ny],  D, D[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
         # boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
         boundary = hstack([boundary[:boundary.shape[0]//2],
                            zeros([P.G.ny*pad*2],dtype=bool),
                            boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
-        D = tile(D,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
+        # D = tile(D,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         dCdx = gradient(phi,P.G.dx,axis=0)
         # print(g.shape,boundary.shape,D.shape)
@@ -243,15 +237,15 @@ def KT_flux(phi,G,P,ax):
         g = tile(g,[P.G.ns,1]).T # P.G.ny*P.G.nx,P.G.ns
         g = g.reshape(-1,P.G.ns) # P.G.ny*P.G.nx,P.G.ns
         # print(g.shape)
-        D = tile(D,[P.G.ns,1]).T.reshape(-1,P.G.ns)
+        # D = tile(D,[P.G.ns,1]).T.reshape(-1,P.G.ns)
         for i in range(pad):
             g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-            D = vstack([D[:P.G.nx], D,  D[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
+            # D = vstack([D[:P.G.nx], D,  D[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
         boundary = hstack([boundary[:boundary.shape[0]//2],
                            zeros([P.G.nx*pad*2],dtype=bool),
                            boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
-        D = D.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
+        # D = D.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
 
         # fig, axes = plt.subplots(nrows=1,ncols=P.G.ns)
@@ -262,7 +256,7 @@ def KT_flux(phi,G,P,ax):
         #     plt.colorbar(im)
         # plt.show()
 
-        dCdx = gradient(phi,P.G.dy,axis=0)
+        #dCdx = gradient(phi,P.G.dy,axis=0)
         # print(g.shape,boundary.shape,D.shape)
 
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
@@ -271,16 +265,26 @@ def KT_flux(phi,G,P,ax):
     # f_c = (1. - S/S_bar)
 
     # print(D*dCdx)
-    flux = P.c*f_c*g - D*dCdx # NOTE: IS THIS MISSING A PHI?!???
+    flux = P.c*f_c*g #- D*dCdx # NOTE: IS THIS MISSING A PHI?!???
     flux[boundary] = 0 # WHAT DOES THIS DO?!??
 
     return flux#, boundary
 
+def Diffusion(P,G):
+    D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
+    D = tile(D,[P.G.ns,1]).T.reshape(P.G.ny,P.G.nx,P.G.ns)
+    phi = G.phi.reshape(P.G.ny,P.G.nx,P.G.ns)
+    dDc_dy,dDc_dx = gradient(D*phi,P.G.dy,P.G.dx,axis=[0,1])
+    d2Dc_dy2 = gradient(dDc_dy,P.G.dy,axis=0)
+    d2Dc_dx2 = gradient(dDc_dx,P.G.dx,axis=1)
+    return P.dt*(d2Dc_dx2 + d2Dc_dy2).reshape(P.G.ny*P.G.nx,P.G.ns)
+
 def increment_grainsize(P,G):
-    dphi = KT(P,G,0) + KT(P,G,1)
+    dphi_adv = KT(P,G,0) + KT(P,G,1)
+    dphi_diff = Diffusion(P,G)
     # dphi = NT(P,G,0) + NT(P,G,1)
     # dphi = normalise_phi_increment(P,G,dphi) # THIS IS A HACK!!!!!!!
-    return dphi
+    return dphi_adv + dphi_diff
 
 def apply_fixed_BC(P,G): # NEVER USE THIS! JUST FOR TESTING!
     phi = G.phi.reshape(P.G.ny,P.G.nx,P.G.ns)
@@ -305,45 +309,18 @@ def normalise_phi_increment(P,G,dphi): # NEVER USE THIS! JUST FOR TESTING!
 if __name__ == "__main__":
     import initialise
     from numpy import random, maximum, ones
+    from MPM import time_march
     from plotting import Plotting
     import matplotlib.pyplot as plt
 
     plot = Plotting()
     P,G,L = initialise.get_parameters(['bi_seg_test','23','2','51'])
-    G.wipe(P)
-    L.get_reference_node(P,G) # Find node down and left
-    L.get_basis_functions(P,G) # Make basis functions
-    L.get_nodal_mass_momentum(P,G) # Initialise from grid state
-    P.O.plot_gsd_debug = True
-    plot.draw_gsd_grid(L,P,G)
-
-    # G.grad_pk = -100.*ones([P.G.ny*P.G.nx,3])
-    # G.grad_pk[:,0] = 0.
-    G.gammadot = 1*ones([P.G.ny*P.G.nx])
-    G.I_0 = 1*ones([P.G.ny*P.G.nx])
-    G.I = 1*ones([P.G.ny*P.G.nx])
-    G.m = 1*ones([P.G.ny*P.G.nx])
-    # G.pressure = G.pk*1000000. # run faster, also set up a gradient field
-
-    # G.I = G.I_0*G.s_bar
-    # G.pk = G.pressure*G.I
-    G.grad_pk = zeros([P.G.ny*P.G.nx,3])
-    G.grad_pk[:,1] = -1000000.*G.m
-    # G.grad_pk = G.calculate_gradient(P,G,G.pk,smooth=False)
-    # G.grad_pk[:] = G.grad_pk[21]
-
+    time_march(P,G,L) # do one time increment to set up all fields
+    P.dt *= 100 # be a bit optimistic
 
     while P.t <= P.t_f:
-        # G.phi = apply_fixed_BC(P,G)
         G.phi += increment_grainsize(P,G)
-        # G.phi[:,-1] = 1. - sum(G.phi[:,:-1],axis=1) # dont _NEED_ to solve for the last one, but can enforce it to keep everything balanced?
-
-        # G.phi += KT(P,G,1) # just in vertical direction
         G.s_bar = G.phi[:,0]*P.G.s[0] + G.phi[:,1]*P.G.s[1]
-
-        # G.I = G.I_0*G.s_bar
-        # G.pk = G.pressure*G.I
-        # G.grad_pk = G.calculate_gradient(P,G,G.pk,smooth=False)
 
         P.t += P.dt
         P.tstep += 1
