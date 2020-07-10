@@ -196,79 +196,49 @@ def KT(P,G,ax):
 def KT_flux(phi,G,P,ax):
     S = zeros_like(phi)
     S_1_bar = zeros_like(phi)
-    S_bar = zeros_like(phi)
+    # S_bar = zeros_like(phi)
 
     boundary = G.boundary_tot.astype(bool) # true boundaries
     boundary[G.m < P.M_tol] = True # empty cells
-    # boundary[:P.G.nx] = True # bottom
-    # boundary[(P.G.ny-1)*P.G.nx:] = True # top
 
     for i in range(P.G.ns): S[:,:,i] = P.G.s[i]
     for i in range(P.G.ns): S_1_bar[:,:,i] = sum(phi*(1./S),axis=2) # INVERSE OF HARMONIC MEAN!
-    for i in range(P.G.ns): S_bar[:,:,i] = sum(phi*S,axis=2) # INVERSE OF HARMONIC MEAN!
-
+    # for i in range(P.G.ns): S_bar[:,:,i] = sum(phi*S,axis=2) # INVERSE OF HARMONIC MEAN!
 
     if ax == 0: # x direction
         pad = (phi.shape[0] - P.G.nx)//2
         g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
-        # D = D.reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
         for i in range(pad):
             if P.B.cyclic_lr:
                 g = hstack([g[-P.G.ny:], g, g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-                # D = hstack([D[-P.G.ny:], D, D[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
             else:
                 g = hstack([g[:P.G.ny],  g, g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-                # D = hstack([D[:P.G.ny],  D, D[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-        # boundary = hstack([boundary[:P.G.ny], boundary,  boundary[-P.G.ny:]])
         boundary = hstack([boundary[:boundary.shape[0]//2],
                            zeros([P.G.ny*pad*2],dtype=bool),
                            boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
-        # D = tile(D,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
         dCdx = gradient(phi,P.G.dx,axis=0)
-        # print(g.shape,boundary.shape,D.shape)
 
     elif ax == 1: # y direction
         pad = (phi.shape[0] - P.G.ny)//2
         g = G.grad_pk[:,ax] # P.G.ny*P.G.nx
-        # print(P.G.nx,P.G.ny,P.G.nx*P.G.ny,g.shape)
         g = tile(g,[P.G.ns,1]).T # P.G.ny*P.G.nx,P.G.ns
         g = g.reshape(-1,P.G.ns) # P.G.ny*P.G.nx,P.G.ns
-        # print(g.shape)
-        # D = tile(D,[P.G.ns,1]).T.reshape(-1,P.G.ns)
         for i in range(pad):
             g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-            # D = vstack([D[:P.G.nx], D,  D[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
         boundary = hstack([boundary[:boundary.shape[0]//2],
                            zeros([P.G.nx*pad*2],dtype=bool),
                            boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
         g = g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
-        # D = D.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
         boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
 
-        # fig, axes = plt.subplots(nrows=1,ncols=P.G.ns)
-        # axes = axes.flatten()
-        # for i in range(P.G.ns):
-        #     # axes[i].imshow(boundary.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)[:,:,i])
-        #     im = axes[i].imshow(g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)[:,:,i])
-        #     plt.colorbar(im)
-        # plt.show()
-
-        #dCdx = gradient(phi,P.G.dy,axis=0)
-        # print(g.shape,boundary.shape,D.shape)
-
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
-    # f_c = phi*(1-phi)*(1. - S/S_bar)
-    # f_c = phi*(1. - S/S_bar)
-    # f_c = (1. - S/S_bar)
-
-    # print(D*dCdx)
-    flux = P.c*f_c*g #- D*dCdx # NOTE: IS THIS MISSING A PHI?!???
+    flux = P.c*f_c*g
     flux[boundary] = 0 # WHAT DOES THIS DO?!??
 
-    return flux#, boundary
+    return flux
 
 def Diffusion(P,G):
     D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
@@ -282,18 +252,7 @@ def Diffusion(P,G):
 def increment_grainsize(P,G):
     dphi_adv = KT(P,G,0) + KT(P,G,1)
     dphi_diff = Diffusion(P,G)
-    # dphi = NT(P,G,0) + NT(P,G,1)
-    # dphi = normalise_phi_increment(P,G,dphi) # THIS IS A HACK!!!!!!!
     return dphi_adv + dphi_diff
-
-def apply_fixed_BC(P,G): # NEVER USE THIS! JUST FOR TESTING!
-    phi = G.phi.reshape(P.G.ny,P.G.nx,P.G.ns)
-    phi[ :4,:, 0] = 1
-    phi[ :4,:,-1] = 0
-    phi[-5:,:, 0] = 0
-    phi[-5:,:,-1] = 1
-    return phi.reshape(P.G.ny*P.G.nx,P.G.ns)
-
 
 def normalise_phi_increment(P,G,dphi): # NEVER USE THIS! JUST FOR TESTING!
     d = dphi.copy()
