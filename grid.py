@@ -3,7 +3,7 @@ from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
 from integrators import increment_grainsize
 from scipy.interpolate import RectBivariateSpline as interp2d
-from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel
+from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel, interpolate_replace_nans
 import sys
 
 
@@ -327,18 +327,13 @@ class Grid():
         """
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-        # dZdy,dZdx = gradient(Z,G.dy,G.dx)
-        # Use astropy to do the gradient calculation - still works near nans
-        dZdy = convolve(Z, self.kernel_grad_y, boundary='extend', normalize_kernel=False, nan_treatment='fill')
-        dZdx = convolve(Z, self.kernel_grad_x, boundary='extend', normalize_kernel=False, nan_treatment='fill')
 
-        # Fix boundaries where convolution doesn't work nicely
-        # TODO: Enforce actual boundaries
-        dZdy[ 0] = (Z[ 1] - Z[ 0])/P.G.dy
-        dZdy[-1] = (Z[-1] - Z[-2])/P.G.dy
+        # Step 1: get rid of adjacent NaNs with astropy.convolve
+        kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
+        Z_interp = interpolate_replace_nans(Z, kernel)
 
-        dZdx[:, 0] = (Z[:, 1] - Z[:, 0])/P.G.dx
-        dZdx[:,-1] = (Z[:,-1] - Z[:,-2])/P.G.dx
+        dZdy,dZdx = gradient(Z_interp,G.dy,G.dx)
+
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
