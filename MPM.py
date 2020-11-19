@@ -35,7 +35,7 @@ def time_march(P,G,L):
     G.BCs(P) # Add external forces from BCs
     G.update_momentum(P) # Compute rate of momentum and update nodes
     G.calculate_gammadot(P,G)
-    if P.segregate_grid and (P.tstep != 0): # ignore first time step
+    if P.segregate_grid:
         G.update_pk(P,G) # NOTE: THIS IS BRAND NEW AND PROBABLY BROKEN
         # if P.B.cyclic_lr: G.make_cyclic(P,G,['phi','pk','s_bar'])
         G.calculate_phi_increment(P)
@@ -48,6 +48,7 @@ def time_march(P,G,L):
     if P.B.inlet_right: L.inlet_right(P,G)
     if P.B.inlet_top: L.inlet_top(P,G)
     if P.B.cyclic_lr: L.cyclic_lr(P,G)
+    return P,G,L
 
 def main(params):
     """This is the main loop which is repeated every timestep. Currently, this follows the Update Strain Last paradigm (does it?!?).
@@ -63,7 +64,7 @@ def main(params):
 #     if P.O.plot_material_points: plot.draw_material_points(L,P,G,'initial')
 
     while P.t <= P.t_f:# Time march
-        time_march(P,G)
+        P,G,L = time_march(P,G,L)
 
         # Output related things
         if P.O.measure_energy: P.O.energy[P.tstep] = L.measure_elastic_energy(P,G) # measure energy

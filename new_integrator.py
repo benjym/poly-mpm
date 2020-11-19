@@ -85,12 +85,12 @@ def KT(c,v,dx,dt,ax):
     aright = np.maximum(np.abs(velocity(cminusright,vright)),np.abs(velocity(cplusright,vright)))
     aleft  = np.maximum(np.abs(velocity( cminusleft, vleft)),np.abs(velocity( cplusleft, vleft)))
 
-    RHS = -(( flux( cplusright,vright) +
-              flux(cminusright,vright) -
-              flux(  cplusleft, vleft) -
-              flux( cminusleft, vleft) ) -
-              ( aright*(cplusright - cminusright) -
-                 aleft*(cplusleft  -  cminusleft) )
+    RHS = -( flux( cplusright,vright) +
+             flux(cminusright,vright) -
+             flux(  cplusleft, vleft) -
+             flux( cminusleft, vleft) -
+             ( aright*(cplusright - cminusright) -
+               aleft*(cplusleft  -  cminusleft) )
             )/(2*dx)
     return RHS
 

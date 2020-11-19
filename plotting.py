@@ -225,7 +225,8 @@ class Plotting:
                         plt.ylim(P.G.y_m,P.G.y_M)
                         if P.segregate_grid:
                             if titles[i] == r'$\bar s$':
-                                plt.clim(P.G.s_m,P.G.s_M)
+                                pass
+                                # plt.clim(P.G.s_m,P.G.s_M)
                                 # plt.set_cmap('bwr')
                                 # plt.set_cmap(cc.cm.bmy)
                             elif titles[i] == r'$\eta/\eta_{max}$':
@@ -235,8 +236,8 @@ class Plotting:
                             elif titles[i] == r'$\dot\phi^{M}$':
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
                                 plt.set_cmap('bwr')
-                            elif titles[i] == r'$\phi^{M}$':
-                                plt.clim(0,1)
+                            # elif titles[i] == r'$\phi^{M}$':
+                                # plt.clim(0,1)
                             else:
                                 plt.set_cmap('viridis')
                                 # plt.set_cmap('bwr')

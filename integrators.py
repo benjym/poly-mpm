@@ -237,7 +237,6 @@ def KT_flux(phi,G,P,ax):
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
     flux = P.c*f_c*g
     flux[boundary] = 0 # WHAT DOES THIS DO?!??
-
     return flux
 
 def Diffusion(P,G):
@@ -245,6 +244,10 @@ def Diffusion(P,G):
     D = tile(D,[P.G.ns,1]).T.reshape(P.G.ny,P.G.nx,P.G.ns)
     phi = G.phi.reshape(P.G.ny,P.G.nx,P.G.ns)
     dDc_dy,dDc_dx = gradient(D*phi,P.G.dy,P.G.dx,axis=[0,1])
+    boundary = G.boundary_tot.astype(bool).reshape(P.G.ny,P.G.nx)
+    for i in range(P.G.ns): # enforce no flux at boundary
+        dDc_dy[:,i] *= ~boundary
+        dDc_dx[:,i] *= ~boundary
     d2Dc_dy2 = gradient(dDc_dy,P.G.dy,axis=0)
     d2Dc_dx2 = gradient(dDc_dx,P.G.dx,axis=1)
     return P.dt*(d2Dc_dx2 + d2Dc_dy2).reshape(P.G.ny*P.G.nx,P.G.ns)
@@ -273,13 +276,16 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     plot = Plotting()
-    P,G,L = initialise.get_parameters(['bi_seg_test','23','2','51'])
-    time_march(P,G,L) # do one time increment to set up all fields
-    P.dt *= 100 # be a bit optimistic
+    P,G,L = initialise.get_parameters(['bi_seg_test','23','2','31'])
+    P.O.plot_gsd_debug = True
+    P,G,L = time_march(P,G,L) # do one time increment to set up all fields
+    if P.time_stepping == 'dynamic': P.update_timestep(P,G)
+    P.l = 1e0
 
     while P.t <= P.t_f:
         G.phi += increment_grainsize(P,G)
-        G.s_bar = G.phi[:,0]*P.G.s[0] + G.phi[:,1]*P.G.s[1]
+        G.s_bar = zeros([P.G.nx*P.G.ny])
+        for i in range(P.G.ns): G.s_bar += G.phi[:,i]*P.G.s[i]
 
         P.t += P.dt
         P.tstep += 1
