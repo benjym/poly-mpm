@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # import colorcet as cc
 import matplotlib.pyplot as plt
-from matplotlib.cm import viridis, bwr
+from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap, Normalize, LogNorm
 import matplotlib.patches as patches
 from numpy import *
 from numpy.linalg import norm
 import os
+import copy
 plt.viridis()
 
 cdict = {'red': ((0.0, 1.0, 1.0),
@@ -27,6 +28,7 @@ cdict = {'red': ((0.0, 1.0, 1.0),
                   (1.0, 1., 1.))}
 orange_blue = LinearSegmentedColormap('orange_blue',cdict,256)
 orange_blue.set_bad('w',1.0)
+bwr = copy.copy(cm.get_cmap("bwr"))
 # print(orange_blue)
 # viridis.set_under('w')
 # viridis.set_over('w')
@@ -86,7 +88,7 @@ class Plotting:
 
     def draw_gamma_dot(self,L,P,G):
         for p in range(P.phases):
-            if P.S[p].law is not 'rigid':
+            if P.S[p].law != 'rigid':
                 x = zeros((P.S[p].n,3))
                 v = zeros((P.S[p].n,3))
                 gammadot = zeros((P.S[p].n))
@@ -106,7 +108,7 @@ class Plotting:
     def draw_continuum(self,G,P):
 #         for p in range(P.phases):
         for p in [0,]: # all phases have same continuum properties!
-            if P.S[p].law is not 'rigid':
+            if P.S[p].law != 'rigid':
                 plt.clf()
                 if hasattr(P.O, 'continuum_fig_size'):
                     figsize = P.O.continuum_fig_size
@@ -499,7 +501,7 @@ class Plotting:
                 plt.subplot(212)
                 plt.xlabel(r'${\bf u}$',rotation='horizontal')
                 plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
-            # if P.S[p].law is not 'rigid':
+            # if P.S[p].law != 'rigid':
             if name:
                 self.savefig(P,'MP_'+str(p)+'/'+str(name).zfill(5))
             else:

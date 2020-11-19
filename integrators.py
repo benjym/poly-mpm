@@ -246,8 +246,8 @@ def Diffusion(P,G):
     dDc_dy,dDc_dx = gradient(D*phi,P.G.dy,P.G.dx,axis=[0,1])
     boundary = G.boundary_tot.astype(bool).reshape(P.G.ny,P.G.nx)
     for i in range(P.G.ns): # enforce no flux at boundary
-        dDc_dy[:,i] *= ~boundary
-        dDc_dx[:,i] *= ~boundary
+        dDc_dy[:,:,i] *= ~boundary
+        dDc_dx[:,:,i] *= ~boundary
     d2Dc_dy2 = gradient(dDc_dy,P.G.dy,axis=0)
     d2Dc_dx2 = gradient(dDc_dx,P.G.dx,axis=1)
     return P.dt*(d2Dc_dx2 + d2Dc_dy2).reshape(P.G.ny*P.G.nx,P.G.ns)

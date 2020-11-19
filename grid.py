@@ -1,11 +1,13 @@
+import sys
+import warnings
 from numpy import *
 from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
 from integrators import increment_grainsize
 from scipy.interpolate import RectBivariateSpline as interp2d
 from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel, interpolate_replace_nans
-import sys
 
+warnings.simplefilter('ignore', UserWarning) # remove astropy warning for nans in result
 
 
 # from numba import jitclass          # import the decorator
@@ -301,7 +303,7 @@ class Grid():
         """
         u = (self.q[:,0]/self.m)
         v = (self.q[:,1]/self.m)
-        gradu = self.calculate_gradient(P,G,u,smooth=smooth)
+        gradu = self.calculate_gradient(P,G,u,smooth=smooth)#,verbose=True)
         gradv = self.calculate_gradient(P,G,v,smooth=smooth)
         dudy = gradu[:,1]
         dvdx = gradv[:,0]
@@ -316,7 +318,7 @@ class Grid():
         self.grad_gammadot = G.calculate_gradient(P,G,abs(G.gammadot),smooth=P.smooth_grad2)
 
 
-    def calculate_gradient(self,P,G,Z,smooth=False):
+    def calculate_gradient(self,P,G,Z,smooth=False,verbose=False):
         """Calculate the gradient of any property. Deals with grid points that have no mass (that should'nt contribute to the gradient).
 
         :param P: A param.Param instance.
@@ -331,9 +333,22 @@ class Grid():
         # Step 1: get rid of adjacent NaNs with astropy.convolve
         kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
         Z_interp = interpolate_replace_nans(Z, kernel)
+        # Z_interp = convolve(Z,kernel)#, boundary='extend')
 
-        dZdy,dZdx = gradient(Z_interp,G.dy,G.dx)
+        dZdy,dZdx = gradient(nan_to_num(Z_interp),G.dy,G.dx)
 
+        if verbose:
+            plt.clf()
+            plt.subplot(131)
+            plt.imshow(Z,origin='lower')
+            plt.colorbar()
+            plt.subplot(132)
+            plt.imshow(Z_interp,origin='lower')
+            plt.colorbar()
+            plt.subplot(133)
+            plt.imshow(dZdy,origin='lower')
+            plt.colorbar()
+            plt.savefig('gradient_test.png')
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
