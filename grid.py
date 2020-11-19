@@ -333,7 +333,7 @@ class Grid():
         # Step 1: get rid of adjacent NaNs with astropy.convolve
         kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
         Z_interp = interpolate_replace_nans(Z, kernel)
-        # Z_interp = convolve(Z,kernel)#, boundary='extend')
+        # Z_interp = convolve(Z,kernel)#, boundary='extend') # this adds way too much smoothing and the gradient calculation gets far from reasonable
 
         dZdy,dZdx = gradient(nan_to_num(Z_interp),G.dy,G.dx)
 

@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,37 +11,31 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'./',
-              VERSION:'1.1',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Tutorial" href="tutorial.html" />
@@ -60,7 +53,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> poly-mpm
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> poly-mpm
           
 
           
@@ -87,6 +80,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -108,6 +102,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -146,7 +141,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Getting started</li>
     
@@ -174,31 +169,31 @@
 <p>For this to run, you will need the following installed</p>
 <blockquote>
 <div><ul class="simple">
-<li>Python 2.7+/3+</li>
-<li>NumPy</li>
-<li>Matplotlib</li>
+<li><p>Python 2.7+/3+</p></li>
+<li><p>NumPy</p></li>
+<li><p>Matplotlib</p></li>
 </ul>
 </div></blockquote>
 <p>If running on Mac OS X, I recommend installing the <a class="reference external" href="https://www.continuum.io/downloads">Anaconda</a> package. On Ubuntu, just type:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span> <span class="n">python</span><span class="o">-</span><span class="n">numpy</span> <span class="n">python</span><span class="o">-</span><span class="n">matplotlib</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span> <span class="n">python</span><span class="o">-</span><span class="n">numpy</span> <span class="n">python</span><span class="o">-</span><span class="n">matplotlib</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="running-an-example">
 <span id="example"></span><h2>Running an example<a class="headerlink" href="#running-an-example" title="Permalink to this headline">¶</a></h2>
-<p>Parameters for each simulation are contained in separate files in the inputs directory. For example, to run the simulation described by <code class="file docutils literal"><span class="pre">inputs/ball.py</span></code>, run the following in the terminal:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">MPM</span><span class="o">.</span><span class="n">py</span> <span class="n">ball</span>
+<p>Parameters for each simulation are contained in separate files in the inputs directory. For example, to run the simulation described by <code class="file docutils literal notranslate"><span class="pre">inputs/ball.py</span></code>, run the following in the terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">MPM</span><span class="o">.</span><span class="n">py</span> <span class="n">ball</span>
 </pre></div>
 </div>
-<p>By default, the output files should be contained in <code class="file docutils literal"><span class="pre">~/Documents/poly-mpm</span></code>.</p>
+<p>By default, the output files should be contained in <code class="file docutils literal notranslate"><span class="pre">~/Documents/poly-mpm</span></code>.</p>
 </div>
 <div class="section" id="loading-example-data">
 <h2>Loading example data<a class="headerlink" href="#loading-example-data" title="Permalink to this headline">¶</a></h2>
 <p>This is a fairly convoluted process, but is kind of summarised here:</p>
-<img src="_images/graphviz-8e3458550374cdae25107d431e6447072523c1be.png" alt="digraph foo {
+<div class="graphviz"><img src="_images/graphviz-954248157eccad350729229e02db4948a2cf18d7.png" alt="digraph foo {
    &quot;input file&quot; -&gt; &quot;inititalise&quot; -&gt; &quot;params.Params instance&quot;;
-}" />
-<p>Any data which is not provided in the input file will be created with a default value in <code class="file docutils literal"><span class="pre">initialise.py</span></code>. This complete data is then passed into the params.Params instance, which is used for the rest of the simulation.</p>
+}" class="graphviz" /></div>
+<p>Any data which is not provided in the input file will be created with a default value in <code class="file docutils literal notranslate"><span class="pre">initialise.py</span></code>. This complete data is then passed into the params.Params instance, which is used for the rest of the simulation.</p>
 </div>
 </div>
 
@@ -222,11 +217,19 @@
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2018, Benjy Marks
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -237,7 +240,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
