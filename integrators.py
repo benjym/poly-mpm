@@ -262,8 +262,8 @@ def KT_flux(phi,G,P,ax,verbose=False):
 
 def Diffusion(P,G):
     # D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
-    # D = P.l*(P.G.s_bar_0**1.5)*sqrt(abs(G.gammadot))*sqrt(abs(G.pressure/G.m))/sqrt(P.S[0].rho_s) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10 - THIS IMPLEMENTATION AVOIDS DIVIDING BY ZERO
-    D = P.l*ones_like(G.s_bar)
+    D = P.l*(P.G.s_bar_0**1.5)*sqrt(abs(G.gammadot))*sqrt(abs(G.pressure/G.m))/sqrt(P.S[0].rho_s) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10 - THIS IMPLEMENTATION AVOIDS DIVIDING BY ZERO
+    # D = P.l*ones_like(G.s_bar)
     # print(D)
     D = tile(D,[P.G.ns,1]).T.reshape(P.G.ny,P.G.nx,P.G.ns)
     phi = G.phi.reshape(P.G.ny,P.G.nx,P.G.ns)
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     plot = Plotting()
-    P,G,L = initialise.get_parameters(['bi_seg_test','23','2','31'])
+    P,G,L = initialise.get_parameters(['bi_seg_test','23','2','201'])
     P.O.plot_gsd_debug = True
     P,G,L = time_march(P,G,L) # do one time increment to set up all fields
     if P.time_stepping == 'dynamic': P.update_timestep(P,G)
