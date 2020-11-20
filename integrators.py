@@ -193,7 +193,7 @@ def KT(P,G,ax):
     if   ax == 0: return gc[2:-2].transpose([1,0,2]).reshape(-1,P.G.ns)
     elif ax == 1: return gc[2:-2].reshape(-1,P.G.ns)
 
-def KT_flux(phi,G,P,ax):
+def KT_flux(phi,G,P,ax,verbose=False):
     S = zeros_like(phi)
     S_1_bar = zeros_like(phi)
     # S_bar = zeros_like(phi)
@@ -207,44 +207,69 @@ def KT_flux(phi,G,P,ax):
 
     if ax == 0: # x direction
         pad = (phi.shape[0] - P.G.nx)//2
+        padded_shape = [P.G.nx+2*pad,P.G.ny,P.G.ns]
+        boundary_shape = [P.G.nx,P.G.ny]
         g = G.grad_pk[:,ax].reshape(P.G.ny,P.G.nx).T.flatten()
         boundary = boundary.reshape(P.G.ny,P.G.nx).T.flatten()
+        boundary_2d = boundary.reshape(boundary_shape)
+
         for i in range(pad):
             if P.B.cyclic_lr:
                 g = hstack([g[-P.G.ny:], g, g[:P.G.ny]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
             else:
                 g = hstack([g[:P.G.ny],  g, g[-P.G.ny:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-        boundary = hstack([boundary[:boundary.shape[0]//2],
-                           zeros([P.G.ny*pad*2],dtype=bool),
-                           boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
-        g = tile(g,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
-        boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.nx+2*pad,P.G.ny,P.G.ns)
-        dCdx = gradient(phi,P.G.dx,axis=0)
+            boundary_2d = vstack([boundary_2d[0,:],boundary_2d,boundary_2d[-1,:]])
+
+        boundary_padded = boundary_2d.flatten()
+
+        g = tile(g,[P.G.ns,1]).T.reshape(padded_shape)
+        boundary_padded = tile(boundary_padded,[P.G.ns,1]).T.reshape(padded_shape)
 
     elif ax == 1: # y direction
         pad = (phi.shape[0] - P.G.ny)//2
+        padded_shape = [P.G.ny+2*pad,P.G.nx,P.G.ns]
+        boundary_shape = [P.G.ny,P.G.nx]
         g = G.grad_pk[:,ax] # P.G.ny*P.G.nx
         g = tile(g,[P.G.ns,1]).T # P.G.ny*P.G.nx,P.G.ns
         g = g.reshape(-1,P.G.ns) # P.G.ny*P.G.nx,P.G.ns
+        boundary_2d = boundary.reshape(boundary_shape)
+
         for i in range(pad):
             g = vstack([g[:P.G.nx], g,  g[-P.G.nx:]]) # (P.G.ny+2*pad)*P.G.nx,P.G.ns
-        boundary = hstack([boundary[:boundary.shape[0]//2],
-                           zeros([P.G.nx*pad*2],dtype=bool),
-                           boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
-        g = g.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
-        boundary = tile(boundary,[P.G.ns,1]).T.reshape(P.G.ny+2*pad,P.G.nx,P.G.ns)
+            boundary_2d = vstack([boundary_2d[0,:],boundary_2d,boundary_2d[-1,:]])
+        # boundary_padded = hstack([boundary[:boundary.shape[0]//2],
+                           # zeros([P.G.nx*pad*2],dtype=bool),
+                           # boundary[boundary.shape[0]//2-P.G.nx*pad:boundary.shape[0]//2+P.G.nx*pad],
+                           # boundary[boundary.shape[0]//2:]]) # keep just the edges as boundaries
+        g = g.reshape(padded_shape)
+        boundary_padded = tile(boundary_2d.flatten(),[P.G.ns,1]).T.reshape(padded_shape)
 
     f_c = 1./(S_1_bar*S) - 1. # NOTE: FLIPPED TO MAKE COMPRESSION POSITIVE - JFM PAPER HAS TENSION POSITIVE
     flux = P.c*f_c*g
-    flux[boundary] = 0 # WHAT DOES THIS DO?!??
+    flux[boundary_padded] = 0 # WHAT DOES THIS DO?!??
+
+    if verbose:
+        import matplotlib.pyplot as plt
+        plt.subplot(211)
+        plt.imshow(boundary.reshape(boundary_shape),origin='lower')
+        for i in range(P.G.ns):
+            plt.subplot(2,P.G.ns,P.G.ns+i+1)
+            plt.imshow(boundary_padded.reshape(padded_shape)[:,:,i],origin='lower')
+        plt.savefig('boundary_' + str(ax) + '.png')
+        # import sys
+        # sys.exit()
     return flux
 
 def Diffusion(P,G):
-    D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
+    # D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
+    # D = P.l*(P.G.s_bar_0**1.5)*sqrt(abs(G.gammadot))*sqrt(abs(G.pressure/G.m))/sqrt(P.S[0].rho_s) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10 - THIS IMPLEMENTATION AVOIDS DIVIDING BY ZERO
+    D = P.l*ones_like(G.s_bar)
+    # print(D)
     D = tile(D,[P.G.ns,1]).T.reshape(P.G.ny,P.G.nx,P.G.ns)
     phi = G.phi.reshape(P.G.ny,P.G.nx,P.G.ns)
     dDc_dy,dDc_dx = gradient(D*phi,P.G.dy,P.G.dx,axis=[0,1])
     boundary = G.boundary_tot.astype(bool).reshape(P.G.ny,P.G.nx)
+    # print(boundary)
     for i in range(P.G.ns): # enforce no flux at boundary
         dDc_dy[:,:,i] *= ~boundary
         dDc_dx[:,:,i] *= ~boundary
@@ -280,7 +305,9 @@ if __name__ == "__main__":
     P.O.plot_gsd_debug = True
     P,G,L = time_march(P,G,L) # do one time increment to set up all fields
     if P.time_stepping == 'dynamic': P.update_timestep(P,G)
-    P.l = 1e0
+    P.l = 2e-3 #1.0
+    P.c = 1e-3 #1e-4
+    P.t_f = 0.5
 
     while P.t <= P.t_f:
         G.phi += increment_grainsize(P,G)

@@ -58,6 +58,7 @@ class Grid_Params():
 class Boundary_Params():
     def __init__(self):
         self.has_bottom = True
+        self.has_top = True # DO I NEED THIS FOR SEGREGATOIN EQUATIONS TO HAVE NICE BC?!?
         self.cyclic_lr = True
         self.no_slip_bottom = True
 
