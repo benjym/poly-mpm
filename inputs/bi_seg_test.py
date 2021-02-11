@@ -6,7 +6,7 @@ class Params():
     def __init__(self,args):
         self.dt = 1e-8#5e-8 # timestep (s)
         self.savetime = 1e-3 # (s)
-        self.t_f = 5.0 #100.0 # 3*self.dt # final time (s)
+        self.t_f = 10.0 #100.0 # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.theta = -deg2rad(float(args[1])) # slope angle (degrees)
         self.pressure = 'lithostatic'
@@ -58,6 +58,7 @@ class Grid_Params():
 class Boundary_Params():
     def __init__(self):
         self.has_bottom = True
+        self.has_top = True # DO I NEED THIS FOR SEGREGATOIN EQUATIONS TO HAVE NICE BC?!?
         self.cyclic_lr = True
         self.no_slip_bottom = True
 

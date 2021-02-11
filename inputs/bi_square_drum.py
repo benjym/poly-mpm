@@ -18,7 +18,7 @@ class Params():
         self.S = [Solid_Params(self.G,self,args),]
         self.segregate_grid = True
         self.c = 1e-3 # inter-particle drag coefficient
-        self.l = 1. # number of particle diameters for seg diffusion coeff
+        self.l = 10. # number of particle diameters for seg diffusion coeff
         # self.D = 1e-3 # segregation diffusion coefficient
         self.supername = 'im/drum/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/'
         # self.supername = 'im/drum_rough/wall_mu_' + str(self.B.wall_mu) + '/ny_' + str(self.G.ny) + '/Fr_' + str(self.Fr) + '/c_' +
@@ -91,7 +91,7 @@ class Solid_Params():
         self.eta_max = 100.*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2 # 10x WORKS BETTER
 
         # self.law = 'dp'
-        # self.beta = 0.0
+        # # self.beta = 0.5
         # self.s = 2.0
 
         self.E = 1e7
@@ -101,11 +101,11 @@ class Solid_Params():
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
-        self.y = (G.ny-1)//2*self.pts_per_cell # particles in y direction
+        self.y = (G.ny-1)//2*self.pts_per_cell + 2 # particles in y direction
         gap = array((G.dx,G.dy))/(2*self.pts_per_cell)
 
         xp = linspace(G.x_m+gap[0],G.x_M-gap[0],self.x)
-        yp = linspace(G.y_m+gap[1],G.y_M-gap[1] - G.top_gap,self.y)
+        yp = linspace(G.y_m+gap[1],(G.y_M+G.y_m)/2.-gap[1]/2.,self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
         for i in range(self.x*self.y):
@@ -114,16 +114,16 @@ class Solid_Params():
             self.n += 1
         self.A = (G.y_M - G.y_m - G.top_gap)*(G.x_M - G.x_m)/self.n # area (m^2)
 
-    def critical_time(self,P): # pouliquen
-        distance = minimum(P.G.dx,P.G.dy)
-        t_ela = distance/sqrt(self.K/self.rho) # elasticity
-        t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
-        return minimum(t_diff,t_ela)
-
-    # def critical_time(self,P): # dp
+    # def critical_time(self,P): # pouliquen
     #     distance = minimum(P.G.dx,P.G.dy)
     #     t_ela = distance/sqrt(self.K/self.rho) # elasticity
-    #     return t_ela/10.
+    #     t_diff = distance**2/self.eta_max*self.rho # momentum diffusivity/viscosity
+    #     return minimum(t_diff,t_ela)
+
+    def critical_time(self,P): # dp
+        distance = minimum(P.G.dx,P.G.dy)
+        t_ela = distance/sqrt(self.K/self.rho) # elasticity
+        return t_ela
 
 class Output_Params():
     def __init__(self,G):

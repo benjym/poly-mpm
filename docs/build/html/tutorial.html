@@ -1,8 +1,7 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8">
   
@@ -12,37 +11,31 @@
   
 
   
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/graphviz.css" type="text/css" />
+
+  
   
   
   
 
   
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
     
-      <script type="text/javascript">
-          var DOCUMENTATION_OPTIONS = {
-              URL_ROOT:'./',
-              VERSION:'1.1',
-              LANGUAGE:'None',
-              COLLAPSE_INDEX:false,
-              FILE_SUFFIX:'.html',
-              HAS_SOURCE:  true,
-              SOURCELINK_SUFFIX: '.txt'
-          };
-      </script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
-
-  
-  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Documentation" href="code.html" />
@@ -60,7 +53,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> poly-mpm
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> poly-mpm
           
 
           
@@ -87,6 +80,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -111,6 +105,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -149,7 +144,7 @@
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
       <li>Tutorial</li>
     
@@ -174,14 +169,14 @@
 <span id="id1"></span><h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="looking-at-the-input-file">
 <h2>Looking at the input file<a class="headerlink" href="#looking-at-the-input-file" title="Permalink to this headline">¶</a></h2>
-<p>Load up the file <code class="file docutils literal"><span class="pre">inputs/ball.py</span></code> in your favourite text editor. I like <a class="reference external" href="https://atom.io/">atom</a>.</p>
+<p>Load up the file <code class="file docutils literal notranslate"><span class="pre">inputs/ball.py</span></code> in your favourite text editor. I like <a class="reference external" href="https://atom.io/">atom</a>.</p>
 </div>
 <div class="section" id="the-params-class">
 <h2>The Params class<a class="headerlink" href="#the-params-class" title="Permalink to this headline">¶</a></h2>
 <p>This contains all of the parameters for controlling a single simulation. Some global information is stored here, such as timestepping and gravity values. Other information is stored in subclasses. A convenience method is also provided for updating gravity, or any other parameters, as many simulations require a slow ramp up in gravity, rather than applying a step function:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Params</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mode</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">4</span> <span class="c1"># timestep (s)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Params</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mode</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">1e-4</span> <span class="c1"># timestep (s)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">savetime</span> <span class="o">=</span> <span class="mf">0.01</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">t_f</span> <span class="o">=</span> <span class="mf">5.</span><span class="c1">#100*self.dt # final time (s)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nt</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t_f</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span> <span class="c1"># number of timesteps</span>
@@ -200,9 +195,9 @@
 </div>
 <div class="section" id="the-grid-params-class">
 <h2>The Grid_Params class<a class="headerlink" href="#the-grid-params-class" title="Permalink to this headline">¶</a></h2>
-<p>This describes the <span class="math">\(x\)</span> and <span class="math">\(y\)</span> extents of the grid, as well as their resolution. This is pretty inflexible at the moment, and only allows for regular cartesian grids on a rectangular domain:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Grid_Params</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<p>This describes the <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> extents of the grid, as well as their resolution. This is pretty inflexible at the moment, and only allows for regular cartesian grids on a rectangular domain:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Grid_Params</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_m</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="c1"># (m)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_M</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="c1"># (m)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">y_m</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="c1"># (m)</span>
@@ -214,18 +209,18 @@
 </div>
 <div class="section" id="the-boundary-params-class">
 <h2>The Boundary_Params class<a class="headerlink" href="#the-boundary-params-class" title="Permalink to this headline">¶</a></h2>
-<p>Here all of the boundaries of the grid are defined. For this example, only the bottom of the grid has a boundary. It is also not rough (<code class="docutils literal"><span class="pre">self.roughness</span></code> has not been set to  <code class="docutils literal"><span class="pre">True</span></code>):</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Boundary_Params</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<p>Here all of the boundaries of the grid are defined. For this example, only the bottom of the grid has a boundary. It is also not rough (<code class="docutils literal notranslate"><span class="pre">self.roughness</span></code> has not been set to  <code class="docutils literal notranslate"><span class="pre">True</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Boundary_Params</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_bottom</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="the-solid-params-class">
 <h2>The Solid_Params class<a class="headerlink" href="#the-solid-params-class" title="Permalink to this headline">¶</a></h2>
-<p>This defines the properties of each material point. The lists <code class="docutils literal"><span class="pre">self.X</span></code> and <code class="docutils literal"><span class="pre">self.Y</span></code> define initial positions of each material point, up to <code class="docutils literal"><span class="pre">self.n</span></code> points in total. The constitutive model to use is defined by <code class="docutils literal"><span class="pre">self.law</span></code> &#8212; this needs to be the same as the class in <code class="file docutils literal"><span class="pre">constit.py</span></code>. In this example, material points are placed onto a set of <code class="docutils literal"><span class="pre">nr</span></code> concentric circles with centre at <code class="docutils literal"><span class="pre">c</span></code>, largest radius <code class="docutils literal"><span class="pre">r</span></code> and <code class="docutils literal"><span class="pre">nphi</span></code> material points around the largest circle.:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Solid_Params</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<p>This defines the properties of each material point. The lists <code class="docutils literal notranslate"><span class="pre">self.X</span></code> and <code class="docutils literal notranslate"><span class="pre">self.Y</span></code> define initial positions of each material point, up to <code class="docutils literal notranslate"><span class="pre">self.n</span></code> points in total. The constitutive model to use is defined by <code class="docutils literal notranslate"><span class="pre">self.law</span></code> — this needs to be the same as the class in <code class="file docutils literal notranslate"><span class="pre">constit.py</span></code>. In this example, material points are placed onto a set of <code class="docutils literal notranslate"><span class="pre">nr</span></code> concentric circles with centre at <code class="docutils literal notranslate"><span class="pre">c</span></code>, largest radius <code class="docutils literal notranslate"><span class="pre">r</span></code> and <code class="docutils literal notranslate"><span class="pre">nphi</span></code> material points around the largest circle.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Solid_Params</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Y</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
@@ -267,8 +262,8 @@
 <div class="section" id="the-output-params-class">
 <h2>The Output_Params class<a class="headerlink" href="#the-output-params-class" title="Permalink to this headline">¶</a></h2>
 <p>This class defines what should be output from the simulation. Here, the continuum values and material point values are both show, using custom sizes for the respective figures.:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Output_Params</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Output_Params</span><span class="p">():</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">continuum_fig_size</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mp_fig_size</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">plot_continuum</span> <span class="o">=</span> <span class="kc">True</span>
@@ -298,11 +293,19 @@
 
   <div role="contentinfo">
     <p>
+        
         &copy; Copyright 2018, Benjy Marks
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -313,7 +316,6 @@
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {

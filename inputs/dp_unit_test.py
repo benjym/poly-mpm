@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 
 class Params():
     def __init__(self,mode):
-        self.dt = 2e-5 # timestep (s)
-        self.savetime = 0.1
+        self.dt = 1e-4 # timestep (s)
+        self.savetime = 1
         self.t_f = 1 # final time (s)
         self.nt = int(self.t_f/self.dt) # number of timesteps
         self.max_q = 1.
@@ -22,7 +22,7 @@ class Params():
 
     def update_forces(self):
         self.g = 0
-        t_c = self.t_f/2.
+        t_c = self.t_f/10.
         if self.t < t_c:
             self.q_h = self.q_v = self.max_q*self.t/t_c
         else:
@@ -66,7 +66,7 @@ class Solid_Params():
         self.rho_s = self.rho/self.packing # solid density
 
         self.E = 1e7 # elastic modulus (Pa)
-        self.nu = 0.0 # poisson's ratio
+        self.nu = 0.4 # poisson's ratio
         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
 
@@ -77,6 +77,7 @@ class Solid_Params():
         self.I_0 = 1e-3
         self.beta = 0 #1.*self.mu
         self.s = 2.
+        self.eta_max = 1e10
 
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction

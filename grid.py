@@ -1,10 +1,14 @@
+import sys
+import warnings
 from numpy import *
 from scipy.ndimage.filters import gaussian_filter
 import matplotlib.pyplot as plt
 from integrators import increment_grainsize
 from scipy.interpolate import RectBivariateSpline as interp2d
-from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel
-import sys
+from astropy.convolution import convolve, Gaussian2DKernel, Box2DKernel, CustomKernel, interpolate_replace_nans
+
+warnings.simplefilter('ignore', UserWarning) # remove astropy warning for nans in result
+
 
 # from numba import jitclass          # import the decorator
 # from numba import int32, float32, bool_    # import the types
@@ -101,6 +105,11 @@ class Grid():
         # if P.B.cyclic_lr: self.DX = P.G.dx*ones([P.G.nx-1])
         # else: self.DX = hstack([P.G.dx/2.,P.G.dx*ones([P.G.nx-3]),P.G.dx/2.])
         # self.DY = hstack([P.G.dy/2.,P.G.dy*ones([P.G.ny-3]),P.G.dy/2.])
+
+        # Central difference kernels for convolution operations
+        self.kernel_grad_x = CustomKernel(array([[0,0,0],[1.0/(2*self.dx),0,-1.0/(2*self.dx)],[0,0,0]]))
+        self.kernel_grad_y = CustomKernel(array([[0,0,0],[1.0/(2*self.dy),0,-1.0/(2*self.dy)],[0,0,0]]).T)
+
 
     def boundary(self,P):
         """
@@ -294,7 +303,7 @@ class Grid():
         """
         u = (self.q[:,0]/self.m)
         v = (self.q[:,1]/self.m)
-        gradu = self.calculate_gradient(P,G,u,smooth=smooth)
+        gradu = self.calculate_gradient(P,G,u,smooth=smooth)#,verbose=True)
         gradv = self.calculate_gradient(P,G,v,smooth=smooth)
         dudy = gradu[:,1]
         dvdx = gradv[:,0]
@@ -309,7 +318,7 @@ class Grid():
         self.grad_gammadot = G.calculate_gradient(P,G,abs(G.gammadot),smooth=P.smooth_grad2)
 
 
-    def calculate_gradient(self,P,G,Z,smooth=False):
+    def calculate_gradient(self,P,G,Z,smooth=False,verbose=False):
         """Calculate the gradient of any property. Deals with grid points that have no mass (that should'nt contribute to the gradient).
 
         :param P: A param.Param instance.
@@ -320,7 +329,26 @@ class Grid():
         """
 
         Z = ma.masked_where(G.m<P.M_tol,Z).reshape(P.G.ny,P.G.nx)
-        dZdy,dZdx = gradient(Z,G.dy,G.dx)
+
+        # Step 1: get rid of adjacent NaNs with astropy.convolve
+        kernel = Gaussian2DKernel(x_stddev=1,y_stddev=1)
+        Z_interp = interpolate_replace_nans(Z, kernel)
+        # Z_interp = convolve(Z,kernel)#, boundary='extend') # this adds way too much smoothing and the gradient calculation gets far from reasonable
+
+        dZdy,dZdx = gradient(nan_to_num(Z_interp),G.dy,G.dx)
+
+        if verbose:
+            plt.clf()
+            plt.subplot(131)
+            plt.imshow(Z,origin='lower')
+            plt.colorbar()
+            plt.subplot(132)
+            plt.imshow(Z_interp,origin='lower')
+            plt.colorbar()
+            plt.subplot(133)
+            plt.imshow(dZdy,origin='lower')
+            plt.colorbar()
+            plt.savefig('gradient_test.png')
 
         if smooth: # For details of astropy convolution process, see here: http://docs.astropy.org/en/stable/convolution/using.html
         #     # kernel = Box2DKernel(smooth) # smallest possible square kernel is 3
@@ -351,11 +379,7 @@ class Grid():
         :param P: A param.Param instance.
 
         """
-        decay_time = 0.1 # seconds
-
-        if (P.tstep == 0) and P.initial_flow:
-            self.pk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
-            # print('\n\n\n\n\nhi!\n\n\n\n\n')
+        # decay_time = 0.1 # seconds
 
 
         # diffusivity = (length_scale**2)/(2.*decay_time) # definition of diffusivity?
@@ -377,16 +401,23 @@ class Grid():
         # grad2_Dpk_dy = self.calculate_gradient(P,G,diffusivity*grad_pk[:,1],smooth=False)[:,1]
         # diff_term = grad2_Dpk_dx + grad2_Dpk_dy
 
-        self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #- nan_to_num(diff_term)
-        # if P.t == 0:
-            # print('Setting pk initial condition')
-            # self.dpk[15] = 30
+        # self.dpk = nan_to_num(P.l*self.s_bar*sqrt(abs(self.pressure/self.V))*abs(self.gammadot) - self.pk)/decay_time*P.dt #-
 
-        # print(amax(self.s_bar),amax(abs(self.pressure/self.V)),amax(abs(nan_to_num(self.gammadot))),amax(nan_to_num(self.pk)))
+        # LATEST AND BEST WORKING EVOLUTION EQUATION:
+        # max_gamma_dot_allowable = 100.0
+        # sanitised_gamma_dot = minimum(abs(nan_to_num(self.gammadot)),max_gamma_dot_allowable)
+        # self.dpk = (P.l*self.s_bar**2*sanitised_gamma_dot**2*self.m/self.I - self.pk)/decay_time*P.dt # p_k_steady = l*gamma_dot^2*d^2/I
+        # self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
 
-        # self.pk += self.dpk_dot
-        self.grad_pk = self.calculate_gradient(P,G,self.pk.copy(),smooth=False)
+        # self.I = maximum(minimum(self.I/self.m,1.0),1e-6)*self.m
+        # self.I[G.m<P.M_tol] = nan
+        self.pk = abs(self.gammadot)*self.s_bar*sqrt(P.S[0].rho_s*abs(self.pressure/self.m)) # p*I without dividing by p
+        # self.pk = nan_to_num(-(self.pressure/self.m)*(self.I/self.m)) # tension positive!!
+        self.grad_pk = self.calculate_gradient(P,G,self.pk,smooth=False)
 
-        # NOTE: THIS IS TOTALLY UNTESTED AND APPEARS TO BE RANDOM!!!!
-        # self.grad_p = self.calculate_gradient(P,G,self.p.copy(),smooth=False)
-        # self.grad_pk = abs(self.grad_pk)*sign(self.grad_p)
+        # # JUST USED FOR SEGREGATION MODEL - NOT ACTUALLY GRAD OF PK!!!!
+        # grad_pk_mag = sqrt(self.grad_pk[:,0]**2 + self.grad_pk[:,1]**2)
+        # grad_p = self.calculate_gradient(P,G,self.pressure.copy(),smooth=False)
+        # grad_p_mag = sqrt(grad_p[:,0]**2 + grad_p[:,1]**2)
+        # self.grad_pk[:,0] = -grad_pk_mag*grad_p[:,0]/grad_p_mag
+        # self.grad_pk[:,1] = -grad_pk_mag*grad_p[:,1]/grad_p_mag

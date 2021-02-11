@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # import colorcet as cc
 import matplotlib.pyplot as plt
-from matplotlib.cm import viridis, bwr
+from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap, Normalize, LogNorm
 import matplotlib.patches as patches
 from numpy import *
 from numpy.linalg import norm
 import os
+import copy
 plt.viridis()
 
 cdict = {'red': ((0.0, 1.0, 1.0),
@@ -27,6 +28,7 @@ cdict = {'red': ((0.0, 1.0, 1.0),
                   (1.0, 1., 1.))}
 orange_blue = LinearSegmentedColormap('orange_blue',cdict,256)
 orange_blue.set_bad('w',1.0)
+bwr = copy.copy(cm.get_cmap("bwr"))
 # print(orange_blue)
 # viridis.set_under('w')
 # viridis.set_over('w')
@@ -86,7 +88,7 @@ class Plotting:
 
     def draw_gamma_dot(self,L,P,G):
         for p in range(P.phases):
-            if P.S[p].law is not 'rigid':
+            if P.S[p].law != 'rigid':
                 x = zeros((P.S[p].n,3))
                 v = zeros((P.S[p].n,3))
                 gammadot = zeros((P.S[p].n))
@@ -106,7 +108,7 @@ class Plotting:
     def draw_continuum(self,G,P):
 #         for p in range(P.phases):
         for p in [0,]: # all phases have same continuum properties!
-            if P.S[p].law is not 'rigid':
+            if P.S[p].law != 'rigid':
                 plt.clf()
                 if hasattr(P.O, 'continuum_fig_size'):
                     figsize = P.O.continuum_fig_size
@@ -185,7 +187,8 @@ class Plotting:
                               # r'$\mu$',r'$\log_{10}I$',r'$\dot\phi^{m}$',r'$\dot\phi^{M}$']
                               r'$\mu$',r'$\eta/\eta_{max}$',
                               # r'$p_k$',r'$||\nabla p_k||$',r'$\dot\phi^{M}$',r'$\phi^{M}$'] # THIS
-                              r'$p_k$',r'$\dot p_k$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
+                              # r'$p_k$',r'$\dot p_k$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
+                              r'$p_k$',r'$I$',r'$\nabla_y p_k$',r'$\dot\phi^{M}$'] # NOT THIS
                     norm = [Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),Normalize(),
                             Normalize(),Normalize(),Normalize(),LogNorm(),
@@ -204,9 +207,10 @@ class Plotting:
                          ma.masked_less_equal(G.eta/P.S[0].eta_max,0.), # just for log scaling nicely
                          # G.dphi[:,0]/P.dt*G.m,
                          G.pk*G.m,
+                         G.I,
                          # sqrt(G.grad_pk[:,0]**2 + G.grad_pk[:,1]**2)*G.m, # THIS
                          # G.grad_pk[:,0]*G.m,
-                         G.dpk/P.dt*G.m, # NOT THIS
+                         # G.dpk/P.dt*G.m, # NOT THIS
                          G.grad_pk[:,1]*G.m, # NOT THIS
                          G.dphi[:,-1]/P.dt*G.m,
                          # G.phi[:,-1]*G.m # THIS
@@ -223,7 +227,8 @@ class Plotting:
                         plt.ylim(P.G.y_m,P.G.y_M)
                         if P.segregate_grid:
                             if titles[i] == r'$\bar s$':
-                                plt.clim(P.G.s_m,P.G.s_M)
+                                pass
+                                # plt.clim(P.G.s_m,P.G.s_M)
                                 # plt.set_cmap('bwr')
                                 # plt.set_cmap(cc.cm.bmy)
                             elif titles[i] == r'$\eta/\eta_{max}$':
@@ -233,8 +238,8 @@ class Plotting:
                             elif titles[i] == r'$\dot\phi^{M}$':
                                 plt.clim(-amax(abs(G.dphi[:,-1]))/P.dt,amax(abs(G.dphi[:,-1]))/P.dt)
                                 plt.set_cmap('bwr')
-                            elif titles[i] == r'$\phi^{M}$':
-                                plt.clim(0,1)
+                            # elif titles[i] == r'$\phi^{M}$':
+                                # plt.clim(0,1)
                             else:
                                 plt.set_cmap('viridis')
                                 # plt.set_cmap('bwr')
@@ -496,7 +501,7 @@ class Plotting:
                 plt.subplot(212)
                 plt.xlabel(r'${\bf u}$',rotation='horizontal')
                 plt.quiver(x[:,0],x[:,1],v[:,0],v[:,1])#,scale=1.)
-            # if P.S[p].law is not 'rigid':
+            # if P.S[p].law != 'rigid':
             if name:
                 self.savefig(P,'MP_'+str(p)+'/'+str(name).zfill(5))
             else:
@@ -605,8 +610,8 @@ class Plotting:
             plt.pcolormesh(G.x_plot,
                            G.y_plot,
                            ma.masked_where(G.m<P.M_tol,G.phi[:,i]).reshape(P.G.ny,P.G.nx),
-                           vmin=0.0,
-                           vmax=1.0,
+                           # vmin=0.0,
+                           # vmax=1.0,
                            )
             plt.colorbar()
             plt.title(mean(G.phi[:,i]))

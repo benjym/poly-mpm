@@ -56,27 +56,29 @@ class Particle():
         self.dev_stress = self.stress - self.sigma_kk*eye(3)/3.
         self.gammadot = 0.
         self.pressure = self.sigma_kk/3.
+        self.pk = 0. # kinetic pressure
+
         self.sigmav = self.stress[1,1]
         self.sigmah = self.stress[0,0]
         self.yieldfunction = 0.
         self.G = zeros((4,3)) # gradient of shape function
         self.N = zeros((4)) # basis function
         self.n_star = 0 # reference node
-        self.pk = 0. # kinetic pressure
+
         if phi is not None:
             self.phi = array(phi)
         else:
             self.phi = array(P.S[p].phi)
+
         if P.initial_flow == 'steady':
             if P.S[0].law == 'viscous' or P.S[0].law == 'viscous_size':
                 self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.]) # VISCOUS FLOW DOWN A SLOPE
             elif P.S[0].law == 'pouliquen' or P.S[0].law == 'pouliquen2D':
-                s_bar = (P.G.s_m+P.G.s_M)/2.
-                self.v = array([sqrt(abs(P.max_g)*P.G.s_bar_0)*(2./3.)*P.S[p].I_0*
-                               (tan(abs(P.theta))-P.S[p].mu_0)/(P.S[p].mu_1-tan(abs(P.theta)))*
-                               sqrt(P.S[p].packing*cos(abs(P.theta)))*
-                               (P.G.y_M**1.5 - (P.G.y_M - y)**1.5)/P.G.s_bar_0**1.5,
-                               0.,0.])
+                A = sqrt(abs(P.max_g)*P.G.s_bar_0)*(2./3.)*P.S[p].I_0*(tan(abs(P.theta))-P.S[p].mu_0)/(P.S[p].mu_1-tan(abs(P.theta)))*sqrt(P.S[p].packing*cos(abs(P.theta)))
+                self.v = array([A*(P.G.y_M**1.5 - (P.G.y_M - y)**1.5)/P.G.s_bar_0**1.5,0.,0.])
+                self.gammadot = 1.5*A*sqrt(P.G.y_M - y)/P.G.s_bar_0**1.5
+                self.pk = nan_to_num(P.l*P.G.s_bar_0*sqrt(abs(self.pressure*self.rho))*abs(self.gammadot)) # p_k_steady = l*d*gamma_dot*sqrt(P*rho)
+                # print(self.phi,self.pressure,self.gammadot,self.pk)
         elif P.initial_flow == 'steady_poiseulle': # https://link.springer.com/content/pdf/10.1007%2Fs10035-013-0447-3.pdf
             H = P.G.y_M - P.G.y_m
             y_star = y/H
@@ -97,7 +99,6 @@ class Particle():
             if not stable:
                 print('WARNING: THIS SETUP WILL ACCELERATE FOREVER')
                 print(sqrt(2*P.S[p].mu_0),beta,sqrt(2*P.S[p].mu_1))
-
 
         # elif P.initial_flow == 'steady_poiseulle': # TOTALLY FAKE
         #         H = P.G.y_M - P.G.y_m
@@ -121,6 +122,7 @@ class Particle():
 
             # elif P.S[0].law == 'marks2012': self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.])
         # print(self.stress)
+
     def update_strain(self,P,G):
         """Calculate incremental strain at the particle level from the nodal velocity. Also update the total strain.
 

@@ -183,7 +183,7 @@ class MatPointList():
 
         """
         for p in range(P.phases):
-            if P.S[p].law is 'rigid':
+            if P.S[p].law == 'rigid':
                 for i in range(P.S[p].n):
                     self.S[p][i].move_rigid_points(P,G)
             else:
