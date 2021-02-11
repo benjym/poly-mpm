@@ -14,7 +14,7 @@ class Params():
         self.G = Grid_Params()
         self.B = Boundary_Params()
         self.O = Output_Params()
-        self.S = Solid_Params()
+        self.S = [Solid_Params()]
 
     def update_forces(self):
         self.g=self.max_g
