@@ -127,14 +127,23 @@ class Solid_Params():
 
 class Output_Params():
     def __init__(self,G):
-        self.plot_continuum = True
-        # self.plot_material_points = True
-        self.plot_gsd_mp = True
-        # self.plot_gsd_grid = True
-        self.save_s_bar = True
-        self.save_u = True
-        self.save_density = True
-        self.save_phi_MP = True
         self.continuum_fig_size = [24,8]
         self.mp_fig_size = [18,4]
-        # self.save_fields = [[G.s_bar,'s_bar'],[G.m/G.V,'density'],[G.q[:,0]/G.m,'u'],[G.q[:,1]/G.m],'v']
+
+    def after_every_nth_timestep(self,P,G,L,plot):
+        plot.draw_continuum(G,P)
+        # plot.draw_material_points(L,P,G)
+        plot.draw_gsd_mp(L,P,G)
+        plot.save_u(L,P,G)
+        plot.save_s_bar(L,P,G)
+        plot.save_density(L,P,G)
+        plot.save_phi_MP(L,P,G)
+
+    def final_graphs(self,P,G,L,plot):
+        plot.draw_continuum(G,P)
+        # plot.draw_material_points(L,P,G,'final')
+        plot.draw_gsd_mp(L,P,G)
+        plot.save_u(L,P,G)
+        plot.save_s_bar(L,P,G)
+        plot.save_density(L,P,G)
+        plot.save_phi_MP(L,P,G)

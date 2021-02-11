@@ -76,5 +76,31 @@ class Output_Params():
     def __init__(self):
         self.continuum_fig_size = [10,6]
         self.mp_fig_size = [10,10]
-        self.plot_continuum = True
-        self.plot_material_points = True
+
+    def after_every_nth_timestep(self,P,G,L,plot):
+        plot.draw_continuum(G,P)
+        plot.draw_material_points(L,P,G)
+        # plot.draw_gsd_mp(L,P,G)
+        # plot.draw_gsd_grid(L,P,G)
+        # plot.draw_continuum(G,P)
+        # plot.draw_material_points(L,P,G)
+        # plot.draw_gamma_dot(L,P,G)
+        # P.O.measure_E(L,P,G)
+        # plot.save_u(L,P,G)
+        # plot.save_s_bar(L,P,G)
+        # plot.save_density(L,P,G)
+        # plot.save_phi_MP(L,P,G)
+
+    def final_graphs(self,P,G,L,plot):
+        plot.draw_continuum(G,P)
+        plot.draw_material_points(L,P,G,'final')
+        # P.O.measure_E(L,P,G)
+        # plot.draw_energy(P)
+        # plot.draw_gsd_mp(L,P,G)
+        # plot.draw_gsd_grid(L,P,G)
+        # plot.save_u(L,P,G)
+        # plot.save_s_bar(L,P,G)
+        # plot.save_density(L,P,G)
+        # plot.save_phi_MP(L,P,G)
+        # P.O.draw_p_q(P,G,L,plot,P.tstep)
+        # P.O.draw_mu(P,G,L,plot,P.tstep)

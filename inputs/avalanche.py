@@ -34,7 +34,7 @@ class Grid_Params():
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
         self.thickness = 1. # (m)
-        
+
 class Boundary_Params():
     def __init__(self):
         self.wall = True
@@ -60,7 +60,7 @@ class Solid_Params():
         self.mu_s = 1e3
         self.K = 1e6
         self.mu_v = 0
-        
+
 #         self.law = 'bingham'
 #         self.mu_s = 1e2 # shear viscosity
 #         self.tau_0 = 100. # yield stress
@@ -68,7 +68,7 @@ class Solid_Params():
 #         self.gamma_c = self.tau_0/(self.mu_0 - self.mu_s)
 #         self.K = 1e7 # bulk modulus
 #         self.mu_v = 0. #1e3
-        
+
         self.inlet_rate = 0.1
         filling_fraction = 0.5
         self.pts_per_cell = 3
@@ -84,16 +84,38 @@ class Solid_Params():
             self.Y.append(Y[i])
             self.n += 1
         self.A = (G.x_M-G.x_m)*(G.y_M-G.y_m)/self.n*filling_fraction # area (m^2)
-#         self.A = 0.002 
+#         self.A = 0.002
 #         self.initial_v = array([-0.0001,0,0])
-        
+
 class Output_Params():
-    def __init__(self):#self,nt):
-        self.measure_energy = False
-        self.plot_continuum = True
-        self.plot_material_points = True
-        self.measure_stiffness = False
-        self.check_positions = False
-        self.plot_fluid = False
+    def __init__(self):
         self.continuum_fig_size = [18,6]
         self.mp_fig_size = [6,6]
+
+        def after_every_nth_timestep(self,P,G,L,plot):
+        plot.draw_continuum(G,P)
+        plot.draw_material_points(L,P,G)
+        # plot.draw_gsd_mp(L,P,G)
+        # plot.draw_gsd_grid(L,P,G)
+        # plot.draw_continuum(G,P)
+        # plot.draw_material_points(L,P,G)
+        # plot.draw_gamma_dot(L,P,G)
+        # P.O.measure_E(L,P,G)
+        # plot.save_u(L,P,G)
+        # plot.save_s_bar(L,P,G)
+        # plot.save_density(L,P,G)
+        # plot.save_phi_MP(L,P,G)
+
+    def final_graphs(self,P,G,L,plot):
+        plot.draw_continuum(G,P)
+        plot.draw_material_points(L,P,G,'final')
+        # P.O.measure_E(L,P,G)
+        # plot.draw_energy(P)
+        # plot.draw_gsd_mp(L,P,G)
+        # plot.draw_gsd_grid(L,P,G)
+        # plot.save_u(L,P,G)
+        # plot.save_s_bar(L,P,G)
+        # plot.save_density(L,P,G)
+        # plot.save_phi_MP(L,P,G)
+        # P.O.draw_p_q(P,G,L,plot,P.tstep)
+        # P.O.draw_mu(P,G,L,plot,P.tstep)
