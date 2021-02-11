@@ -19,7 +19,7 @@ class Params():
         self.c = 1e-3 # inter-particle drag coefficient
         # self.D = 1e-3 # segregation diffusion coefficient
         self.l = 10. # number of particle diameters for seg diffusion coeff
-        self.supername = 'im/PSM_slope_stab/ny_' + args[1] + '/ns_' + args[4] + '/' + args[2] + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
+        self.supername = 'im/PSM_slope_stab/ny_' + args[1] + '/ns_' + args[3] + '/' + args[2] + '/c_' + str(self.c) + '/l_' + str(self.l) + '/'
         self.pressure = 'lithostatic'
         self.smooth_gamma_dot = False # smooth calculation of gamma_dot
         self.normalise_phi = True
@@ -50,7 +50,7 @@ class Grid_Params():
         self.R = 10.
         self.s_M = 0.1 # 10 cm aggregate
         self.s_m = self.s_M/self.R
-        self.ns = int(args[4])
+        self.ns = int(args[3])
         # self.s = array([self.s_m,self.s_M])
         s_edges = linspace(self.s_m,self.s_M,self.ns+1)
         self.s = (s_edges[1:] + s_edges[:-1])/2.
@@ -82,10 +82,6 @@ class Solid_Params():
         self.delta_mu = self.mu_1 - self.mu_0
         self.I_0 = 0.279
         self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2
-        # print(self.eta_max)
-        # self.law = 'linear_mu'
-        # self.mu_0 = 0.5
-        # self.b = 0.5
 
         self.E = 1e7
         self.nu = 0.4 # poissons ratio
@@ -96,34 +92,22 @@ class Solid_Params():
         self.ny = (G.ny-1)*self.pts_per_cell # particles in y direction
         gap = array((G.dx,G.dy))/(2*self.pts_per_cell)
 
-
-        # xp = linspace(G.x_m + (G.L - 1. + (G.L_1 - 1.)/G.L_1)/G.L*(G.x_M - G.x_m) + gap[0],G.x_M - gap[0],self.nx)
         yp = linspace(G.y_m + gap[1],G.y_M - gap[1],self.ny)
-        # X = tile(xp,self.ny)
-        # Y = repeat(yp,self.nx)
-
-
         for j in range(self.ny):
-            current_L = G.L_1 - yp[j]/tan(P.slope_angle)
-            # print(current_L)
+            current_L = G.L_1 - yp[j]/tan(P.slope_angle) # length of slope at this height
             nx = int(current_L/G.dx*self.pts_per_cell) # particles in x direction
             if nx > 0:
                 xp = linspace(G.x_m + gap[0],current_L - gap[0],nx)
                 for i in range(nx):
-                    # print(xp[i],yp[j])
                     self.X.append(xp[i])
                     self.Y.append(yp[j])
                     if args[2] == 'top': # small on top
-                        # if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([1.,0.])
-                        # else:                        self.PHI.append([0.,1.])
                         this_phi = zeros([G.ns])
                         H = (G.y_M - G.y_m)
                         this_phi_arg = int(floor((H-yp[j])/H*G.ns))
                         this_phi[this_phi_arg] = 1.
                         self.PHI.append(this_phi)
                     elif args[2] == 'bot': # large on top
-                        # if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([0.,1.])
-                        # else:                        self.PHI.append([1.,0.])
                         this_phi = zeros([G.ns])
                         H = (G.y_M - G.y_m)
                         this_phi_arg = int(floor(yp[j]/H*G.ns))
@@ -136,7 +120,6 @@ class Solid_Params():
                         dist_from_origin = (yp[j] + xp[i]*tan(P.slope_angle))/sqrt(tan(P.slope_angle)**2 + 1)
                         layerwidth = 1
                         this_phi_arg = int(G.ns/2*cos(dist_from_origin/layerwidth*pi) + G.ns/2)
-                        print(dist_from_origin)
                         this_phi[this_phi_arg] = 1.
                         self.PHI.append(this_phi)
                     self.n += 1
@@ -152,11 +135,24 @@ class Solid_Params():
 
 class Output_Params():
     def __init__(self):
-        self.plot_continuum = True
-        # self.plot_material_points = True
-        self.save_s_bar = True
-        self.save_u = True
-        self.save_density = True
-        self.save_phi_MP = True
         self.continuum_fig_size = [24,8]
         self.mp_fig_size = [18,4]
+
+    def after_every_nth_timestep(self,P,G,L,plot):
+        # plot.draw_gsd_mp(L,P,G)
+        # plot.draw_gsd_grid(L,P,G)
+        plot.draw_continuum(G,P)
+        # plot.draw_material_points(L,P,G)
+        plot.save_u(L,P,G)
+        plot.save_s_bar(L,P,G)
+        plot.save_density(L,P,G)
+        plot.save_phi_MP(L,P,G)
+
+    def final_graphs(self,P,G,L,plot):
+        # plot.draw_material_points(L,P,G,'final')
+        # plot.draw_gsd_mp(L,P,G)
+        # plot.draw_gsd_grid(L,P,G)
+        plot.save_u(L,P,G)
+        plot.save_s_bar(L,P,G)
+        plot.save_density(L,P,G)
+        plot.save_phi_MP(L,P,G)

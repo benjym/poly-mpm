@@ -89,6 +89,13 @@ def get_parameters(params):
     if not hasattr(P.O, 'save_u'): P.O.save_u = False
     if not hasattr(P.O, 'save_phi_MP'): P.O.save_phi_MP = False
 
+    def blank_function(P,G,L,plot): pass
+    if not hasattr(P.O, 'initial_graphs'): P.O.initial_graphs = blank_function
+    if not hasattr(P.O, 'before_every_timestep'): P.O.before_every_timestep = blank_function
+    if not hasattr(P.O, 'after_every_nth_timestep'): P.O.after_every_nth_timestep = blank_function
+    if not hasattr(P.O, 'after_every_timestep'): P.O.after_every_timestep = blank_function
+    if not hasattr(P.O, 'final_graphs'): P.O.final_graphs = blank_function
+
     if P.O.measure_energy: P.O.energy = zeros((P.nt+1,4)) # energy
 
     P.update_forces()

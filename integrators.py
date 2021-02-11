@@ -262,7 +262,7 @@ def KT_flux(phi,G,P,ax,verbose=False):
 
 def Diffusion(P,G):
     # D = P.l*(G.s_bar**2.)*abs(G.gammadot)/sqrt(G.I/G.m) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10
-    D = P.l*(P.G.s_bar_0**1.5)*sqrt(abs(G.gammadot))*sqrt(abs(G.pressure/G.m))/sqrt(P.S[0].rho_s) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10 - THIS IMPLEMENTATION AVOIDS DIVIDING BY ZERO
+    D = P.l*(G.s_bar**1.5)*sqrt(abs(G.gammadot))*sqrt(abs(G.pressure/G.m))/sqrt(P.S[0].rho_s) # from Pierre, D = l*gamma_dot*d^2/sqrt(I), l \approx 10 - THIS IMPLEMENTATION AVOIDS DIVIDING BY ZERO
     # D = P.l*ones_like(G.s_bar)
     # print(D)
     D = tile(D,[P.G.ns,1]).T.reshape(P.G.ny,P.G.nx,P.G.ns)

@@ -13,7 +13,7 @@ matplotlib.use('Agg')
 from numpy import zeros, sum, seterr, mean, amax, amin, abs, nan_to_num, sqrt, minimum
 from plotting import Plotting
 import initialise
-import MPM
+# import MPM
 seterr(all='ignore')
 
 def time_march(P,G,L):
@@ -26,12 +26,7 @@ def time_march(P,G,L):
     L.get_nodal_mass_momentum(P,G) # Initialise from grid state
     if P.B.cyclic_lr: G.make_cyclic(P,G,['m','q'])
     L.update_stress_strain(P,G) # Update stress and strain
-    # if P.tstep == 1:
-    #     print(L.S[0][0].stress)
-    #     sys.exit()
     L.get_nodal_forces(P,G) # Compute internal and external forces
-    # print(G.fi)
-    # sys.exit()
     G.BCs(P) # Add external forces from BCs
     G.update_momentum(P) # Compute rate of momentum and update nodes
     G.calculate_gammadot(P,G)
@@ -61,32 +56,35 @@ def main(params):
 
     P,G,L = initialise.get_parameters(params)
     plot = Plotting()
+    P.O.initial_graphs(P,G,L,plot)
 #     if P.O.plot_material_points: plot.draw_material_points(L,P,G,'initial')
 
     while P.t <= P.t_f:# Time march
         P,G,L = time_march(P,G,L)
-
+        P.O.before_every_timestep(P,G,L,plot)
         # Output related things
-        if P.O.measure_energy: P.O.energy[P.tstep] = L.measure_elastic_energy(P,G) # measure energy
+        # if P.O.measure_energy: P.O.energy[P.tstep] = L.measure_elastic_energy(P,G) # measure energy
 
         print('{0:.4f}'.format(P.t*100./P.t_f) + '% Complete, t = ' +
               '{0:.4f}'.format(P.t) + ', g = ' + str(P.g), end='\r')
 
         if (P.t%P.savetime < P.dt) and (P.t != P.dt): # ignore first timestep
-            if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
-            if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
-#             plot.draw_voronoi(P,G)
-            if P.O.plot_continuum: plot.draw_continuum(G,P)
-            if P.O.plot_material_points: plot.draw_material_points(L,P,G)
-            if P.mode == 'anisotropy': plot.draw_gamma_dot(L,P,G)
-            if P.O.measure_energy: P.O.measure_E(L,P,G)
-            # for [field,fieldname] in P.O.save_fields: P.O.save_field(L,P,G,field,fieldname)
-            if P.O.save_u: plot.save_u(L,P,G)
-            if P.O.save_s_bar: plot.save_s_bar(L,P,G)
-            if P.O.save_density: plot.save_density(L,P,G)
-            if P.O.save_phi_MP: plot.save_phi_MP(L,P,G)
-        if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.store_p_q(P,G,L,P.tstep)
-        if P.mode == 'pouliquen_unit_test': P.O.store_mu(P,G,L,P.tstep)
+            P.O.after_every_nth_timestep(P,G,L,plot)
+#             if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
+#             if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
+# #             plot.draw_voronoi(P,G)
+#             if P.O.plot_continuum: plot.draw_continuum(G,P)
+#             if P.O.plot_material_points: plot.draw_material_points(L,P,G)
+#             if P.mode == 'anisotropy': plot.draw_gamma_dot(L,P,G)
+#             if P.O.measure_energy: P.O.measure_E(L,P,G)
+#             # for [field,fieldname] in P.O.save_fields: P.O.save_field(L,P,G,field,fieldname)
+#             if P.O.save_u: plot.save_u(L,P,G)
+#             if P.O.save_s_bar: plot.save_s_bar(L,P,G)
+#             if P.O.save_density: plot.save_density(L,P,G)
+#             if P.O.save_phi_MP: plot.save_phi_MP(L,P,G)
+        P.O.after_every_timestep(P,G,L,plot)
+        # if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.store_p_q(P,G,L,P.tstep)
+        # if P.mode == 'pouliquen_unit_test': P.O.store_mu(P,G,L,P.tstep)
 
         # Increment time
         P.t += P.dt
@@ -100,17 +98,18 @@ def main(params):
 #                 L.update_timestep(P) # Check for yielding and reduce timestep
 
     # Final things to do
-    if P.O.plot_material_points: plot.draw_material_points(L,P,G,'final')
-    if P.O.measure_stiffness: P.O.measure_E(L,P,G)
-    if P.O.measure_energy: plot.draw_energy(P)
-    if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
-    if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
-    if P.O.save_u: plot.save_u(L,P,G)
-    if P.O.save_s_bar: plot.save_s_bar(L,P,G)
-    if P.O.save_density: plot.save_density(L,P,G)
-    if P.O.save_phi_MP: plot.save_phi_MP(L,P,G)
-    if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.draw_p_q(P,G,L,plot,P.tstep)
-    if P.mode == 'pouliquen_unit_test': P.O.draw_mu(P,G,L,plot,P.tstep)
+    P.O.final_graphs(P,G,L,plot)
+    # if P.O.plot_material_points: plot.draw_material_points(L,P,G,'final')
+    # if P.O.measure_stiffness: P.O.measure_E(L,P,G)
+    # if P.O.measure_energy: plot.draw_energy(P)
+    # if P.O.plot_gsd_mp: plot.draw_gsd_mp(L,P,G)
+    # if P.O.plot_gsd_grid: plot.draw_gsd_grid(L,P,G)
+    # if P.O.save_u: plot.save_u(L,P,G)
+    # if P.O.save_s_bar: plot.save_s_bar(L,P,G)
+    # if P.O.save_density: plot.save_density(L,P,G)
+    # if P.O.save_phi_MP: plot.save_phi_MP(L,P,G)
+    # if P.mode == 'dp_unit_test' or P.mode == 'dp_rate_unit_test': P.O.draw_p_q(P,G,L,plot,P.tstep)
+    # if P.mode == 'pouliquen_unit_test': P.O.draw_mu(P,G,L,plot,P.tstep)
     print('')
     return 0
 
