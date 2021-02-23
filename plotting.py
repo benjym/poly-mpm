@@ -53,20 +53,25 @@ class Plotting:
 
     def savefig(self,P,name,dpi=150):
         """ A method for saving figures in the right place """
-        if P.O.plot_material_points:
-            for p in range(P.phases):
-                save_dir_p = P.save_dir + 'MP_' + str(p) + '/'
-                if not os.path.isdir(save_dir_p):
-                    os.makedirs(save_dir_p)
-        if P.O.plot_continuum:
-            if not os.path.isdir(P.save_dir + 'Continuum'):
-                os.makedirs(P.save_dir + 'Continuum/')
-        if P.O.plot_gsd_mp or P.O.plot_gsd_grid:
-            if not os.path.isdir(P.save_dir + 'GSD/'): os.makedirs(P.save_dir + 'GSD/')
-        if P.O.plot_gsd_debug:
-            if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
-            for i in range(P.G.ns):
-                if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
+        subfolder = '/'.join(name.split('/')[:-1])
+        save_dir = P.save_dir + subfolder
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+
+        # if P.O.plot_material_points:
+        #     for p in range(P.phases):
+        #         save_dir_p = P.save_dir + 'MP_' + str(p) + '/'
+        #         if not os.path.isdir(save_dir_p):
+        #             os.makedirs(save_dir_p)
+        # if P.O.plot_continuum:
+        #     if not os.path.isdir(P.save_dir + 'Continuum'):
+        #         os.makedirs(P.save_dir + 'Continuum/')
+        # if P.O.plot_gsd_mp or P.O.plot_gsd_grid:
+        #     if not os.path.isdir(P.save_dir + 'GSD/'): os.makedirs(P.save_dir + 'GSD/')
+        # if P.O.plot_gsd_debug:
+        #     if not os.path.isdir(P.save_dir + 'GSD/s_bar/'): os.makedirs(P.save_dir + 'GSD/s_bar/')
+        #     for i in range(P.G.ns):
+        #         if not os.path.exists(P.save_dir + 'GSD/phi_' + str(i) + '/'): os.makedirs(P.save_dir + 'GSD/phi_' + str(i))
 
         plt.subplots_adjust(hspace=0.4,wspace=0.4)
         plt.savefig(P.save_dir + name + '.png', dpi=dpi)

@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 class Params():
     def __init__(self,args):
         self.dt = 1e-8 # timestep (s)
-        self.savetime = 0.1 # 1e3*self.dt # 0.1 (s)
-        self.t_f = 100.0 # 3*self.dt # final time (s)
+        self.savetime = 0.005 # 1e3*self.dt # 0.1 (s)
+        self.t_f = 100.0*self.savetime # 3*self.dt # final time (s)
         self.max_g = -9.81 # gravity (ms^-2)
         self.max_q = 0.
         self.theta = 0. # world tilt angle (degrees)
-        self.slope_angle = deg2rad(45.0)
-        self.G = Grid_Params(args)
+        self.slope_angle = deg2rad(30.0)
+        self.G = Grid_Params(args,self)
         self.B = Boundary_Params()
         self.O = Output_Params()#self.nt)
         self.S = [Solid_Params(self.G,self,args),]
@@ -32,12 +32,12 @@ class Params():
         self.g = self.max_g
 
 class Grid_Params():
-    def __init__(self,args):
+    def __init__(self,args,P):
         self.L = 2 # aspect ratio of box
         self.y_m = 0.0 # (m)
         self.y_M = 10.0 # (m)
         self.x_m = 0.0 # (m)
-        self.L_1 = 1.0*self.y_M # length of bottom of pile
+        self.L_1 = self.y_M/tan(P.slope_angle) # length of bottom of pile
         self.x_M = 2*self.L_1 # (m)
         self.ny = int(args[1])
         self.nx = (self.ny-1)*self.L + 1
@@ -77,13 +77,13 @@ class Solid_Params():
         self.PHI = []
 
         self.law = 'pouliquen'
-        self.mu_0 = 2.*tan(deg2rad(20.90)) # double glass beads - about 37.5 deg
-        self.mu_1 = 2.*tan(deg2rad(32.76)) # double glass beads
+        self.mu_0 = array([tan(deg2rad(25)),tan(deg2rad(35))])
+        self.mu_1 = array([tan(deg2rad(35)),tan(deg2rad(45))])
         self.delta_mu = self.mu_1 - self.mu_0
-        self.I_0 = 0.279
-        self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/1e2
+        self.I_0 = array([0.279,0.279])
+        self.eta_max = 1e2*self.rho*sqrt(-P.max_g*(G.y_M-G.y_m)**3)/100
 
-        self.E = 1e7
+        self.E = 1e8
         self.nu = 0.4 # poissons ratio
         self.K = self.E/(3*(1-2*self.nu))
         self.G = self.E/(2*(1+self.nu))

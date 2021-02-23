@@ -418,7 +418,16 @@ def pouliquen(MP,P,G,p):
     # 4. no feedback to density
 
     s_bar = 0.
-    for i in range(P.G.ns): s_bar += MP.phi[i]*P.G.s[i]
+    mu_0 = 0.
+    delta_mu = 0.
+    I_0 = 0.
+
+    for i in range(P.G.ns):
+        s_bar += MP.phi[i]*P.G.s[i]
+        # HACK: THIS IS SOME GARBAGE I'M TRYING TO GET MORE SIZE EFFECTS
+        mu_0 += MP.phi[i]*P.S[p].mu_0[i]
+        delta_mu += MP.phi[i]*P.S[p].delta_mu[i]
+        I_0 += MP.phi[i]*P.S[p].I_0[i]
 
     MP.de_kk = trace(MP.dstrain)/3. # tension positive
     MP.de_ij = MP.dstrain - MP.de_kk*eye(3) # shear strain increment
@@ -427,7 +436,13 @@ def pouliquen(MP,P,G,p):
     MP.I = MP.gammadot*s_bar*sqrt(P.S[p].rho_s/abs(MP.pressure))
     # if MP.I == inf: MP.I = 1e10 # HACK
     # if MP.I < 1e-6: MP.I = 1e-6 # HACK
-    MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+
+    # NOTE: THIS IS THE CORRECT ONE THAT SHOULD BE USED
+    # MP.mu = P.S[p].mu_0 + P.S[p].delta_mu/(P.S[p].I_0/MP.I + 1.)
+    # HACK: THIS IS SOME GARBAGE I'M TRYING TO GET MORE SIZE EFFECTS
+    MP.mu = mu_0 + delta_mu/(I_0/MP.I + 1.)
+
+
     MP.eta = 2.*sqrt(2)*MP.mu*abs(MP.pressure)/MP.gammadot # HACK: 2*SQRT(2) FIXES ISSUES WITH DEFINITION OF STRAIN
     MP.eta_limited = minimum(nan_to_num(MP.eta),P.S[p].eta_max) # COPYING FROM HERE: http://www.lmm.jussieu.fr/~lagree/TEXTES/PDF/JFMcollapsePYLLSSP11.pdf
     MP.dev_stress = MP.eta_limited*MP.de_ij/P.dt
