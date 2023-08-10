@@ -1,0 +1,30 @@
+[project]
+name = "poly-mpm"
+version = "1.0.0"
+description = "A Python implementation of the Polydisperse Material Point Method"
+readme = "README.md"
+license = {text = "GPLv3"}
+requires-python = ">=3.7"
+keywords = ["mpm", "polydisperse", "material point method", "poly-mpm", "granular material", "granular media"]
+authors = [
+    {name = "Benjy Marks", email = "benjy.marks@sydney.edu.au"}
+]
+maintainers = [
+    {name = "Benjy Marks", email = "benjy.marks@sydney.edu.au"}
+]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "astropy",
+    "matplotlib",
+    "tqdm"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 110
+target-version = ['py39']

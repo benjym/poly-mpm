@@ -43,7 +43,7 @@ def main(params):
         #     sys.exit()
         L.get_nodal_forces(P,G) # Compute internal and external forces
         print(G.fe)
-        sys.exit()
+        # sys.exit()
         G.BCs(P) # Add external forces from BCs
         G.update_momentum(P) # Compute rate of momentum and update nodes
         G.calculate_gammadot(P,G)

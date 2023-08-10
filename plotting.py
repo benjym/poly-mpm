@@ -84,7 +84,7 @@ class Plotting:
         plt.plot(G.X*G.boundary_v,G.Y*G.boundary_v,'ko',markersize=1)
 
     def draw_gamma_dot(self,L,P,G):
-        if P.S.law is not 'rigid':
+        if P.S.law != 'rigid':
             x = zeros((P.S.n,3))
             v = zeros((P.S.n,3))
             gammadot = zeros((P.S.n))
@@ -102,7 +102,7 @@ class Plotting:
             P.save += 1
 
     def draw_continuum(self,G,P):
-        if P.S.law is not 'rigid':
+        if P.S.law != 'rigid':
             plt.clf()
             if hasattr(P.O, 'continuum_fig_size'):
                 figsize = P.O.continuum_fig_size
