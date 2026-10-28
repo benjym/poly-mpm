@@ -48,7 +48,7 @@ No files after a short preview
     separate directory, as in :doc:`getting_started`.
 
 A run appears to take forever
-    Check ``dt``, ``t_f``, and plot frequency in the input. Some original examples
+    Check ``dt``, ``t_f``, and plot frequency in the input. Some examples
     request millions of steps. Start with ``run(..., max_steps=100, output=False)``.
     The CLI has no generic duration or maximum-step switch. Ctrl-C interrupts a
     run but does not create a restart checkpoint or guarantee end callbacks run.
@@ -76,7 +76,7 @@ A model reports nonfinite state
 
 Grain fractions do not sum to one
     Initial rows must be nonnegative and sum to one. Use ``phi`` of shape
-    ``(ns,)`` or ``(n, ns)``. The corrected segregation tests conserve species mass
+    ``(ns,)`` or ``(n, ns)``. The segregation tests conserve species mass
     without clipping or renormalisation. Investigate inventory and boundary fluxes
     rather than enabling ``normalise_phi`` to hide drift.
 

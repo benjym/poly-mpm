@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Updated mechanics, interpolation, transfers, and diagnostics &#8212; poly-mpm user guide</title>
+    <title>Numerical methods &#8212; poly-mpm user guide</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Solver implementation checklist" href="implementation-todo.html" />
+    <link rel="next" title="Verification and error studies" href="verification.html" />
     <link rel="prev" title="Troubleshooting and limitations" href="troubleshooting.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -33,22 +33,21 @@
 
           <div class="body" role="main">
             
-  <section id="updated-mechanics-interpolation-transfers-and-diagnostics">
-<h1>Updated mechanics, interpolation, transfers, and diagnostics<a class="headerlink" href="#updated-mechanics-interpolation-transfers-and-diagnostics" title="Link to this heading">¶</a></h1>
-<p>The current solver implements the first four stages in the
-<a class="reference internal" href="implementation-todo.html"><span class="std std-doc">implementation checklist</span></a>: verification/diagnostics,
-deformation and volume evolution, selectable interpolation, and APIC.
-Later capabilities remain explicit backlog items, not implied guarantees.</p>
+  <section id="numerical-methods">
+<h1>Numerical methods<a class="headerlink" href="#numerical-methods" title="Link to this heading">¶</a></h1>
+<p>The solver uses explicit strain-before-force MPM on a regular Cartesian grid,
+with selectable linear/quadratic interpolation and FLIP, PIC, or APIC transfers.
+Deformable materials evolve deformation, volume, density, and constitutive state.</p>
 <section id="selecting-a-configuration">
 <h2>Selecting a configuration<a class="headerlink" href="#selecting-a-configuration" title="Link to this heading">¶</a></h2>
-<p>For the new combined example:</p>
+<p>Run the quadratic/APIC example:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>python<span class="w"> </span>MPM.py<span class="w"> </span>modern_ball
 </pre></div>
 </div>
 <p>This uses updated mechanics, quadratic B-splines, APIC, and dynamic timestepping.
-The smaller <code class="docutils literal notranslate"><span class="pre">ball</span></code> example retains linear interpolation and FLIP, but also uses
+The <code class="docutils literal notranslate"><span class="pre">ball</span></code> example uses linear interpolation and FLIP, but also uses
 updated mechanics. In a custom <code class="docutils literal notranslate"><span class="pre">Params</span></code> constructor, select:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">mechanics</span> <span class="o">=</span> <span class="s1">'updated'</span>       <span class="c1"># default; historical alternative: 'legacy'</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">mechanics</span> <span class="o">=</span> <span class="s1">'updated'</span>       <span class="c1"># default</span>
 <span class="bp">self</span><span class="o">.</span><span class="n">interpolation</span> <span class="o">=</span> <span class="s1">'quadratic'</span> <span class="c1"># default: 'linear'</span>
 <span class="bp">self</span><span class="o">.</span><span class="n">transfer</span> <span class="o">=</span> <span class="s1">'apic'</span>           <span class="c1"># default: 'flip'; alternatives: 'pic', 'apic'</span>
 <span class="bp">self</span><span class="o">.</span><span class="n">time_stepping</span> <span class="o">=</span> <span class="s1">'dynamic'</span>
@@ -60,11 +59,10 @@ updated mechanics. In a custom <code class="docutils literal notranslate"><span 
 linear APIC is avoided by rejecting that combination explicitly. For a PIC/FLIP
 blend, use <code class="docutils literal notranslate"><span class="pre">transfer='flip'</span></code> and <code class="docutils literal notranslate"><span class="pre">pic_fraction</span></code> between zero (pure FLIP, the
 default) and one (PIC). Changing transfer changes numerical dissipation.</p>
-<p><code class="docutils literal notranslate"><span class="pre">mechanics='legacy'</span></code> explicitly selects the older constitutive equations,
-fixed particle volume, reconstructed particle density, Lie correction, and
-acceleration-only FLIP update. It is for historical comparison, not the
-recommended mechanics. Scalar parity tests and the old performance comparison
-select this mode. The default changes numerical results deliberately.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mechanics='legacy'</span></code> is an explicit compatibility configuration with incremental
+constitutive equations, fixed volume, occupancy-based density, Lie stress
+correction, and acceleration-only FLIP. The default <code class="docutils literal notranslate"><span class="pre">updated</span></code> configuration is
+the one described below.</p>
 </section>
 <section id="deformation-and-physical-density">
 <h2>Deformation and physical density<a class="headerlink" href="#deformation-and-physical-density" title="Link to this heading">¶</a></h2>
@@ -84,8 +82,7 @@ with particle rows through removal and insertion.</p>
 <p>The reference is the input configuration: pressure initialisation supplies an
 initial prestress, not an inferred pre-deformation. Physical density follows
 mass/volume; nodal mass divided by nodal control volume remains a separate grid
-occupancy diagnostic. The old occupancy-based Pouliquen density cutoff is absent
-in updated mode. No separate porosity or critical-state dilation law is implied.</p>
+occupancy diagnostic. No separate porosity or critical-state dilation law is implied.</p>
 </section>
 <section id="stress-and-work-conventions">
 <h2>Stress and work conventions<a class="headerlink" href="#stress-and-work-conventions" title="Link to this heading">¶</a></h2>
@@ -103,9 +100,8 @@ This recovers the supplied initial stress and isotropic linear elasticity about
 an unstressed reference. Energy is measured relative to that reference;
 prestress work can make its change negative. The Cauchy stress matches the
 energy derivative, which is checked by finite differences.</p>
-<p><strong>Von Mises</strong> now uses a standard perfectly plastic J2 return map. Supply
-<code class="docutils literal notranslate"><span class="pre">yield_stress</span></code> in Pa, or retain <code class="docutils literal notranslate"><span class="pre">k</span></code> with <code class="docutils literal notranslate"><span class="pre">yield_stress=sqrt(3)*k</span></code>. The old <code class="docutils literal notranslate"><span class="pre">s</span></code>
-exponent only applies in legacy mode. <strong>DP/DP-rate</strong> retain the audited return
+<p><strong>Von Mises</strong> uses a standard perfectly plastic J2 return map. Supply
+<code class="docutils literal notranslate"><span class="pre">yield_stress</span></code> in Pa, or retain <code class="docutils literal notranslate"><span class="pre">k</span></code> with <code class="docutils literal notranslate"><span class="pre">yield_stress=sqrt(3)*k</span></code>. <code class="docutils literal notranslate"><span class="pre">s</span></code> only applies in compatibility mode. <strong>DP/DP-rate</strong> use cone/apex return
 maps. These rate-form plastic solids use the symmetric spin split and accumulate
 plastic strain and nonnegative plastic work. Their elasticity remains
 hypoelastic, not a multiplicative finite-strain plasticity formulation. Their
@@ -115,11 +111,11 @@ remains on the implementation checklist.</p>
 They use engineering shear rate <code class="docutils literal notranslate"><span class="pre">sqrt(2</span> <span class="pre">D':D')</span></code>, bulk-pressure increments
 <code class="docutils literal notranslate"><span class="pre">K</span> <span class="pre">tr(dstrain)</span></code>, and nonnegative shear/bulk dissipation. Pouliquen uses its bounded
 friction function and actual current density. No Lie correction is added to these
-algebraic stresses. This changes the former original-five conventions.
+algebraic stresses.
 Bulk elastic work is integrated along the exponential volume change, including
 the no-tension cutoff where present; <code class="docutils literal notranslate"><span class="pre">pressure</span></code> history excludes the instantaneous
 bulk-viscous mean stress. Local rheology still needs application-specific
-calibration and has the limitations described in the constitutive audit.</p>
+calibration and has the limitations described in the constitutive reference.</p>
 </section>
 <section id="interpolation-and-physical-boundaries">
 <h2>Interpolation and physical boundaries<a class="headerlink" href="#interpolation-and-physical-boundaries" title="Link to this heading">¶</a></h2>
@@ -170,10 +166,8 @@ would discard a nonzero unresolved affine component, the transfer fails rather
 than silently losing angular momentum. There is no arbitrary inverse-moment
 ridge. APIC reduces PIC’s transfer dissipation; it does not remove all remapping,
 integration, or quadrature errors.</p>
-<p>Updated FLIP takes the complete nodal velocity change from pre-constraint P2G to
-the final grid velocity. Thus a wall’s velocity projection reaches particles.
-The historical acceleration-only update could keep incoming particle velocity
-while the wall repeatedly removed the same nodal momentum.</p>
+<p>FLIP takes the complete nodal velocity change from pre-constraint P2G to
+the final grid velocity. Thus a wall’s velocity projection reaches particles.</p>
 </section>
 <section id="timestep-estimates-and-diagnostics">
 <h2>Timestep estimates and diagnostics<a class="headerlink" href="#timestep-estimates-and-diagnostics" title="Link to this heading">¶</a></h2>
@@ -187,7 +181,7 @@ Plastic relaxation is integrated locally by the implicit return map.</p>
 <p>Static stepping retains the supplied <code class="docutils literal notranslate"><span class="pre">dt</span></code> and reports its estimated restrictions.
 Set <code class="docutils literal notranslate"><span class="pre">timestep_policy='enforce'</span></code> to reject a static step above those estimates;
 it does not silently change <code class="docutils literal notranslate"><span class="pre">dt</span></code>. Dynamic stepping limits the step instead.
-A floating-point-sized final-time remainder no longer produces an extra step.</p>
+Final-time remainders within floating-point tolerance do not produce an extra step.</p>
 <p>Diagnostics run independently of plotting. Inspect <code class="docutils literal notranslate"><span class="pre">L.diagnostics.last</span></code> or
 <code class="docutils literal notranslate"><span class="pre">.history</span></code>. Set <code class="docutils literal notranslate"><span class="pre">diagnostics=False</span></code> to disable them, or <code class="docutils literal notranslate"><span class="pre">diagnostics_stride=100</span></code>
 to retain fewer rows while still accumulating work and recording the final state.
@@ -205,8 +199,8 @@ integration error. <code class="docutils literal notranslate"><span class="pre">
 fluid work potential from the plastic models’ energy estimate. Prescribed rigid
 motion has unaccounted actuator work, so its budget is flagged incomplete.
 Periodic angular checks require unwrapped geometry and are flagged accordingly.
-The legacy <code class="docutils literal notranslate"><span class="pre">measure_energy</span></code> plot remains a separate historical estimate;
-use the new ledger for verification.</p>
+The <code class="docutils literal notranslate"><span class="pre">measure_energy</span></code> plot is a separate potential-energy estimate;
+use the diagnostics ledger for conservation verification.</p>
 </section>
 <section id="evidence-and-limits">
 <h2>Evidence and limits<a class="headerlink" href="#evidence-and-limits" title="Link to this heading">¶</a></h2>
@@ -226,8 +220,9 @@ phase/transfer errors. It includes coupled grid/timestep refinement, fixed-step
 spatial comparisons, and fixed-grid timestep comparisons. Remapping frequency
 changes when <code class="docutils literal notranslate"><span class="pre">dt</span></code> changes, so the latter is not a pure time-integrator order test.
 At 32 cells, the coupled quadratic/APIC velocity error is below 2%; it is not an
-accuracy guarantee for other problems. Hydrostatic, large-deformation plasticity,
-contact, and broader application validation remain separate work.</p>
+accuracy guarantee for other problems. See <a class="reference internal" href="verification.html"><span class="std std-doc">verification</span></a> for
+hydrostatic, translated-stress, large-deformation, and operator-isolation studies.
+Finite-strain plasticity, contact, and experimental validation remain separate work.</p>
 <p><img alt="Standing-wave velocity errors and energy residuals across all transfer configurations" src="_images/verification.png" /></p>
 <p>The report also records full <code class="docutils literal notranslate"><span class="pre">modern_ball</span></code> and <code class="docutils literal notranslate"><span class="pre">dp_rate_unit_test</span></code> runs. These
 bounded/full examples do not establish convergence of every application.</p>
@@ -263,7 +258,7 @@ bounded/full examples do not establish convergence of every application.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Updated mechanics, interpolation, transfers, and diagnostics</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Numerical methods</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#selecting-a-configuration">Selecting a configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#deformation-and-physical-density">Deformation and physical density</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#stress-and-work-conventions">Stress and work conventions</a></li>
@@ -273,11 +268,12 @@ bounded/full examples do not establish convergence of every application.</p>
 <li class="toctree-l2"><a class="reference internal" href="#evidence-and-limits">Evidence and limits</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

@@ -44,7 +44,7 @@ with ``max_steps`` stops earlier and still calls its end-of-run output callback.
 
 ``time_stepping='dynamic'`` enables the existing timestep controller, with ``CFL``
 and optional material ``critical_time(P)`` functions. It is not a universal
-stability guarantee: the central controller now estimates elastic, viscous,
+stability guarantee: the central controller estimates elastic, viscous,
 advection, and segregation restrictions, but nonlinear and model-specific
 stability still requires verification. Start with conservative values and
 verify the behaviour of the chosen input.

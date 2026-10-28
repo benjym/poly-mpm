@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Updated mechanics, interpolation, transfers, and diagnostics" href="numerical-foundations.html" />
+    <link rel="next" title="Numerical methods" href="numerical-foundations.html" />
     <link rel="prev" title="Output and Python API" href="outputs.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -57,7 +57,7 @@ commands from the checkout root.</p>
 <a class="reference internal" href="array-conversion.html"><span class="doc">example matrix</span></a> and supply every listed argument in
 order. Arguments are specific to the chosen input.</p>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">Unsupported</span> <span class="pre">material</span> <span class="pre">law</span></code></dt><dd><p>Check the exact registry name and <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a>. The retired
+<dt><code class="docutils literal notranslate"><span class="pre">Unsupported</span> <span class="pre">material</span> <span class="pre">law</span></code></dt><dd><p>Check the exact registry name and <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive models</span></a>. The retired
 <code class="docutils literal notranslate"><span class="pre">elastic_time</span></code>, <code class="docutils literal notranslate"><span class="pre">ken_kamrin</span></code>, and <code class="docutils literal notranslate"><span class="pre">ken_simple</span></code> implementations are not
 available. <code class="docutils literal notranslate"><span class="pre">viscous_size</span></code> and the separate legacy <code class="docutils literal notranslate"><span class="pre">P.F</span></code> compressible-fluid
 path are unimplemented. Four inputs remain deliberately unsupported:
@@ -76,7 +76,7 @@ all output, including custom histories.</p>
 save only at save times. Set <code class="docutils literal notranslate"><span class="pre">P.savetime=P.dt</span></code> for a few steps and choose a
 separate directory, as in <a class="reference internal" href="getting_started.html"><span class="doc">Getting started</span></a>.</p>
 </dd>
-<dt>A run appears to take forever</dt><dd><p>Check <code class="docutils literal notranslate"><span class="pre">dt</span></code>, <code class="docutils literal notranslate"><span class="pre">t_f</span></code>, and plot frequency in the input. Some original examples
+<dt>A run appears to take forever</dt><dd><p>Check <code class="docutils literal notranslate"><span class="pre">dt</span></code>, <code class="docutils literal notranslate"><span class="pre">t_f</span></code>, and plot frequency in the input. Some examples
 request millions of steps. Start with <code class="docutils literal notranslate"><span class="pre">run(...,</span> <span class="pre">max_steps=100,</span> <span class="pre">output=False)</span></code>.
 The CLI has no generic duration or maximum-step switch. Ctrl-C interrupts a
 run but does not create a restart checkpoint or guarantee end callbacks run.</p>
@@ -102,7 +102,7 @@ the timestep as a diagnostic, then perform convergence checks. Finite output
 alone is not proof of an accurate or physically valid solution.</p>
 </dd>
 <dt>Grain fractions do not sum to one</dt><dd><p>Initial rows must be nonnegative and sum to one. Use <code class="docutils literal notranslate"><span class="pre">phi</span></code> of shape
-<code class="docutils literal notranslate"><span class="pre">(ns,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">ns)</span></code>. The corrected segregation tests conserve species mass
+<code class="docutils literal notranslate"><span class="pre">(ns,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">ns)</span></code>. The segregation tests conserve species mass
 without clipping or renormalisation. Investigate inventory and boundary fluxes
 rather than enabling <code class="docutils literal notranslate"><span class="pre">normalise_phi</span></code> to hide drift.</p>
 </dd>
@@ -117,8 +117,8 @@ a quadratic basis and planar motion. There is no GIMP, independent multi-body
 contact, general curved boundary, implicit/quasistatic solve, or checkpoint/restart.
 Rate-form plasticity is not a multiplicative finite-strain plasticity model.
 Legacy mode preserves the earlier numerical conventions explicitly.</p>
-<p>See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a>, <a class="reference internal" href="array-conversion.html"><span class="doc">NumPy array conversion</span></a>, <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a>,
-and <a class="reference internal" href="segregation-conservation.html"><span class="doc">Source and correction of segregation drift</span></a> for exact scope. Smoke-tested examples, equation
+<p>See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Numerical methods</span></a>, <a class="reference internal" href="array-conversion.html"><span class="doc">Particle arrays and examples</span></a>, <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive models</span></a>,
+and <a class="reference internal" href="segregation-conservation.html"><span class="doc">Segregation transport</span></a> for exact scope. Smoke-tested examples, equation
 checks, conservation tests, experimental validation, and convergence studies are
 different levels of evidence. Choose the evidence required for your application.</p>
 </section>
@@ -159,11 +159,13 @@ different levels of evidence. Choose the evidence required for your application.
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

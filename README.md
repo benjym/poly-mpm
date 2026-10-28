@@ -22,8 +22,7 @@ uv sync --extra dev --locked
 uv run --locked python MPM.py ball
 ```
 
-For an existing checkout, start at `uv sync` from the repository root. Use the
-branch containing this README; older branches may contain the scalar solver.
+For an existing checkout, start at `uv sync` from the repository root.
 The installed command `uv run --locked poly-mpm ball` runs the same example.
 For quadratic B-splines, APIC, and dynamic timestepping, use
 `uv run --locked python MPM.py modern_ball`.
@@ -34,7 +33,7 @@ progress and saves figures under **`im/ball/elastic/Continuum/`** and
 and plotting; repeating a run can overwrite its output.
 
 For installation without uv, Windows instructions, and a three-step preview with
-its own output folder, see [getting started](docs/getting_started.rst).
+its own output folder, see [getting started](https://github.com/benjym/poly-mpm/blob/main/docs/getting_started.rst).
 `uv.lock` records the tested dependency set. The pip alternative resolves compatible
 versions rather than reproducing that exact environment.
 
@@ -54,29 +53,30 @@ print(P.t, P.tstep, L.materials[0].x.shape)
 
 Save this as `preview.py` in the checkout and run `uv run --locked python preview.py`.
 `output=False` disables all callbacks, so this preview creates no plots or saved
-histories. Some original examples request millions of steps; preview them first.
+histories. Some examples request millions of steps; preview them first.
 
 For segregation, `bi_seg_test 22 2 11` means 22 degrees, two size classes, and
-11 vertical grid nodes. See the [complete example matrix](docs/array-conversion.md#example-compatibility)
+11 vertical grid nodes. See the [complete example matrix](https://github.com/benjym/poly-mpm/blob/main/docs/array-conversion.md#example-compatibility)
 for required arguments and support status. A smoke-tested input is not a guarantee
-of stability or physical calibration at every original setting.
+of stability or physical calibration at every setting.
 
 ## User guide
 
-- [Getting started](docs/getting_started.rst): setup, first run, previews, and examples.
-- [Create a simulation](docs/tutorial.rst): a complete runnable input, units, geometry,
+- [Getting started](https://github.com/benjym/poly-mpm/blob/main/docs/getting_started.rst): setup, first run, previews, and examples.
+- [Create a simulation](https://github.com/benjym/poly-mpm/blob/main/docs/tutorial.rst): a complete runnable input, units, geometry,
   boundaries, material parameters, and segregation settings.
-- [Updated numerical methods](docs/numerical-foundations.md): deformation/volume evolution,
+- [Numerical methods](https://github.com/benjym/poly-mpm/blob/main/docs/numerical-foundations.md): deformation/volume evolution,
   interpolation, APIC, timestep estimates, diagnostics, and compatibility mode.
-- [Implementation checklist](IMPLEMENTATION_TODO.md): completed acceptance checks and deferred work.
-- [Material selection](docs/materials.rst): supported laws and required parameters.
-- [Output and API](docs/outputs.rst): output flags, file formats, callbacks, and arrays.
-- [Troubleshooting](docs/troubleshooting.rst): installation, missing output, numerical
+- [Verification](https://github.com/benjym/poly-mpm/blob/main/docs/verification.md): equilibrium, transport, finite strain, and error studies.
+- [Implementation checklist](https://github.com/benjym/poly-mpm/blob/main/IMPLEMENTATION_TODO.md): completed acceptance checks and deferred work.
+- [Material selection](https://github.com/benjym/poly-mpm/blob/main/docs/materials.rst): supported laws and required parameters.
+- [Output and API](https://github.com/benjym/poly-mpm/blob/main/docs/outputs.rst): output flags, file formats, callbacks, and arrays.
+- [Troubleshooting](https://github.com/benjym/poly-mpm/blob/main/docs/troubleshooting.rst): installation, missing output, numerical
   errors, and current limitations.
-- [Constitutive audit](docs/constitutive-models.md): restored equations and retired laws.
-- [Array reference and examples](docs/array-conversion.md): shapes, migration, and numerical scope.
-- [Segregation conservation](docs/segregation-conservation.md): equations and verification.
-- [Build the HTML manual](docs/README.md): optional documentation dependencies and checks.
+- [Constitutive models](https://github.com/benjym/poly-mpm/blob/main/docs/constitutive-models.md): equations, parameters, and model limits.
+- [Particle arrays and examples](https://github.com/benjym/poly-mpm/blob/main/docs/array-conversion.md): state shapes, input interfaces, and support status.
+- [Segregation transport](https://github.com/benjym/poly-mpm/blob/main/docs/segregation-conservation.md): equations and verification.
+- [Build the HTML manual](https://github.com/benjym/poly-mpm/blob/main/docs/README.md): optional documentation dependencies and checks.
 
 The solver supports `rigid`, `elastic`, `viscous`, `von_mises`, `pouliquen`,
 `bingham`, `dp`, `dp_rate`, and `linear_mu`. Retired or absent laws fail explicitly.
@@ -85,8 +85,8 @@ mechanics evolves deformation, volume, and physical density. Linear/quadratic
 interpolation and FLIP/PIC/APIC transfers are selectable; `modern_ball` demonstrates
 the combined configuration. Mechanics still uses explicit stepping and shared
 nodal momentum, with no independent body contact, implicit solve, or general
-checkpoint/restart. Historical equations are available through explicit
-`mechanics='legacy'`; see the migration notes before comparing old results.
+checkpoint/restart. The explicit `mechanics='legacy'` compatibility configuration uses fixed-volume,
+incremental mechanics; the user guide describes the default configuration.
 
 ## Tests and benchmarks
 
@@ -108,21 +108,21 @@ manual, and validates wheel/sdist metadata plus an installed-wheel smoke test.
 The test job uploads `coverage.xml` with `CODECOV_TOKEN`; fork pull requests skip
 the upload because repository secrets are unavailable. Coverage is informational
 until a useful baseline and thresholds have been agreed.
-See the [release checklist](docs/releasing.md) for the remaining PyPI setup.
+See the [release checklist](https://github.com/benjym/poly-mpm/blob/main/docs/releasing.md) for the remaining PyPI setup.
 
 Choose another writable report path on Windows. The audit runs five bounded
-steps per supported example. See [benchmark instructions](benchmarks/README.md)
+steps per supported example. See [benchmark instructions](https://github.com/benjym/poly-mpm/blob/main/benchmarks/README.md)
 for timing and conservation reports. Their default output paths overwrite
 committed reports; use separate paths for your own measurements.
 
-The [performance report](benchmarks/README.md) is a historical Python 3.12.8
-comparison, measured before the runtime upgrade and later numerical corrections.
-Its timings have not been relabelled as current results. Tests and example checks
-run separately on Python 3.14 with the locked dependencies.
+The [verification guide](https://github.com/benjym/poly-mpm/blob/main/docs/verification.md) describes analytical references,
+refinement controls, measured errors, and scope. Benchmark reports record their
+own configuration and environment; performance depends on material, particle
+count, diagnostics, and output frequency.
 
 ## Project
 
 Originally authored by Benjy Marks, University of Sydney. NumPy, SciPy, Astropy,
 and Matplotlib provide the numerical and plotting environment.
 
-Licensed under the [GNU GPL v3](LICENSE).
+Licensed under the [GNU GPL v3](https://github.com/benjym/poly-mpm/blob/main/LICENSE).

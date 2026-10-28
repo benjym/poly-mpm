@@ -1,13 +1,9 @@
-# Constitutive model audit
+# Constitutive models
 
-This records the constitutive restoration before the numerical-foundations update.
-The [updated methods](numerical-foundations.md) now supersede the original-five
-equations in default updated mechanics; explicit legacy mode preserves them.
-
-The active registry now includes `bingham`, `dp`, `dp_rate`, and `linear_mu`, as
-well as the five previously converted laws. These four kernels are array based
-and checked against analytical responses and physical invariants. The old scalar
-code is historical evidence, not the numerical reference for these models.
+The material registry supports prescribed rigid motion, hyperelastic solids,
+rate-form plastic solids, Newtonian/Bingham fluids, and local granular flow.
+Select parameters and units using [material selection](materials.rst).
+These equations describe the default `mechanics='updated'` configuration.
 
 All tensors are 3 by 3, including the out-of-plane normal stress in plane strain.
 Cauchy stress is tension positive. Below, `p = -tr(stress)/3` is compression
@@ -17,14 +13,19 @@ shear rate is `gamma = sqrt(2 D':D')`, with `D' = dev(dstrain)/dt`.
 `.pressure` diagnostic remains tension positive; for Bingham it stores the
 elastic mean part, excluding instantaneous bulk-viscous stress.
 
-## Restored laws
+## Model parameters
 
-| Law | Parameters (SI units) | Behaviour and corrections |
+| Law | Parameters (SI units) | Behaviour |
 |---|---|---|
-| `bingham` | `K >= 0` (Pa), `mu_s >= 0`, `mu_0 > mu_s`, optional `mu_v >= 0` (Pa s), `tau_0 >= 0` (Pa) | Continuous bi-viscosity regularisation, correct stress-increment interface, engineering shear invariant, dissipative bulk viscosity. |
-| `dp` | `K, G > 0` (Pa), `mu > 0`, `0 <= beta <= mu` | Cohesionless, perfectly plastic Drucker–Prager solid with nonassociated dilation and a zero mean-tensile-strength cutoff. Replaces the singular legacy H²/loading-direction formula with a return map. |
-| `dp_rate` | Same as `dp`, plus `t_star >= 0` (s) | Linear Perzyna overstress regularisation, integrated by backward Euler. Replaces a rate update missing its timestep factor. |
-| `linear_mu` | `K >= 0` (Pa), `mu_0, b >= 0`, `rho_s > 0` (kg/m³), `eta_max > 0` (Pa s), grain sizes and particle compositions | Dense flowing `mu(I) = mu_0 + b I`, finite viscosity cap, updated compression-positive confinement, explicit zero-pressure/rate limits. Removes singular divisions and ad hoc shear-invariant factors. |
+| `rigid` | Optional `initial_v` | Prescribed planar motion; no constitutive integration. |
+| `elastic` | `K, G > 0` (Pa) | Compressible neo-Hookean elasticity with reference prestress; see [deformation and stress](numerical-foundations.md#stress-and-work-conventions). |
+| `von_mises` | `K, G > 0`, `yield_stress > 0` (Pa), or `k` with `yield_stress=sqrt(3)*k` | Perfect J2 plasticity with objective spin integration. |
+| `viscous` | `K, mu_s, mu_v >= 0` | Newtonian deviatoric stress `2 mu_s D'`, bulk viscous stress `mu_v tr(D) I`, elastic mean-stress increment `K tr(dstrain)`. |
+| `pouliquen` | `K >= 0`, `rho_s, I_0, eta_max > 0`, `mu_0, delta_mu >= 0` | Bounded friction `mu(I)=mu_0+delta_mu I/(I_0+I)` and capped viscosity `mu p/gamma`; mean grain diameter sets `I`. |
+| `bingham` | `K >= 0` (Pa), `mu_s >= 0`, `mu_0 > mu_s`, optional `mu_v >= 0` (Pa s), `tau_0 >= 0` (Pa) | Continuous bi-viscosity regularisation with engineering shear invariant and dissipative bulk viscosity. |
+| `dp` | `K, G > 0` (Pa), `mu > 0`, `0 <= beta <= mu` | Cohesionless, perfectly plastic Drucker–Prager solid with nonassociated dilation and a zero mean-tensile-strength cutoff. Uses a cone/apex return map. |
+| `dp_rate` | Same as `dp`, plus `t_star >= 0` (s) | Linear Perzyna overstress regularisation, integrated by backward Euler. |
+| `linear_mu` | `K >= 0` (Pa), `mu_0, b >= 0`, `rho_s > 0` (kg/m³), `eta_max > 0` (Pa s), grain sizes and particle compositions | Dense flowing `mu(I) = mu_0 + b I`, finite viscosity cap, updated compression-positive confinement, explicit zero-pressure/rate limits. |
 
 Initialization rejects missing, nonfinite, nonscalar, and inadmissible parameters
 for these laws. `beta` is a plastic-potential slope, not an angle. `mu` in DP is
@@ -42,7 +43,7 @@ gamma_c = tau_0/(mu_0-mu_s)
 
 At zero rate, `eta = mu_0`. At `tau_0 = 0`, the law reduces to a Newtonian fluid
 with viscosity `mu_s`, including at zero rate; `mu_0 >= mu_s` then suffices.
-An optional old `gamma_c` input must agree with the derived transition.
+An optional `gamma_c` input must agree with the derived transition.
 For simple shear the stress is continuous and becomes
 `abs(stress_xy) = tau_0 + mu_s*abs(du/dy)` above that transition.
 This finite-viscosity approximation permits small creep below yield; it does not
@@ -51,9 +52,7 @@ underlying Bingham relation are also described in the
 [FEBio fluid material documentation](https://febiosoftware.github.io/febio-docs/features/features/fluid_materialprop_bingham/).
 
 The elastic mean stress increment is `K tr(dstrain)`, and the instantaneous bulk
-viscous stress is `mu_v tr(D) I`. The bulk-viscous sign ensures nonnegative
-viscous dissipation; the old scalar implementation had the opposite sign and
-used a mean strain increment as though it were a volumetric one.
+viscous stress is `mu_v tr(D) I`. The bulk-viscous contribution dissipates `mu_v tr(D)^2` per unit current volume.
 
 ### Drucker–Prager and its rate regularisation
 
@@ -95,10 +94,10 @@ handling, as explained in
 [Itasca's Drucker–Prager formulation](https://docs.itascacg.com/itasca930/common/models/drucker/doc/modeldrucker.html)
 (which uses a different shear-invariant normalisation).
 
-Both solids use a symmetric spin split: rotate old stress by half the incremental
+Both solids use a symmetric spin split: rotate the incoming stress by half the incremental
 spin, perform the constitutive update, then rotate by the other half. This is a
 corotational hypoelastic integration, exact for pure rigid spin with constant
-angular velocity. The old solver's Lie correction is not added to this result.
+angular velocity.
 It is not a finite-strain hyperelastic or multiplicative plasticity model.
 
 ### Linear friction
@@ -124,52 +123,36 @@ This is a dense-flow approximation. Its friction grows without bound at high
 flow regime. Local granular rheology has known continuum limitations; see
 [Barker et al.'s stability analysis](https://www.cambridge.org/core/journals/journal-of-fluid-mechanics/article/wellposed-and-illposed-behaviour-of-the-itmui-rheology-for-granular-flow/BABE7C7E3E783B9B71D7D12888F4F1D4).
 Bingham and linear-friction fluids prescribe current stress directly, so the
-legacy Lie correction is not applied to their algebraic viscous stress.
+spin correction is not applied to their algebraic viscous stress.
 
-## Retired implementations
+## Model limits and unsupported names
 
-| Old name | Audit finding | Replacement or decision |
-|---|---|---|
-| `elastic_time` | The active code uses constant initial modulus; the intended softening is commented out. An undefined phase index guards a 5% particle-mass reduction per timestep, unrelated to strain or elapsed time. | Retire. Use `elastic` for constant stiffness. Excavation/mass removal or modulus evolution requires a separately specified model; `tunnel` remains explicitly unsupported. |
-| `ken_kamrin` | Unfinished duplicate local granular law: signed compressive pressure can zero its viscosity, while a gravity-based cap can make viscosity negative. Fixed grain diameter and arbitrary rate floor also bypass the intended state. | Retire this implementation; use the existing `pouliquen` law for the supported local friction rheology. This is not a rejection of Kamrin's published models. |
-| `ken_simple` | Uses stale shear rate and switches off stress below a hardcoded `rho = 2500 kg/m³`, so changing material density changes the constitutive regime arbitrarily. | Retire. `linear_mu` with `b=0` supplies a tested constant-friction flowing alternative without that cutoff. |
+The plastic laws use corotational hypoelasticity, not multiplicative finite-
+strain plasticity. Their quadratic stored-energy diagnostic is an estimate.
+Granular flow laws describe dense flow and need calibration for the material and
+loading regime. Viscosity caps regularise the calculation and permit creep;
+they do not impose an exactly rigid plug or prove continuum well-posedness.
 
-These names fail early with specific retirement reasons rather than silently
-mapping to another law. Their scalar source remains untouched in `legacy/` for
-provenance and is excluded from the package. `viscous_size` has no implementation;
-the separate legacy `P.F` compressible-fluid path is also unimplemented. Neither
-was classified as physically invalid simply because it is missing.
+`elastic_time`, `ken_kamrin`, and `ken_simple` are unsupported registry names.
+Use `elastic` for constant stiffness, `pouliquen` for the supported bounded local
+friction law, or `linear_mu` with `b=0` for capped constant friction. These are
+model choices requiring appropriate parameters, not automatic substitutions.
+`viscous_size` and the separate `P.F` compressible-fluid path are unimplemented.
 
-## Migration and checks
+`mechanics='legacy'` is a compatibility option with fixed particle volume,
+occupancy-based density, and incremental constitutive equations. Use the default
+configuration and the equations on this page for physical interpretation.
 
-These are physical corrections and replacements, not numerical parity ports.
-Old coefficients may need recalibration: DP now consistently uses 3D `q=sqrt(3 J2)`
-and constant `mu`; `dp_rate.t_star` has the explicit relaxation-time meaning above.
-The old DP example's unused `mu(I)` parameters were replaced by `mu=0.5`.
-Flowing laws use engineering shear rate, standard bulk modulus, and actual
-viscosity units. Their former ad hoc invariant factors are not carried across.
+## Checks and outputs
 
-The DP loading examples now record growing array histories through the standard
-callbacks and save `data/pq_history.npz` plus a labelled `pq_history.png`.
-They no longer use `L.S[p][i]` or allocate histories from nominal timestep counts.
+`tests/test_constitutive.py` covers analytical shear/volume responses, transition
+continuity, flow reversal, dissipation, unloading, plastic flow direction, yield
+consistency, cone apex, zero confinement, Perzyna relaxation and timestep
+convergence, tensor rotation covariance, rigid-spin integration, empty batches,
+and parameter rejection. The [verification guide](verification.md) covers
+full-solver equilibrium, translation and finite-strain manufactured solutions.
+Implementation verification does not replace experimental calibration.
 
-`tests/test_constitutive.py` checks analytical shear/volume responses, transition
-continuity, flow reversal, dissipation, hydrostatic elasticity, elastic unloading,
-plastic flow direction, yield consistency, cone apex, zero confinement, Perzyna
-relaxation and timestep convergence, tensor rotation covariance, rigid-spin
-integration, empty batches, parameter rejection, and output histories. Existing
-particle/grid/segregation regressions remain in the full suite.
-
-At this audit, the example check admitted 33 of 37 examples for bounded smoke runs, including
-all seven formerly blocked Bingham/DP examples. The full `dp_unit_test` (50,000
-steps, `dt=2e-5`, 1 s) and `dp_rate_unit_test` (5,000 steps, `dt=1e-3`, 5 s) also
-completed at their original timesteps with finite stress. The rate-independent
-case ended on `q=0.5 p`; the rate-dependent case retained the permitted positive
-overstress. These checks establish equation and implementation consistency; they do not replace experimental calibration,
-spatial convergence studies, or long runs at the old example timesteps.
-
-In explicit `mechanics='legacy'` mode, the five previously supported laws retain
-their existing equations and stress integration. Their scalar-parity tests remain compatibility checks. In particular,
-legacy `viscous` bulk normalisation/sign and `pouliquen` invariant/cutoff conventions
-were not brought into alignment in this historical audit; updated mechanics now
-corrects those conventions separately.
+The DP loading inputs save `data/pq_history.npz` and `pq_history.png` through the
+standard output callbacks. Tensor stresses use tension-positive signs; plotted
+`p` is compression positive. See [outputs](outputs.rst) for file conventions.

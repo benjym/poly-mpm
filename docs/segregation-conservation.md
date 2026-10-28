@@ -1,41 +1,24 @@
-# Source and correction of segregation drift
+# Segregation transport
 
-## Where the drift came from
+The segregation operator transports grain fractions while preserving each
+mobile species mass and each particle's total mass. Rigid materials do not
+participate. Enable it with `segregate=True` and supply grain diameters,
+composition, and the model coefficients described in [the tutorial](tutorial.rst).
 
-There were three discretisation errors, rather than accumulated floating-point
-roundoff. Particle-to-grid deposition already conserved species mass.
+For species `k`, the conserved inventory is
 
-**The wrong global quantity was conserved.** The previous KT update telescoped
-`sum_i delta_phi[i,k]` to zero. The total particle inventory is instead
-`Q[k] = sum_p m[p]*phi[p,k]`. The former incremental gather obeys
+```
+Q[k] = sum_p m[p] phi[p,k] = sum_i M[i] phi_grid[i,k]
+```
 
-    delta_Q[k] = sum_i M[i]*delta_phi[i,k]
+Periodic endpoint duplicates count once. Because nodal masses can differ,
+conserving an unweighted sum of concentration increments is insufficient. Both
+weighted species conservation and local mixture closure `sum_k phi[k]=1` are
+required.
 
-because `M[i] = sum_p m[p]*N[p,i]`. Therefore an unweighted concentration sum is
-insufficient when nodal masses differ. In the slope fixture, boundary nodes carry
-13.5 kg and interior nodes 27 kg. On the very first bidisperse timestep,
-particle-to-grid mass error is zero, but the old update changes the two species
-by approximately +6.78e-7 kg and -6.78e-7 kg. The error accumulates after that.
-Periodic duplicate endpoints must also count only once in this identity.
+## Grid flux and mass exchanges
 
-**Diffusion was multiplied by concentration twice.** `KT2_flux` returned
-`v[k] - D*grad(phi[k])` and the KT routine treated that entire quantity as a
-velocity, multiplying it by the reconstructed `phi[k]`. The resulting diffusion
-flux was `-D*phi[k]*grad(phi[k])`, rather than `-D*grad(phi[k])`. Summing the former
-over species is generally nonzero even when the fractions sum to one.
-
-**The mixture was discretised as independent scalar equations.** Each class got
-a different numerical diffusion speed and an independently limited slope.
-Those operations do not preserve `sum_k delta_phi[i,k] = 0`. Physical segregation
-velocities do sum to zero when weighted by composition; that identity must also
-hold for the numerical face flux, including its stabilisation terms.
-
-The old conservation test used uniform `M[i] = 1` and checked only global sums.
-It could not detect the first error and did not check local mixture closure.
-
-## Corrected grid update
-
-The relative concentration flux retains the intended segregation and diffusion
+The relative concentration flux uses segregation and diffusion
 coefficients:
 
     F[k] = c*phi[k]*(1/(s[k]*sum_j(phi[j]/s[j])) - 1)*grad(pk)
@@ -62,10 +45,8 @@ transfer.
 
 ## Bounded return to particles
 
-The original FLIP-style concentration increment can make a particle's depleted
-grain class negative, even if the nodal mixture remains positive. A limiter based
-only on that gather was too restrictive: it could freeze diffusion across pure
-layers. The corrected return transfer uses the actual species inventories.
+The return transfer uses actual species inventories so depleted classes cannot
+supply grains they do not own, and diffusion can mix pure layers.
 
 For a face carrying class k from node i, its donor weights are
 
@@ -74,8 +55,7 @@ For a face carrying class k from node i, its donor weights are
 where `Q[i,k]` is the deposited mobile species mass. A donor particle loses only
 grains it owns and receives equal mass from the counter-flowing classes on that
 face. Each particle's total mass stays fixed, and the opposite side receives the
-same species masses. For uniform composition this reduces to the original
-incremental gather. When physical and numerical fluxes are zero, particle
+same species masses. For uniform composition this reduces to an incremental concentration gather. When physical and numerical fluxes are zero, particle
 composition is unchanged: there is no unconditional PIC smoothing.
 
 Outgoing demand is budgeted over all faces in both directions before updating.
@@ -84,7 +64,7 @@ species conservation and zero mixture flux. A small floating-point balance of
 oppositely signed face totals precedes the return transfer. Fractions are never
 clipped or renormalised by this algorithm.
 
-The grid API is now `G.calculate_phi_increment(P, L)` for the coupled update. It
+The grid API is `G.calculate_phi_increment(P, L)` for the coupled update. It
 stages both `G.dphi` and inventory-aware particle increments. The main timestep
 and benchmark driver pass `L`. Calling it without `L`, or calling
 `increment_grainsize(P, G)`, returns the standalone grid update; its caller is
@@ -99,25 +79,22 @@ transport steps far beyond the unbounded explicit update. A node-aligned
 sinusoidal mixture reproduces the discrete heat-equation step for constant
 diffusivity. The slope examples also run for 1,000 steps with normalisation off.
 
-| Grain classes | Old fraction-sum error, 100 steps | Corrected, 100 steps | Corrected, 1,000 steps | Max species mass change, 1,000 steps (kg) |
-|---:|---:|---:|---:|---:|
-| 2 | 0.000157 | 6.66e-16 | 3.11e-15 | 1.14e-13 |
-| 3 | 0.000349 | 4.44e-16 | 2.11e-15 | 5.68e-14 |
-| 8 | 0.000673 | 4.44e-16 | 1.55e-15 | 2.84e-14 |
+| Grain classes | Fraction-sum error, 100 steps | Fraction-sum error, 1,000 steps | Max species mass error, 1,000 steps (kg) |
+|---:|---:|---:|---:|
+| 2 | 6.66e-16 | 3.11e-15 | 1.14e-13 |
+| 3 | 4.44e-16 | 2.11e-15 | 5.68e-14 |
+| 8 | 4.44e-16 | 1.55e-15 | 2.84e-14 |
 
-Raw measurements are in `benchmarks/segregation_drift_before.json` and
-`benchmarks/segregation_drift.json`. Regenerate the corrected report with
-`python -m benchmarks.segregation_drift`. The small performance snapshot is
-separate from the historical conversion benchmarks.
+Measurements and environment information are in
+`benchmarks/segregation_drift.json`. Reproduce them with `python -m
+benchmarks.segregation_drift --output /tmp/poly-mpm-segregation.json`.
+The [benchmark guide](https://github.com/benjym/poly-mpm/blob/main/benchmarks/README.md) distinguishes report configurations.
 
 These checks establish conservation, bounds, and specific diffusion behaviour;
 they do not validate the segregation constitutive law against experiments. The
-existing diffusion coefficient's zero-inertial-number convention remains
-unchanged. Limiting can reduce transport when particle inventories cannot supply
+diffusion coefficient has a special zero-inertial-number convention. Limiting can reduce transport when particle inventories cannot supply
 a proposed exchange, so quantitative predictions still require mesh/timestep
 convergence checks.
 
 The central-upwind framework and its reconstruction/flux distinction are
 described by [Kurganov and Lin (2007)](https://math.umd.edu/~tadmor/centpack/publications/files/Kurganov%20Lin%20CiCP2006-centpack.pdf).
-The defects and corrections above were established directly from this code and
-the independent conservation/physics checks, rather than attributed to the paper.

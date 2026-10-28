@@ -54,33 +54,30 @@ components use SI units and tension-positive Cauchy stress.</p>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rigid</span></code></p></td>
 <td><p>Optional <code class="docutils literal notranslate"><span class="pre">initial_v</span></code></p></td>
-<td><p>Prescribed velocity; no deformable stress update or new contact model.</p></td>
+<td><p>Prescribed motion with no deformable stress evolution.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elastic</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">G</span></code></p></td>
-<td><p>Updated neo-Hookean elasticity, with bulk/shear moduli in Pa. Legacy mode
+<td><p>Compressible neo-Hookean elasticity, with bulk/shear moduli in Pa. Legacy mode
 retains incremental isotropic elasticity.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">viscous</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">mu_s</span></code>, <code class="docutils literal notranslate"><span class="pre">mu_v</span></code></p></td>
-<td><p>Newtonian fluid; viscosities in Pa s. Updated mode agrees with the zero-
-yield Bingham limit. Historical bulk/stress-rate conventions require
-explicit legacy mode.</p></td>
+<td><p>Newtonian fluid; viscosities in Pa s. The zero-yield Bingham limit gives the same stress law.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">von_mises</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">G</span></code>, <code class="docutils literal notranslate"><span class="pre">yield_stress</span></code> (or <code class="docutils literal notranslate"><span class="pre">k</span></code>)</p></td>
-<td><p>Updated perfect J2 return map, yield stress in Pa. <code class="docutils literal notranslate"><span class="pre">sqrt(3)*k</span></code> is an
+<td><p>Perfect J2 return map, yield stress in Pa. <code class="docutils literal notranslate"><span class="pre">sqrt(3)*k</span></code> is an
 alternative yield stress. <code class="docutils literal notranslate"><span class="pre">s</span></code> only controls the legacy H² law.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pouliquen</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">rho_s</span></code>, <code class="docutils literal notranslate"><span class="pre">mu_0</span></code>, <code class="docutils literal notranslate"><span class="pre">delta_mu</span></code>, <code class="docutils literal notranslate"><span class="pre">I_0</span></code>, <code class="docutils literal notranslate"><span class="pre">eta_max</span></code></p></td>
-<td><p>Local granular friction law with a viscosity cap. Updated mode uses
-engineering shear rate and removes the occupancy density cutoff. Also supply <code class="docutils literal notranslate"><span class="pre">mu_1</span></code> and <code class="docutils literal notranslate"><span class="pre">packing</span></code>
+<td><p>Local granular friction law with a viscosity cap. Uses engineering shear rate and current physical density. Also supply <code class="docutils literal notranslate"><span class="pre">mu_1</span></code> and <code class="docutils literal notranslate"><span class="pre">packing</span></code>
 for the example’s steady-flow initialisation; <code class="docutils literal notranslate"><span class="pre">mu_1=mu_0+delta_mu</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bingham</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">K</span></code>, <code class="docutils literal notranslate"><span class="pre">mu_s</span></code>, <code class="docutils literal notranslate"><span class="pre">mu_0</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_0</span></code>; optional <code class="docutils literal notranslate"><span class="pre">mu_v</span></code></p></td>
-<td><p>Corrected bi-viscosity approximation to Bingham flow. Small creep below
+<td><p>Bi-viscosity approximation to Bingham flow. Small creep below
 yield is permitted; <code class="docutils literal notranslate"><span class="pre">gamma_c</span></code> is derived and need not be supplied.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dp</span></code></p></td>
@@ -104,19 +101,18 @@ constant friction. It is not a dilute/collisional granular model.</p></td>
 <code class="docutils literal notranslate"><span class="pre">P.G.s</span></code> are metres; <code class="docutils literal notranslate"><span class="pre">eta_max</span></code> and viscosities are Pa s; <code class="docutils literal notranslate"><span class="pre">tau_0</span></code> is Pa.
 Friction coefficients, <code class="docutils literal notranslate"><span class="pre">I_0</span></code>, <code class="docutils literal notranslate"><span class="pre">b</span></code>, and <code class="docutils literal notranslate"><span class="pre">beta</span></code> are dimensionless. For flow laws,
 <code class="docutils literal notranslate"><span class="pre">phi</span> <span class="pre">&#64;</span> <span class="pre">P.G.s</span></code> supplies the local mean diameter where used.</p>
-<p>The restored-law <a class="reference internal" href="constitutive-models.html"><span class="doc">constitutive audit</span></a> gives equations,
+<p>The <a class="reference internal" href="constitutive-models.html"><span class="doc">constitutive reference</span></a> gives equations,
 allowed parameter ranges, sign conventions, integration, and analytical checks.
-Historical equations and scalar-comparison tests select explicit legacy mode.
-See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a> for updated equations and their verification.
+See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Numerical methods</span></a> for deformation, transfer, and diagnostic conventions.
 These checks are not experimental validation. Select and calibrate a law for the intended regime rather than
 switching names and retaining unrelated parameters.</p>
 <p>Initialisation can require additional parameters: confined stress and the legacy
 <code class="docutils literal notranslate"><span class="pre">non-zero</span></code>/<code class="docutils literal notranslate"><span class="pre">temperature</span></code> modes may use elastic moduli; steady-flow options are
 only implemented for particular laws. Start with a working input using the same
-initialisation and inspect its setup before changing it. New algebraic Bingham
+initialisation and inspect its setup before changing it. Algebraic Bingham
 and linear-friction fluids do not need an elastic shear modulus.</p>
 <p><code class="docutils literal notranslate"><span class="pre">elastic_time</span></code>, <code class="docutils literal notranslate"><span class="pre">ken_kamrin</span></code>, and <code class="docutils literal notranslate"><span class="pre">ken_simple</span></code> are retired with explicit
-reasons in the audit. Their archived source is not imported. <code class="docutils literal notranslate"><span class="pre">viscous_size</span></code> and
+reasons in the constitutive reference. Their archived source is not imported. <code class="docutils literal notranslate"><span class="pre">viscous_size</span></code> and
 the separate legacy <code class="docutils literal notranslate"><span class="pre">P.F</span></code> compressible-fluid path remain unimplemented.</p>
 </section>
 
@@ -149,11 +145,13 @@ the separate legacy <code class="docutils literal notranslate"><span class="pre"
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

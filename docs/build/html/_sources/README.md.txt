@@ -2,7 +2,7 @@
 
 The current manual starts at [getting started](getting_started.rst); the root
 README provides a short first-run route. Sphinx builds the `.rst`
-and `.md` sources together, so the model audit, example matrix, and conservation
+and `.md` sources together, so the constitutive reference, example matrix, and conservation
 report appear in the same navigation as the tutorial and API reference.
 
 From the checkout root:
@@ -34,8 +34,8 @@ When changing commands or examples:
 2. Check saved PNGs/NPY shapes and the stated output location.
 3. Run the strict Sphinx build and check local links in the generated HTML.
 4. If material or example support changes, regenerate `benchmarks/examples.json`
-   and update the example matrix and model guidance together. Preserve historical
-   performance reports as dated measurements rather than relabelling their environment.
+   and update the example matrix and model guidance together. Keep recorded benchmark environments accurate and regenerate reports for the
+   configuration being measured.
 
 The optional external-link check is `make -C docs linkcheck`; it needs network
 access and external sites can rate-limit it. This is separate from the offline

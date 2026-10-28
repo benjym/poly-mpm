@@ -15,28 +15,25 @@ components use SI units and tension-positive Cauchy stress.
      - Meaning / scope
    * - ``rigid``
      - Optional ``initial_v``
-     - Prescribed velocity; no deformable stress update or new contact model.
+     - Prescribed motion with no deformable stress evolution.
    * - ``elastic``
      - ``K``, ``G``
-     - Updated neo-Hookean elasticity, with bulk/shear moduli in Pa. Legacy mode
+     - Compressible neo-Hookean elasticity, with bulk/shear moduli in Pa. Legacy mode
        retains incremental isotropic elasticity.
    * - ``viscous``
      - ``K``, ``mu_s``, ``mu_v``
-     - Newtonian fluid; viscosities in Pa s. Updated mode agrees with the zero-
-       yield Bingham limit. Historical bulk/stress-rate conventions require
-       explicit legacy mode.
+     - Newtonian fluid; viscosities in Pa s. The zero-yield Bingham limit gives the same stress law.
    * - ``von_mises``
      - ``K``, ``G``, ``yield_stress`` (or ``k``)
-     - Updated perfect J2 return map, yield stress in Pa. ``sqrt(3)*k`` is an
+     - Perfect J2 return map, yield stress in Pa. ``sqrt(3)*k`` is an
        alternative yield stress. ``s`` only controls the legacy H² law.
    * - ``pouliquen``
      - ``K``, ``rho_s``, ``mu_0``, ``delta_mu``, ``I_0``, ``eta_max``
-     - Local granular friction law with a viscosity cap. Updated mode uses
-       engineering shear rate and removes the occupancy density cutoff. Also supply ``mu_1`` and ``packing``
+     - Local granular friction law with a viscosity cap. Uses engineering shear rate and current physical density. Also supply ``mu_1`` and ``packing``
        for the example's steady-flow initialisation; ``mu_1=mu_0+delta_mu``.
    * - ``bingham``
      - ``K``, ``mu_s``, ``mu_0``, ``tau_0``; optional ``mu_v``
-     - Corrected bi-viscosity approximation to Bingham flow. Small creep below
+     - Bi-viscosity approximation to Bingham flow. Small creep below
        yield is permitted; ``gamma_c`` is derived and need not be supplied.
    * - ``dp``
      - ``K``, ``G``, ``mu``, ``beta``
@@ -56,19 +53,18 @@ components use SI units and tension-positive Cauchy stress.
 Friction coefficients, ``I_0``, ``b``, and ``beta`` are dimensionless. For flow laws,
 ``phi @ P.G.s`` supplies the local mean diameter where used.
 
-The restored-law :doc:`constitutive audit <constitutive-models>` gives equations,
+The :doc:`constitutive reference <constitutive-models>` gives equations,
 allowed parameter ranges, sign conventions, integration, and analytical checks.
-Historical equations and scalar-comparison tests select explicit legacy mode.
-See :doc:`numerical-foundations` for updated equations and their verification.
+See :doc:`numerical-foundations` for deformation, transfer, and diagnostic conventions.
 These checks are not experimental validation. Select and calibrate a law for the intended regime rather than
 switching names and retaining unrelated parameters.
 
 Initialisation can require additional parameters: confined stress and the legacy
 ``non-zero``/``temperature`` modes may use elastic moduli; steady-flow options are
 only implemented for particular laws. Start with a working input using the same
-initialisation and inspect its setup before changing it. New algebraic Bingham
+initialisation and inspect its setup before changing it. Algebraic Bingham
 and linear-friction fluids do not need an elastic shear modulus.
 
 ``elastic_time``, ``ken_kamrin``, and ``ken_simple`` are retired with explicit
-reasons in the audit. Their archived source is not imported. ``viscous_size`` and
+reasons in the constitutive reference. Their archived source is not imported. ``viscous_size`` and
 the separate legacy ``P.F`` compressible-fluid path remain unimplemented.

@@ -78,7 +78,7 @@ All callbacks receive ``(L, P, G)``:
 * ``after_every_savetime``: when a step crosses the next requested save time.
 * ``at_end``: once when the run ends, including a ``max_steps`` stop.
 
-``after_ever_timestep`` remains an alias for old inputs. Use the correctly spelled
+``after_ever_timestep`` is a compatibility alias. Use the correctly spelled
 name in new code. A custom callback replaces that stage's default adapter; it
 does not automatically add default plotting or energy recording. Explicitly call
 ``plotting.Plotting`` methods if both behaviours are needed.

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Packaging and future PyPI releases &#8212; poly-mpm user guide</title>
+    <title>Building and publishing packages &#8212; poly-mpm user guide</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Constitutive model audit" href="constitutive-models.html" />
+    <link rel="next" title="Constitutive models" href="constitutive-models.html" />
     <link rel="prev" title="Solver implementation checklist" href="implementation-todo.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -33,12 +33,11 @@
 
           <div class="body" role="main">
             
-  <section id="packaging-and-future-pypi-releases">
-<h1>Packaging and future PyPI releases<a class="headerlink" href="#packaging-and-future-pypi-releases" title="Link to this heading">¶</a></h1>
+  <section id="building-and-publishing-packages">
+<h1>Building and publishing packages<a class="headerlink" href="#building-and-publishing-packages" title="Link to this heading">¶</a></h1>
 <p>The project builds a pure-Python wheel and source distribution. A GitHub Actions
 job builds both, checks their metadata/README with Twine, and installs the wheel
-in an isolated environment for a bounded solver run. These checks do not upload
-a release. The repository version is currently <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>; confirm that version and
+in an isolated environment for a bounded solver run. CI validates artifacts; the separate manual publishing workflow uploads a release only when dispatched. The repository version is currently <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>; confirm that version and
 project-name ownership before the first public release.</p>
 <p>From a clean checkout:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>sync<span class="w"> </span>--locked<span class="w"> </span>--extra<span class="w"> </span>dev<span class="w"> </span>--extra<span class="w"> </span>docs<span class="w"> </span>--extra<span class="w"> </span>release
@@ -53,26 +52,39 @@ uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </
 uploaded accidentally. Install both distributions in fresh environments outside
 the checkout, check imports and <code class="docutils literal notranslate"><span class="pre">poly-mpm</span> <span class="pre">modern_ball</span></code>, and inspect the rendered
 package description. A full example produces output; use a temporary directory.
-CI performs a short wheel run; manually verify the sdist installation as well.</p>
-<p>Before publishing:</p>
-<ul class="simple">
-<li><p>Confirm access to the <code class="docutils literal notranslate"><span class="pre">poly-mpm</span></code> project on PyPI and TestPyPI. A local project
-name does not reserve it. Review version, author/contact, license, package
-contents, Python requirement, and dependency lower bounds.</p></li>
-<li><p>Review README links as rendered on PyPI; repository-relative guide links may
-need absolute URLs for the published description.</p></li>
-<li><p>Test installation from TestPyPI in a fresh environment, resolving numerical
-dependencies from PyPI. Check the console entry point and a bounded simulation.</p></li>
-<li><p>Configure <a class="reference external" href="https://docs.pypi.org/trusted-publishers/">PyPI Trusted Publishing</a>
-for the exact repository, release workflow, and protected GitHub environment.
-Use an approved release/tag workflow with <code class="docutils literal notranslate"><span class="pre">id-token:</span> <span class="pre">write</span></code> on the publishing
-job and an environment approval if desired. Keep upload permissions out of CI.</p></li>
-<li><p>Publish the already-tested artifacts, verify installation from PyPI, and
-attach release notes describing numerical changes and compatibility settings.</p></li>
-</ul>
-<p>The existing workflow has read-only repository permissions. <code class="docutils literal notranslate"><span class="pre">CODECOV_TOKEN</span></code>
-is used only to upload coverage reports; it provides no package-publishing access.
-No PyPI upload workflow or credentials are configured by this change.</p>
+CI checks the wheel; the publishing workflow checks both the wheel and sdist.</p>
+<section id="trusted-publishing-workflow">
+<h2>Trusted Publishing workflow<a class="headerlink" href="#trusted-publishing-workflow" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">.github/workflows/pypi.yml</span></code> builds, checks, and publishes using PyPI Trusted
+Publishing. The configured pending publisher uses <code class="docutils literal notranslate"><span class="pre">benjym/poly-mpm</span></code>, workflow
+<code class="docutils literal notranslate"><span class="pre">pypi.yml</span></code>, and <strong>no GitHub environment</strong>. The publishing job deliberately has
+no <code class="docutils literal notranslate"><span class="pre">environment</span></code> field so its OIDC identity matches that configuration.
+Only that job receives <code class="docutils literal notranslate"><span class="pre">id-token:</span> <span class="pre">write</span></code>; it downloads the tested distributions
+without checking out or executing project source. No API token is required.</p>
+<p>To publish an approved version:</p>
+<ol class="arabic simple">
+<li><p>Set the intended version in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, update <code class="docutils literal notranslate"><span class="pre">uv.lock</span></code>, and push the
+tested release source to <code class="docutils literal notranslate"><span class="pre">main</span></code>. Inspect the package description and contents;
+check documentation links as rendered on PyPI.</p></li>
+<li><p>Open <strong>Actions → Publish to PyPI → Run workflow</strong>, select <code class="docutils literal notranslate"><span class="pre">main</span></code>, and enter
+the exact version from <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>.</p></li>
+<li><p>The workflow checks formatting/tests, builds wheel and sdist, checks metadata,
+and installs/runs each distribution outside the checkout. Publication runs
+only after those checks pass. A dispatch on another branch is skipped.</p></li>
+<li><p>Verify installation from PyPI and create release notes for that version.</p></li>
+</ol>
+<p>The workflow runs only by manual dispatch. Pushing commits or creating tags does
+not publish. PyPI versions cannot be overwritten; increment the version for a new
+release. Adding this workflow does not itself create or upload a release.</p>
+<p>Before the first release, confirm PyPI project ownership and metadata, review the
+README rendering/links, and consider a TestPyPI rehearsal with a separately
+configured publisher. The existing pending publisher is for production PyPI.
+If you add a protected GitHub environment later, update both the publisher and
+workflow to the same environment name.</p>
+<p>See <a class="reference external" href="https://docs.pypi.org/trusted-publishers/using-a-publisher/">PyPI Trusted Publishing</a>
+for the OIDC identity requirements. <code class="docutils literal notranslate"><span class="pre">CODECOV_TOKEN</span></code> is used only by coverage CI
+and provides no package-publishing access.</p>
+</section>
 </section>
 
 
@@ -104,12 +116,16 @@ No PyPI upload workflow or credentials are configured by this change.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Packaging and future PyPI releases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Building and publishing packages</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#trusted-publishing-workflow">Trusted Publishing workflow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

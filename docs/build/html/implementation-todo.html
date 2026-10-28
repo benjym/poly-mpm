@@ -14,8 +14,8 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Packaging and future PyPI releases" href="releasing.html" />
-    <link rel="prev" title="Updated mechanics, interpolation, transfers, and diagnostics" href="numerical-foundations.html" />
+    <link rel="next" title="Building and publishing packages" href="releasing.html" />
+    <link rel="prev" title="Verification and error studies" href="verification.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -35,11 +35,11 @@
             
   <section id="solver-implementation-checklist">
 <h1>Solver implementation checklist<a class="headerlink" href="#solver-implementation-checklist" title="Link to this heading">¶</a></h1>
-<p>This file tracks implementation and evidence, rather than feature suggestions.
-The current authorised tranche is stages 1–4, in order. Later stages remain
-backlog; marking a capability complete requires its acceptance checks to pass.</p>
-<section id="current-tranche">
-<h2>Current tranche<a class="headerlink" href="#current-tranche" title="Link to this heading">¶</a></h2>
+<p>This checklist distinguishes implemented capabilities with verification evidence
+from outstanding implementation and validation work. A checked capability has
+passed its stated tests; it is not a guarantee for every application.</p>
+<section id="implemented-capabilities">
+<h2>Implemented capabilities<a class="headerlink" href="#implemented-capabilities" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>[x] 1. Verification and diagnostics</p>
 <ul>
@@ -55,7 +55,7 @@ timestep restrictions; do not silently hide invalid state.</p></li>
 <li><p>[x] Store reference volume, deformation gradient, determinant, and histories;
 update volume/density from deformation with constant particle mass.</p></li>
 <li><p>[x] Objective stress integration and physical fluid bulk/shear conventions;
-explicit compatibility mode for historical scalar comparisons.</p></li>
+explicit compatibility configuration.</p></li>
 <li><p>[x] Rotation, affine compression, stress/work, inlet/outlet, and species tests.</p></li>
 </ul>
 </li>
@@ -76,30 +76,40 @@ periodic seams; no clipping/renormalisation that breaks completeness.</p></li>
 force-driven evolution, boundary and segregation integration checks.</p></li>
 </ul>
 </li>
-<li><p>[x] Refresh user docs, example audit, and rendered manual; record migration and
-remaining numerical limitations; run the complete regression suite.</p></li>
+<li><p>[x] User guides, input example matrix, rendered manual and regression checks.</p></li>
 <li><p>[x] Black formatting, CI formatting/tests/docs/package checks, and Codecov reporting.</p></li>
+<li><p>[x] Manual <code class="docutils literal notranslate"><span class="pre">pypi.yml</span></code> Trusted Publishing workflow matching the configured pending
+publisher (no GitHub environment); publication requires explicit dispatch.</p></li>
+<li><p>[x] Hydrostatic equilibrium, translated self-equilibrated stress, and nonlinear
+manufactured dynamics with analytical references and regression checks.</p></li>
+<li><p>[x] Separate dynamic grid/timestep studies, particle-quadrature studies, frozen
+exact-state force checks, fixed-cloud remaps, and prescribed affine patches.</p></li>
+<li><p>[x] Present-tense user documentation with measured verification limits.</p></li>
 </ul>
 </section>
 <section id="acceptance-evidence">
 <h2>Acceptance evidence<a class="headerlink" href="#acceptance-evidence" title="Link to this heading">¶</a></h2>
-<p>The completed tranche is checked by the full regression suite, the independent
-<code class="docutils literal notranslate"><span class="pre">tests/test_modern_solver.py</span></code> checks, and the source-fingerprinted
-<code class="docutils literal notranslate"><span class="pre">benchmarks/verification.json</span></code> report. The report includes complete <code class="docutils literal notranslate"><span class="pre">modern_ball</span></code>
-and <code class="docutils literal notranslate"><span class="pre">dp_rate_unit_test</span></code> runs, standing-wave refinement, remapping/dissipation
-comparisons, and caveats about non-monotone errors. The wheel and strict HTML
-manual are also checked. These are implementation checks, not experimental
-validation. Rate-form plasticity and local granular rheology retain the limits
-described in the updated-methods guide.</p>
+<p>The regression suite includes <code class="docutils literal notranslate"><span class="pre">tests/test_modern_solver.py</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tests/test_broader_verification.py</span></code>. Source-fingerprinted reports in
+<code class="docutils literal notranslate"><span class="pre">benchmarks/verification.json</span></code> and <code class="docutils literal notranslate"><span class="pre">benchmarks/broader_verification.json</span></code> cover
+complete example runs, standing waves, equilibrium, finite strain, and operator
+controls. The <a class="reference internal" href="verification.html"><span class="std std-doc">verification guide</span></a> explains measured errors and
+non-monotone levels. Distribution builds and strict HTML documentation checks
+cover packaging and user instructions. These checks verify implementation;
+experimental validation and application calibration remain separate tasks.</p>
 </section>
 <section id="deferred-implementation-backlog">
 <h2>Deferred implementation backlog<a class="headerlink" href="#deferred-implementation-backlog" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>[ ] Confirm PyPI project ownership, choose a release version, test the distributions
-on TestPyPI, and configure Trusted Publishing before the first upload.</p></li>
+<li><p>[ ] Choose a release version, review metadata/README rendering, rehearse on
+TestPyPI if desired, and verify the first production PyPI upload/install.</p></li>
 <li><p>[ ] Establish coverage thresholds after reviewing the first Codecov baseline.</p></li>
-<li><p>[ ] Broader hydrostatic/translated-stress/large-deformation and application
-benchmarks, separating remapping, spatial, and temporal errors.</p></li>
+<li><p>[ ] Control distorted-particle quadrature/cell-crossing force errors; demonstrate
+spatial convergence beyond the two-particles-per-axis sampling regime.</p></li>
+<li><p>[ ] Well-balanced hydrostatics with quadratic interpolation on general particle clouds.</p></li>
+<li><p>[ ] Higher-order position integration consistent with deformation/stress evolution;
+isolate timestep accuracy from the number of remaps.</p></li>
+<li><p>[ ] Broader application benchmarks and experimental validation.</p></li>
 <li><p>[ ] Benchmark-driven assessment of GIMP/CPDI or higher-order interpolation,
 if quadratic boundary/interior accuracy is insufficient.</p></li>
 <li><p>[ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.</p></li>
@@ -146,17 +156,18 @@ if quadratic boundary/interior accuracy is insufficient.</p></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Solver implementation checklist</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#current-tranche">Current tranche</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implemented-capabilities">Implemented capabilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#acceptance-evidence">Acceptance evidence</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#deferred-implementation-backlog">Deferred implementation backlog</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

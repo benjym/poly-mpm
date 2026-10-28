@@ -80,7 +80,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#selecting-a-configuration">Selecting a configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#deformation-and-physical-density">Deformation and physical density</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#stress-and-work-conventions">Stress and work conventions</a></li>
@@ -90,31 +90,42 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#evidence-and-limits">Evidence and limits</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#separating-error-sources">Separating error sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#hydrostatic-equilibrium">Hydrostatic equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#translated-stressed-bodies">Translated stressed bodies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#finite-strain-manufactured-dynamics">Finite-strain manufactured dynamics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#pure-transfer-and-time-integration-controls">Pure transfer and time-integration controls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#scope">Scope</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#current-tranche">Current tranche</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#implemented-capabilities">Implemented capabilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#acceptance-evidence">Acceptance evidence</a></li>
 <li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#deferred-implementation-backlog">Deferred implementation backlog</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#restored-laws">Restored laws</a></li>
-<li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#retired-implementations">Retired implementations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#migration-and-checks">Migration and checks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="releasing.html#trusted-publishing-workflow">Trusted Publishing workflow</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#model-parameters">Model parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#model-limits-and-unsupported-names">Model limits and unsupported names</a></li>
+<li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#checks-and-outputs">Checks and outputs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="array-conversion.html#design-and-public-interfaces">Design and public interfaces</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array-conversion.html#timestep-and-compatibility">Timestep and compatibility</a></li>
-<li class="toctree-l2"><a class="reference internal" href="array-conversion.html#intentional-numerical-corrections">Intentional numerical corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array-conversion.html#timestep-and-input-interfaces">Timestep and input interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="array-conversion.html#numerical-conventions">Numerical conventions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="array-conversion.html#runtime-and-dependency-baseline">Runtime and dependency baseline</a></li>
 <li class="toctree-l2"><a class="reference internal" href="array-conversion.html#validation-and-remaining-limitations">Validation and remaining limitations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="array-conversion.html#example-compatibility">Example compatibility</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="segregation-conservation.html#where-the-drift-came-from">Where the drift came from</a></li>
-<li class="toctree-l2"><a class="reference internal" href="segregation-conservation.html#corrected-grid-update">Corrected grid update</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="segregation-conservation.html#grid-flux-and-mass-exchanges">Grid flux and mass exchanges</a></li>
 <li class="toctree-l2"><a class="reference internal" href="segregation-conservation.html#bounded-return-to-particles">Bounded return to particles</a></li>
 <li class="toctree-l2"><a class="reference internal" href="segregation-conservation.html#verification">Verification</a></li>
 </ul>
@@ -171,12 +182,13 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

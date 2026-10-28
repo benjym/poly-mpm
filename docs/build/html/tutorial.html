@@ -104,7 +104,7 @@ be supplied: the run loop uses physical time and stops at <code class="docutils 
 with <code class="docutils literal notranslate"><span class="pre">max_steps</span></code> stops earlier and still calls its end-of-run output callback.</p>
 <p><code class="docutils literal notranslate"><span class="pre">time_stepping='dynamic'</span></code> enables the existing timestep controller, with <code class="docutils literal notranslate"><span class="pre">CFL</span></code>
 and optional material <code class="docutils literal notranslate"><span class="pre">critical_time(P)</span></code> functions. It is not a universal
-stability guarantee: the central controller now estimates elastic, viscous,
+stability guarantee: the central controller estimates elastic, viscous,
 advection, and segregation restrictions, but nonlinear and model-specific
 stability still requires verification. Start with conservative values and
 verify the behaviour of the chosen input.</p>
@@ -124,7 +124,7 @@ periodic. Particle positions must lie within the domain before cell lookup,
 except for permitted periodic wrapping and the explicit inlet/outlet paths.</p>
 <p>These flags impose grid constraints. They do not define curved contact surfaces
 or independent contact between material bodies. Traction flags retain the
-legacy reference-density scaling; see <a class="reference internal" href="array-conversion.html"><span class="doc">NumPy array conversion</span></a> before using them
+legacy reference-density scaling; see <a class="reference internal" href="array-conversion.html"><span class="doc">Particle arrays and examples</span></a> before using them
 for quantitative loading.</p>
 </section>
 <section id="materials-and-particle-geometry">
@@ -150,7 +150,7 @@ numerical material points.</p>
 <code class="docutils literal notranslate"><span class="pre">E</span></code> and <code class="docutils literal notranslate"><span class="pre">nu</span></code> are convenient input variables, but the loader does not derive
 <code class="docutils literal notranslate"><span class="pre">K</span></code> or <code class="docutils literal notranslate"><span class="pre">G</span></code> from them. The <a class="reference internal" href="materials.html"><span class="doc">Choosing a material</span></a> page lists parameters. Updated <code class="docutils literal notranslate"><span class="pre">elastic</span></code> uses neo-Hookean
 elasticity, while <code class="docutils literal notranslate"><span class="pre">von_mises</span></code> uses a J2 return map. Historical conventions are
-only selected with <code class="docutils literal notranslate"><span class="pre">mechanics='legacy'</span></code>; see <a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a>.</p>
+only selected with <code class="docutils literal notranslate"><span class="pre">mechanics='legacy'</span></code>; see <a class="reference internal" href="numerical-foundations.html"><span class="doc">Numerical methods</span></a>.</p>
 <p>To initialise confined stress, set <code class="docutils literal notranslate"><span class="pre">pressure='compression'</span></code> and a positive
 <code class="docutils literal notranslate"><span class="pre">initial_pressure</span></code> in Pa. This produces negative normal Cauchy stress. The
 <code class="docutils literal notranslate"><span class="pre">lithostatic</span></code> mode uses gravity, depth, and slope. Do not confuse these input
@@ -163,7 +163,7 @@ mode strings with the particle <code class="docutils literal notranslate"><span 
 composition, and the model’s segregation coefficients <code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">l</span></code>.
 <code class="docutils literal notranslate"><span class="pre">segregate_mp</span></code> is unsupported. The current implementation transports conservative
 species-mass exchanges; arbitrary clipping/renormalisation is not needed for the
-validated cases. See <a class="reference internal" href="segregation-conservation.html"><span class="doc">Source and correction of segregation drift</span></a> for equations, coefficient
+validated cases. See <a class="reference internal" href="segregation-conservation.html"><span class="doc">Segregation transport</span></a> for equations, coefficient
 roles, diagnostics, and limitations.</p>
 </section>
 <section id="inspecting-state-and-customising-output">
@@ -175,7 +175,7 @@ objects at <code class="docutils literal notranslate"><span class="pre">L.S[p][i
 clock. <code class="docutils literal notranslate"><span class="pre">MPM.step</span></code> is a lower-level single-step operator: it does not advance
 <code class="docutils literal notranslate"><span class="pre">P.t</span></code> or <code class="docutils literal notranslate"><span class="pre">P.tstep</span></code> and does not invoke output callbacks.</p>
 <p>See <a class="reference internal" href="outputs.html"><span class="doc">Output and Python API</span></a> for flags, file formats, and the callback interface.
-The <a class="reference internal" href="array-conversion.html"><span class="doc">NumPy array conversion</span></a> reference gives full array shapes, defaults, and
+The <a class="reference internal" href="array-conversion.html"><span class="doc">Particle arrays and examples</span></a> reference gives full array shapes, defaults, and
 current numerical limitations, including fixed particle mass/volume and the
 reconstructed-density diagnostic.</p>
 </section>
@@ -218,12 +218,13 @@ reconstructed-density diagnostic.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

@@ -20,8 +20,7 @@ From a terminal::
 ``uv sync`` installs the project as well as its dependencies. ``--extra dev``
 includes pytest; omit it if you only want to run simulations. Run the commands
 below from the checkout root. The snippets use ``uv run`` so activation is not
-required. An existing checkout should use the branch containing these docs;
-older branches may still contain the scalar implementation.
+required. Use ``main`` for the supported solver.
 
 Alternatively, with Python 3.14 already installed::
 
@@ -32,7 +31,7 @@ Alternatively, with Python 3.14 already installed::
 On Windows PowerShell, activate with ``.venv\Scripts\Activate.ps1`` instead.
 For this pip workflow, replace ``uv run --locked python`` below with ``python``.
 The pip install resolves compatible dependency versions; ``uv.lock`` records the
-exact tested environment. Updating Python alone does not modernise an old checkout.
+exact tested environment. Use the Python version and dependencies specified by the checkout.
 
 First complete simulation
 -------------------------
@@ -90,7 +89,7 @@ Choosing an example
 The :doc:`complete example matrix <array-conversion>` gives all required
 arguments and identifies unsupported inputs. Examples with arguments must receive
 them in the listed order; there is no general argument parser for their settings.
-Bounded smoke checks establish compatibility, not stability over every original
+Bounded smoke checks establish compatibility, not stability over every
 run duration or physical calibration.
 
 Supported material names are ``rigid``, ``elastic``, ``viscous``, ``von_mises``,

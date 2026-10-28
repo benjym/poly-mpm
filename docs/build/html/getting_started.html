@@ -52,8 +52,7 @@ space for Python, NumPy, SciPy, Astropy, and Matplotlib.</p>
 <p><code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> installs the project as well as its dependencies. <code class="docutils literal notranslate"><span class="pre">--extra</span> <span class="pre">dev</span></code>
 includes pytest; omit it if you only want to run simulations. Run the commands
 below from the checkout root. The snippets use <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span></code> so activation is not
-required. An existing checkout should use the branch containing these docs;
-older branches may still contain the scalar implementation.</p>
+required. Use <code class="docutils literal notranslate"><span class="pre">main</span></code> for the supported solver.</p>
 <p>Alternatively, with Python 3.14 already installed:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span><span class="mf">.14</span> <span class="o">-</span><span class="n">m</span> <span class="n">venv</span> <span class="o">.</span><span class="n">venv</span>
 <span class="n">source</span> <span class="o">.</span><span class="n">venv</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">activate</span>
@@ -63,7 +62,7 @@ older branches may still contain the scalar implementation.</p>
 <p>On Windows PowerShell, activate with <code class="docutils literal notranslate"><span class="pre">.venv\Scripts\Activate.ps1</span></code> instead.
 For this pip workflow, replace <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span></code> below with <code class="docutils literal notranslate"><span class="pre">python</span></code>.
 The pip install resolves compatible dependency versions; <code class="docutils literal notranslate"><span class="pre">uv.lock</span></code> records the
-exact tested environment. Updating Python alone does not modernise an old checkout.</p>
+exact tested environment. Use the Python version and dependencies specified by the checkout.</p>
 </section>
 <section id="first-complete-simulation">
 <h2>First complete simulation<a class="headerlink" href="#first-complete-simulation" title="Link to this heading">¶</a></h2>
@@ -108,7 +107,7 @@ history recording. In that mode there will be no saved plots or arrays.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">ball</span></code>: a small first run with elastic material and saved plots.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">modern_ball</span></code>: updated elasticity with quadratic B-splines, APIC, and dynamic
-timestepping. See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a> for configuration and diagnostics.</p></li>
+timestepping. See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Numerical methods</span></a> for configuration and diagnostics.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dp_unit_test</span></code> / <code class="docutils literal notranslate"><span class="pre">dp_rate_unit_test</span></code>: Drucker-Prager loading histories;
 full runs have 50,000 / 5,000 steps respectively.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">bi_seg_test</span> <span class="pre">22</span> <span class="pre">2</span> <span class="pre">11</span></code>: segregation at 22 degrees, two grain-size classes,
@@ -119,11 +118,11 @@ This is a long research example; start with a bounded run.</p></li>
 <p>The <a class="reference internal" href="array-conversion.html"><span class="doc">complete example matrix</span></a> gives all required
 arguments and identifies unsupported inputs. Examples with arguments must receive
 them in the listed order; there is no general argument parser for their settings.
-Bounded smoke checks establish compatibility, not stability over every original
+Bounded smoke checks establish compatibility, not stability over every
 run duration or physical calibration.</p>
 <p>Supported material names are <code class="docutils literal notranslate"><span class="pre">rigid</span></code>, <code class="docutils literal notranslate"><span class="pre">elastic</span></code>, <code class="docutils literal notranslate"><span class="pre">viscous</span></code>, <code class="docutils literal notranslate"><span class="pre">von_mises</span></code>,
 <code class="docutils literal notranslate"><span class="pre">pouliquen</span></code>, <code class="docutils literal notranslate"><span class="pre">bingham</span></code>, <code class="docutils literal notranslate"><span class="pre">dp</span></code>, <code class="docutils literal notranslate"><span class="pre">dp_rate</span></code>, and <code class="docutils literal notranslate"><span class="pre">linear_mu</span></code>. See
-<a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a> before selecting parameters. Retired and missing laws
+<a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive models</span></a> before selecting parameters. Retired and missing laws
 fail at initialisation; they are not silently replaced.</p>
 </section>
 <section id="checking-the-installation">
@@ -175,11 +174,13 @@ example’s status. On Windows, choose a writable output path instead of <code c
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
-<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
-<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
-<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">Particle arrays and examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Segregation transport</a></li>
 <li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
 </ul>

@@ -1,4 +1,4 @@
-# NumPy array conversion
+# Particle arrays and examples
 
 ## Design and public interfaces
 
@@ -21,7 +21,7 @@ normalising mass-weighted fields.
 
 Linear neighbours are bottom-left, bottom-right, top-right, top-left. Quadratic
 neighbours are a tensor-product nine-entry stencil, with boundary/periodic mapping
-described in [the updated methods](numerical-foundations.md). Particle
+described in [numerical methods](numerical-foundations.md). Particle
 and grid vectors retain three components; geometry and transport remain two
 dimensional. Constitutive tensor traces and norms reduce tensor axes only.
 
@@ -30,9 +30,10 @@ dimensional. Constitutive tensor traces and norms reduce tensor axes only.
 `law(particles, material_parameters, simulation_parameters)` and update history and
 `dstress`. Updated mechanics uses neo-Hookean elastic stress, objective rate-form
 plasticity, and algebraic fluid stress; it evolves `F`, `J`, `V`, and `rho`.
-Explicit legacy mode retains the older equations/integration. Rigid materials
+The optional `mechanics='legacy'` compatibility configuration uses fixed volume
+and incremental constitutive integration. Rigid materials
 bypass deformation/stress evolution and follow prescribed velocity. See the
-[updated methods](numerical-foundations.md) and [constitutive audit](constitutive-models.md).
+[numerical methods](numerical-foundations.md) and [constitutive models](constitutive-models.md).
 The registry in `constit.py` is the only material dispatch mechanism.
 
 Uniform mass/volume properties, velocities, and grain fractions are copied into
@@ -45,8 +46,8 @@ finite. A zero-particle material is valid.
 The grid stores `pressure`, `gammadot`, `mu`, `I`, `eta`, and other constitutive
 diagnostics as **mass-weighted sums**. Call `G.physical(name)` to divide once by
 nodal mass. `G.phi`, `G.s_bar`, `G.pk`, and `G.shear_rate` are already physical
-fields. `G.shear_rate` is the bulk velocity-gradient measure formerly written over
-the deposited `gammadot` field. Empty-node quotients contribute zero.
+fields. `G.shear_rate` is the bulk velocity-gradient measure; deposited
+`gammadot` is a material constitutive diagnostic. Empty-node quotients contribute zero.
 `G.segregation_m`, `G.segregation_phim`, and `G.segregation_phi` hold the deformable
 transport inventory separately from rigid material. `G.segregation_particle_dphi`
 stages the bounded species-aware increments for the next composition update.
@@ -56,9 +57,9 @@ columns (`array.reshape(ny, nx, ...)[:, :-1]`) when measuring periodic totals.
 Merge deposited sums once per stage; do not add periodic endpoints a second time.
 Particle positions wrap with modulo arithmetic before cell lookup.
 
-## Timestep and compatibility
+## Timestep and input interfaces
 
-The supported timestep keeps the existing strain-before-force order:
+The timestep uses a strain-before-force order:
 
 1. Reset grid, update loading, determine cells and basis functions.
 2. Deposit mass, momentum, composition, and kinetic pressure across all materials.
@@ -72,18 +73,18 @@ The supported timestep keeps the existing strain-before-force order:
 
 Particle mass remains fixed during deformable motion; updated volume is `J*V0`
 and physical density is `m/V`. Legacy mode alone fixes volume and reconstructs
-particle density from nodal occupancy, retaining the old Pouliquen density cutoff.
+particle density from nodal occupancy.
 
-The following input conventions remain supported:
+Input conventions:
 
 - A single material object or list in `P.S`.
 - `segregate_grid` as an alias for `segregate`; contradictory explicit values fail.
 - Uniform `initial_v`, or per-particle initial velocities.
-- Existing pressure initialisation modes, steady viscous/Pouliquen flow, and the
-  existing steady Poiseuille formula within its steady regime.
+- Pressure initialisation modes, steady viscous/Pouliquen flow, and the
+  steady Poiseuille formula within its steady regime.
 - Boundary flags, default output flags, output filenames, and particle-data column
   order (`x`, `y`, grain fractions).
-- Legacy inlet placement and cadence. Only materials declaring `inlet_rate` enter
+- Inlet placement and cadence use material geometry. Only materials declaring `inlet_rate` enter
   through an enabled inlet. Injection properties must be uniform per material;
   each new batch gets freshly initialised constitutive history.
 
@@ -93,54 +94,35 @@ actual array lengths. Prescribed per-particle rigid velocities travel with their
 rows through removal.
 
 Callbacks are `at_start(L, P, G)`, `after_every_timestep(L, P, G)`,
-`after_every_savetime(L, P, G)`, and `at_end(L, P, G)`. The old
-`after_ever_timestep` spelling remains an alias. A custom callback replaces the
+`after_every_savetime(L, P, G)`, and `at_end(L, P, G)`. `after_ever_timestep` is a compatibility alias. A custom callback replaces the
 corresponding default stage; it is responsible for any desired plotting, energy
 recording, or saving at that stage. Default energy histories grow with actual
 steps, so dynamic timesteps do not overflow preallocated buffers.
 
-`run` lands on the requested final time without the legacy extra timestep.
+`run` stops at the requested final time, shortening the last step when needed.
 Dynamic timestep selection considers all materials and ignores inactive zero-speed
 or zero-segregation-rate limits. Invalid resulting timesteps fail explicitly.
 `run(..., output=False)` suppresses every output callback.
 
-## Intentional numerical corrections
+## Numerical conventions
 
-- Repeated node indices accumulate with `bincount`; advanced-indexed `+=` no
-  longer drops particle contributions.
-- Velocity gradient and transpose are no longer the same incremented buffer.
-  Analytical rotation and nonsymmetric affine-flow tests cover this inherited bug.
-- Internal forces retain the spatial component in the stress-gradient contraction.
-- Cell lookup uses floor, validates the domain before indexing, and handles exact
-  upper edges using the final cell. Periodic wrapping handles multiple crossings.
-- Grid validity is computed after periodic merging and all material deposits.
-- Segregation gathers use particle connectivity rather than particle masks as grid
-  indices. Padding follows spatial rows and derivatives exclude the grain axis.
-- Closed-boundary/periodic KT ghost handling uses consistent spatial orientation;
-  periodic endpoint duplicates are not treated as extra cells.
-- Shear rate, weighted diagnostics, and physical fields are distinguished so no
-  field is overwritten or divided by nodal mass twice.
-- Friction uses actual boundary masks without modifying them. Rectangular-box
-  indexing and the bottom silo mask no longer affect unintended rows.
-- At zero pressure, inertial number is undefined. Its stored diagnostic is zero;
-  friction uses the infinite-inertial-number limit for nonzero strain rate.
-  At zero strain rate with nonzero pressure, viscosity uses the existing cap.
-  This avoids overflowing nodal sums with a machine-maximum diagnostic sentinel.
-- At exactly zero inertial number, the existing nonfinite-diffusion/zero-flux limit
-  is explicit. Near-zero inertial number can still make the retained diffusion
-  formula sensitive; it has not been regularised with a new physical parameter.
-- Gravity potential energy uses its Cartesian projection, avoiding division by a
-  particle's zero x-coordinate in the old angle-based expression.
+Repeated node indices accumulate all particle contributions. Cell lookup uses
+floor, validates positions, and assigns exact upper edges to the final cell.
+Periodic coordinates wrap before lookup; node validity is determined after all
+materials deposit and periodic sums are merged. Internal forces contract the
+Cauchy stress with spatial shape gradients and current particle volume.
 
-The original-five compatibility equations remain available in explicit legacy
-mode. Updated mechanics intentionally changes their stress integration, volume,
-density, and fluid conventions; see [the updated methods](numerical-foundations.md). The subsequently restored
-laws have explicit physical corrections and separate analytical tests; see the
-[constitutive audit](constitutive-models.md). The segregation flux,
-reconstruction, and return transfer were subsequently corrected to enforce mixture
-and species conservation; see [the segregation correction](segregation-conservation.md).
-Changes are checked against analytical cases and independent corrected scalar
-kernels, not blind parity with known defects in `master`.
+Pressure-dependent flow laws use compression-positive confinement. At zero
+pressure, the undefined inertial-number diagnostic is stored as zero; Pouliquen
+friction uses its high-inertial-number limit when the shear rate is nonzero.
+At zero shear rate, effective viscosity follows the selected model's cap or
+Newtonian limit. See [constitutive models](constitutive-models.md).
+
+Segregation conserves mobile species inventories using local equal-mass
+exchanges. `G.gammadot` and the constitutive fields remain distinct from the
+bulk-grid shear rate. The diffusion coefficient has an explicit zero-inertial-
+number convention; very small nonzero inertial numbers can still make it
+sensitive. See [segregation transport](segregation-conservation.md).
 
 ## Runtime and dependency baseline
 
@@ -148,8 +130,9 @@ The supported baseline is Python 3.14, pinned to 3.14.10 in `.python-version`.
 Dependency floors are NumPy 2.5.4, SciPy 1.18.1, Astropy 8.0.2, Matplotlib 3.11.2,
 and pytest 9.2. The complete resolved environment is recorded in `uv.lock`.
 Use `uv sync --extra dev --locked` with a current uv release to reproduce it.
-The Python 3.12.8 performance report is retained as a historical measurement;
-the full test suite is separately validated on Python 3.14.
+The regression suite runs on Python 3.14. Benchmark reports record their own
+environment and source fingerprints; use measurements matching the configuration
+you intend to run.
 
 ## Validation and remaining limitations
 
@@ -163,27 +146,17 @@ bidisperse/three-class/eight-class segregation runs are included.
 Kernel reference comparisons use `rtol=1e-10`, `atol=1e-12`; short trajectories use
 `rtol=1e-8`, `atol=1e-12`. Tests run with runtime warnings treated as errors.
 
-The corrected segregation operator conserves participating species masses and
-particle fraction sums to roundoff. A common slope limiter and numerical speed
-preserve mixture closure; physical diffusion is a separate flux. Nodal updates
-use species mass and the actual nodal control volumes. The particle return
-transfer exchanges equal mass locally and limits outgoing inventories before
-updating fractions, including across both spatial directions. Pure layers mix
-without freezing or acquiring negative fractions.
+Segregation checks measure species masses, local fraction sums, bounds, and pure-
+layer mixing without clipping or normalisation. Run `python -m
+benchmarks.segregation_drift` to reproduce the conservation report. The
+`normalise_phi` compatibility option is unnecessary for the conservative operator
+and can conceal an invalid configuration.
 
-The reproducible before/after reports are `benchmarks/segregation_drift_before.json`
-and `benchmarks/segregation_drift.json`. They include 100- and 1,000-step runs with
-normalisation disabled. The explicit legacy `normalise_phi` option remains for
-compatibility and is unnecessary for the corrected operator. It should not be
-used to hide conservation errors. The old performance report predates this
-numerical correction; current small-case timings are recorded separately in
-`benchmarks/segregation_correction_performance.json`.
-
-Retired implementations remain archived outside the active registry, with explicit
-retirement reasons. Absent laws remain unsupported. Mixed
-materials share the existing momentum grid; this work adds neither contact
-resolution nor a separate velocity field per material. Legacy traction scaling
-still uses the first material's uniform reference density.
+Materials share a momentum grid: this does not provide separate-body contact or
+independent material velocity fields. Traction scaling uses the first material's
+uniform reference density. The [numerical methods](numerical-foundations.md)
+describe diagnostics and the verification suite; unsupported registry names fail
+explicitly rather than selecting a different law.
 
 The user manual builds the current reStructuredText and Markdown sources together.
 See [documentation maintenance](README.md) for build instructions and the checked-in
@@ -193,8 +166,7 @@ HTML layout.
 
 The table below is generated from `python -m benchmarks.audit_examples`: five
 bounded timesteps, initial `dt <= 1e-6`, output disabled. Dynamic timestep rules
-remain enabled where configured. Original example durations/settings are retained
-in source. Unsupported laws are deliberately not substituted with different laws.
+remain enabled where configured. Durations, loading, and output frequency are configured in each input module. Unsupported laws are deliberately not substituted with different laws.
 
 | Example command | Status |
 |---|---|
@@ -231,7 +203,7 @@ in source. Unsupported laws are deliberately not substituted with different laws
 | `python MPM.py stokes` | supported smoke-tested |
 | `python MPM.py tri_seg_test` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py triaxial` | supported smoke-tested |
-| `python MPM.py tunnel` | unsupported material law: Retired elastic_time; see constitutive audit |
+| `python MPM.py tunnel` | unsupported material law: Unsupported elastic_time; use a supported constitutive model |
 | `python MPM.py vicky` | supported smoke-tested |
 | `python MPM.py vicky_latest` | supported smoke-tested |
 | `python MPM.py viscous_unit_test` | supported smoke-tested |

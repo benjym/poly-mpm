@@ -1,24 +1,23 @@
-# Updated mechanics, interpolation, transfers, and diagnostics
+# Numerical methods
 
-The current solver implements the first four stages in the
-[implementation checklist](implementation-todo.md): verification/diagnostics,
-deformation and volume evolution, selectable interpolation, and APIC.
-Later capabilities remain explicit backlog items, not implied guarantees.
+The solver uses explicit strain-before-force MPM on a regular Cartesian grid,
+with selectable linear/quadratic interpolation and FLIP, PIC, or APIC transfers.
+Deformable materials evolve deformation, volume, density, and constitutive state.
 
 ## Selecting a configuration
 
-For the new combined example:
+Run the quadratic/APIC example:
 
 ```sh
 uv run --locked python MPM.py modern_ball
 ```
 
 This uses updated mechanics, quadratic B-splines, APIC, and dynamic timestepping.
-The smaller `ball` example retains linear interpolation and FLIP, but also uses
+The `ball` example uses linear interpolation and FLIP, but also uses
 updated mechanics. In a custom `Params` constructor, select:
 
 ```python
-self.mechanics = 'updated'       # default; historical alternative: 'legacy'
+self.mechanics = 'updated'       # default
 self.interpolation = 'quadratic' # default: 'linear'
 self.transfer = 'apic'           # default: 'flip'; alternatives: 'pic', 'apic'
 self.time_stepping = 'dynamic'
@@ -31,11 +30,10 @@ linear APIC is avoided by rejecting that combination explicitly. For a PIC/FLIP
 blend, use `transfer='flip'` and `pic_fraction` between zero (pure FLIP, the
 default) and one (PIC). Changing transfer changes numerical dissipation.
 
-`mechanics='legacy'` explicitly selects the older constitutive equations,
-fixed particle volume, reconstructed particle density, Lie correction, and
-acceleration-only FLIP update. It is for historical comparison, not the
-recommended mechanics. Scalar parity tests and the old performance comparison
-select this mode. The default changes numerical results deliberately.
+`mechanics='legacy'` is an explicit compatibility configuration with incremental
+constitutive equations, fixed volume, occupancy-based density, Lie stress
+correction, and acceleration-only FLIP. The default `updated` configuration is
+the one described below.
 
 ## Deformation and physical density
 
@@ -58,8 +56,7 @@ with particle rows through removal and insertion.
 The reference is the input configuration: pressure initialisation supplies an
 initial prestress, not an inferred pre-deformation. Physical density follows
 mass/volume; nodal mass divided by nodal control volume remains a separate grid
-occupancy diagnostic. The old occupancy-based Pouliquen density cutoff is absent
-in updated mode. No separate porosity or critical-state dilation law is implied.
+occupancy diagnostic. No separate porosity or critical-state dilation law is implied.
 
 ## Stress and work conventions
 
@@ -81,9 +78,8 @@ an unstressed reference. Energy is measured relative to that reference;
 prestress work can make its change negative. The Cauchy stress matches the
 energy derivative, which is checked by finite differences.
 
-**Von Mises** now uses a standard perfectly plastic J2 return map. Supply
-`yield_stress` in Pa, or retain `k` with `yield_stress=sqrt(3)*k`. The old `s`
-exponent only applies in legacy mode. **DP/DP-rate** retain the audited return
+**Von Mises** uses a standard perfectly plastic J2 return map. Supply
+`yield_stress` in Pa, or retain `k` with `yield_stress=sqrt(3)*k`. `s` only applies in compatibility mode. **DP/DP-rate** use cone/apex return
 maps. These rate-form plastic solids use the symmetric spin split and accumulate
 plastic strain and nonnegative plastic work. Their elasticity remains
 hypoelastic, not a multiplicative finite-strain plasticity formulation. Their
@@ -94,11 +90,11 @@ remains on the implementation checklist.
 They use engineering shear rate `sqrt(2 D':D')`, bulk-pressure increments
 `K tr(dstrain)`, and nonnegative shear/bulk dissipation. Pouliquen uses its bounded
 friction function and actual current density. No Lie correction is added to these
-algebraic stresses. This changes the former original-five conventions.
+algebraic stresses.
 Bulk elastic work is integrated along the exponential volume change, including
 the no-tension cutoff where present; `pressure` history excludes the instantaneous
 bulk-viscous mean stress. Local rheology still needs application-specific
-calibration and has the limitations described in the constitutive audit.
+calibration and has the limitations described in the constitutive reference.
 
 ## Interpolation and physical boundaries
 
@@ -156,10 +152,8 @@ than silently losing angular momentum. There is no arbitrary inverse-moment
 ridge. APIC reduces PIC's transfer dissipation; it does not remove all remapping,
 integration, or quadrature errors.
 
-Updated FLIP takes the complete nodal velocity change from pre-constraint P2G to
+FLIP takes the complete nodal velocity change from pre-constraint P2G to
 the final grid velocity. Thus a wall's velocity projection reaches particles.
-The historical acceleration-only update could keep incoming particle velocity
-while the wall repeatedly removed the same nodal momentum.
 
 ## Timestep estimates and diagnostics
 
@@ -174,7 +168,7 @@ Plastic relaxation is integrated locally by the implicit return map.
 Static stepping retains the supplied `dt` and reports its estimated restrictions.
 Set `timestep_policy='enforce'` to reject a static step above those estimates;
 it does not silently change `dt`. Dynamic stepping limits the step instead.
-A floating-point-sized final-time remainder no longer produces an extra step.
+Final-time remainders within floating-point tolerance do not produce an extra step.
 
 Diagnostics run independently of plotting. Inspect `L.diagnostics.last` or
 `.history`. Set `diagnostics=False` to disable them, or `diagnostics_stride=100`
@@ -195,8 +189,8 @@ integration error. `stored_energy_exact` distinguishes the implemented elastic/
 fluid work potential from the plastic models' energy estimate. Prescribed rigid
 motion has unaccounted actuator work, so its budget is flagged incomplete.
 Periodic angular checks require unwrapped geometry and are flagged accordingly.
-The legacy `measure_energy` plot remains a separate historical estimate;
-use the new ledger for verification.
+The `measure_energy` plot is a separate potential-energy estimate;
+use the diagnostics ledger for conservation verification.
 
 ## Evidence and limits
 
@@ -219,8 +213,9 @@ phase/transfer errors. It includes coupled grid/timestep refinement, fixed-step
 spatial comparisons, and fixed-grid timestep comparisons. Remapping frequency
 changes when `dt` changes, so the latter is not a pure time-integrator order test.
 At 32 cells, the coupled quadratic/APIC velocity error is below 2%; it is not an
-accuracy guarantee for other problems. Hydrostatic, large-deformation plasticity,
-contact, and broader application validation remain separate work.
+accuracy guarantee for other problems. See [verification](verification.md) for
+hydrostatic, translated-stress, large-deformation, and operator-isolation studies.
+Finite-strain plasticity, contact, and experimental validation remain separate work.
 
 ![Standing-wave velocity errors and energy residuals across all transfer configurations](../benchmarks/verification.png)
 
