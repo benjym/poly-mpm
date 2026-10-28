@@ -46,9 +46,10 @@ def exclusive_scan(runtime, encoder, source, count):
 
 
 def bins(runtime, encoder, keys, count, bin_count):
-    """Integer histogram -> scan -> scatter, with explicit invalid-key status.
+    """Integer histogram -> scan -> scatter -> per-bin sort, with explicit invalid-key status.
 
-    Ordering within a bin is unspecified; each particle index appears once.
+    Indices within a bin are ascending (the order of a stable sort by key), so
+    gathers over a bin are deterministic; each particle index appears once.
     Only integer atomics are used. Consumers gather by bin on the device.
     """
     count = check_count(count)
@@ -74,6 +75,15 @@ def bins(runtime, encoder, keys, count, bin_count):
         keys=keys,
         offsets=offsets,
         cursors=cursors,
+        permutation=permutation,
+    )
+    runtime.dispatch(
+        encoder,
+        "sort_bins",
+        bin_count,
+        bin_count=bin_count,
+        offsets=offsets,
+        counts=counts,
         permutation=permutation,
     )
     return Bins(counts, offsets, cursors, permutation, status, scratch)
@@ -176,7 +186,7 @@ class Scan:
 
 
 class Binner:
-    """Preallocated histogram -> scan -> scatter with the same contract as bins()."""
+    """Preallocated histogram -> scan -> scatter -> per-bin sort, as bins()."""
 
     def __init__(self, runtime, count, bin_count):
         self.runtime = runtime
@@ -207,6 +217,15 @@ class Binner:
             keys=keys,
             offsets=self.offsets,
             cursors=self.cursors,
+            permutation=self.permutation,
+        )
+        rt.dispatch(
+            encoder,
+            "sort_bins",
+            k,
+            bin_count=k,
+            offsets=self.offsets,
+            counts=self.counts,
             permutation=self.permutation,
         )
         return self

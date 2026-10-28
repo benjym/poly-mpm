@@ -23,6 +23,10 @@ GMRES_RTOL = 1e-5
 # Anderson fit (the FP64 reference uses rcond=1e-10).
 ANDERSON_RCOND = 1e-5
 BATCH = 25
+# Host chunking: stop encoding gated-off work once the device reports it done.
+SWEEP_CHUNK = 5
+SINGLE_ITERATION_ROWS = 1024
+ARNOLDI_CHUNK = 16
 KRYLOV_SIZE = 4420
 
 STATE = (
@@ -113,6 +117,9 @@ class Solver:
         counts = np.bincount(colors)
         self.colors = [(int(o), int(c)) for o, c in zip(np.cumsum(counts) - counts, counts) if c]
         self.color_rows = rt.buffer(order.astype(np.uint32), label="color_rows")
+        self.color_offsets = rt.buffer(np.cumsum([0] + [c for _, c in self.colors]).astype(np.uint32))
+        # Small systems run each iteration as two single-workgroup kernels.
+        self.single_iteration = grid.rows <= SINGLE_ITERATION_ROWS
         self.state = rt.buffer(count=16, label="solver_state")
         self.status = rt.buffer(count=1, label="solver_status")
         self.candidate_status = rt.buffer(count=1)
@@ -142,6 +149,10 @@ class Solver:
         self.chunks = (n + 255) // 256
         self.partials = vector((RESTART + 1) * self.chunks)
         self.first, self.second, self.squares = vector(RESTART + 1), vector(RESTART + 1), vector(1)
+        # Arnoldi inner products: at most 64 chunks of 64 threads per vector.
+        self.per_thread = -(-n // (64 * 64))
+        self.groups = -(-n // (64 * self.per_thread))
+        self.passes = [vector((RESTART + 1) * self.groups) for _ in range(3)]
         self.bindings = None
 
     # ---- encoding helpers ----------------------------------------------------
@@ -364,36 +375,44 @@ class Solver:
             scalars=self.scalars,
         )
 
-    def encode_sweeps(self, encoder, iterations=BATCH):
+    def encode_sweeps(self, encoder, iterations=BATCH, request=True):
         """Colored sweeps, exact refresh and safeguarded Anderson, then a Newton request."""
         b, R, n = self.bindings, self.grid.rows, self.size
+        if self.single_iteration:
+            for _ in range(iterations):
+                self._iteration_single(encoder)
+            if request:
+                self._single(
+                    encoder,
+                    "newton_request",
+                    tolerance=self.tolerance,
+                    state=self.state,
+                    scalars=self.scalars,
+                )
+            return
         for _ in range(iterations):
             self._single(encoder, "iteration_begin", budget=self.budget, state=self.state, status=self.status)
             self._dispatch(
                 encoder, "history_begin", n, size=n, state=self.state, z=self.z, starts=self.starts
             )
+            rows = dict(
+                mu=self.mu,
+                dt=self.dt,
+                state=self.state,
+                scalars=self.scalars,
+                color_rows=self.color_rows,
+                neighbors=self.grid.neighbors,
+                gradients=b["gradients"],
+                gap=b["gap"],
+                diagonal=b["diagonal"],
+                rotation=b["rotation"],
+                inverse_mass=b["inverse_mass"],
+                status=self.status,
+                z=self.z,
+                u=self.u,
+            )
             for offset, count in self.colors:
-                self._dispatch(
-                    encoder,
-                    "sweep_color",
-                    count,
-                    color_offset=offset,
-                    color_count=count,
-                    mu=self.mu,
-                    dt=self.dt,
-                    state=self.state,
-                    scalars=self.scalars,
-                    color_rows=self.color_rows,
-                    neighbors=self.grid.neighbors,
-                    gradients=b["gradients"],
-                    gap=b["gap"],
-                    diagonal=b["diagonal"],
-                    rotation=b["rotation"],
-                    inverse_mass=b["inverse_mass"],
-                    status=self.status,
-                    z=self.z,
-                    u=self.u,
-                )
+                self._dispatch(encoder, "sweep_color", count, color_offset=offset, color_count=count, **rows)
             # Periodic refresh avoids accumulating incremental roundoff.
             self._refresh(encoder, 1, self.z, self.u)
             result = self._residual(encoder, 1, self.z, self.u, self.status)
@@ -417,8 +436,82 @@ class Solver:
                 scalars=self.scalars,
             )
             self._encode_anderson(encoder)
+        if request:
+            self._single(
+                encoder, "newton_request", tolerance=self.tolerance, state=self.state, scalars=self.scalars
+            )
+
+    def _iteration_single(self, encoder):
+        """One iteration as iteration_front, the TSQR/SVD dispatches and iteration_back."""
+        b = self.bindings
+        common = dict(
+            mu=self.mu,
+            dt=self.dt,
+            node_count=self.grid.nodes,
+            row_count=self.grid.rows,
+            state=self.state,
+            scalars=self.scalars,
+            neighbors=self.grid.neighbors,
+            gradients=b["gradients"],
+            gap=b["gap"],
+            inverse_mass=b["inverse_mass"],
+            transpose_rows=self.grid.transpose_rows,
+            transpose_slots=self.grid.transpose_slots,
+            trial=b["trial"],
+            z=self.z,
+            u=self.u,
+            starts=self.starts,
+            steps=self.steps,
+        )
+        self._dispatch(
+            encoder,
+            "iteration_front",
+            1024,
+            budget=self.budget,
+            tolerance=self.tolerance,
+            colors=len(self.colors),
+            status=self.status,
+            color_offsets=self.color_offsets,
+            color_rows=self.color_rows,
+            diagonal=b["diagonal"],
+            rotation=b["rotation"],
+            matrix=self.matrix,
+            **common,
+        )
+        self._encode_tsqr(encoder)
+        self._dispatch(
+            encoder,
+            "iteration_back",
+            1024,
+            tolerance=self.tolerance,
+            coefficients=self.coefficients,
+            candidate=self.candidate,
+            candidate_u=self.candidate_u,
+            **common,
+        )
+
+    def _encode_tsqr(self, encoder):
+        source = self.matrix
+        for rows, groups, output in self.tsqr:
+            self._dispatch(
+                encoder,
+                "tsqr_tile",
+                256 * groups,
+                gate=1 | 2,
+                rows=rows,
+                state=self.state,
+                input=source,
+                output=output,
+            )
+            source = output
         self._single(
-            encoder, "newton_request", tolerance=self.tolerance, state=self.state, scalars=self.scalars
+            encoder,
+            "anderson_solve",
+            rcond=ANDERSON_RCOND,
+            factor=source,
+            state=self.state,
+            status=self.status,
+            coefficients=self.coefficients,
         )
 
     def _encode_anderson(self, encoder):
@@ -465,6 +558,41 @@ class Solver:
 
     def encode_newton(self, encoder):
         """Matrix-free Newton: GMRES(64), four cycles, CGS2, then backtracking."""
+        self._newton_rows(encoder)
+        self.encode_krylov(encoder)
+        self.encode_search(encoder)
+        self._single(encoder, "newton_end", state=self.state)
+
+    def _newton_chunked(self):
+        """encode_newton as several submissions: Arnoldi steps go in chunks and
+        encoding stops once the device has closed GMRES for the cycle."""
+        rt = self.rt
+        encoder = rt.device.create_command_encoder()
+        self._newton_rows(encoder)
+        self._fill(encoder, self.x, self.size)
+        submissions = 0
+        for cycle in range(CYCLES):
+            self._cycle_start(encoder, cycle)
+            for j in range(RESTART):
+                self._arnoldi(encoder, j)
+                if (j + 1) % ARNOLDI_CHUNK and j + 1 < RESTART:
+                    continue
+                rt.submit(encoder)
+                submissions += 1
+                flags = self.read_state()["flags"]
+                encoder = rt.device.create_command_encoder()
+                if not flags & 32:
+                    break
+            self._cycle_end(encoder)
+            # Stop when Krylov is done (converged or breakdown) or Newton was abandoned.
+            if flags & (128 | 8) != 8:
+                break
+        self.encode_search(encoder)
+        self._single(encoder, "newton_end", state=self.state)
+        rt.submit(encoder)
+        return submissions + 1
+
+    def _newton_rows(self, encoder):
         b, R = self.bindings, self.grid.rows
         self._single(encoder, "newton_begin", state=self.state)
         self._dispatch(
@@ -483,74 +611,139 @@ class Solver:
             frozen=self.frozen,
             rhs=self.rhs,
         )
-        self.encode_krylov(encoder)
-        self.encode_search(encoder)
-        self._single(encoder, "newton_end", state=self.state)
 
     def encode_krylov(self, encoder):
-        """Restarted GMRES for J x = -natural, from x = 0, at the frozen branch."""
-        n = self.size
-        newton, gmres = 1 | 8, 1 | 8 | 32
-        self._fill(encoder, self.x, n)
+        """Restarted GMRES for J x = -natural, from x = 0, at the frozen branch (one batch)."""
+        self._fill(encoder, self.x, self.size)
         for cycle in range(CYCLES):
-            if cycle == 0:
-                self._combine(encoder, newton, self.r, self.rhs)
-            else:
-                self._jv(encoder, newton, self.x, 0, self.w)
-                self._combine(encoder, newton, self.r, self.rhs, 1.0, self.w, -1.0)
-            self._dots(encoder, newton, 0, 1, self.r, self.squares)
-            self._single(
-                encoder,
-                "gmres_start",
-                cycle=cycle,
-                rtol=GMRES_RTOL,
-                squares=self.squares,
-                state=self.state,
-                status=self.status,
-                krylov=self.krylov,
-            )
-            self._normalise(encoder, gmres, self.r, 0)
+            self._cycle_start(encoder, cycle)
             for j in range(RESTART):
-                self._jv(encoder, gmres, self.basis, j * n, self.w)
-                for h in (self.first, self.second):
-                    self._dots(encoder, gmres, j + 1, 0, self.w, h)
-                    self._dispatch(
-                        encoder,
-                        "orthogonalise",
-                        n,
-                        gate=gmres,
-                        size=n,
-                        vectors=j + 1,
-                        state=self.state,
-                        basis=self.basis,
-                        h=h,
-                        w=self.w,
-                    )
-                self._dots(encoder, gmres, 0, 1, self.w, self.squares)
-                self._single(
-                    encoder,
-                    "gmres_givens",
-                    step=j,
-                    first=self.first,
-                    second=self.second,
-                    squares=self.squares,
-                    state=self.state,
-                    status=self.status,
-                    krylov=self.krylov,
-                )
-                self._normalise(encoder, gmres, self.w, (j + 1) * n)
-            self._single(encoder, "gmres_solve", state=self.state, status=self.status, krylov=self.krylov)
+                self._arnoldi(encoder, j)
+            self._cycle_end(encoder)
+
+    def _cycle_start(self, encoder, cycle):
+        newton = 1 | 8
+        if cycle == 0:
+            self._combine(encoder, newton, self.r, self.rhs)
+        else:
+            self._jv(encoder, newton, self.x, 0, self.w)
+            self._combine(encoder, newton, self.r, self.rhs, 1.0, self.w, -1.0)
+        self._dots(encoder, newton, 0, 1, self.r, self.squares)
+        self._single(
+            encoder,
+            "gmres_start",
+            cycle=cycle,
+            rtol=GMRES_RTOL,
+            squares=self.squares,
+            state=self.state,
+            status=self.status,
+            krylov=self.krylov,
+        )
+
+    def _arnoldi(self, encoder, j):
+        """One Arnoldi step in nine dispatches: J v_j (normalising v_j on the way),
+        two classical Gram-Schmidt passes, the norm and the Givens update."""
+        b, n, gmres = self.bindings, self.size, 1 | 8 | 32
+        self._dispatch(
+            encoder,
+            "jv_force_normalise",
+            max(n, self.grid.nodes),
+            gate=gmres,
+            node_count=self.grid.nodes,
+            size=n,
+            slot=j,
+            dt=self.dt,
+            state=self.state,
+            scalars=self.scalars,
+            transpose_rows=self.grid.transpose_rows,
+            transpose_slots=self.grid.transpose_slots,
+            gradients=b["gradients"],
+            inverse_mass=b["inverse_mass"],
+            krylov=self.krylov,
+            source=self.r if j == 0 else self.w,
+            basis=self.basis,
+            du=self.du,
+        )
+        self._dispatch(
+            encoder,
+            "jv_rows",
+            self.grid.rows,
+            gate=gmres,
+            row_count=self.grid.rows,
+            mu=self.mu,
+            offset=j * n,
+            state=self.state,
+            neighbors=self.grid.neighbors,
+            gradients=b["gradients"],
+            frozen=self.frozen,
+            source=self.basis,
+            du=self.du,
+            output=self.w,
+        )
+        dots = dict(
+            size=n, per_thread=self.per_thread, groups=self.groups, state=self.state, basis=self.basis
+        )
+        for h in (self.first, self.second):
             self._dispatch(
                 encoder,
-                "basis_update",
-                n,
-                size=n,
-                state=self.state,
-                krylov=self.krylov,
-                basis=self.basis,
-                x=self.x,
+                "arnoldi_dots",
+                64 * self.groups * (j + 1),
+                gate=gmres,
+                squared=0,
+                w=self.w,
+                partials=self.passes[0],
+                **dots,
             )
-            self._single(encoder, "gmres_end", state=self.state)
+            self._dispatch(
+                encoder,
+                "arnoldi_update",
+                n,
+                gate=gmres,
+                size=n,
+                vectors=j + 1,
+                groups=self.groups,
+                state=self.state,
+                basis=self.basis,
+                partials=self.passes[0],
+                h=h,
+                w=self.w,
+            )
+        self._dispatch(
+            encoder,
+            "arnoldi_dots",
+            64 * self.groups,
+            gate=gmres,
+            squared=1,
+            w=self.w,
+            partials=self.passes[2],
+            **dots,
+        )
+        self._single(
+            encoder,
+            "gmres_givens",
+            step=j,
+            groups=self.groups,
+            first=self.first,
+            second=self.second,
+            squares=self.passes[2],
+            state=self.state,
+            status=self.status,
+            krylov=self.krylov,
+        )
+
+    def _cycle_end(self, encoder):
+        self._single(encoder, "gmres_solve", state=self.state, status=self.status, krylov=self.krylov)
+        self._dispatch(
+            encoder,
+            "basis_update",
+            self.size,
+            size=self.size,
+            state=self.state,
+            krylov=self.krylov,
+            basis=self.basis,
+            x=self.x,
+        )
+        self._single(encoder, "gmres_end", state=self.state)
 
     def encode_search(self, encoder):
         """Backtracking on the unprojected Newton candidate, accepted on full-residual decrease."""
@@ -602,22 +795,28 @@ class Solver:
         rt.submit(encoder)
         submissions = 1
         state = self.read_state()
-        # Each sweep batch either advances the sweep count or ends the solve.
-        limit = 2 * (self.budget // BATCH + 2)
+        # Sweeps go in chunks within each 25-sweep Newton period; each chunk
+        # advances the device sweep count or ends the solve.
+        limit = 2 * self.budget + 4
+        batches = 0
         while state["result"] == 0:
-            if submissions > limit:
+            if batches > limit:
                 raise RuntimeError("Metal solver orchestration exceeded its submission bound")
-            encoder = rt.device.create_command_encoder()
+            batches += 1
             if state["flags"] & REQUESTED:
-                self.encode_newton(encoder)
-            elif state["sweeps"] >= self.budget:
-                self._single(
-                    encoder, "iteration_begin", budget=self.budget, state=self.state, status=self.status
-                )
+                submissions += self._newton_chunked()
             else:
-                self.encode_sweeps(encoder)
-            rt.submit(encoder)
-            submissions += 1
+                encoder = rt.device.create_command_encoder()
+                if state["sweeps"] >= self.budget:
+                    self._single(
+                        encoder, "iteration_begin", budget=self.budget, state=self.state, status=self.status
+                    )
+                else:
+                    done = state["sweeps"] % BATCH
+                    count = min(SWEEP_CHUNK, BATCH - done)
+                    self.encode_sweeps(encoder, count, request=done + count == BATCH)
+                rt.submit(encoder)
+                submissions += 1
             state = self.read_state()
         encoder = rt.device.create_command_encoder()
         self.encode_finish(encoder)

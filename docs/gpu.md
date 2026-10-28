@@ -11,8 +11,9 @@ SlangPy 0.43.1, Metal toolchain 32023.921); the complete report is
 fallback: unsupported settings are rejected, and a missing device or an
 unconverged solve raises.
 
-The current implementation is slower than the CPU on the sizes tested (see
-the runner gate below). There is no measured GPU speedup.
+On the M4, matched runs were 3.3 to 26 times faster than the CPU (see
+Performance below). A connected domain of 10,000 particles does not converge on
+either backend within the sweep budget.
 
 The baseline is commit `3d72a69`, without the concurrent density experiments.
 The scientific model and CPU numerical defaults remain unchanged.
@@ -59,11 +60,11 @@ around a waited submission; command buffers are encoded outside the timed
 region because Metal command buffers cannot be resubmitted.
 
 The optional 10,000/100,000-element benchmarks warm up once and alternate CPU/GPU
-order across five pairs. On the M4 the median resident binning time was 0.88 ms
-against 5.1 ms for NumPy at 100,000 keys, and 0.53 ms against 0.34 ms at
+order across five pairs. On the M4 the median resident binning time was 0.78 ms
+against 5.1 ms for NumPy at 100,000 keys, and 0.57 ms against 0.34 ms at
 10,000 keys, where submission and wait latency dominates. They time **binning primitives only**, with resident
-GPU inputs. NumPy uses stable sorting; GPU scatter has unspecified within-bin
-order. These measurements are not MPM speedups. Setup/upload, compilation,
+GPU inputs. Both produce the order of a stable sort by key (the GPU sorts
+each bin after its atomic scatter). These measurements are not MPM speedups. Setup/upload, compilation,
 encoding and readback are reported separately; allocation bytes are cumulative,
 not a measured device-memory peak. Hardware/compiler errors retain their tracebacks in the JSON report.
 
@@ -134,15 +135,15 @@ independent and avoid a CPU solver fallback.
      with periodic aliases matched by canonical index; `B u` gathers by stress
      row and `B.T z` by velocity node through the static transpose incidence.
      Relative block, `B u` and `B.T z` errors against
-     `assemble(..., compact=True)` are at most 4.5e-7; adjoint pairing errors
+     `assemble(..., compact=True)` are at most 2.4e-7; adjoint pairing errors
      at most 5e-8.
    - Local metrics, conservative norm bound (reduced on the device),
      regulariser and tangential eigensystem agree with the `solve_velocity`
-     set-up to at most 2.7e-7. The rotation uses the symmetric Jacobi formula,
+     set-up to at most 3.2e-7. The rotation uses the symmetric Jacobi formula,
      since Metal's `atan2(0, 0)` gave a degenerate rotation for isotropic blocks.
    - The exact local Coulomb solve (opening, frictionless, sticking and
      safeguarded sliding, with FP32 bracket-collapse/stagnation exits and an
-     unconverged status bit) agrees with `diagonal_coulomb` to 2.2e-7 relative
+     unconverged status bit) agrees with `diagonal_coulomb` to 2.1e-7 relative
      to the unconstrained response on 4,007 rows spanning sixteen decades of
      load and six of metric.
    - Transfers: node-owned P2G (mass, raw and masked momentum, `dt m g`, trial
@@ -194,16 +195,16 @@ independent and avoid a CPU solver fallback.
    - Results: on ten wall and periodic columns, static and with random particle
      motion (up to 651 stress rows), every solve reached `1e-4`. The
      independent FP64 frozen natural residual of the device contact stress was
-     at most 9.0e-5; velocities agree with the CPU solve at `1e-9` to 1.3e-4 of
+     at most 9.7e-5; velocities agree with the CPU solve at `1e-9` to 1.2e-4 of
      the largest speed. A warm start from the converged stress needs no sweeps.
      The device natural residual and generalized Jacobian-vector product agree
-     with the FP64 Newton block to 1.8e-6 and 1.4e-7, with identical frozen
+     with the FP64 Newton block to 1.7e-6 and 1.7e-7, with identical frozen
      branches. Anderson coefficients agree with FP64 `lstsq` to at most
      2.9e-5, including rank-deficient and short histories.
-   - Newton paths: one accepted step (FP64 residual 7.8e-5 to 4.4e-6) and one
+   - Newton paths: one accepted step (FP64 residual 7.6e-5 to 4.4e-6) and one
      rejected step whose candidates all raise the FP64 residual, in agreement
      with the device decision. Device corrections have FP64 linear residuals of
-     1.5e-5 and 4.0e-4 at the device's frozen branch. GMRES also converges in
+     1.4e-5 and 6.7e-5 at the device's frozen branch. GMRES also converges in
      one step for `J = I`, and for `J = 0` records a breakdown, makes no
      correction and rejects the unchanged candidate.
    - Explicit failures: an exhausted sweep budget (status 256), a nonfinite
@@ -211,11 +212,12 @@ independent and avoid a CPU solver fallback.
      (status 128) are reported as unconverged, and `SolveResult.require()`
      raises.
 
-   The device scatter leaves the order within a cell bin unspecified, so FP32
-   gradient sums, and with them the iteration path, vary between runs at
-   rounding level. The same moving wall fixture took between 112 and 155 sweeps
-   over five runs; every run converged. The packing gap was computed on the CPU for
-   these checks; computing it on the device is part of gate 4.
+   Binning is deterministic: after the atomic scatter each cell's particle
+   indices are sorted (`sort_bins`), so FP32 sums and the whole iteration path
+   are identical between runs; the runner gate checks that two runs are
+   bit-identical. Before this sort the same moving wall fixture took between
+   112 and 155 sweeps over five runs. The packing gap was computed on the CPU
+   for these checks; it is computed on the device in gate 4.
 4. **Runner and science validation (passed on Apple M4).** Report:
    `benchmarks/metal_runner_m4.json` (`python -m mpm_gpu.validate --stage runner`
    or `--stage all`). `mpm_gpu/runner.py` and `shaders/runner.slang` implement
@@ -259,34 +261,82 @@ independent and avoid a CPU solver fallback.
      | FP64 frozen natural residual of one Metal step (static, collapse, periodic incline) | at most 1.08e-4 | ≤ 2e-4 |
      | Relative mass error, static column | 0 | ≤ 1e-5 |
      | Static column displacement, 0.2 s at `dt = 0.02` | 9.1e-6 grid spacings | ≤ 1e-3 |
-     | Periodic incline, slope 0.75: speed against `g (sin θ - μ cos θ) t` | 0.23% (CPU 0.28%) | ≤ 1% |
+     | Periodic incline, slope 0.75: speed against `g (sin θ - μ cos θ) t` | 0.25% (CPU 0.28%) | ≤ 1% |
      | Periodic incline, slope 0.25 | static | — |
-     | Collapse positions/runout, FLIP, FLIP+PIC 0.3, PIC, `apic_gradient`, dynamic CFL | at most 7.3e-6 grid spacings | ≤ 1% |
-     | Integrated nodal overpacking, Metal minus CPU | at most 1.6e-7 | ≤ 1e-3 |
+     | Collapse positions/runout, FLIP, FLIP+PIC 0.3, PIC, `apic_gradient`, dynamic CFL | at most 7.5e-6 grid spacings | ≤ 1% |
+     | Integrated nodal overpacking, Metal minus CPU | at most 6.5e-8 | ≤ 1e-3 |
      | Free fall at low packing | stress free; velocity change within 1e-6 of `g dt` | — |
    - Budgets: momentum residuals relative to the external impulse are at most
-     1.5e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
+     1.3e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
      larger of external and constraint work agree with the CPU to 5e-6 in the
      collapses (for example -0.04197 and -0.04198 for FLIP). In the static
      column and static incline the work terms are close to zero, so these
      ratios are dominated by solver-tolerance noise and differ between
-     backends (static incline 0.14 CPU, -0.08 Metal).
+     backends (static incline 0.14 CPU, -0.06 Metal).
    - Output: save times, files (figures and `data/diagnostics.json`) and
      snapshot contents at each save match a CPU run; a custom
      `after_every_timestep` is rejected.
+   - Reproducibility: two Metal runs of a 20-step collapse are bit-identical
+     in positions, velocities, stresses, contact and sweep counts.
    - Scale: a collapse with 3,200 particles and 1,271 stress rows (3 steps)
      agrees with the CPU to 1.1e-6 grid spacings. Neither solver converges to
      `1e-4` within the default 2,000 sweeps on the first step of this state
      (CPU residual 1.4e-4, so this is a property of `solve_velocity`, not of the
-     port); with 20,000 both need about 2,330 sweeps. At 20,000 particles both
-     reach about 3e-2 after 2,000 sweeps. Larger problems will need a solver
-     with better scaling before the 10k/100k benchmark is meaningful.
-   - Speed: in that 3,200-particle case the Metal run took 24 s and the CPU
-     15 s (single warm samples). Encoding costs about 10 µs per dispatch; GPU
-     time is about 27 µs per dispatch, almost independent of size, because
-     every dispatch ends with a global barrier. A sweep is about 33 dispatches
-     and a Newton polish about 3,100. Fewer, fused dispatches are the next
-     performance step.
+     port); with 20,000 both need about 2,000-2,500 sweeps. Timings are in the
+     performance section below.
+
+## Performance
+
+Report: `benchmarks/metal_benchmark_m4.json` (`python -m mpm_gpu.benchmark`),
+Apple M4. Both backends start from one prepared state with the same `dt`
+(0.002 s), tolerance (`1e-4`), sweep budget and diagnostics; one Metal warm-up
+run compiles the kernels before timing; paired samples alternate the CPU/Metal
+order. Times are host wall time for the complete run, including every waited
+submission and the final snapshot. The larger cases have fewer than five pairs
+because of the CPU run time; the report records the pairs run. Disconnected
+cases repeat one collapsing column (0.5 m wide, 1 m high, grid spacing
+0.05 m, 4 particles per cell) side by side.
+
+| Case | Particles | Stress rows | Steps | CPU | Metal | CPU / Metal (median) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Static column | 6,400 | 651 | 10 | 2.6 s | 0.07-0.11 s | 25 |
+| Collapse | 3,200 | 651 | 3 | 14.4 s | 4.4-5.0 s | 3.3 |
+| Disconnected collapse | 9,600 | 1,891 | 3 | 28.4 s | 5.9 s | 4.8 |
+| Disconnected collapse | 99,200 | 19,251 | 2 | 360 s | 14.0 s | 26 (one pair) |
+| Connected collapse | 10,000 | 7,676 | 2 | not converged | not converged | — |
+
+Final positions agree with the CPU to at most 2.2e-6 grid spacings. The
+collapse cases are dominated by the first step from rest, which needs about
+2,000 sweeps and 60 Newton polishes on either backend. The connected
+10,000-particle collapse does not converge on either backend within 20,000
+sweeps on its first step (residuals 1.1e-2 CPU, 1.4e-2 Metal): the solver's
+iteration count grows with the size of a connected domain, which limits both
+backends until a better-scaling solver is available. Device memory for one
+runner was 62 MB at 99,200 particles.
+
+Measured costs on the M4 that shaped the implementation:
+
+- Each dispatch in its own compute pass cost about 27 us of GPU time; within
+  one pass, 2-6 us. The runtime now keeps one compute pass per command
+  encoder. Dispatches within a pass run in order and see earlier writes; the
+  runtime gate and every later gate pass on this path.
+- Encoding costs 4-7 us per dispatch in Python, mostly the dispatch call
+  itself. An Arnoldi step uses 9 dispatches: the Jacobian product
+  (normalising the new basis vector on the way), two classical Gram-Schmidt
+  passes and the norm, each inner product with one 64-thread workgroup per
+  vector and chunk, which streams the basis at memory bandwidth.
+- Up to 1,024 stress rows, a solver iteration runs as two 1,024-thread
+  single-workgroup kernels around the TSQR/SVD dispatches (265 us against
+  381 us per iteration at 651 rows). Above that the multi-dispatch iteration
+  is faster (778 us against 1,492 us at 2,501 rows). Both paths use the same
+  control functions and are covered by the solver gate.
+- Tried and removed because they were slower: a whole colored sweep in one
+  workgroup, a whole GMRES cycle in one workgroup (12.5 ms against 8.8 ms at
+  651 rows, 80 ms against 17 ms at 9,801 rows) and Gram-Schmidt kernels fused
+  with the following inner products.
+- The host sends sweeps 5 at a time and Arnoldi steps 16 at a time, reading
+  the 64-byte state record between batches, and stops encoding once the
+  device has closed the corresponding gate.
 
 Final science criteria:
 
@@ -308,8 +358,9 @@ repeated disconnected 10k/100k-particle domains, with identical CPU/GPU states,
 time steps, diagnostics and tolerance on the same target Mac. Keep cold startup
 and compilation separate from warm timings; record wall time per waited
 submission (kernel timestamps are unavailable in the current backend), transfer
-bytes/time, memory, iteration counts and plotting cost. There is no measured
-GPU MPM speedup.
+bytes/time, memory, iteration counts and plotting cost. The current results
+are under Performance above; plotting cost and repeated connected domains at
+100k are not measured yet.
 
 Segregation and packing corrections can extend this package after the mechanics
 gates pass; no separate package or GPU-specific input/output format is needed.

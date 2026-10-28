@@ -67,6 +67,32 @@ void scatter_bins(uint3 tid : SV_DispatchThreadID, uniform uint count,
     permutation[offsets[keys[tid.x]] + slot] = tid.x;
 }
 
+[shader("compute")]
+[numthreads(64, 1, 1)]
+void sort_bins(uint3 tid : SV_DispatchThreadID, uniform uint bin_count,
+               StructuredBuffer<uint> offsets, StructuredBuffer<uint> counts,
+               RWStructuredBuffer<uint> permutation)
+{
+    // The atomic scatter leaves each bin in scheduling order. Sorting every
+    // bin's indices makes the order ascending, as a stable sort by key gives,
+    // so floating-point gathers over a bin are reproducible run to run.
+    // Insertion sort: bins hold a few particles; cost is quadratic in a bin.
+    uint b = tid.x;
+    if (b >= bin_count) return;
+    uint begin = offsets[b], end = begin + counts[b];
+    for (uint i = begin + 1; i < end; i++)
+    {
+        uint value = permutation[i];
+        uint j = i;
+        while (j > begin && permutation[j - 1] > value)
+        {
+            permutation[j] = permutation[j - 1];
+            j--;
+        }
+        permutation[j] = value;
+    }
+}
+
 groupshared float reduce_values[256];
 
 [shader("compute")]

@@ -176,10 +176,13 @@ def _summary(result):
     )
 
 
-def solve_check(rt, spacing, particles_per_cell, periodic, *, motion=False):
+def solve_check(rt, spacing, particles_per_cell, periodic, *, motion=False, single=None):
+    """single forces (True) or excludes (False) the single-workgroup iteration path."""
     from granular_mixed import solve_velocity
 
     case = Case(rt, spacing, particles_per_cell, periodic, motion=motion)
+    if single is not None:
+        case.solver.single_iteration = single
     reference, stats = solve_velocity(
         case.B, case.trial.ravel(), case.inverse_mass.ravel(), case.gap, case.mu, case.dt, tolerance=1e-9
     )
@@ -206,6 +209,7 @@ def solve_check(rt, spacing, particles_per_cell, periodic, *, motion=False):
     return dict(
         rows=case.grid.rows,
         active_rows=len(case.active),
+        single_iteration=case.solver.single_iteration,
         colors=len(case.solver.colors),
         periodic=periodic,
         motion=motion,
@@ -586,6 +590,15 @@ def cases(rt):
             (0.05, 2, False, False),
             (0.05, 3, False, True),
         )
+    ]
+    # Fixtures up to 1,024 rows use the single-workgroup iteration; repeat some
+    # with the multi-dispatch iteration used for larger grids.
+    checks += [
+        (
+            f"solve_h{h}_ppc{n}_{'periodic' if periodic else 'walls'}{'_moving' if motion else ''}_multi_dispatch",
+            lambda h=h, n=n, p=periodic, m=motion: solve_check(rt, h, n, p, motion=m, single=False),
+        )
+        for h, n, periodic, motion in ((0.1, 3, True, True), (0.05, 3, False, True), (0.5, 4, True, False))
     ]
     checks += [
         ("jacobian_walls_moving", lambda: jacobian_check(rt, 0.1, 3, False)),

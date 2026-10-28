@@ -1,0 +1,659 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python": "3.14.10 (main, Oct 25 2026, 17:12:00) [Clang 21.0.0 (clang-2100.3.34.2)]",
+    "system": "Darwin",
+    "machine": "arm64",
+    "macos": "27.0.1",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "slangpy_minimum": "0.43.1",
+    "metal_compiler": "/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/bin/metal",
+    "metal_compiler_version": "Apple metal version 32023.921 (metalfe-32023.921.6)\nTarget: air64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/metal/current/bin",
+    "slangpy": "0.43.1",
+    "adapter": "Apple M4",
+    "api": "Metal",
+    "timestamp_frequency": 0
+  },
+  "host": {
+    "python": "3.14.10 (main, Oct 25 2026, 17:12:00) [Clang 21.0.0 (clang-2100.3.34.2)]",
+    "system": "Darwin",
+    "machine": "arm64",
+    "macos": "27.0.1",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "slangpy_minimum": "0.43.1"
+  },
+  "protocol": "Same prepared state, dt, tolerance and sweep budget on both backends; one Metal warm-up run before timing; paired samples alternate CPU/Metal order; host wall time per complete run including waited submissions and the final snapshot. Not every case has five pairs: the CPU run time of the larger cases limits the number of pairs, recorded per case.",
+  "cases": [
+    {
+      "name": "static_column_3200",
+      "particles": 6400,
+      "stress_rows": 651,
+      "steps": 10,
+      "dt": 0.002,
+      "tolerance": 0.0001,
+      "max_sweeps": 20000,
+      "samples": [
+        {
+          "pair": 0,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": 2.6054944160277955,
+            "sweeps": [
+              50,
+              9,
+              5,
+              5,
+              34,
+              43,
+              0,
+              1,
+              126,
+              0
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "metal": {
+            "seconds": 0.103639250039123,
+            "sweeps": [
+              49,
+              4,
+              3,
+              2,
+              3,
+              2,
+              3,
+              3,
+              2,
+              0
+            ],
+            "newton_attempts": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "gmres_iterations": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "converged": true,
+            "submissions": 48,
+            "dispatches": 1045,
+            "readback_bytes": 1032920,
+            "uploaded_bytes": 1089700
+          },
+          "cpu_over_metal": 25.14003541172135
+        },
+        {
+          "pair": 1,
+          "order": "metal-cpu",
+          "metal": {
+            "seconds": 0.07224295899504796,
+            "sweeps": [
+              49,
+              4,
+              3,
+              2,
+              3,
+              2,
+              3,
+              3,
+              2,
+              0
+            ],
+            "newton_attempts": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "gmres_iterations": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "converged": true,
+            "submissions": 48,
+            "dispatches": 1045,
+            "readback_bytes": 1032920,
+            "uploaded_bytes": 1089700
+          },
+          "cpu": {
+            "seconds": 2.614244292024523,
+            "sweeps": [
+              50,
+              9,
+              5,
+              5,
+              34,
+              43,
+              0,
+              1,
+              126,
+              0
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "cpu_over_metal": 36.186838529187625
+        },
+        {
+          "pair": 2,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": 2.586204749997705,
+            "sweeps": [
+              50,
+              9,
+              5,
+              5,
+              34,
+              43,
+              0,
+              1,
+              126,
+              0
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "metal": {
+            "seconds": 0.10761541704414412,
+            "sweeps": [
+              49,
+              4,
+              3,
+              2,
+              3,
+              2,
+              3,
+              3,
+              2,
+              0
+            ],
+            "newton_attempts": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "gmres_iterations": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "converged": true,
+            "submissions": 48,
+            "dispatches": 1045,
+            "readback_bytes": 1032920,
+            "uploaded_bytes": 1089700
+          },
+          "cpu_over_metal": 24.031916811109298
+        }
+      ],
+      "metal_warmup_seconds": 2.6513487090123817,
+      "metal_runner_allocated_bytes": 2927056,
+      "median_cpu_over_metal": 25.14003541172135,
+      "position_difference_grid_spacings": 2.240281189447302e-06
+    },
+    {
+      "name": "collapse_3200",
+      "particles": 3200,
+      "stress_rows": 651,
+      "steps": 3,
+      "dt": 0.002,
+      "tolerance": 0.0001,
+      "max_sweeps": 20000,
+      "samples": [
+        {
+          "pair": 0,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": 14.48283612501109,
+            "sweeps": [
+              2329,
+              124,
+              44
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "metal": {
+            "seconds": 5.006654000026174,
+            "sweeps": [
+              2013,
+              77,
+              61
+            ],
+            "newton_attempts": [
+              60,
+              3,
+              2
+            ],
+            "gmres_iterations": [
+              15360,
+              768,
+              512
+            ],
+            "converged": true,
+            "submissions": 1546,
+            "dispatches": 149262,
+            "readback_bytes": 629452,
+            "uploaded_bytes": 590500
+          },
+          "cpu_over_metal": 2.8927175964097733
+        },
+        {
+          "pair": 1,
+          "order": "metal-cpu",
+          "metal": {
+            "seconds": 4.404116249992512,
+            "sweeps": [
+              2013,
+              77,
+              61
+            ],
+            "newton_attempts": [
+              60,
+              3,
+              2
+            ],
+            "gmres_iterations": [
+              15360,
+              768,
+              512
+            ],
+            "converged": true,
+            "submissions": 1546,
+            "dispatches": 149262,
+            "readback_bytes": 629452,
+            "uploaded_bytes": 590500
+          },
+          "cpu": {
+            "seconds": 14.498719000024721,
+            "sweeps": [
+              2329,
+              124,
+              44
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "cpu_over_metal": 3.292083627458601
+        },
+        {
+          "pair": 2,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": 14.313938584004063,
+            "sweeps": [
+              2329,
+              124,
+              44
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "metal": {
+            "seconds": 4.366908000025433,
+            "sweeps": [
+              2013,
+              77,
+              61
+            ],
+            "newton_attempts": [
+              60,
+              3,
+              2
+            ],
+            "gmres_iterations": [
+              15360,
+              768,
+              512
+            ],
+            "converged": true,
+            "submissions": 1546,
+            "dispatches": 149262,
+            "readback_bytes": 629452,
+            "uploaded_bytes": 590500
+          },
+          "cpu_over_metal": 3.277820046568579
+        }
+      ],
+      "metal_warmup_seconds": 4.834098458988592,
+      "metal_runner_allocated_bytes": 2107088,
+      "median_cpu_over_metal": 3.277820046568579,
+      "position_difference_grid_spacings": 1.135226507242848e-06
+    },
+    {
+      "name": "collapse_disconnected_9600",
+      "particles": 9600,
+      "stress_rows": 1891,
+      "steps": 3,
+      "dt": 0.002,
+      "tolerance": 0.0001,
+      "max_sweeps": 20000,
+      "samples": [
+        {
+          "pair": 0,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": 28.375539125001524,
+            "sweeps": [
+              1864,
+              77,
+              36
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "metal": {
+            "seconds": 5.9017336670076475,
+            "sweeps": [
+              2095,
+              96,
+              35
+            ],
+            "newton_attempts": [
+              68,
+              3,
+              1
+            ],
+            "gmres_iterations": [
+              17408,
+              768,
+              256
+            ],
+            "converged": true,
+            "submissions": 1679,
+            "dispatches": 224707,
+            "readback_bytes": 1695884,
+            "uploaded_bytes": 1762500
+          },
+          "cpu_over_metal": 4.808000619144977
+        },
+        {
+          "pair": 1,
+          "order": "metal-cpu",
+          "metal": {
+            "seconds": 5.889672874996904,
+            "sweeps": [
+              2095,
+              96,
+              35
+            ],
+            "newton_attempts": [
+              68,
+              3,
+              1
+            ],
+            "gmres_iterations": [
+              17408,
+              768,
+              256
+            ],
+            "converged": true,
+            "submissions": 1679,
+            "dispatches": 224707,
+            "readback_bytes": 1695884,
+            "uploaded_bytes": 1762500
+          },
+          "cpu": {
+            "seconds": 28.361231290968135,
+            "sweeps": [
+              1864,
+              77,
+              36
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "cpu_over_metal": 4.815417068640343
+        }
+      ],
+      "metal_warmup_seconds": 6.949415415991098,
+      "metal_runner_allocated_bytes": 6128860,
+      "median_cpu_over_metal": 4.81170884389266,
+      "position_difference_grid_spacings": 1.0675379735758384e-06
+    },
+    {
+      "name": "collapse_connected_10000",
+      "particles": 10000,
+      "stress_rows": 7676,
+      "steps": 2,
+      "dt": 0.002,
+      "tolerance": 0.0001,
+      "max_sweeps": 20000,
+      "samples": [
+        {
+          "pair": 0,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": null,
+            "converged": false,
+            "error": "granular velocity solve did not converge: residual=0.0109, sweeps=20000"
+          },
+          "metal": {
+            "seconds": null,
+            "converged": false,
+            "error": "granular velocity solve did not converge: residual=0.0142, sweeps=20000, status=['sweep budget exhausted']"
+          }
+        }
+      ],
+      "metal_warmup_error": "granular velocity solve did not converge: residual=0.0142, sweeps=20000, status=['sweep budget exhausted']",
+      "metal_warmup_seconds": 28.889910124999005,
+      "metal_runner_allocated_bytes": 17299136
+    },
+    {
+      "name": "collapse_disconnected_99200",
+      "particles": 99200,
+      "stress_rows": 19251,
+      "steps": 2,
+      "dt": 0.002,
+      "tolerance": 0.0001,
+      "max_sweeps": 20000,
+      "samples": [
+        {
+          "pair": 0,
+          "order": "cpu-metal",
+          "cpu": {
+            "seconds": 359.82788579096086,
+            "sweeps": [
+              2490,
+              112
+            ],
+            "newton_attempts": [
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null
+            ],
+            "converged": true
+          },
+          "metal": {
+            "seconds": 14.046846791985445,
+            "sweeps": [
+              2000,
+              207
+            ],
+            "newton_attempts": [
+              59,
+              8
+            ],
+            "gmres_iterations": [
+              15104,
+              2048
+            ],
+            "converged": true,
+            "submissions": 1587,
+            "dispatches": 213381,
+            "readback_bytes": 16500856,
+            "uploaded_bytes": 18170500
+          },
+          "cpu_over_metal": 25.61627467854664
+        }
+      ],
+      "metal_warmup_seconds": 13.944255875016097,
+      "metal_runner_allocated_bytes": 62274460,
+      "median_cpu_over_metal": 25.61627467854664,
+      "position_difference_grid_spacings": 2.2792326359599713e-07
+    }
+  ]
+}

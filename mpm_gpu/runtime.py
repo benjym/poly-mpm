@@ -93,6 +93,7 @@ class MetalRuntime:
         self._resources = ExitStack()
         self.accounting = Accounting()
         self._kernels = {}
+        self._passes = {}
         self._closed = False
         try:
             self.spy = import_module("slangpy")
@@ -167,17 +168,38 @@ class MetalRuntime:
             self.accounting.uploaded_bytes += data.nbytes
         return buffer
 
+    def _pass(self, encoder):
+        entry = self._passes.get(id(encoder))
+        if entry is None:
+            entry = self._passes[id(encoder)] = (encoder, encoder.begin_compute_pass())
+        return entry[1]
+
+    def _end_pass(self, encoder):
+        entry = self._passes.pop(id(encoder), None)
+        if entry is not None:
+            entry[1].end()
+
     def dispatch(self, encoder, entry, threads, *, module="primitives.slang", **bindings):
+        """Append a dispatch to the encoder's open compute pass.
+
+        Dispatches within one Metal compute pass execute in order and each sees
+        the previous one's device-memory writes (serial dispatch with tracked
+        resources); the runtime gate's barrier and scan cases check this. A
+        separate pass per dispatch cost about 27 us of GPU time each on the M4,
+        against 2-6 us within one pass.
+        """
         if threads < 1:
             raise ValueError("dispatch count must be positive")
-        self.kernel(entry, module).dispatch(
-            thread_count=[int(threads), 1, 1], command_encoder=encoder, **bindings
-        )
+        compute = self._pass(encoder)
+        root = compute.bind_pipeline(self.kernel(entry, module).pipeline)
+        target = self.spy.ShaderCursor(root).find_entry_point(0)
+        for name, value in bindings.items():
+            target[name] = value
+        compute.dispatch([int(threads), 1, 1])
         self.accounting.dispatches += 1
-        # Dispatch boundaries are global synchronization points. No spin locks.
-        encoder.global_barrier()
 
     def dispatch_indirect(self, encoder, entry, args, *, module="primitives.slang", **bindings):
+        self._end_pass(encoder)
         kernel = self.kernel(entry, module)
         with encoder.begin_compute_pass() as compute:
             root = compute.bind_pipeline(kernel.pipeline)
@@ -190,8 +212,12 @@ class MetalRuntime:
         self.accounting.dispatches += 1
         encoder.global_barrier()
 
+    def finish(self, encoder):
+        self._end_pass(encoder)
+        return encoder.finish()
+
     def submit(self, encoder):
-        self.device.submit_command_buffer(encoder.finish())
+        self.device.submit_command_buffer(self.finish(encoder))
         self.accounting.submissions += 1
 
     def wait(self):

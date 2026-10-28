@@ -180,6 +180,9 @@ def bins_check(rt, size, bin_count, mode):
         np.array_equal(keys[used], np.repeat(np.arange(bin_count), counts.astype(int))),
         "scatter bin membership mismatch",
     )
+    # Deterministic order: exactly a stable sort of the valid indices by key.
+    stable = np.flatnonzero(valid)[np.argsort(keys[valid], kind="stable")]
+    require(np.array_equal(used, stable), "bin order is not ascending within bins")
     return dict(elements=size, bin_count=bin_count, distribution=mode)
 
 
@@ -288,7 +291,7 @@ def primitive_benchmark(rt, size):
         started = perf_counter()
         encoder = rt.device.create_command_encoder()
         result = bins(rt, encoder, source, size, bin_count)
-        command = encoder.finish()
+        command = rt.finish(encoder)
         encode = perf_counter() - started
         started = perf_counter()
         rt.device.submit_command_buffer(command)
@@ -324,7 +327,7 @@ def primitive_benchmark(rt, size):
         elements=size,
         bin_count=bin_count,
         samples=samples,
-        scope="Resident integer binning only. NumPy stable sort and GPU unordered scatter differ within bins. Not an MPM speedup.",
+        scope="Resident integer binning only, including the per-bin sort; both orders match a stable sort. Not an MPM speedup.",
         warmup_pairs=1,
         setup_and_upload_in_timing=False,
         allocation_bytes_total=rt.accounting.allocated_bytes,

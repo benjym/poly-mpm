@@ -16,12 +16,22 @@
   },
   "source_sha256": {
     "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
-    "config.py": "e9810b9ae31472fc567c8fc1823ceef6c6e9e05017f71c65e04834fbd9c52a03",
-    "runtime.py": "ae8167fdddac85871b182336e789739f3f0b46a83f56e76eaeab1d218c5754e7",
-    "primitives.py": "22f2f015cc105d3d198baa61f0fbebde9ea160f2ec59661ae003ec56ff9248da",
+    "config.py": "d59fa4d3e63ff47c9bffc79cc0774978c09346d03a8c177dac06385f3f5d4a21",
+    "runtime.py": "c6c91ebc3cc74e9ee0ddc115b1a6bd9c7e1569fdaa8bbff4603bb83c263671bd",
+    "primitives.py": "f21d884e24df629ccc6c38f084b53e31faa862082dcfe2cadddca01b2ba05a28",
     "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
-    "validate.py": "06703a88e5619c5c731b81752ef1cd01aa4ffb6d2951c294f8b6acdd458bf620",
-    "shaders/primitives.slang": "097d62b6f37e8d0a7afd1c91832f033d4d1a574db2356d8b6b3279b97c481f87"
+    "mechanics.py": "0a809d73dfda2e028b5718cb842b5c5aedae72ec6467118e753edc8022ffb5a0",
+    "mechanics_checks.py": "617f3ea4b4ac44f141444c5108255df98e012739dbb9f9ce2e9a4c450999bc2c",
+    "fixtures.py": "75323ac341544ef9f2535d2eaa5fe31e1285f0bad8695eaff514a2b56ddcb3cb",
+    "solver.py": "a9f2e08ce7bee5ccdb3f05d46b50cd3370d23840055a534589212c47bd3e2822",
+    "solver_checks.py": "47ff623429f939bbda350e7673ea345d68b0c4487ee7efa49c44d5dfc05494a4",
+    "runner.py": "debfaa80ecbfeefe7117bf38656112aa916188bd5ffa86ede5a041155e435013",
+    "runner_checks.py": "6f7cf6b246de2e17fe3c741dd4a5b84ca4d07994cab5f766e277c01c3755f057",
+    "validate.py": "d50d3752ecce114a23a7795044474c5a6cda55cbeeece9ec38c3b2b00f752017",
+    "shaders/primitives.slang": "14a2b495d2f93897b6b4fa5bc80327e8b1f3043f4e05083fe1e3d7446faa54a8",
+    "shaders/mechanics.slang": "81932534ac321f15f491019df8628cd70a9f4116e95b666922457cc6a3d0375b",
+    "shaders/solver.slang": "3afdee57a8b34e76c0d55dba31820b3ae6301fd57c4a8d11b417739c2ea01c89",
+    "shaders/runner.slang": "5185ee784a47d5d0376f18536c87b032ecb31c7172677cb7b89b9f538e9db455"
   },
   "requested_stage": "runtime",
   "cpu_only": false,
@@ -33,55 +43,55 @@
         {
           "name": "scalar_abi",
           "status": "passed",
-          "seconds": 0.603013708954677,
+          "seconds": 0.04766050004400313,
           "elements": 5
         },
         {
           "name": "scan_1",
           "status": "passed",
-          "seconds": 0.10480520798591897,
+          "seconds": 0.04339158401126042,
           "elements": 1,
           "scratch_buffers": 2
         },
         {
           "name": "scan_255",
           "status": "passed",
-          "seconds": 0.0006050419760867953,
+          "seconds": 0.0005833329632878304,
           "elements": 255,
           "scratch_buffers": 2
         },
         {
           "name": "scan_256",
           "status": "passed",
-          "seconds": 0.00044341699685901403,
+          "seconds": 0.0004987919819541276,
           "elements": 256,
           "scratch_buffers": 2
         },
         {
           "name": "scan_257",
           "status": "passed",
-          "seconds": 0.0330250000115484,
+          "seconds": 0.031744625011924654,
           "elements": 257,
           "scratch_buffers": 4
         },
         {
           "name": "scan_65537",
           "status": "passed",
-          "seconds": 0.0010191669571213424,
+          "seconds": 0.0008937920210883021,
           "elements": 65537,
           "scratch_buffers": 6
         },
         {
           "name": "scan_100003",
           "status": "passed",
-          "seconds": 0.000960292003583163,
+          "seconds": 0.0008438749937340617,
           "elements": 100003,
           "scratch_buffers": 6
         },
         {
           "name": "bins_random",
           "status": "passed",
-          "seconds": 0.1107090839650482,
+          "seconds": 0.13085675000911579,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "random"
@@ -89,7 +99,7 @@
         {
           "name": "bins_one_bin",
           "status": "passed",
-          "seconds": 0.0017364169470965862,
+          "seconds": 0.4530530829797499,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "one_bin"
@@ -97,7 +107,7 @@
         {
           "name": "bins_sparse",
           "status": "passed",
-          "seconds": 0.0016402080073021352,
+          "seconds": 0.1352877079625614,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "sparse"
@@ -105,7 +115,7 @@
         {
           "name": "bins_invalid",
           "status": "passed",
-          "seconds": 0.0015878749545663595,
+          "seconds": 0.001971582998521626,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "invalid"
@@ -113,7 +123,7 @@
         {
           "name": "reduction_sum",
           "status": "passed",
-          "seconds": 0.049175458028912544,
+          "seconds": 0.038993708963971585,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": false
@@ -121,7 +131,7 @@
         {
           "name": "reduction_min",
           "status": "passed",
-          "seconds": 0.0010800420423038304,
+          "seconds": 0.0008432920440100133,
           "elements": 100003,
           "operation": "min",
           "expected_nonfinite": false
@@ -129,7 +139,7 @@
         {
           "name": "reduction_max",
           "status": "passed",
-          "seconds": 0.0009849999914877117,
+          "seconds": 0.0007730840006843209,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": false
@@ -137,7 +147,7 @@
         {
           "name": "nonfinite_nan",
           "status": "passed",
-          "seconds": 0.0007183749694377184,
+          "seconds": 0.0005455000209622085,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": true
@@ -145,7 +155,7 @@
         {
           "name": "nonfinite_inf",
           "status": "passed",
-          "seconds": 0.0007120000082068145,
+          "seconds": 0.0005431669997051358,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": true
@@ -153,36 +163,36 @@
         {
           "name": "guarded_all",
           "status": "passed",
-          "seconds": 0.03304100001696497,
+          "seconds": 0.03174470900557935,
           "active": 1003,
           "elements": 1003
         },
         {
           "name": "guarded_none",
           "status": "passed",
-          "seconds": 0.00038645899621769786,
+          "seconds": 0.0003529579844325781,
           "active": 0,
           "elements": 1003
         },
         {
           "name": "guarded_partial",
           "status": "passed",
-          "seconds": 0.000359416997525841,
+          "seconds": 0.0003191250143572688,
           "active": 517,
           "elements": 1003
         },
         {
           "name": "barriers",
           "status": "passed",
-          "seconds": 0.005999249988235533,
+          "seconds": 0.000583791988901794,
           "dispatches": 8,
           "elements": 100003,
-          "wall_seconds": 0.0056168329901993275
+          "wall_seconds": 0.0002625830238685012
         },
         {
           "name": "binning_benchmark_10000",
           "status": "passed",
-          "seconds": 0.007811875024344772,
+          "seconds": 0.006644165958277881,
           "elements": 10000,
           "bin_count": 2500,
           "samples": [
@@ -190,59 +200,59 @@
               "pair": 0,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.0003417080151848495
+                "wall_seconds": 0.00035979098174721
               },
               "gpu": {
-                "wall_seconds": 0.0005313329747878015,
-                "encode_seconds": 0.00013499998021870852
+                "wall_seconds": 0.0002501659910194576,
+                "encode_seconds": 0.00010150001617148519
               }
             },
             {
               "pair": 1,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.0003192909643985331
+                "wall_seconds": 0.0003244169638492167
               },
               "gpu": {
-                "wall_seconds": 0.0005074170185253024,
-                "encode_seconds": 0.00010779197327792645
+                "wall_seconds": 0.0005857919459231198,
+                "encode_seconds": 9.883299935609102e-05
               }
             },
             {
               "pair": 2,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.0003587499959394336
+                "wall_seconds": 0.00037299998803064227
               },
               "gpu": {
-                "wall_seconds": 0.0005089999758638442,
-                "encode_seconds": 0.00017975002992898226
+                "wall_seconds": 0.0005732079735025764,
+                "encode_seconds": 0.00016233400674536824
               }
             },
             {
               "pair": 3,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.00033725000685080886
+                "wall_seconds": 0.00033899996196851134
               },
               "gpu": {
-                "wall_seconds": 0.000654833042062819,
-                "encode_seconds": 0.00011683302000164986
+                "wall_seconds": 0.0005479160463437438,
+                "encode_seconds": 0.00010662502609193325
               }
             },
             {
               "pair": 4,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.0003769160248339176
+                "wall_seconds": 0.00033566600177437067
               },
               "gpu": {
-                "wall_seconds": 0.0006846250034868717,
-                "encode_seconds": 0.00011479097884148359
+                "wall_seconds": 0.0006060419837012887,
+                "encode_seconds": 9.262497769668698e-05
               }
             }
           ],
-          "scope": "Resident integer binning only. NumPy stable sort and GPU unordered scatter differ within bins. Not an MPM speedup.",
+          "scope": "Resident integer binning only, including the per-bin sort; both orders match a stable sort. Not an MPM speedup.",
           "warmup_pairs": 1,
           "setup_and_upload_in_timing": false,
           "allocation_bytes_total": 4561204
@@ -250,7 +260,7 @@
         {
           "name": "binning_benchmark_100000",
           "status": "passed",
-          "seconds": 0.0369551659678109,
+          "seconds": 0.03628608299186453,
           "elements": 100000,
           "bin_count": 25000,
           "samples": [
@@ -258,59 +268,59 @@
               "pair": 0,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.0052419170388020575
+                "wall_seconds": 0.005075082997791469
               },
               "gpu": {
-                "wall_seconds": 0.0008588749915361404,
-                "encode_seconds": 0.0001188750029541552
+                "wall_seconds": 0.00067754095653072,
+                "encode_seconds": 0.00010062498040497303
               }
             },
             {
               "pair": 1,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.005109958990942687
+                "wall_seconds": 0.004956874996423721
               },
               "gpu": {
-                "wall_seconds": 0.0008762080105952919,
-                "encode_seconds": 0.00012695800978690386
+                "wall_seconds": 0.0008259579772129655,
+                "encode_seconds": 0.00011541595449671149
               }
             },
             {
               "pair": 2,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.0051083340076729655
+                "wall_seconds": 0.005166167044080794
               },
               "gpu": {
-                "wall_seconds": 0.00035429198760539293,
-                "encode_seconds": 0.00011199997970834374
+                "wall_seconds": 0.0007840420003049076,
+                "encode_seconds": 0.00010416697477921844
               }
             },
             {
               "pair": 3,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.005059292016085237
+                "wall_seconds": 0.005107167002279311
               },
               "gpu": {
-                "wall_seconds": 0.0009276670170947909,
-                "encode_seconds": 0.00012683297973126173
+                "wall_seconds": 0.0008874160121195018,
+                "encode_seconds": 0.00015074998373165727
               }
             },
             {
               "pair": 4,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.005005250044632703
+                "wall_seconds": 0.0049498340231366456
               },
               "gpu": {
-                "wall_seconds": 0.0008927079616114497,
-                "encode_seconds": 0.00010845798533409834
+                "wall_seconds": 0.000349665991961956,
+                "encode_seconds": 0.00010562501847743988
               }
             }
           ],
-          "scope": "Resident integer binning only. NumPy stable sort and GPU unordered scatter differ within bins. Not an MPM speedup.",
+          "scope": "Resident integer binning only, including the per-bin sort; both orders match a stable sort. Not an MPM speedup.",
           "warmup_pairs": 1,
           "setup_and_upload_in_timing": false,
           "allocation_bytes_total": 9165956
@@ -365,15 +375,15 @@
       }
     ]
   },
-  "startup_seconds": 0.10953558405162767,
+  "startup_seconds": 0.07603212498361245,
   "accounting": {
     "uploaded_bytes": 3265400,
     "readback_bytes": 1376064,
-    "readback_seconds": 0.020186667854432017,
-    "wait_seconds": 0.013438165071420372,
+    "readback_seconds": 0.5994749210076407,
+    "wait_seconds": 0.007300959900021553,
     "allocated_bytes": 9174080,
     "submissions": 34,
-    "dispatches": 199,
-    "compile_seconds": 0.02911795990075916
+    "dispatches": 215,
+    "compile_seconds": 0.016227458021603525
   }
 }

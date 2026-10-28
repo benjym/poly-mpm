@@ -27,8 +27,9 @@ the task is larger than running the first validation command.
 
 The resident GPU timestep exists and passed all four gates on an Apple M4.
 `MPM.step` and `MPM.run` select `mpm_gpu.runner` for `P.backend = "metal"`;
-it never falls back to CPU mechanics. It is currently slower than the CPU on
-the sizes tested, and there is no GPU MPM speedup.
+it never falls back to CPU mechanics. Matched runs on the M4 were 3.3 to 26
+times faster than the CPU (`benchmarks/metal_benchmark_m4.json`). Metal runs
+are deterministic: binning sorts each cell's particles.
 
 ## Status on the Apple M4 (29 October 2026)
 
@@ -68,15 +69,13 @@ workspaces (`mechanics.Operator`, `Preconditioner`, `GridState`,
 
 Next work, in order:
 
-1. Performance. A sweep is about 33 dispatches and a Newton polish about
-   3,100; each dispatch costs about 27 µs of GPU time because it ends with a
-   global barrier. Fuse kernels (residual with refresh, the CGS2 passes and
-   dot products, candidate evaluation) and drop barriers between independent
-   dispatches, then run the matched benchmark protocol in `gpu.md`.
-2. Solver scaling. `solve_velocity` itself needs more than 2,000 sweeps on the
-   first step of a 3,200-particle collapse and does not reach `1e-4` at 20,000
-   particles. The 10k/100k benchmark needs a better-scaling solver; that is a
-   numerical change and must be validated on the CPU first.
+1. Solver scaling. `solve_velocity` needs about 2,000 sweeps on the first step
+   of a 3,200-particle collapse and does not converge within 20,000 sweeps for
+   a connected 10,000-particle collapse, on either backend. Connected
+   10k/100k domains need a better-scaling solver; that is a numerical change
+   and must be validated on the CPU first.
+2. Remaining benchmark items in `gpu.md`: plotting cost and repeated
+   connected 100k domains.
 3. Segregation and the other unsupported settings listed in `gpu.md`.
 
 ## First action on the target Mac

@@ -159,5 +159,5 @@ Licensed under the [GNU GPL v3](https://github.com/benjym/poly-mpm/blob/main/LIC
 An optional Apple silicon/SlangPy backend runs the granular rigid-grain
 timestep on the GPU in FP32 (`P.backend = "metal"`). Its hardware gates passed
 on an Apple M4; see [the GPU notes](docs/gpu.md) for supported settings,
-results and the [validation command](docs/gpu.md). It is currently slower than
-the CPU on the sizes tested. CPU execution remains the default.
+results and the [validation command](docs/gpu.md). Matched runs on an M4 were
+3 to 26 times faster than the CPU. CPU execution remains the default.

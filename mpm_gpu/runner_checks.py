@@ -322,6 +322,22 @@ def scale_check(rt, spacing=0.05, particle_spacing=0.0125, steps=3):
     )
 
 
+def reproducibility_check(rt, steps=20):
+    """Two Metal runs of one state are bit-identical (deterministic binning and reductions)."""
+    runs = []
+    for _ in range(2):
+        P, G, L = _collapse(dt=0.005)
+        P.backend = "metal"
+        _run((P, G, L), max_steps=steps)
+        b = L.materials[0]
+        history = [r["granular_solver"]["sweeps"] for r in L.diagnostics.history]
+        runs.append((b.x.copy(), b.v.copy(), b.stress.copy(), G.granular_contact.copy(), history))
+    for k, name in enumerate(("positions", "velocities", "stresses", "contact")):
+        _require(np.array_equal(runs[0][k], runs[1][k]), f"{name} differ between identical runs")
+    _require(runs[0][4] == runs[1][4], "sweep counts differ between identical runs")
+    return dict(steps=steps, sweeps=runs[0][4])
+
+
 def output_check(rt, directory):
     """Save times, snapshot freshness, plots, diagnostics file and callback rejection."""
     from pathlib import Path
@@ -394,5 +410,6 @@ def cases(rt):
         ("collapse_apic_gradient", lambda: collapse_check(rt, "apic_gradient")),
         ("collapse_dynamic_cfl", lambda: collapse_check(rt, dynamic=True)),
         ("output_scheduling", lambda: output_check(rt, directory)),
+        ("reproducibility", lambda: reproducibility_check(rt)),
         ("collapse_3200_particles", lambda: scale_check(rt)),
     ]
