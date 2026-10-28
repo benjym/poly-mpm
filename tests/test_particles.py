@@ -170,7 +170,7 @@ def test_invalid_initial_state(overrides, match):
         state(ns=2, materials=material(**overrides))
 
 
-@pytest.mark.parametrize('name', ['dp', 'dp_rate', 'bingham', 'ken_simple', 'viscous_size', 'missing'])
+@pytest.mark.parametrize('name', ['elastic_time', 'ken_kamrin', 'ken_simple', 'viscous_size', 'missing'])
 def test_unsupported_models_fail_early(name):
     with pytest.raises(ValueError, match='Unsupported material law'):
         state(name)

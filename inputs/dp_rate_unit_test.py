@@ -1,3 +1,4 @@
+from plotting import PQHistory
 import os
 from numpy import pi,array,dot,tan,zeros,eye,cumsum,outer,sum,trace,exp,linspace,minimum,amax,tile,repeat
 from numpy import random,ones
@@ -88,28 +89,5 @@ class Solid_Params():
         self.A = (G.x_M-G.x_m)*(G.y_M-G.y_m)/self.n # area (m^2)
 
 
-class Output_Params():
-    def __init__(self,nt,n):
-#         self.plot_continuum = True
-#         self.plot_material_points = True
-        self.energy = zeros((nt*10+1,4)) # energy
-        self.p = zeros((nt*10+10,n))
-        self.q = zeros((nt*10+10,n))
-
-    def store_p_q(self,P,G,L,tstep):
-        for i in range(P.S[0].n):
-            self.p[tstep,i] = L.S[0][i].p
-            self.q[tstep,i] = L.S[0][i].q
-            
-    def draw_p_q(self,P,G,L,plot,tstep):
-#         x = zeros((P.S[0].n,3))
-#         v = zeros((P.S[0].n,3))
-        plt.figure()
-        for i in range(P.S[0].n):
-            plt.clf()
-            plt.xlabel(r"$p$")
-            plt.ylabel(r"$q$",rotation='horizontal')
-            plt.plot([0,amax(self.p)],[0,P.S[0].mu*amax(self.p)],'k--')
-            plt.plot(self.p[:tstep-1,i],self.q[:tstep-1,i],'b-')
-            plot.savefig(P,str(i))
-        #print (self.q[tstep-1,0]-self.q[1,0])/(self.p[tstep-1,0]-self.p[1,0])
+class Output_Params(PQHistory):
+    pass

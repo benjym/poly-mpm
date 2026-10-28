@@ -26,8 +26,11 @@ dimensional. Constitutive tensor traces and norms reduce tensor axes only.
 `Particles(P, G, material, material_id)` constructs one batch.
 `ParticleSystem(P, G)` coordinates the material list. Supported laws implement
 `law(particles, material_parameters, simulation_parameters)` and update history and
-`dstress`. The coordinator applies the existing Lie stress-rate correction once;
-rigid materials bypass the stress update and move at their prescribed velocities.
+`dstress`. The original five laws retain their existing Lie stress-rate integration;
+restored `dp`/`dp_rate` solids use a symmetric corotational spin split, and restored
+`bingham`/`linear_mu` fluids prescribe current stress directly. Rigid materials
+bypass the stress update and move at their prescribed velocities. See the
+[constitutive audit](constitutive-models.md) for equations and integration tests.
 The registry in `constit.py` is the only material dispatch mechanism.
 
 Uniform mass/volume properties, velocities, and grain fractions are copied into
@@ -126,8 +129,10 @@ or zero-segregation-rate limits. Invalid resulting timesteps fail explicitly.
 - Gravity potential energy uses its Cartesian projection, avoiding division by a
   particle's zero x-coordinate in the old angle-based expression.
 
-The constitutive equations, coefficients, tension convention, viscosity cap,
-and stress-rate formulation are otherwise retained. The segregation flux,
+The original five laws retain their constitutive equations, coefficients, tension
+convention, viscosity cap, and stress-rate formulation. The subsequently restored
+laws have explicit physical corrections and separate analytical tests; see the
+[constitutive audit](constitutive-models.md). The segregation flux,
 reconstruction, and return transfer were subsequently corrected to enforce mixture
 and species conservation; see [the segregation correction](segregation-conservation.md).
 Changes are checked against analytical cases and independent corrected scalar
@@ -170,7 +175,8 @@ used to hide conservation errors. The old performance report predates this
 numerical correction; current small-case timings are recorded separately in
 `benchmarks/segregation_correction_performance.json`.
 
-Unsupported experimental laws remain archived outside the active registry. Mixed
+Retired implementations remain archived outside the active registry, with explicit
+retirement reasons. Absent laws remain unsupported. Mixed
 materials share the existing momentum grid; this work adds neither contact
 resolution nor a separate velocity field per material. Legacy traction scaling
 still uses the first material's uniform reference density.
@@ -197,30 +203,30 @@ in source. Unsupported laws are deliberately not substituted with different laws
 | `python MPM.py bi_seg_test 22 2 11` | supported smoke-tested |
 | `python MPM.py bi_square_drum 11 2` | supported smoke-tested |
 | `python MPM.py bi_vertical_chute 2 11` | supported smoke-tested |
-| `python MPM.py bingham_unit_test` | unsupported material law: Unsupported material law 'bingham' |
+| `python MPM.py bingham_unit_test` | supported smoke-tested |
 | `python MPM.py brazillian` | supported smoke-tested |
 | `python MPM.py chuteflow` | supported smoke-tested |
-| `python MPM.py dam_break` | unsupported material law: Unsupported material law 'dp_rate' |
-| `python MPM.py dp_rate_unit_test` | unsupported material law: Unsupported material law 'dp_rate' |
-| `python MPM.py dp_unit_test` | unsupported material law: Unsupported material law 'dp' |
+| `python MPM.py dam_break` | supported smoke-tested |
+| `python MPM.py dp_rate_unit_test` | supported smoke-tested |
+| `python MPM.py dp_unit_test` | supported smoke-tested |
 | `python MPM.py flow` | supported smoke-tested |
 | `python MPM.py fluid` | unsupported material law: Unsupported material law 'compressible' in legacy P.F; use supported P.S materials |
 | `python MPM.py francois 11` | supported smoke-tested |
 | `python MPM.py gsd` | supported smoke-tested |
 | `python MPM.py incline` | supported smoke-tested |
 | `python MPM.py macro` | supported smoke-tested |
-| `python MPM.py pierre` | unsupported material law: Unsupported material law 'bingham' |
+| `python MPM.py pierre` | supported smoke-tested |
 | `python MPM.py poly_avalanche` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py poly_seg_test 22` | supported smoke-tested |
 | `python MPM.py pouliquen_unit_test` | supported smoke-tested |
 | `python MPM.py seg_unit_test` | supported smoke-tested |
 | `python MPM.py silo 11 2` | supported smoke-tested |
-| `python MPM.py slope_stab` | unsupported material law: Unsupported material law 'dp' |
+| `python MPM.py slope_stab` | supported smoke-tested |
 | `python MPM.py stokes` | supported smoke-tested |
 | `python MPM.py tri_seg_test` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py triaxial` | supported smoke-tested |
-| `python MPM.py tunnel` | unsupported material law: Unsupported material law 'elastic_time' |
+| `python MPM.py tunnel` | unsupported material law: Retired material law 'elastic_time'; see constitutive audit |
 | `python MPM.py vicky` | supported smoke-tested |
-| `python MPM.py vicky_latest` | unsupported material law: Unsupported material law 'bingham' |
+| `python MPM.py vicky_latest` | supported smoke-tested |
 | `python MPM.py viscous_unit_test` | supported smoke-tested |
 | `python MPM.py vm_unit_test` | supported smoke-tested |

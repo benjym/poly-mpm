@@ -26,9 +26,12 @@ The default output is `im/<example>/<first-material-law>/`, unless an input defi
 `supername` or `save_dir`. Examples can run for a long time at their original
 settings; the compatibility checks use bounded runs.
 
-Supported material laws are `rigid`, `elastic`, `viscous`, `von_mises`, and
-`pouliquen`. Rigid particles follow prescribed velocities; no new contact model is
-provided. Experimental and absent laws fail explicitly at initialisation.
+Supported material laws are `rigid`, `elastic`, `viscous`, `von_mises`,
+`pouliquen`, `bingham`, `dp`, `dp_rate`, and `linear_mu`. Rigid particles follow
+prescribed velocities; no new contact model is provided. See the
+[constitutive audit](docs/constitutive-models.md) for equations, parameter domains,
+analytical tests, corrected stress integration, and retired implementations.
+Retired and absent laws fail explicitly at initialisation.
 
 ```sh
 python MPM.py bi_seg_test 22 2 11

@@ -1,7 +1,7 @@
 """Structure-of-arrays particle state and multiple-material coordination."""
 from copy import copy
 import numpy as np
-from constit import EYE, get_law
+from constit import EYE, ALGEBRAIC, get_law, validate_material, update_stress
 from transfers import scatter, divide, gather, nodal_velocity
 
 
@@ -27,6 +27,7 @@ class Particles:
         S = self.material
         self.material_id = material_id
         self.law = get_law(S.law)
+        validate_material(S)
         count = int(S.n)
         if count < 0 or count != S.n:
             raise ValueError('particle count must be a non-negative integer')
@@ -65,6 +66,17 @@ class Particles:
     def __len__(self):
         return len(self.x)
 
+    @property
+    def p(self):
+        """Compression-positive mean Cauchy stress (Pa)."""
+        return -np.trace(self.stress, axis1=1, axis2=2)/3
+
+    @property
+    def q(self):
+        """Von Mises equivalent stress sqrt(3 J2), including plane-strain zz."""
+        shear = self.stress + self.p[:, None, None]*EYE
+        return np.sqrt(1.5)*np.linalg.norm(shear, axis=(1, 2))
+
     def _scratch(self):
         count = len(self)
         self.N = np.zeros((count, 4))
@@ -91,13 +103,16 @@ class Particles:
         elif P.pressure in ('non-zero', 'temperature'):
             self.strain[:] = -1e-15 if P.pressure == 'non-zero' else -1e-5 * EYE
             tr = np.trace(self.strain, axis1=1, axis2=2)
-            self.stress = S.K * tr[:, None, None] * EYE + 2 * S.G * (self.strain - tr[:, None, None] * EYE / 3)
+            shear_modulus = 0. if S.law in ALGEBRAIC else S.G
+            self.stress = S.K * tr[:, None, None] * EYE + 2 * shear_modulus * (self.strain - tr[:, None, None] * EYE / 3)
         elif P.pressure is not None:
             raise ValueError(f'Unknown pressure initialisation {P.pressure!r}')
         if P.pressure in ('lithostatic', 'compression') and S.law != 'rigid':
             tr = np.trace(self.stress, axis1=1, axis2=2)
-            self.strain = divide(tr, 9 * S.K)[:, None, None] * EYE
-            if getattr(S, 'G', 0):
+            # Algebraic fluids have no elastic shear strain. K=0 may still carry
+            # a prescribed initial mean pressure, without an elastic compliance.
+            self.strain = divide(tr, 9 * S.K)[:, None, None] * EYE if S.K else np.zeros_like(self.stress)
+            if S.law not in ALGEBRAIC and getattr(S, 'G', 0):
                 self.strain += (self.stress - tr[:, None, None] * EYE / 3) / (2 * S.G)
         self.sigma_kk = np.trace(self.stress, axis1=1, axis2=2)
         self.pressure = self.sigma_kk / 3
@@ -191,8 +206,7 @@ class Particles:
         self.L = np.einsum('nri,nrj->nij', velocity, self.G)
         self.dstrain = .5 * (self.L+self.L_T) * P.dt
         self.strain += self.dstrain
-        self.law(self, self.material, P)
-        self.stress += self.dstress - (self.L @ self.stress + self.stress @ self.L_T)*P.dt
+        update_stress(self, self.material, P)
         self.check_finite(P)
 
     def get_nodal_forces(self, P, G):

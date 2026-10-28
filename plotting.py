@@ -123,6 +123,36 @@ class Plotting:
         np.save(directory/'energy.npy', energy)
 
 
+class PQHistory:
+    """Growing array histories for the Drucker-Prager loading examples."""
+    def __init__(self, nt=None, n=None):
+        self.time, self.p, self.q = [], [], []
+
+    def at_start(self, L, P, G):
+        Path(P.save_dir).mkdir(parents=True, exist_ok=True)
+        self.after_every_timestep(L, P, G)
+
+    def after_every_timestep(self, L, P, G):
+        self.time.append(P.t)
+        self.p.append(values(L, 'p').copy())
+        self.q.append(values(L, 'q').copy())
+
+    def at_end(self, L, P, G):
+        directory = Path(P.save_dir)/'data'
+        directory.mkdir(parents=True, exist_ok=True)
+        np.savez(directory/'pq_history.npz', time=self.time, p=self.p, q=self.q)
+        plt.figure()
+        p, q = np.asarray(self.p), np.asarray(self.q)
+        plt.plot(p, q, alpha=.5)
+        limit = max(float(p.max(initial=0)), 1e-12)
+        for S in P.S:
+            plt.plot([0, limit], [0, S.mu*limit], '--', label=f'q = {S.mu:g} p')
+        plt.xlabel('p = -tr(stress)/3 (Pa)')
+        plt.ylabel('q = sqrt(3 J2) (Pa)')
+        plt.legend()
+        Plotting().savefig(P, 'pq_history')
+
+
 def install_callbacks(P):
     plot = Plotting()
     O = P.O
