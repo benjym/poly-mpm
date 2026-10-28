@@ -155,6 +155,16 @@
     ]
   },
   {
+    "example": "domain_column",
+    "args": [
+      "domain_column"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      256
+    ]
+  },
+  {
     "example": "dp_rate_unit_test",
     "args": [
       "dp_rate_unit_test"
@@ -298,8 +308,7 @@
     "example": "silo",
     "args": [
       "silo",
-      "11",
-      "2"
+      "11"
     ],
     "status": "supported smoke-tested",
     "particles": [

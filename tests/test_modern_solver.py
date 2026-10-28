@@ -248,15 +248,17 @@ def test_apic_refuses_to_discard_unresolved_affine_momentum():
         L.get_nodal_mass_momentum(P, G)
 
 
+@pytest.mark.parametrize("quadrature", ["point", "domain"])
 @pytest.mark.parametrize("transfer", ["flip", "pic", "apic"])
 @pytest.mark.parametrize("periodic", [False, True])
-def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic):
+def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic, quadrature):
     rng = np.random.default_rng(10)
     xy = rng.uniform(0.15, 0.85, (20, 2))
     phi = rng.dirichlet([1, 1, 1], len(xy))
     P, G, L, b = mapped(
         interpolation="quadratic",
         transfer=transfer,
+        quadrature=quadrature,
         ns=3,
         segregate=True,
         c=1e-3,
@@ -266,6 +268,7 @@ def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic):
             X=xy[:, 0],
             Y=xy[:, 1],
             PHI=phi,
+            domain_size=[0.1, 0.1],
             initial_v=np.column_stack((0.1 * xy[:, 1], np.zeros((20, 2)))),
             initial_C=[[0, 0.1, 0], [0, 0, 0], [0, 0, 0]],
         ),

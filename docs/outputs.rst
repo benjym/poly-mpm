@@ -115,3 +115,7 @@ by mass again. Periodic endpoint columns duplicate one physical grid node.
 ``run`` advances ``P.t`` and ``P.tstep``. ``step`` intentionally does not. Neither
 saved NPY/NPZ output nor a bounded stop is a general checkpoint/restart facility;
 reconstructing all state and callback/controller history is not implemented.
+
+Diagnostics also record the selected ``mechanics``, ``interpolation``,
+``quadrature`` and ``transfer``, plus ``maximum_stencil_entries``. Finite-domain
+support varies with particle geometry; see :doc:`quadrature`.

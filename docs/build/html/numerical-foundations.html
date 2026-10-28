@@ -9,12 +9,12 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Verification and error studies" href="verification.html" />
+    <link rel="next" title="Finite-domain quadrature and cell crossing" href="quadrature.html" />
     <link rel="prev" title="Troubleshooting and limitations" href="troubleshooting.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -120,16 +120,17 @@ calibration and has the limitations described in the constitutive reference.</p>
 <section id="interpolation-and-physical-boundaries">
 <h2>Interpolation and physical boundaries<a class="headerlink" href="#interpolation-and-physical-boundaries" title="Link to this heading">¶</a></h2>
 <p>The stencil interface returns node indices, weights, gradients, and physical
-node-minus-particle offsets. Linear interpolation uses four entries; quadratic
-uses nine. Force mapping, diagnostics, deformation, momentum, composition, and
+node-minus-particle offsets. With point quadrature, linear interpolation uses
+four entries and quadratic uses nine. Finite-domain integration uses wider
+stencils as required by the particle geometry. Force mapping, diagnostics, deformation, momentum, composition, and
 segregation all use the returned support size.</p>
 <p>The quadratic interior uses tensor products of cardinal quadratic B-splines.
 At physical boundaries, ghost <strong>values</strong> are linearly extrapolated through the
 boundary nodes, and their basis contributions are combined onto physical nodes.
 In the outer half-cell this reduces to linear weights. The join is C1, weights
 are nonnegative, and partition/affine completeness are preserved, including at
-corners. This is a boundary-modified quadratic basis; it is not an open-knot
-basis, truncated-and-normalised cardinal basis, or finite-domain GIMP.
+corners. This is a boundary-modified cardinal quadratic basis. Domain quadrature
+averages this same basis over the represented particle domains.
 The method still has quadrature and boundary errors. The motivation for smooth
 interior basis functions is discussed by
 <a class="reference external" href="https://doi.org/10.1002/nme.2360">Steffen, Kirby and Berzins</a>.</p>
@@ -143,6 +144,15 @@ at a grid node does not acquire spurious strain under translation. APIC also use
 its resolved affine extension. Such support is reported; nonzero stress forces
 requiring massless support fail explicitly. Add particle coverage or review the
 mass threshold instead of discarding forces.</p>
+</section>
+<section id="particle-quadrature">
+<h2>Particle quadrature<a class="headerlink" href="#particle-quadrature" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">quadrature='point'</span></code> evaluates the basis at particle centres. The optional
+<code class="docutils literal notranslate"><span class="pre">quadrature='domain'</span></code> configuration averages it over F-convected reference
+rectangles, using the same averaged weights/gradients throughout the timestep.
+Each material must provide <code class="docutils literal notranslate"><span class="pre">domain_size</span></code> consistent with <code class="docutils literal notranslate"><span class="pre">A</span></code>. See
+<a class="reference internal" href="quadrature.html"><span class="std std-doc">finite-domain quadrature</span></a> for setup, conservation properties,
+controlled comparisons, boundary restrictions and computational cost.</p>
 </section>
 <section id="matched-apic-transfers">
 <h2>Matched APIC transfers<a class="headerlink" href="#matched-apic-transfers" title="Link to this heading">¶</a></h2>
@@ -263,11 +273,13 @@ bounded/full examples do not establish convergence of every application.</p>
 <li class="toctree-l2"><a class="reference internal" href="#deformation-and-physical-density">Deformation and physical density</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#stress-and-work-conventions">Stress and work conventions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#interpolation-and-physical-boundaries">Interpolation and physical boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#particle-quadrature">Particle quadrature</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#matched-apic-transfers">Matched APIC transfers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#timestep-estimates-and-diagnostics">Timestep estimates and diagnostics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#evidence-and-limits">Evidence and limits</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>

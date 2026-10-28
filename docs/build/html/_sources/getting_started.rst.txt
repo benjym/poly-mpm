@@ -67,6 +67,14 @@ The installed command is equivalent::
 
     uv run --locked poly-mpm ball
 
+Example usage
+-------------
+
+Run ``uv run --locked python MPM.py --help`` to list examples. Add ``--help``
+after an example name to see its required arguments, for example
+``uv run --locked python MPM.py bi_dam_break --help``. Missing, invalid, and extra
+arguments produce a usage error before simulation setup.
+
 A bounded preview
 -----------------
 
@@ -96,6 +104,8 @@ Choosing an example
 * ``ball``: a small first run with elastic material and saved plots.
 * ``modern_ball``: updated elasticity with quadratic B-splines, APIC, and dynamic
   timestepping. See :doc:`numerical-foundations` for configuration and diagnostics.
+* ``domain_column``: source-checkout example with finite-domain integration,
+  quadratic interpolation and APIC; see :doc:`quadrature` for geometry requirements.
 * ``dp_unit_test`` / ``dp_rate_unit_test``: Drucker-Prager loading histories;
   full runs have 50,000 / 5,000 steps respectively.
 * ``bi_seg_test 22 2 11``: segregation at 22 degrees, two grain-size classes,

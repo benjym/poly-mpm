@@ -37,6 +37,7 @@ def strip(
     height=0.2,
     vertical=False,
     square=False,
+    quadrature="point",
     gravity=0.0,
     pressure=None,
     speed=0.0,
@@ -59,6 +60,7 @@ def strip(
         K=BULK,
         G=SHEAR,
         initial_v=[speed, 0.0, 0.0],
+        domain_size=[1 / (nx * ppc), height / (ny * ppc)],
     )
     P = NS(
         dt=final_time / steps,
@@ -69,6 +71,7 @@ def strip(
         pressure=pressure,
         interpolation=basis,
         transfer=transfer,
+        quadrature=quadrature,
         CFL=0.5,
         timestep_policy="enforce",
         G=NS(nx=nx + 1, ny=ny + 1, x_m=0.0, x_M=1.0, y_m=0.0, y_M=height),
@@ -85,6 +88,7 @@ def _fields(b):
 def _finish(P, L, metrics, return_fields):
     b = L.materials[0]
     row = L.diagnostics.last
+    metrics["quadrature"] = P.quadrature
     metrics.update(
         steps=P.tstep,
         dt=P.dt,
@@ -101,7 +105,15 @@ def _finish(P, L, metrics, return_fields):
 
 
 def hydrostatic(
-    cells=16, steps=128, *, basis="quadratic", transfer="apic", ppc=2, final_time=0.05, return_fields=False
+    cells=16,
+    steps=128,
+    *,
+    basis="quadratic",
+    transfer="apic",
+    ppc=2,
+    final_time=0.05,
+    return_fields=False,
+    quadrature="point",
 ):
     """Exact rest: sigma=-rho*g*(H-y) I, g=1, traction-free top, supported bottom."""
     P, G, L = strip(
@@ -111,6 +123,7 @@ def hydrostatic(
         basis=basis,
         transfer=transfer,
         ppc=ppc,
+        quadrature=quadrature,
         vertical=True,
         gravity=-1.0,
         pressure="lithostatic",
@@ -133,6 +146,7 @@ def hydrostatic(
         L,
         dict(
             cells=cells,
+            quadrature=quadrature,
             particles_per_cell_axis=ppc,
             basis=basis,
             transfer=transfer,
@@ -169,10 +183,19 @@ def translated_stress(
     speed=1.0,
     final_time=0.1,
     return_fields=False,
+    quadrature="point",
 ):
     """Self-equilibrated Airy stress advected horizontally on a periodic square."""
     P, G, L = strip(
-        cells, steps, final_time, basis=basis, transfer=transfer, ppc=ppc, square=True, speed=speed
+        cells,
+        steps,
+        final_time,
+        basis=basis,
+        transfer=transfer,
+        ppc=ppc,
+        square=True,
+        speed=speed,
+        quadrature=quadrature,
     )
     b = L.materials[0]
     reference = airy_stress(b.x0)
@@ -187,6 +210,7 @@ def translated_stress(
         L,
         dict(
             cells=cells,
+            quadrature=quadrature,
             particles_per_cell_axis=ppc,
             basis=basis,
             transfer=transfer,
@@ -238,10 +262,18 @@ def elastic_reference(F, bulk=BULK, shear=SHEAR):
 
 
 def large_deformation(
-    cells=16, steps=128, *, basis="quadratic", transfer="apic", ppc=2, final_time=0.25, return_fields=False
+    cells=16,
+    steps=128,
+    *,
+    basis="quadratic",
+    transfer="apic",
+    ppc=2,
+    final_time=0.25,
+    return_fields=False,
+    quadrature="point",
 ):
     """Full timestep with analytically manufactured material-coordinate body load."""
-    P, G, L = strip(cells, steps, final_time, basis=basis, transfer=transfer, ppc=ppc)
+    P, G, L = strip(cells, steps, final_time, basis=basis, transfer=transfer, ppc=ppc, quadrature=quadrature)
     b = L.materials[0]
     initial = manufactured_motion(b.x0[:, 0], 0.0)
     b.v[:, 0] = initial["v"]
@@ -264,6 +296,7 @@ def large_deformation(
         L,
         dict(
             cells=cells,
+            quadrature=quadrature,
             particles_per_cell_axis=ppc,
             basis=basis,
             transfer=transfer,
@@ -368,10 +401,14 @@ def affine_patch(steps=32, cells=8):
     )
 
 
-def force_balance(case, cells=16, *, ppc=2, basis="quadratic", quadrature="midpoint"):
+def force_balance(
+    case, cells=16, *, ppc=2, basis="quadratic", quadrature="midpoint", integration="point", offset=0.0
+):
     """Frozen exact states: spatial/particle quadrature residual, without remapping/time integration."""
     if case not in ("hydrostatic", "translated_stress", "large_deformation"):
         raise ValueError(f"Unknown analytical case: {case}")
+    if quadrature == "gauss" and integration != "point":
+        raise ValueError("Gaussian control uses point integration, not finite particle domains")
     hydro = case == "hydrostatic"
     P, G, L = strip(
         cells,
@@ -380,6 +417,7 @@ def force_balance(case, cells=16, *, ppc=2, basis="quadratic", quadrature="midpo
         basis=basis,
         transfer="flip",
         ppc=ppc,
+        quadrature=integration,
         vertical=hydro,
         square=case == "translated_stress",
         gravity=-1.0 if hydro else 0.0,
@@ -434,6 +472,7 @@ def force_balance(case, cells=16, *, ppc=2, basis="quadratic", quadrature="midpo
         b.stress[:] = exact["stress"]
         body[:, 0] = exact["body"]
         acceleration[:, 0] = -2 * np.pi * 0.4 * np.sin(2 * np.pi * b.x0[:, 0])
+    b.x[:, 0] += offset
     L.get_reference_nodes(P, G)
     L.get_basis_functions(P, G)
     G.wipe(P)
@@ -455,6 +494,8 @@ def force_balance(case, cells=16, *, ppc=2, basis="quadratic", quadrature="midpo
     nodal_error = residual[active] / G.m[active, None]
     return dict(
         case=case,
+        integration=integration,
+        offset=offset,
         quadrature=quadrature,
         gaussian_points_per_half_cell=8 if quadrature == "gauss" else None,
         cells=cells,

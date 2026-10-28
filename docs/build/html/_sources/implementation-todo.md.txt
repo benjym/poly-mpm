@@ -41,12 +41,20 @@ passed its stated tests; it is not a guarantee for every application.
 - [x] Separate dynamic grid/timestep studies, particle-quadrature studies, frozen
       exact-state force checks, fixed-cloud remaps, and prescribed affine patches.
 - [x] Present-tense user documentation with measured verification limits.
+- [x] Optional finite-domain integration for linear/quadratic bases, including
+      F-convected rectangles, exact knot-split integration, periodic seams and
+      explicit rejection of inadmissible wall geometry/support.
+- [x] Shared integration weights/gradients for force, strain, APIC, diagnostics and
+      segregation; conservation, power pairing and geometry/inlet/outlet checks.
+- [x] Controlled point/domain cell-phase and grid-refinement comparisons, plus a
+      runnable `domain_column` example and integration-mode diagnostics.
 
 ## Acceptance evidence
 
 The regression suite includes `tests/test_modern_solver.py` and
 `tests/test_broader_verification.py`. Source-fingerprinted reports in
-`benchmarks/verification.json` and `benchmarks/broader_verification.json` cover
+`benchmarks/verification.json`, `benchmarks/broader_verification.json` and
+`benchmarks/quadrature_verification.json` cover
 complete example runs, standing waves, equilibrium, finite strain, and operator
 controls. The [verification guide](verification.md) explains measured errors and
 non-monotone levels. Distribution builds and strict HTML documentation checks
@@ -57,14 +65,16 @@ experimental validation and application calibration remain separate tasks.
 
 - [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
 
-- [ ] Control distorted-particle quadrature/cell-crossing force errors; demonstrate
-      spatial convergence beyond the two-particles-per-axis sampling regime.
+- [ ] Control remaining gaps/overlaps of independently convected domains, and
+      verify convergence for broader nonuniform deformation and material interfaces.
 - [ ] Well-balanced hydrostatics with quadratic interpolation on general particle clouds.
 - [ ] Higher-order position integration consistent with deformation/stress evolution;
       isolate timestep accuracy from the number of remaps.
 - [ ] Broader application benchmarks and experimental validation.
-- [ ] Benchmark-driven assessment of GIMP/CPDI or higher-order interpolation,
-      if quadratic boundary/interior accuracy is insufficient.
+- [ ] Assess shared-corner/topology tracking or alternative quadrature against the
+      remaining geometric integration defects.
+- [ ] Profile and accelerate rotated/sheared polygon integration while retaining
+      the exact reference path and its conservation checks.
 
 - [ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.
 - [ ] Curved rigid boundaries, contact reactions, friction and separate body fields.

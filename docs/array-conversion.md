@@ -13,11 +13,15 @@ normalising mass-weighted fields.
 | `m`, `rho`, `initial_rho`, `V`, `pressure`, scalar history | `(n,)` |
 | `stress`, `strain`, `dstrain`, `dstress`, `F`, affine/material history | `(n, 3, 3)` |
 | `phi` | `(n, ns)` |
+| `domain_halfsize` (reference geometry) | `(n, 2)` |
 | `n_star` | `(n,)`, integer |
-| `n` | `(n, k)`, integer; k=4 linear, k=9 quadratic |
+| `n` | `(n, k)`, integer; k=4 linear / k=9 quadratic for point quadrature; domain support varies |
 | `N` | `(n, k)` |
 | `G` (shape-function gradients), `offsets` | `(n, k, 3)` |
 | `L` (velocity gradient), `L_T` (transpose view) | `(n, 3, 3)` |
+
+The reference `domain_halfsize` is zero in point mode. Domain mode validates
+material `domain_size` against represented area; see [quadrature](quadrature.md).
 
 Linear neighbours are bottom-left, bottom-right, top-right, top-left. Quadratic
 neighbours are a tensor-product nine-entry stencil, with boundary/periodic mapping
@@ -186,6 +190,7 @@ remain enabled where configured. Durations, loading, and output frequency are co
 | `python MPM.py dam_break` | supported smoke-tested |
 | `python MPM.py dp_rate_unit_test` | supported smoke-tested |
 | `python MPM.py dp_unit_test` | supported smoke-tested |
+| `python MPM.py domain_column` | supported smoke-tested |
 | `python MPM.py flow` | supported smoke-tested |
 | `python MPM.py fluid` | unsupported material law: Unsupported material law 'compressible' in legacy P.F; use supported P.S materials |
 | `python MPM.py francois 11` | supported smoke-tested |
@@ -198,7 +203,7 @@ remain enabled where configured. Durations, loading, and output frequency are co
 | `python MPM.py poly_seg_test 22` | supported smoke-tested |
 | `python MPM.py pouliquen_unit_test` | supported smoke-tested |
 | `python MPM.py seg_unit_test` | supported smoke-tested |
-| `python MPM.py silo 11 2` | supported smoke-tested |
+| `python MPM.py silo 11` | supported smoke-tested |
 | `python MPM.py slope_stab` | supported smoke-tested |
 | `python MPM.py stokes` | supported smoke-tested |
 | `python MPM.py tri_seg_test` | unsupported material law: Unsupported material law 'viscous_size' |

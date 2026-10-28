@@ -3,7 +3,8 @@
 import numpy as np
 
 
-def limits(P, G, L):
+def _state_limits(P, G, L):
+    """Unscaled restrictions depending on particle/grid state, not the timestep."""
     h = min(G.dx, G.dy)
     inverse_h2 = 1 / G.dx**2 + 1 / G.dy**2
     result = {}
@@ -43,11 +44,6 @@ def limits(P, G, L):
         )
         bulk = getattr(S, "mu_v", 0.0) if S.law in ("viscous", "bingham") else 0.0
         viscosity = max(viscosity, (2 * eta + 3 * bulk) / rho)
-        if hasattr(S, "critical_time"):
-            value = float(S.critical_time(P))
-            if not np.isfinite(value) or value <= 0:
-                raise ValueError("material critical_time must be positive and finite")
-            result[f"material_{b.material_id}"] = value
     if wave:
         result["elastic_wave"] = h / wave
     if viscosity:
@@ -61,6 +57,30 @@ def limits(P, G, L):
         diffusion = _diffusivity(G, P, G.phi).max(initial=0)
         if diffusion:
             result["segregation_diffusion"] = 1 / (2 * diffusion * inverse_h2)
+    return result
+
+
+def limits(P, G, L, *, cache=None):
+    """Estimate limits, optionally sharing state work within one runner phase.
+
+    The runner clears its local cache before advancing the state. Standalone
+    callers always recompute. Material callbacks are deliberately reevaluated:
+    they may depend on the trial timestep, unlike the central estimates.
+    """
+    if cache is None:
+        state = _state_limits(P, G, L)
+    else:
+        if "state" not in cache:
+            cache["state"] = _state_limits(P, G, L)
+        state = cache["state"]
+    result = {"advection": state["advection"]} if "advection" in state else {}
+    for b in L.materials:
+        if len(b) and b.material.law != "rigid" and hasattr(b.material, "critical_time"):
+            value = float(b.material.critical_time(P))
+            if not np.isfinite(value) or value <= 0:
+                raise ValueError("material critical_time must be positive and finite")
+            result[f"material_{b.material_id}"] = value
+    result.update((name, value) for name, value in state.items() if name != "advection")
     if any(not np.isfinite(x) or x <= 0 for x in result.values()):
         raise FloatingPointError("nonfinite or nonpositive explicit timestep estimate")
     return {name: float(value * P.CFL) for name, value in result.items()}

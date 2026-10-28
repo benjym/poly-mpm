@@ -22,10 +22,20 @@ The example cannot be imported
     modules under ``inputs/`` and expose ``Params(args)``. Run the documented
     commands from the checkout root.
 
-``IndexError`` while loading an example
-    Some legacy examples access positional arguments directly. Check the
-    :doc:`example matrix <array-conversion>` and supply every listed argument in
-    order. Arguments are specific to the chosen input.
+An example reports a usage error
+    Run ``uv run --locked python MPM.py --help`` to list examples, or
+    ``uv run --locked python MPM.py <example> --help`` for its argument order,
+    types, and choices. Missing, invalid, and extra arguments are rejected before
+    setup. The Python loader raises ``ValueError`` for these errors. Check the
+    :doc:`example matrix <array-conversion>` for runnable commands.
+
+    For the square drum, use
+    ``uv run --locked python MPM.py bi_square_drum 11 2``. The arguments are the
+    number of grid nodes per side (at least 3) and the finite, positive Froude
+    number. For ``bi_dam_break``, the arrangement must be ``top``, ``bot``, or
+    ``mix``. Grain size class counts must be at least two. ``silo`` accepts only
+    its grid node count: use ``silo 11``; its two size classes are fixed, and the
+    formerly documented trailing ``2`` was ignored.
 
 ``Unsupported material law``
     Check the exact registry name and :doc:`constitutive-models`. The retired

@@ -62,6 +62,9 @@ Interpolation and affine transfer geometry
 Deformation and volume evolution
 --------------------------------
 
+.. automodule:: quadrature
+   :members:
+
 .. automodule:: kinematics
    :members:
 

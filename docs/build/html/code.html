@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -59,7 +59,7 @@ imported from the current source, not copied from the former scalar interface.</
 
 <dl class="py function">
 <dt class="sig sig-object py" id="MPM.step">
-<span class="sig-prename descclassname"><span class="pre">MPM.</span></span><span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#MPM.step" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">MPM.</span></span><span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">_limit_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#MPM.step" title="Link to this definition">¶</a></dt>
 <dd><p>Advance one complete timestep, without output or changing the clock.</p>
 </dd></dl>
 
@@ -77,6 +77,15 @@ imported from the current source, not copied from the former scalar interface.</
 <dt class="sig sig-object py" id="particles.Particles">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">particles.</span></span><span class="sig-name descname"><span class="pre">Particles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#particles.Particles" title="Link to this definition">¶</a></dt>
 <dd><p>One material’s writable float64 particle arrays.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="particles.Particles.apic_matrices">
+<span class="sig-name descname"><span class="pre">apic_matrices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#particles.Particles.apic_matrices" title="Link to this definition">¶</a></dt>
+<dd><p>Reuse the support moment and its pseudoinverse until the stencil changes.</p>
+<p>Cache geometry only: affine momentum changes during grid-to-particle
+transfer, so the corresponding affine velocity must still be recomputed.
+Particle removal/injection invalidates this cache through _scratch().</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="particles.Particles.p">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">p</span></span><a class="headerlink" href="#particles.Particles.p" title="Link to this definition">¶</a></dt>
@@ -232,9 +241,18 @@ Periodic x support retains unwrapped offsets but deposits to unique seam nodes.<
 </dd></dl>
 
 </section>
-<section id="module-kinematics">
-<span id="deformation-and-volume-evolution"></span><h2>Deformation and volume evolution<a class="headerlink" href="#module-kinematics" title="Link to this heading">¶</a></h2>
-<p>Updated-Lagrangian kinematics with a rotation-preserving exponential map.</p>
+<section id="module-quadrature">
+<span id="deformation-and-volume-evolution"></span><h2>Deformation and volume evolution<a class="headerlink" href="#module-quadrature" title="Link to this heading">¶</a></h2>
+<p>Finite-domain integration of grid basis functions (point stress per domain).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="quadrature.domain_stencil">
+<span class="sig-prename descclassname"><span class="pre">quadrature.</span></span><span class="sig-name descname"><span class="pre">domain_stencil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">halfsize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quadrature.domain_stencil" title="Link to this definition">¶</a></dt>
+<dd><p>Integrate over F-convected rectangles; polynomial pieces are integrated exactly.</p>
+<p>Axis-aligned domains use exact piecewise polynomial Gauss integration. Rotated/sheared domains
+are clipped at basis knots and integrated by a degree-four triangle rule.</p>
+</dd></dl>
+
+<p id="module-kinematics">Updated-Lagrangian kinematics with a rotation-preserving exponential map.</p>
 </section>
 <section id="module-diagnostics">
 <span id="diagnostics-and-timestep-estimates"></span><h2>Diagnostics and timestep estimates<a class="headerlink" href="#module-diagnostics" title="Link to this heading">¶</a></h2>
@@ -251,6 +269,15 @@ only here. Prescribed rigid motion is externally controlled.</p>
 </dd></dl>
 
 <p id="module-stability">Conservative explicit timestep estimates, reported separately by mechanism.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="stability.limits">
+<span class="sig-prename descclassname"><span class="pre">stability.</span></span><span class="sig-name descname"><span class="pre">limits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#stability.limits" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate limits, optionally sharing state work within one runner phase.</p>
+<p>The runner clears its local cache before advancing the state. Standalone
+callers always recompute. Material callbacks are deliberately reevaluated:
+they may depend on the trial timestep, unlike the central estimates.</p>
+</dd></dl>
+
 </section>
 </section>
 
@@ -284,6 +311,7 @@ only here. Prescribed rigid motion is externally controlled.</p>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
@@ -300,7 +328,7 @@ only here. Prescribed rigid motion is externally controlled.</p>
 <li class="toctree-l2"><a class="reference internal" href="#module-integrators">Segregation operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-plotting">Output adapters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-interpolation">Interpolation and affine transfer geometry</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-kinematics">Deformation and volume evolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-quadrature">Deformation and volume evolution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-diagnostics">Diagnostics and timestep estimates</a></li>
 </ul>
 </li>

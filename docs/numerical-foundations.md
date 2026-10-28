@@ -99,8 +99,9 @@ calibration and has the limitations described in the constitutive reference.
 ## Interpolation and physical boundaries
 
 The stencil interface returns node indices, weights, gradients, and physical
-node-minus-particle offsets. Linear interpolation uses four entries; quadratic
-uses nine. Force mapping, diagnostics, deformation, momentum, composition, and
+node-minus-particle offsets. With point quadrature, linear interpolation uses
+four entries and quadratic uses nine. Finite-domain integration uses wider
+stencils as required by the particle geometry. Force mapping, diagnostics, deformation, momentum, composition, and
 segregation all use the returned support size.
 
 The quadratic interior uses tensor products of cardinal quadratic B-splines.
@@ -108,8 +109,8 @@ At physical boundaries, ghost **values** are linearly extrapolated through the
 boundary nodes, and their basis contributions are combined onto physical nodes.
 In the outer half-cell this reduces to linear weights. The join is C1, weights
 are nonnegative, and partition/affine completeness are preserved, including at
-corners. This is a boundary-modified quadratic basis; it is not an open-knot
-basis, truncated-and-normalised cardinal basis, or finite-domain GIMP.
+corners. This is a boundary-modified cardinal quadratic basis. Domain quadrature
+averages this same basis over the represented particle domains.
 The method still has quadrature and boundary errors. The motivation for smooth
 interior basis functions is discussed by
 [Steffen, Kirby and Berzins](https://doi.org/10.1002/nme.2360).
@@ -125,6 +126,15 @@ at a grid node does not acquire spurious strain under translation. APIC also use
 its resolved affine extension. Such support is reported; nonzero stress forces
 requiring massless support fail explicitly. Add particle coverage or review the
 mass threshold instead of discarding forces.
+
+## Particle quadrature
+
+`quadrature='point'` evaluates the basis at particle centres. The optional
+`quadrature='domain'` configuration averages it over F-convected reference
+rectangles, using the same averaged weights/gradients throughout the timestep.
+Each material must provide `domain_size` consistent with `A`. See
+[finite-domain quadrature](quadrature.md) for setup, conservation properties,
+controlled comparisons, boundary restrictions and computational cost.
 
 ## Matched APIC transfers
 

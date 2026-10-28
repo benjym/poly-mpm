@@ -2,23 +2,27 @@
 """Array MPM timestep and command-line entry point."""
 
 import sys
+from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 import numpy as np
 import initialise
 
 
-def step(P, G, L):
+def step(P, G, L, *, _limit_cache=None):
     """Advance one complete timestep, without output or changing the clock."""
     if not np.isfinite(P.dt) or P.dt <= 0:
         raise ValueError("dt must be finite and positive")
     from stability import limits
 
     if P.mechanics == "updated":
-        P.timestep_limits = limits(P, G, L)
+        P.timestep_limits = limits(P, G, L, cache=_limit_cache)
         safe = min(P.timestep_limits.values(), default=P.dt)
         if P.timestep_policy == "enforce" and P.dt > safe * (1 + 1e-12):
             raise ValueError(
                 f"dt={P.dt:g} exceeds estimated stable dt={safe:g}; use dynamic stepping or reduce dt"
             )
+    if _limit_cache is not None:
+        # No cached estimates may survive a state update or output callback.
+        _limit_cache.clear()
     if L.diagnostics is not None:
         L.diagnostics.begin(P, L)
     G.wipe(P)
@@ -49,51 +53,82 @@ def step(P, G, L):
 
 def run(P, G, L, *, max_steps=None, output=True, progress=False):
     """Run prepared state. max_steps permits bounded smoke tests and previews."""
-    if output:
-        P.O.at_start(L, P, G)
-    count = 0
-    next_save = P.t + P.savetime
-    while P.t < P.t_f and (max_steps is None or count < max_steps):
-        nominal_dt = P.dt
-        remaining = P.t_f - P.t
-        if remaining <= 16 * np.finfo(float).eps * max(abs(P.t_f), nominal_dt):
-            P.t = P.t_f
-            break
-        P.dt = min(P.dt, remaining)
-        if P.time_stepping == "dynamic" and P.mechanics == "updated":
-            from stability import limits
-
-            restrictions = limits(P, G, L)
-            if restrictions:
-                P.dt = min(P.dt, min(restrictions.values()))
-        used_dt = P.dt
-        step(P, G, L)
-        P.t += used_dt
-        P.tstep += 1
-        count += 1
+    with Progress(
+        TextColumn("{task.description}"),
+        BarColumn(),
+        TextColumn("{task.percentage:>5.1f}%"),
+        TextColumn("t = {task.fields[time]:.6g} s"),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+        disable=not progress,
+    ) as display:
+        # Rich treats a zero total as indeterminate; an empty run is complete.
+        task = display.add_task("Simulating", total=P.t_f or 1, completed=P.t if P.t_f else 1, time=P.t)
         if output:
-            P.O.after_every_timestep(L, P, G)
-            if P.t >= next_save:
-                P.O.after_every_savetime(L, P, G)
-                next_save += (np.floor((P.t - next_save) / P.savetime) + 1) * P.savetime
+            P.O.at_start(L, P, G)
+        count = 0
+        next_save = P.t + P.savetime
+        limit_cache = {}
+        while P.t < P.t_f and (max_steps is None or count < max_steps):
+            if progress:
+                display.update(task, description="Simulating")
+            nominal_dt = P.dt
+            remaining = P.t_f - P.t
+            if remaining <= 16 * np.finfo(float).eps * max(abs(P.t_f), nominal_dt):
+                P.t = P.t_f
+                break
+            P.dt = min(P.dt, remaining)
+            if P.time_stepping == "dynamic" and P.mechanics == "updated":
+                from stability import limits
+
+                restrictions = limits(P, G, L, cache=limit_cache)
+                if restrictions:
+                    P.dt = min(P.dt, min(restrictions.values()))
+            used_dt = P.dt
+            step(P, G, L, _limit_cache=limit_cache)
+            P.t += used_dt
+            P.tstep += 1
+            count += 1
+            if progress:
+                display.update(task, completed=P.t, time=P.t)
+            if output:
+                P.O.after_every_timestep(L, P, G)
+                if P.t >= next_save:
+                    if progress:
+                        display.update(task, description="Saving output")
+                    P.O.after_every_savetime(L, P, G)
+                    next_save += (np.floor((P.t - next_save) / P.savetime) + 1) * P.savetime
+            P.dt = nominal_dt
+            if P.time_stepping == "dynamic" and P.t < P.t_f:
+                if getattr(P.update_timestep, "_uses_limit_cache", False):
+                    P.update_timestep(P, G, _limit_cache=limit_cache)
+                else:
+                    P.update_timestep(P, G)
+        if L.diagnostics is not None:
+            L.diagnostics.complete()
+        if output:
+            if progress:
+                display.update(task, description="Finalizing", completed=P.t if P.t_f else 1, time=P.t)
+            P.O.at_end(L, P, G)
+            if L.diagnostics is not None and P.O.save_diagnostics:
+                L.diagnostics.save(P.save_dir)
         if progress:
-            print(f"{P.t/P.t_f:.1%} complete, t = {P.t:.6g}", end="\r")
-        P.dt = nominal_dt
-        if P.time_stepping == "dynamic" and P.t < P.t_f:
-            P.update_timestep(P, G)
-    if L.diagnostics is not None:
-        L.diagnostics.complete()
-    if output:
-        P.O.at_end(L, P, G)
-        if L.diagnostics is not None and P.O.save_diagnostics:
-            L.diagnostics.save(P.save_dir)
+            display.update(
+                task,
+                description="Complete" if P.t >= P.t_f else "Stopped",
+                completed=P.t if P.t_f else 1,
+                time=P.t,
+            )
     return P, G, L
 
 
 def main(params=None):
-    state = initialise.get_parameters(sys.argv[1:] if params is None else params)
+    try:
+        state = initialise.get_parameters(sys.argv[1:] if params is None else params)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
     run(*state, progress=True)
-    print()
     return 0
 
 

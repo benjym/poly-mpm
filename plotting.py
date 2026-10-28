@@ -5,6 +5,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 import numpy as np
 from transfers import divide, nodal_velocity
 
@@ -14,6 +16,46 @@ def values(L, name):
 
 
 class Plotting:
+    def __init__(self):
+        # Keep only the latest figure of each kind; no pyplot figure managers are
+        # needed for these persistent, file-only figures.
+        self._figures = {}
+        self._figure_bounds = {}
+
+    def _cached_figure(self, kind, P, G, shape, figsize):
+        key = (id(P), id(G), tuple(figsize), P.G.nx, P.G.ny, P.G.x_m, P.G.x_M, P.G.y_m, P.G.y_M)
+        cached = self._figures.get(kind)
+        if cached is not None and cached[0] == key:
+            return cached[1], None
+        fig = Figure(figsize=figsize, dpi=150, layout="constrained")
+        FigureCanvasAgg(fig)
+        axes = fig.subplots(*shape)
+        self._figures[kind] = (key, fig)
+        return fig, axes
+
+    @staticmethod
+    def _update_colors(artist, data):
+        artist.set_array(data)
+        # Reset both limits together before notifying the colorbar. Otherwise
+        # colorbar callbacks can alter the limits halfway through autoscaling.
+        with artist.norm.callbacks.blocked():
+            artist.norm.autoscale(data)
+        artist.changed()
+
+    def _fix_layout(self, kind, fig):
+        # Calculate panel/colorbar spacing once, at the output resolution, then
+        # reuse it. Subsequent saves only render the updated artists.
+        fig.canvas.draw()
+        self._figure_bounds[kind] = fig.get_tightbbox(fig.canvas.get_renderer()).padded(0.1)
+        with matplotlib.rc_context({"figure.autolayout": False, "figure.constrained_layout.use": False}):
+            fig.set_layout_engine(None)
+
+    def _save_cached(self, kind, P, name):
+        path = Path(P.save_dir) / (name + ".png")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fig = self._figures[kind][1]
+        fig.savefig(path, dpi=150, bbox_inches=self._figure_bounds[kind])
+
     def savefig(self, P, name, dpi=150):
         path = Path(P.save_dir) / (name + ".png")
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -38,28 +80,42 @@ class Plotting:
             G.s_bar,
         )
         names = ("u", "v", "density", "pressure (tension positive)", "shear rate", "mean grain size")
-        fig, axes = plt.subplots(
-            2, 3, figsize=getattr(P.O, "continuum_fig_size", (12, 7)), layout="constrained"
+        fig, axes = self._cached_figure(
+            "continuum", P, G, (2, 3), getattr(P.O, "continuum_fig_size", (12, 7))
         )
-        for ax, name, data in zip(axes.flat, names, fields):
+        for i, (name, data) in enumerate(zip(names, fields)):
             masked = np.ma.masked_where(~G.valid_nodes, data).reshape(P.G.ny, P.G.nx)
-            mesh = ax.pcolormesh(G.x_plot, G.y_plot, masked, shading="flat")
-            ax.set(title=name, xlabel="x", ylabel="y", xlim=(P.G.x_m, P.G.x_M), ylim=(P.G.y_m, P.G.y_M))
-            fig.colorbar(mesh, ax=ax)
-        self.savefig(P, f"Continuum/{P.grid_save:05d}")
+            if axes is not None:
+                ax = axes.flat[i]
+                mesh = ax.pcolormesh(G.x_plot, G.y_plot, masked, shading="flat")
+                ax.set(title=name, xlabel="x", ylabel="y", xlim=(P.G.x_m, P.G.x_M), ylim=(P.G.y_m, P.G.y_M))
+                fig.colorbar(mesh, ax=ax)
+            else:
+                self._update_colors(fig.axes[i].collections[0], masked)
+        if axes is not None:
+            self._fix_layout("continuum", fig)
+        self._save_cached("continuum", P, f"Continuum/{P.grid_save:05d}")
         P.grid_save += 1
 
     def draw_material_points(self, L, P, G, name=None):
         x, v, pressure = values(L, "x"), values(L, "v"), values(L, "pressure")
-        fig, axes = plt.subplots(1, 3, figsize=getattr(P.O, "mp_fig_size", (12, 4)), layout="constrained")
+        fig, axes = self._cached_figure("particles", P, G, (1, 3), getattr(P.O, "mp_fig_size", (12, 4)))
         material = np.concatenate([np.full(len(b), i) for i, b in enumerate(L.materials)])
-        for ax, title, data in zip(
-            axes, ("material", "speed", "pressure"), (material, np.linalg.norm(v, axis=1), pressure)
+        for i, (title, data) in enumerate(
+            zip(("material", "speed", "pressure"), (material, np.linalg.norm(v, axis=1), pressure))
         ):
-            points = ax.scatter(x[:, 0], x[:, 1], c=data, s=8)
-            ax.set(title=title, xlim=(P.G.x_m, P.G.x_M), ylim=(P.G.y_m, P.G.y_M), aspect="equal")
-            fig.colorbar(points, ax=ax)
-        self.savefig(P, "MP/" + (str(name) if name else f"{P.mp_save:05d}"))
+            if axes is not None:
+                ax = axes[i]
+                points = ax.scatter(x[:, 0], x[:, 1], c=data, s=8)
+                ax.set(title=title, xlim=(P.G.x_m, P.G.x_M), ylim=(P.G.y_m, P.G.y_M), aspect="equal")
+                fig.colorbar(points, ax=ax)
+            else:
+                points = fig.axes[i].collections[0]
+                points.set_offsets(x[:, :2])
+                self._update_colors(points, data)
+        if axes is not None:
+            self._fix_layout("particles", fig)
+        self._save_cached("particles", P, "MP/" + (str(name) if name else f"{P.mp_save:05d}"))
         P.mp_save += 1
 
     def draw_gamma_dot(self, L, P, G):
@@ -67,7 +123,9 @@ class Plotting:
         plt.figure()
         plt.scatter(x[:, 0], x[:, 1], c=values(L, "gammadot"), s=8)
         plt.colorbar(label="strain rate")
-        self.savefig(P, f"MP/gammadot_{P.mp_save:05d}")
+        index = getattr(P, "gamma_dot_save", 0)
+        self.savefig(P, f"MP/gammadot_{index:05d}")
+        P.gamma_dot_save = index + 1
 
     def draw_gsd_mp(self, L, P, G):
         x = values(L, "x")
@@ -77,7 +135,9 @@ class Plotting:
             points = ax.scatter(x[:, 0], x[:, 1], c=phi[:, j], vmin=0, vmax=1, s=8)
             ax.set(title=f"grain class {j}", xlim=(P.G.x_m, P.G.x_M), ylim=(P.G.y_m, P.G.y_M))
             fig.colorbar(points, ax=ax)
-        self.savefig(P, f"GSD/MP_{P.mp_save:05d}")
+        index = getattr(P, "gsd_mp_save", 0)
+        self.savefig(P, f"GSD/MP_{index:05d}")
+        P.gsd_mp_save = index + 1
 
     def draw_gsd_grid(self, L, P, G):
         fig, axes = plt.subplots(1, P.G.ns, squeeze=False, figsize=(4 * P.G.ns, 4), layout="constrained")
@@ -85,7 +145,9 @@ class Plotting:
             mesh = ax.pcolormesh(G.x_plot, G.y_plot, G.phi[:, j].reshape(P.G.ny, P.G.nx), vmin=0, vmax=1)
             ax.set_title(f"grain class {j}")
             fig.colorbar(mesh, ax=ax)
-        self.savefig(P, f"GSD/{P.grid_save:05d}")
+        index = getattr(P, "gsd_grid_save", 0)
+        self.savefig(P, f"GSD/{index:05d}")
+        P.gsd_grid_save = index + 1
 
     def _save(self, P, label, array, counter):
         directory = Path(P.save_dir) / "data"

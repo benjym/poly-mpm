@@ -20,7 +20,7 @@ ARGUMENTS = {
     "bi_vertical_chute": ["2", "11"],
     "francois": ["11"],
     "poly_seg_test": ["22"],
-    "silo": ["11", "2"],
+    "silo": ["11"],
 }
 
 

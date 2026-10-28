@@ -1034,12 +1034,13 @@ wheels = [
 
 [[package]]
 name = "poly-mpm"
-version = "1.0.0"
+version = "1.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "astropy" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "rich" },
     { name = "scipy" },
 ]
 
@@ -1068,6 +1069,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.5.4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.2" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=7.1" },
+    { name = "rich", specifier = ">=15" },
     { name = "scipy", specifier = ">=1.18.1" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=8.2" },
     { name = "twine", marker = "extra == 'release'", specifier = ">=6.2" },

@@ -1,11 +1,38 @@
 from pathlib import Path
 from types import SimpleNamespace as NS
 import numpy as np
+import pytest
 from numpy.testing import assert_allclose
 from conftest import state
 from MPM import run
 from plotting import Plotting
 from initialise import get_parameters
+
+
+@pytest.mark.parametrize("regular_plots", [False, True])
+def test_grain_and_strain_rate_frames_increment_independently(tmp_path, regular_plots):
+    O = NS(
+        plot_material_points=regular_plots,
+        plot_continuum=regular_plots,
+        plot_gsd_mp=True,
+        plot_gsd_grid=True,
+        plot_gamma_dot=True,
+    )
+    P, G, L = state(ns=2, O=O, save_dir=str(tmp_path), savetime=1e-5)
+    # One save-time output and the final output must produce separate frames.
+    run(P, G, L, max_steps=1)
+    assert sorted(p.name for p in (tmp_path / "GSD").glob("MP_*.png")) == [
+        "MP_00000.png",
+        "MP_00001.png",
+    ]
+    assert sorted(p.name for p in (tmp_path / "GSD").glob("[0-9]*.png")) == [
+        "00000.png",
+        "00001.png",
+    ]
+    assert sorted(p.name for p in (tmp_path / "MP").glob("gammadot_*.png")) == [
+        "gammadot_00000.png",
+        "gammadot_00001.png",
+    ]
 
 
 def test_output_flags_and_saved_shapes(tmp_path):
@@ -66,6 +93,52 @@ def test_ball_custom_callback(tmp_path):
     run(P, G, L, max_steps=1)
     assert list((tmp_path / "Continuum").glob("*.png"))
     assert list((tmp_path / "MP").glob("*.png"))
+
+
+def test_reused_plots_refresh_data_colors_and_keep_layout(tmp_path):
+    import matplotlib.pyplot as plt
+
+    P, G, L = state(save_dir=str(tmp_path))
+    run(P, G, L, max_steps=1, output=False)
+    plot = Plotting()
+    managers = plt.get_fignums()
+    plot.draw_continuum(G, P)
+    plot.draw_material_points(L, P, G)
+    figures = {kind: cached[1] for kind, cached in plot._figures.items()}
+    positions = {kind: [ax.get_position().bounds for ax in fig.axes] for kind, fig in figures.items()}
+
+    # Change masks, positions and color ranges, including a constant field.
+    G.valid_nodes[:] = True
+    G.valid_nodes[0] = False
+    G.s_bar[:] = np.linspace(10, 20, len(G.s_bar))
+    for b in L.materials:
+        b.x[:, 0] += 0.1
+        b.v[:, 0] = np.linspace(10, 20, len(b))
+        b.pressure[:] = -50
+    plot.draw_continuum(G, P)
+    plot.draw_material_points(L, P, G)
+
+    # A fresh render must have the same data, masks and normalization as reuse.
+    fresh = Plotting()
+    fresh.draw_continuum(G, P)
+    fresh.draw_material_points(L, P, G)
+    for kind, count in (("continuum", 6), ("particles", 3)):
+        fig = plot._figures[kind][1]
+        assert fig is figures[kind]
+        assert len(fig.axes) == 2 * count
+        assert_allclose([ax.get_position().bounds for ax in fig.axes], positions[kind])
+        for ax, reference in zip(fig.axes[:count], fresh._figures[kind][1].axes[:count]):
+            artist, expected = ax.collections[0], reference.collections[0]
+            assert_allclose(artist.get_array(), expected.get_array())
+            assert np.array_equal(
+                np.ma.getmaskarray(artist.get_array()), np.ma.getmaskarray(expected.get_array())
+            )
+            assert_allclose(artist.get_clim(), expected.get_clim())
+            if kind == "particles":
+                assert_allclose(artist.get_offsets(), expected.get_offsets())
+    assert plt.get_fignums() == managers
+    assert (tmp_path / "Continuum/00001.png").is_file()
+    assert (tmp_path / "MP/00001.png").is_file()
 
 
 def test_constitutive_history_callback(tmp_path):

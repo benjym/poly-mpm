@@ -5,6 +5,10 @@ Inputs are Python modules under ``inputs/``. Each exposes ``Params(args)``;
 ``args[0]`` is the example name and subsequent entries are its CLI arguments.
 The loader imports ``inputs.<name>`` and passes the complete argument list to
 ``Params``. It does not load arbitrary filesystem paths or JSON input files.
+Declare positional arguments in ``inputs.ARGUMENTS`` (in ``inputs/__init__.py``),
+including their converters and help text. The loader validates these before
+constructing ``Params`` and exposes them through ``python MPM.py <name> --help``.
+Inputs without a declaration accept no positional arguments.
 
 A complete minimal input
 ------------------------
@@ -125,6 +129,11 @@ clock. ``MPM.step`` is a lower-level single-step operator: it does not advance
 ``P.t`` or ``P.tstep`` and does not invoke output callbacks.
 
 See :doc:`outputs` for flags, file formats, and the callback interface.
+For finite-domain integration, set ``quadrature='domain'`` and supply each
+material's reference ``domain_size=(width_x,width_y)`` during construction. Its
+product must match ``A``. The :doc:`quadrature` guide and ``domain_column`` input
+show a complete setup; this mode requires a source checkout.
+
 The :doc:`array-conversion` reference gives full array shapes, defaults, and
 current numerical limitations, including fixed particle mass/volume and the
 reconstructed-density diagnostic.

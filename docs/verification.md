@@ -157,6 +157,15 @@ integration remains on the checklist.
 
 ![Operator-isolated force, integration, remapping, and finite-strain error studies](../benchmarks/broader_verification.png)
 
+## Finite-domain integration comparison
+
+The [quadrature guide](quadrature.md) compares point and finite-domain integration
+using these analytical problems. It includes frozen-cloud cell-phase sweeps,
+fixed-step grid refinement, fixed-grid timestep refinement, and particle sampling.
+The comparison report records the actual integration mode and all measured
+levels. Domain integration reduces the tested cell-crossing force defects, while
+hydrostatic balance and geometric gaps remain measurable limitations.
+
 ## Scope
 
 The suite covers elastic equilibrium and large-deformation elasticity, plus

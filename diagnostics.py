@@ -1,7 +1,6 @@
 """Run-time inventories and discrete work accounting; no hidden energy correction."""
 
 import numpy as np
-from interpolation import moment
 
 
 def inventory(P, L):
@@ -26,8 +25,7 @@ def inventory(P, L):
                 ),
                 axis=0,
             )
-            D = moment(b.N, b.offsets)
-            inverse = np.linalg.pinv(D, rcond=1e-12, hermitian=True)
+            _, inverse = b.apic_matrices()
             affine_kinetic += 0.5 * np.sum(b.m * np.einsum("nij,njk,nik->n", B, inverse, B))
         elastic += b.elastic_energy.sum()
         plastic += b.plastic_work.sum()
@@ -117,6 +115,11 @@ class Diagnostics:
         row = dict(
             time=float(P.t + P.dt),
             timestep=int(P.tstep + 1),
+            mechanics=P.mechanics,
+            interpolation=P.interpolation,
+            quadrature=P.quadrature,
+            transfer=P.transfer,
+            maximum_stencil_entries=max((b.N.shape[1] for b in L.materials), default=0),
             **now,
             boundary_mass=float(self.boundary_mass),
             boundary_species=self.boundary_species.tolist(),

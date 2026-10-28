@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -96,6 +96,13 @@ rendering. Repeating a run in the same directory can overwrite its files.</p>
 </pre></div>
 </div>
 </section>
+<section id="example-usage">
+<h2>Example usage<a class="headerlink" href="#example-usage" title="Link to this heading">¶</a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">--help</span></code> to list examples. Add <code class="docutils literal notranslate"><span class="pre">--help</span></code>
+after an example name to see its required arguments, for example
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">bi_dam_break</span> <span class="pre">--help</span></code>. Missing, invalid, and extra
+arguments produce a usage error before simulation setup.</p>
+</section>
 <section id="a-bounded-preview">
 <h2>A bounded preview<a class="headerlink" href="#a-bounded-preview" title="Link to this heading">¶</a></h2>
 <p>Some examples request millions of steps. The CLI takes an example name and its
@@ -124,6 +131,8 @@ history recording. In that mode there will be no saved plots or arrays.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">ball</span></code>: a small first run with elastic material and saved plots.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">modern_ball</span></code>: updated elasticity with quadratic B-splines, APIC, and dynamic
 timestepping. See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Numerical methods</span></a> for configuration and diagnostics.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">domain_column</span></code>: source-checkout example with finite-domain integration,
+quadratic interpolation and APIC; see <a class="reference internal" href="quadrature.html"><span class="doc">Finite-domain quadrature and cell crossing</span></a> for geometry requirements.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">dp_unit_test</span></code> / <code class="docutils literal notranslate"><span class="pre">dp_rate_unit_test</span></code>: Drucker-Prager loading histories;
 full runs have 50,000 / 5,000 steps respectively.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">bi_seg_test</span> <span class="pre">22</span> <span class="pre">2</span> <span class="pre">11</span></code>: segregation at 22 degrees, two grain-size classes,
@@ -179,6 +188,7 @@ example’s status. On Windows, choose a writable output path instead of <code c
 <li class="toctree-l2"><a class="reference internal" href="#install-from-pypi">Install from PyPI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#development-checkout">Development checkout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#first-complete-simulation">First complete simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#a-bounded-preview">A bounded preview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#choosing-an-example">Choosing an example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checking-the-installation">Checking the installation</a></li>
@@ -192,6 +202,7 @@ example’s status. On Windows, choose a writable output path instead of <code c
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>

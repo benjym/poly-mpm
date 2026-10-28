@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -37,7 +37,7 @@
 <h1>Troubleshooting and limitations<a class="headerlink" href="#troubleshooting-and-limitations" title="Link to this heading">¶</a></h1>
 <section id="installation-and-command-errors">
 <h2>Installation and command errors<a class="headerlink" href="#installation-and-command-errors" title="Link to this heading">¶</a></h2>
-<dl class="simple">
+<dl>
 <dt><code class="docutils literal notranslate"><span class="pre">uv</span></code> cannot find the pinned Python</dt><dd><p>Update uv using the installation method you originally used, then retry
 <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--extra</span> <span class="pre">dev</span> <span class="pre">--locked</span></code>. If your platform has no compatible
 interpreter or dependency wheel, inspect that package’s error rather than
@@ -53,9 +53,18 @@ first. <code class="docutils literal notranslate"><span class="pre">python</span
 modules under <code class="docutils literal notranslate"><span class="pre">inputs/</span></code> and expose <code class="docutils literal notranslate"><span class="pre">Params(args)</span></code>. Run the documented
 commands from the checkout root.</p>
 </dd>
-<dt><code class="docutils literal notranslate"><span class="pre">IndexError</span></code> while loading an example</dt><dd><p>Some legacy examples access positional arguments directly. Check the
-<a class="reference internal" href="array-conversion.html"><span class="doc">example matrix</span></a> and supply every listed argument in
-order. Arguments are specific to the chosen input.</p>
+<dt>An example reports a usage error</dt><dd><p>Run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">--help</span></code> to list examples, or
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">&lt;example&gt;</span> <span class="pre">--help</span></code> for its argument order,
+types, and choices. Missing, invalid, and extra arguments are rejected before
+setup. The Python loader raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> for these errors. Check the
+<a class="reference internal" href="array-conversion.html"><span class="doc">example matrix</span></a> for runnable commands.</p>
+<p>For the square drum, use
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">bi_square_drum</span> <span class="pre">11</span> <span class="pre">2</span></code>. The arguments are the
+number of grid nodes per side (at least 3) and the finite, positive Froude
+number. For <code class="docutils literal notranslate"><span class="pre">bi_dam_break</span></code>, the arrangement must be <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">bot</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">mix</span></code>. Grain size class counts must be at least two. <code class="docutils literal notranslate"><span class="pre">silo</span></code> accepts only
+its grid node count: use <code class="docutils literal notranslate"><span class="pre">silo</span> <span class="pre">11</span></code>; its two size classes are fixed, and the
+formerly documented trailing <code class="docutils literal notranslate"><span class="pre">2</span></code> was ignored.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">Unsupported</span> <span class="pre">material</span> <span class="pre">law</span></code></dt><dd><p>Check the exact registry name and <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive models</span></a>. The retired
 <code class="docutils literal notranslate"><span class="pre">elastic_time</span></code>, <code class="docutils literal notranslate"><span class="pre">ken_kamrin</span></code>, and <code class="docutils literal notranslate"><span class="pre">ken_simple</span></code> implementations are not
@@ -160,6 +169,7 @@ different levels of evidence. Choose the evidence required for your application.
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>

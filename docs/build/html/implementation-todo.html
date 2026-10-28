@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -87,13 +87,21 @@ manufactured dynamics with analytical references and regression checks.</p></li>
 <li><p>[x] Separate dynamic grid/timestep studies, particle-quadrature studies, frozen
 exact-state force checks, fixed-cloud remaps, and prescribed affine patches.</p></li>
 <li><p>[x] Present-tense user documentation with measured verification limits.</p></li>
+<li><p>[x] Optional finite-domain integration for linear/quadratic bases, including
+F-convected rectangles, exact knot-split integration, periodic seams and
+explicit rejection of inadmissible wall geometry/support.</p></li>
+<li><p>[x] Shared integration weights/gradients for force, strain, APIC, diagnostics and
+segregation; conservation, power pairing and geometry/inlet/outlet checks.</p></li>
+<li><p>[x] Controlled point/domain cell-phase and grid-refinement comparisons, plus a
+runnable <code class="docutils literal notranslate"><span class="pre">domain_column</span></code> example and integration-mode diagnostics.</p></li>
 </ul>
 </section>
 <section id="acceptance-evidence">
 <h2>Acceptance evidence<a class="headerlink" href="#acceptance-evidence" title="Link to this heading">¶</a></h2>
 <p>The regression suite includes <code class="docutils literal notranslate"><span class="pre">tests/test_modern_solver.py</span></code> and
 <code class="docutils literal notranslate"><span class="pre">tests/test_broader_verification.py</span></code>. Source-fingerprinted reports in
-<code class="docutils literal notranslate"><span class="pre">benchmarks/verification.json</span></code> and <code class="docutils literal notranslate"><span class="pre">benchmarks/broader_verification.json</span></code> cover
+<code class="docutils literal notranslate"><span class="pre">benchmarks/verification.json</span></code>, <code class="docutils literal notranslate"><span class="pre">benchmarks/broader_verification.json</span></code> and
+<code class="docutils literal notranslate"><span class="pre">benchmarks/quadrature_verification.json</span></code> cover
 complete example runs, standing waves, equilibrium, finite strain, and operator
 controls. The <a class="reference internal" href="verification.html"><span class="std std-doc">verification guide</span></a> explains measured errors and
 non-monotone levels. Distribution builds and strict HTML documentation checks
@@ -104,14 +112,16 @@ experimental validation and application calibration remain separate tasks.</p>
 <h2>Deferred implementation backlog<a class="headerlink" href="#deferred-implementation-backlog" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>[ ] Establish coverage thresholds after reviewing the first Codecov baseline.</p></li>
-<li><p>[ ] Control distorted-particle quadrature/cell-crossing force errors; demonstrate
-spatial convergence beyond the two-particles-per-axis sampling regime.</p></li>
+<li><p>[ ] Control remaining gaps/overlaps of independently convected domains, and
+verify convergence for broader nonuniform deformation and material interfaces.</p></li>
 <li><p>[ ] Well-balanced hydrostatics with quadratic interpolation on general particle clouds.</p></li>
 <li><p>[ ] Higher-order position integration consistent with deformation/stress evolution;
 isolate timestep accuracy from the number of remaps.</p></li>
 <li><p>[ ] Broader application benchmarks and experimental validation.</p></li>
-<li><p>[ ] Benchmark-driven assessment of GIMP/CPDI or higher-order interpolation,
-if quadratic boundary/interior accuracy is insufficient.</p></li>
+<li><p>[ ] Assess shared-corner/topology tracking or alternative quadrature against the
+remaining geometric integration defects.</p></li>
+<li><p>[ ] Profile and accelerate rotated/sheared polygon integration while retaining
+the exact reference path and its conservation checks.</p></li>
 <li><p>[ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.</p></li>
 <li><p>[ ] Curved rigid boundaries, contact reactions, friction and separate body fields.</p></li>
 <li><p>[ ] Implicit/quasistatic solver and constitutive consistent tangents.</p></li>
@@ -157,6 +167,7 @@ if quadratic boundary/interior accuracy is insufficient.</p></li>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Solver implementation checklist</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#implemented-capabilities">Implemented capabilities</a></li>

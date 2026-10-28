@@ -219,6 +219,22 @@ class Grid:
         self.force_scaling_work = float(np.sum(scaling[unique] * midpoint[unique]))
 
     def calculate_gradient(self, P, G, Z, smooth=False):
+        if not smooth:
+            values = Z.reshape(P.G.ny, P.G.nx)
+            valid = ~(G.m <= P.M_tol).reshape(P.G.ny, P.G.nx)
+            dy, dx = np.gradient(values, G.dy, G.dx)
+            # A central difference needs the two neighbouring values, even
+            # when the centre itself is empty. Edge differences need both
+            # endpoints. This matches the masked-array free-surface stencil.
+            for derivative, axis in ((dy, 0), (dx, 1)):
+                out = np.moveaxis(derivative, axis, 0)
+                active = np.moveaxis(valid, axis, 0)
+                out[1:-1] = np.where(active[:-2] & active[2:], out[1:-1], 0)
+                out[0] = np.where(active[0] & active[1], out[0], 0)
+                out[-1] = np.where(active[-2] & active[-1], out[-1], 0)
+                # Masked division also masks nonfinite derivative results.
+                out[~np.isfinite(out)] = 0
+            return np.column_stack((dx.ravel(), dy.ravel(), np.zeros_like(G.m)))
         # Preserve masked free-surface differences; explicitly fill masked output
         # rather than exposing the arbitrary backing values of a masked array.
         values = np.ma.masked_where(G.m <= P.M_tol, Z).reshape(P.G.ny, P.G.nx)

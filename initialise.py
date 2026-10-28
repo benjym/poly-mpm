@@ -1,6 +1,7 @@
 """Input compatibility, defaults, and construction of the array solver."""
 
 from importlib import import_module
+from inputs import validate_arguments
 import numpy as np
 from constit import get_law
 from grid import Grid
@@ -54,6 +55,8 @@ def prepare(P, mode="simulation"):
         timestep_policy="report",
         mechanics="updated",
         interpolation="linear",
+        quadrature="point",
+        domain_max_support=256,
         transfer="flip",
         pic_fraction=0.0,
         diagnostics=True,
@@ -76,6 +79,12 @@ def prepare(P, mode="simulation"):
         raise ValueError("mechanics must be updated or legacy")
     if P.interpolation not in ("linear", "quadratic"):
         raise ValueError("interpolation must be linear or quadratic")
+    if P.quadrature not in ("point", "domain"):
+        raise ValueError("quadrature must be point or domain")
+    if P.quadrature == "domain" and P.mechanics != "updated":
+        raise ValueError("domain quadrature requires updated mechanics")
+    if int(P.domain_max_support) != P.domain_max_support or P.domain_max_support < 4:
+        raise ValueError("domain_max_support must be an integer >= 4")
     if P.transfer not in ("flip", "pic", "apic"):
         raise ValueError("transfer must be flip, pic, or apic")
     if not np.isfinite(P.pic_fraction) or not 0 <= P.pic_fraction <= 1:
@@ -164,12 +173,13 @@ def prepare(P, mode="simulation"):
 
         original_controller = P.update_timestep
 
-        def controlled_step(P, G):
+        def controlled_step(P, G, *, _limit_cache=None):
             original_controller(P, G)
-            restrictions = limits(P, G, L)
+            restrictions = limits(P, G, L, cache=_limit_cache)
             if restrictions:
                 P.dt = min(P.dt, min(restrictions.values()))
 
+        controlled_step._uses_limit_cache = True
         P.update_timestep = controlled_step
     from diagnostics import Diagnostics
 
@@ -181,7 +191,6 @@ def prepare(P, mode="simulation"):
 
 
 def get_parameters(params):
-    if not params:
-        raise ValueError("usage: python MPM.py <example> [arguments...]")
+    validate_arguments(params)
     module = import_module("inputs." + params[0])
     return prepare(module.Params(params), params[0])

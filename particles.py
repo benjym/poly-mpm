@@ -4,8 +4,9 @@ from copy import copy
 import numpy as np
 from constit import EYE, ALGEBRAIC, FLUIDS, get_law, validate_material, update_stress
 from transfers import scatter, divide, gather, nodal_velocity
-from interpolation import SIZES, stencil, moment, affine_matrix
+from interpolation import SIZES, stencil, moment
 from kinematics import advance
+from quadrature import domain_stencil
 
 
 def field(value, shape, name):
@@ -59,7 +60,7 @@ class Particles:
         "elastic_strain",
         "plastic_strain",
     )
-    persistent_fields = ("x", "v", "x0", "phi") + scalar_fields + tensor_fields
+    persistent_fields = ("x", "v", "x0", "phi", "domain_halfsize") + scalar_fields + tensor_fields
 
     def __init__(self, P, G, material=None, material_id=0):
         self.material = material if material is not None else P.S
@@ -68,6 +69,7 @@ class Particles:
         self.law = get_law(S.law, P.mechanics)
         self.interpolation = P.interpolation
         self.transfer = P.transfer
+        self.quadrature = P.quadrature
         validate_material(S, P.mechanics)
         count = int(S.n)
         if count < 0 or count != S.n:
@@ -96,6 +98,20 @@ class Particles:
         self.V = field(S.A, (count,), "A") * P.G.thickness
         self.m = self.rho * self.V
         self.V0 = self.V.copy()
+        self.domain_halfsize = np.zeros((count, 2))
+        if self.quadrature == "domain":
+            if not hasattr(S, "domain_size"):
+                raise ValueError(
+                    "domain quadrature requires material.domain_size (reference widths in x and y)"
+                )
+            size = field(S.domain_size, (count, 2), "domain_size")
+            if np.any(size <= 0) or not np.allclose(
+                np.prod(size, axis=1) * P.G.thickness, self.V0, rtol=1e-12, atol=0
+            ):
+                raise ValueError("domain_size widths must be positive and their area must match material.A")
+            if np.any(self.v[:, 2] != 0):
+                raise ValueError("domain quadrature requires planar velocity (v_z=0)")
+            self.domain_halfsize = 0.5 * size
         self.J.fill(1.0)
         if np.any(self.rho <= 0) or np.any(self.V <= 0):
             raise ValueError("initial density and volume must be positive")
@@ -145,6 +161,7 @@ class Particles:
         self.n_star = np.zeros(count, dtype=np.intp)
         self.n = np.zeros((count, support), dtype=np.intp)
         self.L = np.zeros((count, 3, 3))
+        self._apic_matrices = None
         self.material.n = count
 
     @property
@@ -265,15 +282,32 @@ class Particles:
         self.n_star = cell[:, 0] + cell[:, 1] * P.G.nx
 
     def get_basis_functions(self, P, G):
-        self.n, self.N, self.G, self.offsets = stencil(self.x, P, G)
+        if self.quadrature == "domain":
+            self.n, self.N, self.G, self.offsets = domain_stencil(self.x, self.F, self.domain_halfsize, P, G)
+        else:
+            self.n, self.N, self.G, self.offsets = stencil(self.x, P, G)
+        self._apic_matrices = None
+
+    def apic_matrices(self):
+        """Reuse the support moment and its pseudoinverse until the stencil changes.
+
+        Cache geometry only: affine momentum changes during grid-to-particle
+        transfer, so the corresponding affine velocity must still be recomputed.
+        Particle removal/injection invalidates this cache through _scratch().
+        """
+        if self._apic_matrices is None:
+            D = moment(self.N, self.offsets)
+            self._apic_matrices = (D, np.linalg.pinv(D, rcond=1e-12, hermitian=True))
+        return self._apic_matrices
 
     def get_nodal_mass_momentum(self, P, G):
         weight = self.N * self.m[:, None]
         scatter(G.m, self.n, weight)
         velocity = self.v[:, None, :]
         if self.transfer == "apic" and self.material.law != "rigid":
-            C = affine_matrix(self.affine_momentum, self.N, self.offsets)
-            residual = self.affine_momentum - C @ moment(self.N, self.offsets)
+            D, inverse = self.apic_matrices()
+            C = self.affine_momentum @ inverse
+            residual = self.affine_momentum - C @ D
             if np.any(
                 np.linalg.norm(residual, axis=(1, 2))
                 > 256
@@ -295,12 +329,14 @@ class Particles:
         if P.mechanics == "updated" and np.any(coverage < 1 - 1e-8):
             raise FloatingPointError("incomplete particle grid support; check M_tol and particle mass")
         velocity = nodal_velocity(G, P)[self.n]
+        if self.quadrature == "domain" and np.any(np.abs(velocity[:, :, 2]) > 1e-12):
+            raise ValueError("domain quadrature requires planar grid motion")
         if P.mechanics == "updated":
             resolved = G.valid_nodes[self.n]
             center_velocity = np.einsum("nr,nri->ni", self.N, velocity)
             fallback = np.broadcast_to(center_velocity[:, None, :], velocity.shape).copy()
             if self.transfer == "apic":
-                C = affine_matrix(self.affine_momentum, self.N, self.offsets)
+                C = self.affine_momentum @ self.apic_matrices()[1]
                 fallback += np.einsum("nij,nrj->nri", C, self.offsets)
             velocity = np.where(resolved[:, :, None], velocity, fallback)
             self.gradient_support_missing = np.sum(
@@ -351,6 +387,8 @@ class Particles:
             self.x += P.dt * self.v
         else:
             velocity = nodal_velocity(G, P)
+            if self.quadrature == "domain" and np.any(np.abs(velocity[G.valid_nodes, 2]) > 1e-12):
+                raise ValueError("domain quadrature requires planar grid motion")
             pic = gather(velocity, self.n, self.N, G.valid_nodes)
             if self.transfer == "apic":
                 if np.any(np.abs(pic[:, 2]) > 1e-12):
@@ -501,9 +539,14 @@ class ParticleSystem:
                     S.X = np.array([(P.G.x_M - P.G.x_m) / 2])
                     S.Y = np.array([P.G.y_M - template.gap[1]])
                 S.n = len(S.X)
-                for name in ("rho", "A", "initial_v", "PHI", "phi"):
+                for name in ("rho", "A", "initial_v", "PHI", "phi", "domain_size"):
                     value = getattr(S, name, None)
-                    uniform_shape = {"initial_v": (3,), "phi": (P.G.ns,), "PHI": (P.G.ns,)}.get(name, ())
+                    uniform_shape = {
+                        "initial_v": (3,),
+                        "phi": (P.G.ns,),
+                        "PHI": (P.G.ns,),
+                        "domain_size": (2,),
+                    }.get(name, ())
                     if value is not None and np.asarray(value).shape != uniform_shape:
                         raise ValueError(f"inlet {name} must be uniform per material")
                 batch.append(Particles(P, G, S, batch.material_id))

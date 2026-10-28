@@ -9,7 +9,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
     <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
     <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
-    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/documentation_options.js?v=292eb321"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -47,6 +47,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#install-from-pypi">Install from PyPI</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#development-checkout">Development checkout</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#first-complete-simulation">First complete simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#a-bounded-preview">A bounded preview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#choosing-an-example">Choosing an example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#checking-the-installation">Checking the installation</a></li>
@@ -86,9 +87,17 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#deformation-and-physical-density">Deformation and physical density</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#stress-and-work-conventions">Stress and work conventions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#interpolation-and-physical-boundaries">Interpolation and physical boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#particle-quadrature">Particle quadrature</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#matched-apic-transfers">Matched APIC transfers</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#timestep-estimates-and-diagnostics">Timestep estimates and diagnostics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#evidence-and-limits">Evidence and limits</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quadrature.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quadrature.html#integration-and-conservation">Integration and conservation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quadrature.html#verification-results">Verification results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quadrature.html#scope-and-remaining-work">Scope and remaining work</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a><ul>
@@ -97,6 +106,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <li class="toctree-l2"><a class="reference internal" href="verification.html#translated-stressed-bodies">Translated stressed bodies</a></li>
 <li class="toctree-l2"><a class="reference internal" href="verification.html#finite-strain-manufactured-dynamics">Finite-strain manufactured dynamics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="verification.html#pure-transfer-and-time-integration-controls">Pure transfer and time-integration controls</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#finite-domain-integration-comparison">Finite-domain integration comparison</a></li>
 <li class="toctree-l2"><a class="reference internal" href="verification.html#scope">Scope</a></li>
 </ul>
 </li>
@@ -143,7 +153,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-integrators">Segregation operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-plotting">Output adapters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-interpolation">Interpolation and affine transfer geometry</a></li>
-<li class="toctree-l2"><a class="reference internal" href="code.html#module-kinematics">Deformation and volume evolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.html#module-quadrature">Deformation and volume evolution</a></li>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-diagnostics">Diagnostics and timestep estimates</a></li>
 </ul>
 </li>
@@ -186,6 +196,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Numerical methods</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quadrature.html">Finite-domain quadrature and cell crossing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="verification.html">Verification and error studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="releasing.html">Building and publishing packages</a></li>
