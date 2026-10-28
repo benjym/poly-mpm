@@ -30,3 +30,12 @@ def test_mechanics_operator_on_actual_metal_device():
         report = validate_mechanics(runtime)
     failures = [row for row in report["cases"] if row["status"] != "passed"]
     assert not failures, failures
+
+
+def test_resident_solver_on_actual_metal_device():
+    from mpm_gpu.validate import validate_solver
+
+    with MetalRuntime() as runtime:
+        report = validate_solver(runtime)
+    failures = [row for row in report["cases"] if row["status"] != "passed"]
+    assert not failures, failures

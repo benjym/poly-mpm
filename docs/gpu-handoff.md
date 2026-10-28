@@ -53,9 +53,17 @@ Gate 2 (mechanics kernels) passed (`benchmarks/metal_mechanics_m4.json`).
 operator, preconditioner, exact local Coulomb solve (`coulomb_local`, for reuse
 in the solver's colored sweeps), transfers and deformation;
 `mpm_gpu/mechanics_checks.py` compares them with FP64 CPU states from
-`mpm_gpu/fixtures.py`. Each encoder currently allocates its outputs; the solver
-and runner should preallocate workspaces. Gate 3 (resident nonlinear solver) is
-next; `--stage all` exits 3 with solver and runner `not_implemented`.
+`mpm_gpu/fixtures.py`.
+
+Gate 3 (resident nonlinear solver) passed (`benchmarks/metal_solver_m4.json`).
+`mpm_gpu/solver.py` and `shaders/solver.slang` implement the device-controlled
+solve; `mpm_gpu/solver_checks.py` checks it against `solve_velocity` and FP64
+references, including failure paths. `Solver` preallocates every workspace and
+`primitives.Reduction` is a preallocated reduction. The mechanics encoders
+(`assemble`, `preconditioner`, `p2g`) still allocate their outputs on each call
+and must be moved to preallocated workspaces for the runner. The packing gap
+and occupancy are still computed on the CPU. Gate 4 (runner and science
+validation) is next; `--stage all` exits 3 with the runner `not_implemented`.
 
 ## First action on the target Mac
 
@@ -89,10 +97,10 @@ POLY_MPM_TEST_METAL=1 uv run --locked --extra gpu --extra dev python -m pytest t
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 uv run --locked --extra gpu --extra dev python -m pytest -q
 ```
 
-`--stage runtime` should exit 0 with status `passed`. At this checkpoint,
-`--stage all` runs the runtime gate but then exits 3 and labels mechanics,
-solver and runner `not_implemented`. That is an implementation status, not a
-hardware failure or permission to mark the whole port validated.
+`--stage runtime`, `--stage mechanics` and `--stage solver` should exit 0 with
+status `passed`. At this checkpoint `--stage all` runs those three gates, then
+exits 3 and labels the runner `not_implemented`. That is an implementation
+status, not a hardware failure or permission to mark the whole port validated.
 
 ## What is already written
 
@@ -100,16 +108,18 @@ hardware failure or permission to mark the whole port validated.
 | --- | --- |
 | `mpm_gpu/runtime.py` | Lazy SlangPy import, explicit Metal device, compiler/platform checks, kernel cache, scalar buffers, dispatch/barriers and transfer accounting; indirect dispatch and timestamps are kept only for capability probes |
 | `mpm_gpu/shaders/primitives.slang` | Ten entry points: fill, histogram, tiled scan, scan offsets, scatter, reduction, guarded marker, device dispatch arguments and indirect marker (capability probe only) and ABI probe |
-| `mpm_gpu/primitives.py` | Hierarchical scans/reductions and histogram → scan → scatter; intermediate buffers remain on device |
+| `mpm_gpu/primitives.py` | Hierarchical scans/reductions, a preallocated `Reduction` and histogram → scan → scatter; intermediate buffers remain on device |
 | `mpm_gpu/topology.py` | Static canonical Q1 neighbors, transpose incidence, conflict colors, split cell/fraction coordinates |
 | `mpm_gpu/config.py` | Backend defaults, supported configuration validation and temporary runner guard |
+| `mpm_gpu/mechanics.py`, `shaders/mechanics.slang` | Compact operator, preconditioner, exact local Coulomb solve, transfers and deformation (gate 2) |
+| `mpm_gpu/solver.py`, `shaders/solver.slang` | Resident sweeps, residual, Anderson (TSQR, Jacobi SVD) and Newton/GMRES with device control (gate 3) |
+| `mpm_gpu/fixtures.py`, `mechanics_checks.py`, `solver_checks.py` | FP64 CPU reference states and the gate 2 and 3 checks |
 | `mpm_gpu/validate.py` | JSON hardware-gate reports and 10k/100k binning benchmarks |
 | `tests/test_gpu_contract.py` | CPU-verifiable packaging, topology, coordinates, configuration and error-report contracts |
-| `tests/test_gpu_hardware.py` | Actual Metal runtime gate, opt-in via environment variable; unavailable hardware fails when explicitly requested |
+| `tests/test_gpu_hardware.py` | Actual Metal runtime, mechanics and solver gates, opt-in via environment variable; unavailable hardware fails when explicitly requested |
 
-No mechanics shaders, device nonlinear solver, GPU runner, GPU diagnostic
-adapter or snapshot integration have been implemented. The validation stages
-for those components must be implemented as those components are added.
+No GPU runner, GPU diagnostic adapter or snapshot integration has been
+implemented. The runner validation stage must be implemented with it.
 
 ## Numerical references and next implementation work
 
@@ -122,8 +132,8 @@ reference, and `granular_mixed.py:GradientOperator`, `diagonal_coulomb` and
 Our nodal-stress rigid-grain model is an adaptation, not the paper's complete
 constitutive model/discretization. P0 remains outside the first GPU release.
 
-Implement the mechanics gate next, then the solver, then runner integration,
-following the order and quantitative acceptance criteria in [gpu.md](gpu.md).
+The mechanics and solver gates have passed; runner integration is next,
+following the quantitative acceptance criteria in [gpu.md](gpu.md).
 The following details are easy to miss:
 
 - Assemble two integrated gradient components per stress/velocity pair using

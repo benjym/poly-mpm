@@ -34,9 +34,12 @@ def fingerprint():
         "mechanics.py",
         "mechanics_checks.py",
         "fixtures.py",
+        "solver.py",
+        "solver_checks.py",
         "validate.py",
         "shaders/primitives.slang",
         "shaders/mechanics.slang",
+        "shaders/solver.slang",
     ]
     return {name: hashlib.sha256(root.joinpath(name).read_bytes()).hexdigest() for name in names}
 
@@ -48,6 +51,14 @@ def cpu_checks():
     mechanics = resources.files("mpm_gpu.shaders").joinpath("mechanics.slang").read_text()
     require(
         "void assemble_gradients" in mechanics and "void apply_bt" in mechanics, "mechanics shader missing"
+    )
+    solver = resources.files("mpm_gpu.shaders").joinpath("solver.slang").read_text()
+    require(
+        all(
+            f"void {entry}" in solver
+            for entry in ("sweep_color", "tsqr_tile", "anderson_solve", "gmres_givens")
+        ),
+        "solver shader missing",
     )
     from types import SimpleNamespace
     from .config import defaults
@@ -346,17 +357,27 @@ def validate_runtime(rt, *, benchmark=False):
     )
 
 
-def validate_mechanics(rt):
-    from .mechanics_checks import PENDING, cases
-
+def _validate_cases(module, rt):
     results = []
-    for name, check in cases(rt):
+    for name, check in module.cases(rt):
         _case(results, name, check)
     if any(r["status"] != "passed" for r in results):
         status = "failed"
     else:
-        status = "partial" if PENDING else "passed"
-    return dict(status=status, cases=results, pending=list(PENDING))
+        status = "partial" if module.PENDING else "passed"
+    return dict(status=status, cases=results, pending=list(module.PENDING))
+
+
+def validate_mechanics(rt):
+    from . import mechanics_checks
+
+    return _validate_cases(mechanics_checks, rt)
+
+
+def validate_solver(rt):
+    from . import solver_checks
+
+    return _validate_cases(solver_checks, rt)
 
 
 def main(argv=None):
@@ -392,11 +413,14 @@ def main(argv=None):
                 report["environment"] = rt.environment
                 report["startup_seconds"] = rt.startup_seconds
                 report["stages"]["runtime"] = validate_runtime(rt, benchmark=args.benchmark)
-                requested = (
-                    () if args.stage == "runtime" else STAGES[1:] if args.stage == "all" else (args.stage,)
-                )
-                if "mechanics" in requested and report["stages"]["runtime"]["status"] == "passed":
-                    report["stages"]["mechanics"] = validate_mechanics(rt)
+                # A stage runs only after every preceding stage has passed.
+                last = len(STAGES) if args.stage == "all" else STAGES.index(args.stage) + 1
+                requested = STAGES[1:last]
+                previous = report["stages"]["runtime"]["status"]
+                for stage, validate in (("mechanics", validate_mechanics), ("solver", validate_solver)):
+                    if stage in requested and previous == "passed":
+                        report["stages"][stage] = validate(rt)
+                        previous = report["stages"][stage]["status"]
                 report["accounting"] = rt.metrics()
             statuses = [stage["status"] for stage in report["stages"].values()]
             if "failed" in statuses:

@@ -80,8 +80,10 @@ POLY_MPM_TEST_METAL=1 python -m pytest tests/test_gpu_hardware.py -q
 
 An explicitly requested but unavailable GPU fails rather than skipping.
 
-`--stage all` is accepted now. It runs the runtime gate and records subsequent
-stages as `not_implemented`; its exit code is 3 after a successful runtime gate.
+`--stage all` runs the runtime, mechanics and solver gates and records the
+runner as `not_implemented`; its exit code is 3 after those gates pass. A
+single `--stage` also runs every preceding stage, and a stage runs only after
+the previous one has passed.
 Exit 0 means the requested implemented gate passed (or explicitly requested CPU
 checks passed); exit 1 means failure/unavailable; argument errors use exit 2.
 A runtime result cannot certify mechanics or solver convergence.
@@ -154,15 +156,62 @@ independent and avoid a CPU solver fallback.
      status bit and leave the particle unchanged.
 
    Stress, work and diagnostic updates are part of runner integration (gate 4).
-3. **Resident nonlinear solver.** Colored contact sweeps and exact velocity
-   refresh; natural residual with positive gaps excluded from scaling; Anderson
-   memory 12 with hierarchical TSQR and device-side Jacobi SVD; matrix-free
-   Newton/GMRES restart 64, four cycles, two-pass orthogonalization and device
-   Givens/Hessenberg control; safeguarded full-residual acceptance. All histories,
-   small linear algebra and convergence/acceptance state stay on the device.
-   Explicit failure on exhausted budgets, nonfinite values and unsupported
-   constraints. Cover rank-deficient histories, GMRES breakdown, candidate
-   rejection and nonconvergence, not just successful solves.
+3. **Resident nonlinear solver (passed on Apple M4).** Report:
+   `benchmarks/metal_solver_m4.json` (`python -m mpm_gpu.validate --stage solver`,
+   which runs the runtime and mechanics stages first). The solver
+   (`mpm_gpu/solver.py`, `shaders/solver.slang`) follows `solve_velocity`:
+   colored Gauss-Seidel sweeps with the exact local solve, an exact velocity
+   refresh after every sweep, the dimensionless maximum block Euclidean natural
+   residual with positive normal gaps excluded from the scaling, Anderson
+   acceleration with 12 differences and matrix-free Newton every 25 sweeps when
+   the residual lies between the tolerance and `1e-3`.
+   - Control: the host encodes batches of 25 sweeps and reads a 64-byte state
+     record after each one. Each kernel reads a device flag word and returns
+     when its gate is closed; single-thread kernels make every scalar decision
+     (convergence, budget, acceptance, history length, Krylov termination). A
+     Newton batch is encoded only when the device has set its request flag.
+     Every workspace is allocated when the solver is constructed; a repeated
+     solve allocates no device memory.
+   - Sweeps: rows of one static Q1 color share no velocity node, so each row
+     updates its own nodes' velocities without atomics. Colors come from the
+     static topology (9 on walls, up to 12 with periodic x), not from the
+     CPU's mass-dependent greedy coloring, so the iteration order differs from
+     the CPU.
+   - Anderson: the 13 × 13 R factor of `[df | f]` comes from Householder TSQR
+     over 256-row tiles, reduced level by level (four levels at 108,300
+     unknowns). A one-sided Jacobi SVD of `R_df` gives the minimum-norm fit,
+     with singular values below `1e-5` of the largest discarded (the FP64
+     reference uses `1e-10`). Candidates are projected to feasibility and
+     accepted only on a decrease of the full residual.
+   - Newton: GMRES(64) for up to four cycles from `x = 0` with `rtol = 1e-5`,
+     two classical Gram-Schmidt passes, Givens rotations and back substitution
+     on the device, then backtracking `1, .5, .25, .125` on the unprojected
+     candidate. An accepted step clears the Anderson history.
+   - Results: on ten wall and periodic columns, static and with random particle
+     motion (up to 651 stress rows), every solve reached `1e-4`. The
+     independent FP64 frozen natural residual of the device contact stress was
+     at most 9.0e-5; velocities agree with the CPU solve at `1e-9` to 1.3e-4 of
+     the largest speed. A warm start from the converged stress needs no sweeps.
+     The device natural residual and generalized Jacobian-vector product agree
+     with the FP64 Newton block to 1.8e-6 and 1.4e-7, with identical frozen
+     branches. Anderson coefficients agree with FP64 `lstsq` to at most
+     2.9e-5, including rank-deficient and short histories.
+   - Newton paths: one accepted step (FP64 residual 7.8e-5 to 4.4e-6) and one
+     rejected step whose candidates all raise the FP64 residual, in agreement
+     with the device decision. Device corrections have FP64 linear residuals of
+     1.5e-5 and 4.0e-4 at the device's frozen branch. GMRES also converges in
+     one step for `J = I`, and for `J = 0` records a breakdown, makes no
+     correction and rejects the unchanged candidate.
+   - Explicit failures: an exhausted sweep budget (status 256), a nonfinite
+     trial velocity (status 2) and compression with no free velocity
+     (status 128) are reported as unconverged, and `SolveResult.require()`
+     raises.
+
+   The device scatter leaves the order within a cell bin unspecified, so FP32
+   gradient sums, and with them the iteration path, vary between runs at
+   rounding level. The same moving wall fixture took between 112 and 155 sweeps
+   over five runs; every run converged. The packing gap was computed on the CPU for
+   these checks; computing it on the device is part of gate 4.
 4. **Runner and science validation.** Preserve full timestep ordering, stress,
    work and diagnostics; reduce scalar records on device; snapshot NumPy arrays
    at output times and final return, and on standalone `step()`. Preserve plots,

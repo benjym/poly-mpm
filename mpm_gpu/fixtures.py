@@ -35,6 +35,7 @@ def column(
     P.S.n, P.S.A = x.size, s**2
     P.dt = 0.005
     P.granular_solver = "velocity"
+    P.granular_max_nodes = 10**6  # CPU prototype guard; the fixtures exceed it
     P.transfer, P.pic_fraction = transfer, pic_fraction
     if periodic:
         P.B.has_left = P.B.has_right = False

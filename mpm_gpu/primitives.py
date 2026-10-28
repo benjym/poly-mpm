@@ -106,3 +106,41 @@ def reduce(runtime, encoder, source, count, *, operation="sum", status=None):
         if groups == 1:
             return result, status, retained
         source, count = result, groups
+
+
+class Reduction:
+    """Preallocated hierarchical FP32 reduction, so re-encoding allocates nothing.
+
+    The result is element 0 of `result`. Nonfinite inputs set status bit 2 in
+    whichever status buffer is passed to encode().
+    """
+
+    def __init__(self, runtime, count, *, operation="max"):
+        if operation not in ("sum", "max", "min"):
+            raise ValueError("operation must be sum, max or min")
+        self.runtime, self.count = runtime, check_count(count)
+        self.operation = ("sum", "max", "min").index(operation)
+        self.levels = []
+        while True:
+            groups = (count + TILE - 1) // TILE
+            self.levels.append((count, runtime.buffer(count=groups, dtype=np.float32)))
+            if groups == 1:
+                break
+            count = groups
+        self.result = self.levels[-1][1]
+
+    def encode(self, encoder, source, status):
+        for count, output in self.levels:
+            groups = (count + TILE - 1) // TILE
+            self.runtime.dispatch(
+                encoder,
+                "reduce_tiles",
+                groups * TILE,
+                count=count,
+                operation=self.operation,
+                input=source,
+                output=output,
+                status=status,
+            )
+            source = output
+        return self.result

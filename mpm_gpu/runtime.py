@@ -208,6 +208,12 @@ class MetalRuntime:
         self.accounting.readback_seconds += perf_counter() - started
         return result
 
+    def write(self, buffer, data, dtype):
+        """Synchronous host upload into an existing buffer (tests and set-up only)."""
+        data = np.ascontiguousarray(data, dtype=dtype).ravel()
+        buffer.copy_from_numpy(data)
+        self.accounting.uploaded_bytes += data.nbytes
+
     def timestamps(self, pool):
         started = perf_counter()
         ticks = pool.get_results(0, 2)
