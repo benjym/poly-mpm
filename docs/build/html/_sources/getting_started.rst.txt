@@ -1,8 +1,25 @@
 Getting started
 ===============
 
-Requirements and installation
------------------------------
+Install from PyPI
+-----------------
+
+The published package requires Python 3.14 or later. Create a virtual environment
+and install with pip::
+
+    python3.14 -m venv .venv
+    source .venv/bin/activate
+    python -m pip install poly-mpm
+    poly-mpm ball
+
+On Windows, use ``py -3.14 -m venv .venv`` and activate with
+``.venv\Scripts\Activate.ps1`` in PowerShell. The installed ``poly-mpm`` command
+runs packaged examples and writes output relative to your working directory.
+For a bounded run, use ``initialise.get_parameters`` and ``MPM.run`` from Python.
+Tests, benchmark modules and documentation sources require a source checkout.
+
+Development checkout
+--------------------
 
 Use a checkout of this repository, Git, and a current version of
 `uv <https://docs.astral.sh/uv/getting-started/installation/>`_. Python 3.14 is the

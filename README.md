@@ -3,6 +3,7 @@
 [![CI](https://github.com/benjym/poly-mpm/actions/workflows/ci.yml/badge.svg)](https://github.com/benjym/poly-mpm/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/benjym/poly-mpm/graph/badge.svg)](https://codecov.io/gh/benjym/poly-mpm)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI](https://img.shields.io/pypi/v/poly-mpm.svg)](https://pypi.org/project/poly-mpm/)
 [![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/downloads/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -10,7 +11,18 @@ A small 2D material point method solver for solid and viscous/granular flow,
 including grain-size segregation. Particle state uses NumPy arrays, with one
 batch per material and a shared regular Cartesian grid.
 
-## Quick start
+## Install from PyPI
+
+With Python 3.14 or later, install in a virtual environment and run an example:
+
+```sh
+python -m pip install poly-mpm
+poly-mpm ball
+```
+
+For development, tests, and benchmark modules, use a source checkout below.
+
+## Source checkout
 
 Use Git and a current version of [uv](https://docs.astral.sh/uv/getting-started/installation/).
 uv can install the pinned Python 3.14.10 interpreter. From a terminal:
@@ -108,7 +120,7 @@ manual, and validates wheel/sdist metadata plus an installed-wheel smoke test.
 The test job uploads `coverage.xml` with `CODECOV_TOKEN`; fork pull requests skip
 the upload because repository secrets are unavailable. Coverage is informational
 until a useful baseline and thresholds have been agreed.
-See the [release checklist](https://github.com/benjym/poly-mpm/blob/main/docs/releasing.md) for the remaining PyPI setup.
+See the [release checklist](https://github.com/benjym/poly-mpm/blob/main/docs/releasing.md) for version-tag and manual publishing instructions.
 
 Choose another writable report path on Windows. The audit runs five bounded
 steps per supported example. See [benchmark instructions](https://github.com/benjym/poly-mpm/blob/main/benchmarks/README.md)

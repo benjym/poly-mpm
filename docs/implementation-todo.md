@@ -32,8 +32,10 @@ passed its stated tests; it is not a guarantee for every application.
 - [x] User guides, input example matrix, rendered manual and regression checks.
 
 - [x] Black formatting, CI formatting/tests/docs/package checks, and Codecov reporting.
-- [x] Manual `pypi.yml` Trusted Publishing workflow matching the configured pending
-      publisher (no GitHub environment); publication requires explicit dispatch.
+- [x] `pypi.yml` Trusted Publishing on version-tag pushes and manual dispatch,
+      with tag/version consistency checks and no GitHub environment.
+- [x] Production PyPI release `1.0.0`, verified with a clean index installation,
+      console entry point and bounded APIC simulation.
 - [x] Hydrostatic equilibrium, translated self-equilibrated stress, and nonlinear
       manufactured dynamics with analytical references and regression checks.
 - [x] Separate dynamic grid/timestep studies, particle-quadrature studies, frozen
@@ -53,8 +55,6 @@ experimental validation and application calibration remain separate tasks.
 
 ## Deferred implementation backlog
 
-- [ ] Choose a release version, review metadata/README rendering, rehearse on
-      TestPyPI if desired, and verify the first production PyPI upload/install.
 - [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
 
 - [ ] Control distorted-particle quadrature/cell-crossing force errors; demonstrate

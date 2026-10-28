@@ -78,8 +78,10 @@ force-driven evolution, boundary and segregation integration checks.</p></li>
 </li>
 <li><p>[x] User guides, input example matrix, rendered manual and regression checks.</p></li>
 <li><p>[x] Black formatting, CI formatting/tests/docs/package checks, and Codecov reporting.</p></li>
-<li><p>[x] Manual <code class="docutils literal notranslate"><span class="pre">pypi.yml</span></code> Trusted Publishing workflow matching the configured pending
-publisher (no GitHub environment); publication requires explicit dispatch.</p></li>
+<li><p>[x] <code class="docutils literal notranslate"><span class="pre">pypi.yml</span></code> Trusted Publishing on version-tag pushes and manual dispatch,
+with tag/version consistency checks and no GitHub environment.</p></li>
+<li><p>[x] Production PyPI release <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>, verified with a clean index installation,
+console entry point and bounded APIC simulation.</p></li>
 <li><p>[x] Hydrostatic equilibrium, translated self-equilibrated stress, and nonlinear
 manufactured dynamics with analytical references and regression checks.</p></li>
 <li><p>[x] Separate dynamic grid/timestep studies, particle-quadrature studies, frozen
@@ -101,8 +103,6 @@ experimental validation and application calibration remain separate tasks.</p>
 <section id="deferred-implementation-backlog">
 <h2>Deferred implementation backlog<a class="headerlink" href="#deferred-implementation-backlog" title="Link to this heading">¶</a></h2>
 <ul class="simple">
-<li><p>[ ] Choose a release version, review metadata/README rendering, rehearse on
-TestPyPI if desired, and verify the first production PyPI upload/install.</p></li>
 <li><p>[ ] Establish coverage thresholds after reviewing the first Codecov baseline.</p></li>
 <li><p>[ ] Control distorted-particle quadrature/cell-crossing force errors; demonstrate
 spatial convergence beyond the two-particles-per-axis sampling regime.</p></li>

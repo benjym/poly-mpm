@@ -35,10 +35,10 @@
             
   <section id="building-and-publishing-packages">
 <h1>Building and publishing packages<a class="headerlink" href="#building-and-publishing-packages" title="Link to this heading">¶</a></h1>
-<p>The project builds a pure-Python wheel and source distribution. A GitHub Actions
-job builds both, checks their metadata/README with Twine, and installs the wheel
-in an isolated environment for a bounded solver run. CI validates artifacts; the separate manual publishing workflow uploads a release only when dispatched. The repository version is currently <code class="docutils literal notranslate"><span class="pre">1.0.0</span></code>; confirm that version and
-project-name ownership before the first public release.</p>
+<p>The project builds a pure-Python wheel and source distribution. CI checks
+formatting, tests, documentation, metadata, and installed-wheel execution.
+The publishing workflow also installs and runs the sdist before uploading.
+Version tags trigger publication; manual publication from <code class="docutils literal notranslate"><span class="pre">main</span></code> is available.</p>
 <p>From a clean checkout:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>sync<span class="w"> </span>--locked<span class="w"> </span>--extra<span class="w"> </span>dev<span class="w"> </span>--extra<span class="w"> </span>docs<span class="w"> </span>--extra<span class="w"> </span>release
 uv<span class="w"> </span>run<span class="w"> </span>--locked<span class="w"> </span>black<span class="w"> </span>--check<span class="w"> </span>.
@@ -56,31 +56,46 @@ CI checks the wheel; the publishing workflow checks both the wheel and sdist.</p
 <section id="trusted-publishing-workflow">
 <h2>Trusted Publishing workflow<a class="headerlink" href="#trusted-publishing-workflow" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">.github/workflows/pypi.yml</span></code> builds, checks, and publishes using PyPI Trusted
-Publishing. The configured pending publisher uses <code class="docutils literal notranslate"><span class="pre">benjym/poly-mpm</span></code>, workflow
+Publishing. The configured publisher uses <code class="docutils literal notranslate"><span class="pre">benjym/poly-mpm</span></code>, workflow
 <code class="docutils literal notranslate"><span class="pre">pypi.yml</span></code>, and <strong>no GitHub environment</strong>. The publishing job deliberately has
 no <code class="docutils literal notranslate"><span class="pre">environment</span></code> field so its OIDC identity matches that configuration.
 Only that job receives <code class="docutils literal notranslate"><span class="pre">id-token:</span> <span class="pre">write</span></code>; it downloads the tested distributions
 without checking out or executing project source. No API token is required.</p>
-<p>To publish an approved version:</p>
-<ol class="arabic simple">
-<li><p>Set the intended version in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, update <code class="docutils literal notranslate"><span class="pre">uv.lock</span></code>, and push the
-tested release source to <code class="docutils literal notranslate"><span class="pre">main</span></code>. Inspect the package description and contents;
-check documentation links as rendered on PyPI.</p></li>
-<li><p>Open <strong>Actions → Publish to PyPI → Run workflow</strong>, select <code class="docutils literal notranslate"><span class="pre">main</span></code>, and enter
-the exact version from <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>.</p></li>
-<li><p>The workflow checks formatting/tests, builds wheel and sdist, checks metadata,
-and installs/runs each distribution outside the checkout. Publication runs
-only after those checks pass. A dispatch on another branch is skipped.</p></li>
-<li><p>Verify installation from PyPI and create release notes for that version.</p></li>
+</section>
+<section id="publish-a-version-tag">
+<h2>Publish a version tag<a class="headerlink" href="#publish-a-version-tag" title="Link to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p>Set the intended version in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">lock</span></code>, and commit/push
+the tested source to <code class="docutils literal notranslate"><span class="pre">main</span></code>. Inspect metadata, package contents and README
+links before tagging. Every published version must be unique.</p></li>
+<li><p>Create an annotated tag matching that version and push it. For example, after
+setting the project version to <code class="docutils literal notranslate"><span class="pre">1.0.1</span></code>:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>v1.0.1<span class="w"> </span>-m<span class="w"> </span><span class="s2">"Release poly-mpm 1.0.1"</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>refs/tags/v1.0.1
+</pre></div>
+</div>
+</li>
+<li><p>The tag push starts <strong>Publish to PyPI</strong>. Tags matching <code class="docutils literal notranslate"><span class="pre">v[0-9]*</span></code> trigger the
+workflow, and its version check requires the exact name <code class="docutils literal notranslate"><span class="pre">v&lt;project</span> <span class="pre">version&gt;</span></code>.
+The checked-out source, tests, distributions and published package all come
+from that tagged commit. A mismatched tag fails before publication.</p></li>
+<li><p>After success, verify installation from PyPI and add release notes for the tag.</p></li>
 </ol>
-<p>The workflow runs only by manual dispatch. Pushing commits or creating tags does
-not publish. PyPI versions cannot be overwritten; increment the version for a new
-release. Adding this workflow does not itself create or upload a release.</p>
-<p>Before the first release, confirm PyPI project ownership and metadata, review the
-README rendering/links, and consider a TestPyPI rehearsal with a separately
-configured publisher. The existing pending publisher is for production PyPI.
-If you add a protected GitHub environment later, update both the publisher and
-workflow to the same environment name.</p>
+<p>Pushing ordinary commits to <code class="docutils literal notranslate"><span class="pre">main</span></code> runs CI without publishing. Creating a GitHub
+release for an already-pushed tag does not start another upload. PyPI versions
+cannot be overwritten: increment the version and create a new tag for a new
+release.</p>
+</section>
+<section id="manual-publication">
+<h2>Manual publication<a class="headerlink" href="#manual-publication" title="Link to this heading">¶</a></h2>
+<p>Open <strong>Actions → Publish to PyPI → Run workflow</strong>, select <code class="docutils literal notranslate"><span class="pre">main</span></code>, and enter the
+exact version from <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>. The workflow runs the same checks before
+uploading. Manual dispatch on another branch is skipped. Use this option for an
+intentional release without a new tag; do not dispatch an already-published
+version. A pending publisher becomes active after its first successful upload.</p>
+<p>The publisher uses production PyPI. A TestPyPI rehearsal requires a separately
+configured publisher and destination. If you add a protected GitHub environment
+later, update both the publisher and workflow to the same environment name.</p>
 <p>See <a class="reference external" href="https://docs.pypi.org/trusted-publishers/using-a-publisher/">PyPI Trusted Publishing</a>
 for the OIDC identity requirements. <code class="docutils literal notranslate"><span class="pre">CODECOV_TOKEN</span></code> is used only by coverage CI
 and provides no package-publishing access.</p>
@@ -121,6 +136,8 @@ and provides no package-publishing access.</p>
 <li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Building and publishing packages</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#trusted-publishing-workflow">Trusted Publishing workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#publish-a-version-tag">Publish a version tag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#manual-publication">Manual publication</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive models</a></li>

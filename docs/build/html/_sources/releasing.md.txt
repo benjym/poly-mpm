@@ -1,9 +1,9 @@
 # Building and publishing packages
 
-The project builds a pure-Python wheel and source distribution. A GitHub Actions
-job builds both, checks their metadata/README with Twine, and installs the wheel
-in an isolated environment for a bounded solver run. CI validates artifacts; the separate manual publishing workflow uploads a release only when dispatched. The repository version is currently `1.0.0`; confirm that version and
-project-name ownership before the first public release.
+The project builds a pure-Python wheel and source distribution. CI checks
+formatting, tests, documentation, metadata, and installed-wheel execution.
+The publishing workflow also installs and runs the sdist before uploading.
+Version tags trigger publication; manual publication from `main` is available.
 
 From a clean checkout:
 
@@ -25,33 +25,47 @@ CI checks the wheel; the publishing workflow checks both the wheel and sdist.
 ## Trusted Publishing workflow
 
 `.github/workflows/pypi.yml` builds, checks, and publishes using PyPI Trusted
-Publishing. The configured pending publisher uses `benjym/poly-mpm`, workflow
+Publishing. The configured publisher uses `benjym/poly-mpm`, workflow
 `pypi.yml`, and **no GitHub environment**. The publishing job deliberately has
 no `environment` field so its OIDC identity matches that configuration.
 Only that job receives `id-token: write`; it downloads the tested distributions
 without checking out or executing project source. No API token is required.
 
-To publish an approved version:
+## Publish a version tag
 
-1. Set the intended version in `pyproject.toml`, update `uv.lock`, and push the
-   tested release source to `main`. Inspect the package description and contents;
-   check documentation links as rendered on PyPI.
-2. Open **Actions → Publish to PyPI → Run workflow**, select `main`, and enter
-   the exact version from `pyproject.toml`.
-3. The workflow checks formatting/tests, builds wheel and sdist, checks metadata,
-   and installs/runs each distribution outside the checkout. Publication runs
-   only after those checks pass. A dispatch on another branch is skipped.
-4. Verify installation from PyPI and create release notes for that version.
+1. Set the intended version in `pyproject.toml`, run `uv lock`, and commit/push
+   the tested source to `main`. Inspect metadata, package contents and README
+   links before tagging. Every published version must be unique.
+2. Create an annotated tag matching that version and push it. For example, after
+   setting the project version to `1.0.1`:
 
-The workflow runs only by manual dispatch. Pushing commits or creating tags does
-not publish. PyPI versions cannot be overwritten; increment the version for a new
-release. Adding this workflow does not itself create or upload a release.
+   ```sh
+   git tag -a v1.0.1 -m "Release poly-mpm 1.0.1"
+   git push origin refs/tags/v1.0.1
+   ```
 
-Before the first release, confirm PyPI project ownership and metadata, review the
-README rendering/links, and consider a TestPyPI rehearsal with a separately
-configured publisher. The existing pending publisher is for production PyPI.
-If you add a protected GitHub environment later, update both the publisher and
-workflow to the same environment name.
+3. The tag push starts **Publish to PyPI**. Tags matching `v[0-9]*` trigger the
+   workflow, and its version check requires the exact name `v<project version>`.
+   The checked-out source, tests, distributions and published package all come
+   from that tagged commit. A mismatched tag fails before publication.
+4. After success, verify installation from PyPI and add release notes for the tag.
+
+Pushing ordinary commits to `main` runs CI without publishing. Creating a GitHub
+release for an already-pushed tag does not start another upload. PyPI versions
+cannot be overwritten: increment the version and create a new tag for a new
+release.
+
+## Manual publication
+
+Open **Actions → Publish to PyPI → Run workflow**, select `main`, and enter the
+exact version from `pyproject.toml`. The workflow runs the same checks before
+uploading. Manual dispatch on another branch is skipped. Use this option for an
+intentional release without a new tag; do not dispatch an already-published
+version. A pending publisher becomes active after its first successful upload.
+
+The publisher uses production PyPI. A TestPyPI rehearsal requires a separately
+configured publisher and destination. If you add a protected GitHub environment
+later, update both the publisher and workflow to the same environment name.
 
 See [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/using-a-publisher/)
 for the OIDC identity requirements. `CODECOV_TOKEN` is used only by coverage CI
