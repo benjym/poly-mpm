@@ -50,9 +50,11 @@ re-encoding allocates nothing.
 
 Gate 2 is partly implemented: the compact operator (`mpm_gpu/mechanics.py`,
 `shaders/mechanics.slang`) matches the FP64 CPU assembly, checked by
-`mpm_gpu/mechanics_checks.py` against states from `mpm_gpu/fixtures.py`. The
-local metric and tangential eigensystem, local Coulomb solves and planar
-exponential deformation remain; `mechanics_checks.PENDING` lists them and
+`mpm_gpu/mechanics_checks.py` against states from `mpm_gpu/fixtures.py`, as do
+the local metric, norm bound, tangential eigensystem and exact local Coulomb
+solve (`coulomb_local` in `shaders/mechanics.slang`, for reuse by the solver's
+colored sweeps). Particle-grid transfers and planar exponential deformation
+remain; `mechanics_checks.PENDING` lists them and
 keeps the stage `partial` until they pass.
 
 ## First action on the target Mac

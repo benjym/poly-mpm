@@ -127,9 +127,17 @@ independent and avoid a CPU solver fallback.
    columns (including one- and two-cell periodic strips and particles on the
    closed upper edge), relative block, `B u` and `B.T z` errors are at most
    4.5e-7 and the adjoint pairing error is at most 5e-8
-   (`python -m mpm_gpu.validate --stage mechanics`). The local metric, local
-   Coulomb solves and planar exponential are not yet implemented, and the stage
-   reports `partial`. Full scope: node-owned gathers using device bins; compact paired
+   (`python -m mpm_gpu.validate --stage mechanics`). The local 3×3 metrics,
+   conservative norm bound (reduced on the device), regulariser and tangential
+   eigensystem agree with the FP64 set-up in `solve_velocity` to at most
+   2.7e-7. The tangential rotation uses the symmetric Jacobi formula; Metal's
+   `atan2(0, 0)` produced a degenerate rotation for isotropic blocks. The exact
+   local Coulomb solve (opening, frictionless, sticking and safeguarded sliding,
+   with FP32 bracket-collapse and stagnation exits and an unconverged status
+   bit) agrees with `diagonal_coulomb` to 2.2e-7 relative to the unconstrained
+   response on 4,007 rows spanning sixteen decades of load and six of metric.
+   Particle-grid transfers and the planar exponential are not yet implemented,
+   and the stage reports `partial`. Full scope: node-owned gathers using device bins; compact paired
    `B`/`B.T`; periodic aliases merged; local metric and analytic tangential
    eigensystem; exact opening/sticking/sliding local solves; planar exponential
    with scaling/squaring and the full compatible 3×3 deformation gradient.

@@ -183,3 +183,91 @@ def apply_bt(rt, encoder, grid, operator, stress, output):
         stress=stress,
         output=output,
     )
+
+
+@dataclass
+class Preconditioner:
+    metric: object
+    bound: object
+    norm: object
+    diagonal: object
+    rotation: object
+    status: object
+    retained: list
+
+
+def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None):
+    """Normalised local metrics, regularised diagonal and tangential rotation.
+
+    inverse_mass holds two components per canonical node, zero where a
+    component is fixed. The global norm bound is reduced on the device and
+    read by the normalising dispatch; no host round trip. Status bit 8: zero
+    norm, which the solver must treat as unsupported compression or a trivial solve.
+    """
+    from .primitives import reduce
+
+    retained = []
+    if status is None:
+        status = rt.buffer(count=1)
+        rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=status)
+    absolute = rt.buffer(count=2 * grid.nodes, dtype=np.float32)
+    metric = rt.buffer(count=6 * grid.rows, dtype=np.float32)
+    bound = rt.buffer(count=grid.rows, dtype=np.float32)
+    diagonal = rt.buffer(count=3 * grid.rows, dtype=np.float32)
+    rotation = rt.buffer(count=2 * grid.rows, dtype=np.float32)
+    rt.dispatch(
+        encoder,
+        "absolute_force",
+        grid.nodes,
+        module=MODULE,
+        node_count=grid.nodes,
+        transpose_rows=grid.transpose_rows,
+        transpose_slots=grid.transpose_slots,
+        gradients=operator.gradients,
+        output=absolute,
+    )
+    rt.dispatch(
+        encoder,
+        "local_metric",
+        grid.rows,
+        module=MODULE,
+        row_count=grid.rows,
+        dt=float(dt),
+        neighbors=grid.neighbors,
+        gradients=operator.gradients,
+        inverse_mass=inverse_mass,
+        absolute=absolute,
+        metric=metric,
+        bound=bound,
+    )
+    norm, reduce_status, scratch = reduce(rt, encoder, bound, grid.rows, operation="max", status=status)
+    retained += [absolute, *scratch]
+    rt.dispatch(
+        encoder,
+        "metric_finish",
+        grid.rows,
+        module=MODULE,
+        row_count=grid.rows,
+        norm=norm,
+        metric=metric,
+        diagonal=diagonal,
+        rotation=rotation,
+        status=status,
+    )
+    return Preconditioner(metric, bound, norm, diagonal, rotation, status, retained)
+
+
+def local_coulomb(rt, encoder, diagonal, q, mu, output, status, count):
+    """Batched exact local solves (test entry point for the solver's inner kernel)."""
+    rt.dispatch(
+        encoder,
+        "local_coulomb_test",
+        count,
+        module=MODULE,
+        count=count,
+        diagonal=diagonal,
+        q=q,
+        mu=mu,
+        output=output,
+        status=status,
+    )
