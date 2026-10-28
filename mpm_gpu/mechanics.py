@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .primitives import bins
+from .primitives import Binner, Reduction
 from .topology import q1_topology
 
 MODULE = "mechanics.slang"
@@ -87,29 +87,29 @@ def upload_particles(rt, cells, fractions, volume):
     )
 
 
-@dataclass
 class Operator:
-    gradients: object
-    keys: object
-    local_x: object
-    local_y: object
-    status: object
-    bins: object
+    """Workspace and result of assemble(): bins, local coordinates, gradients, occupancy."""
+
+    def __init__(self, rt, grid, count):
+        self.keys = rt.buffer(count=count)
+        self.local_x = rt.buffer(count=count, dtype=np.float32)
+        self.local_y = rt.buffer(count=count, dtype=np.float32)
+        self.status = rt.buffer(count=1)
+        self.gradients = rt.buffer(count=grid.rows * 18, dtype=np.float32)
+        self.occupied = rt.buffer(count=grid.rows, dtype=np.float32)
+        self.bins = Binner(rt, count, grid.cells)
 
 
-def assemble(rt, encoder, grid, particles):
+def assemble(rt, encoder, grid, particles, workspace=None):
     """Bin particles by cell and gather each stress row's integrated gradients.
 
-    Status bit 1: a particle lies outside the grid. Bit 4: a stencil node is
-    missing from the static incidence, which would indicate a topology error.
+    Also gathers each row's occupied grain volume sum_p V_p N_row(x_p). Status
+    bit 1: a particle lies outside the grid. Bit 4: a stencil node is missing
+    from the static incidence, which would indicate a topology error.
     """
     n = particles.count
-    keys = rt.buffer(count=n)
-    local_x = rt.buffer(count=n, dtype=np.float32)
-    local_y = rt.buffer(count=n, dtype=np.float32)
-    status = rt.buffer(count=1)
-    gradients = rt.buffer(count=grid.rows * 18, dtype=np.float32)
-    rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=status)
+    ws = Operator(rt, grid, n) if workspace is None else workspace
+    rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=ws.status)
     rt.dispatch(
         encoder,
         "particle_cells",
@@ -123,12 +123,12 @@ def assemble(rt, encoder, grid, particles):
         cell_y=particles.cell_y,
         fraction_x=particles.fraction_x,
         fraction_y=particles.fraction_y,
-        keys=keys,
-        local_x=local_x,
-        local_y=local_y,
-        status=status,
+        keys=ws.keys,
+        local_x=ws.local_x,
+        local_y=ws.local_y,
+        status=ws.status,
     )
-    cell_bins = bins(rt, encoder, keys, n, grid.cells)
+    cell_bins = ws.bins.encode(encoder, ws.keys)
     rt.dispatch(
         encoder,
         "assemble_gradients",
@@ -145,13 +145,14 @@ def assemble(rt, encoder, grid, particles):
         cell_offsets=cell_bins.offsets,
         cell_counts=cell_bins.counts,
         permutation=cell_bins.permutation,
-        local_x=local_x,
-        local_y=local_y,
+        local_x=ws.local_x,
+        local_y=ws.local_y,
         volume=particles.volume,
-        gradients=gradients,
-        status=status,
+        gradients=ws.gradients,
+        occupied=ws.occupied,
+        status=ws.status,
     )
-    return Operator(gradients, keys, local_x, local_y, status, cell_bins)
+    return ws
 
 
 def apply_b(rt, encoder, grid, operator, velocity, output):
@@ -185,18 +186,21 @@ def apply_bt(rt, encoder, grid, operator, stress, output):
     )
 
 
-@dataclass
 class Preconditioner:
-    metric: object
-    bound: object
-    norm: object
-    diagonal: object
-    rotation: object
-    status: object
-    retained: list
+    """Workspace and result of preconditioner(); the global norm is norm[0]."""
+
+    def __init__(self, rt, grid):
+        self.absolute = rt.buffer(count=2 * grid.nodes, dtype=np.float32)
+        self.metric = rt.buffer(count=6 * grid.rows, dtype=np.float32)
+        self.bound = rt.buffer(count=grid.rows, dtype=np.float32)
+        self.diagonal = rt.buffer(count=3 * grid.rows, dtype=np.float32)
+        self.rotation = rt.buffer(count=2 * grid.rows, dtype=np.float32)
+        self.reduction = Reduction(rt, grid.rows, operation="max")
+        self.norm = self.reduction.result
+        self.status = None
 
 
-def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None):
+def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None, workspace=None):
     """Normalised local metrics, regularised diagonal and tangential rotation.
 
     inverse_mass holds two components per canonical node, zero where a
@@ -204,17 +208,11 @@ def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None):
     read by the normalising dispatch; no host round trip. Status bit 8: zero
     norm, which the solver must treat as unsupported compression or a trivial solve.
     """
-    from .primitives import reduce
-
-    retained = []
+    ws = Preconditioner(rt, grid) if workspace is None else workspace
     if status is None:
-        status = rt.buffer(count=1)
+        status = rt.buffer(count=1) if ws.status is None else ws.status
         rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=status)
-    absolute = rt.buffer(count=2 * grid.nodes, dtype=np.float32)
-    metric = rt.buffer(count=6 * grid.rows, dtype=np.float32)
-    bound = rt.buffer(count=grid.rows, dtype=np.float32)
-    diagonal = rt.buffer(count=3 * grid.rows, dtype=np.float32)
-    rotation = rt.buffer(count=2 * grid.rows, dtype=np.float32)
+    ws.status = status
     rt.dispatch(
         encoder,
         "absolute_force",
@@ -224,7 +222,7 @@ def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None):
         transpose_rows=grid.transpose_rows,
         transpose_slots=grid.transpose_slots,
         gradients=operator.gradients,
-        output=absolute,
+        output=ws.absolute,
     )
     rt.dispatch(
         encoder,
@@ -236,25 +234,24 @@ def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None):
         neighbors=grid.neighbors,
         gradients=operator.gradients,
         inverse_mass=inverse_mass,
-        absolute=absolute,
-        metric=metric,
-        bound=bound,
+        absolute=ws.absolute,
+        metric=ws.metric,
+        bound=ws.bound,
     )
-    norm, reduce_status, scratch = reduce(rt, encoder, bound, grid.rows, operation="max", status=status)
-    retained += [absolute, *scratch]
+    ws.reduction.encode(encoder, ws.bound, status)
     rt.dispatch(
         encoder,
         "metric_finish",
         grid.rows,
         module=MODULE,
         row_count=grid.rows,
-        norm=norm,
-        metric=metric,
-        diagonal=diagonal,
-        rotation=rotation,
+        norm=ws.norm,
+        metric=ws.metric,
+        diagonal=ws.diagonal,
+        rotation=ws.rotation,
         status=status,
     )
-    return Preconditioner(metric, bound, norm, diagonal, rotation, status, retained)
+    return ws
 
 
 def local_coulomb(rt, encoder, diagonal, q, mu, output, status, count):
@@ -284,29 +281,39 @@ def fixed_components(boundary_v, boundary_h, roughness):
     return (fixed_x * 1 + fixed_y * 2).astype(np.uint32)
 
 
-@dataclass
 class GridState:
-    mass: object
-    reference: object
-    momentum: object
-    trial: object
-    inverse_mass: object
+    def __init__(self, rt, grid):
+        n = grid.nodes
+        self.mass = rt.buffer(count=n, dtype=np.float32)
+        self.reference = rt.buffer(count=2 * n, dtype=np.float32)
+        self.momentum = rt.buffer(count=2 * n, dtype=np.float32)
+        self.trial = rt.buffer(count=2 * n, dtype=np.float32)
+        self.inverse_mass = rt.buffer(count=2 * n, dtype=np.float32)
 
 
-def p2g(rt, encoder, grid, operator, fixed, particle_mass, velocity, gradient, *, dt, m_tol, body, affine):
+def p2g(
+    rt,
+    encoder,
+    grid,
+    operator,
+    fixed,
+    particle_mass,
+    velocity,
+    gradient,
+    *,
+    dt,
+    m_tol,
+    body,
+    affine,
+    state=None,
+):
     """Nodal mass, raw momentum, masked momentum after dt*m*g, trial velocity, free inverse mass.
 
     Uses the particle bins and local coordinates from assemble(). velocity has
     two and gradient four (row-major 2x2 L) components per particle.
     """
     n = grid.nodes
-    state = GridState(
-        rt.buffer(count=n, dtype=np.float32),
-        rt.buffer(count=2 * n, dtype=np.float32),
-        rt.buffer(count=2 * n, dtype=np.float32),
-        rt.buffer(count=2 * n, dtype=np.float32),
-        rt.buffer(count=2 * n, dtype=np.float32),
-    )
+    state = GridState(rt, grid) if state is None else state
     rt.dispatch(
         encoder,
         "p2g_nodes",
@@ -356,8 +363,15 @@ def g2p(
     m_tol,
     transfer,
     pic_fraction,
+    shift=None,
 ):
-    """Particle velocity, velocity gradient L and split-coordinate advection (in place)."""
+    """Particle velocity, velocity gradient L and split-coordinate advection (in place).
+
+    shift receives each particle's periodic wrap in cells (unwrapped minus
+    wrapped cell), for budgets that need the position before wrapping.
+    """
+    if shift is None:
+        shift = rt.buffer(count=particles.count, dtype=np.float32)
     rt.dispatch(
         encoder,
         "g2p_particles",
@@ -384,6 +398,7 @@ def g2p(
         fraction_y=particles.fraction_y,
         particle_velocity=velocity,
         particle_gradient=gradient,
+        shift=shift,
     )
 
 

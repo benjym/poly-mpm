@@ -156,6 +156,8 @@ Licensed under the [GNU GPL v3](https://github.com/benjym/poly-mpm/blob/main/LIC
 
 ### Experimental GPU port
 
-An optional Apple silicon/SlangPy backend is under development. The first
-milestone provides runtime primitives and a [hardware validation command](docs/gpu.md);
-the GPU MPM runner is not enabled yet. CPU execution remains the default.
+An optional Apple silicon/SlangPy backend runs the granular rigid-grain
+timestep on the GPU in FP32 (`P.backend = "metal"`). Its hardware gates passed
+on an Apple M4; see [the GPU notes](docs/gpu.md) for supported settings,
+results and the [validation command](docs/gpu.md). It is currently slower than
+the CPU on the sizes tested. CPU execution remains the default.

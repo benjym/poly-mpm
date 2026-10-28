@@ -192,11 +192,9 @@ def prepare(P, mode="simulation"):
         )
     if P.solver == "granular" and (P.B.vertical_force or P.B.horizontal_force):
         raise ValueError("granular prototype does not support traction boundary flags")
-    from mpm_gpu.config import validate as validate_backend, require_runner
+    from mpm_gpu.config import validate as validate_backend
 
     validate_backend(P)
-    if P.backend == "metal":
-        require_runner()
     P.G.s = np.asarray(P.G.s, dtype=float)
     if P.G.s.shape != (P.G.ns,) or not np.isfinite(P.G.s).all() or np.any(P.G.s <= 0):
         raise ValueError("s must contain ns positive finite grain sizes")
@@ -236,6 +234,7 @@ def prepare(P, mode="simulation"):
                 P.dt = min(P.dt, min(restrictions.values()))
 
         controlled_step._uses_limit_cache = True
+        controlled_step._controller = original_controller
         P.update_timestep = controlled_step
     from diagnostics import Diagnostics
 

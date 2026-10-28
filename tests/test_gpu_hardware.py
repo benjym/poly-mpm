@@ -39,3 +39,12 @@ def test_resident_solver_on_actual_metal_device():
         report = validate_solver(runtime)
     failures = [row for row in report["cases"] if row["status"] != "passed"]
     assert not failures, failures
+
+
+def test_runner_and_science_on_actual_metal_device():
+    from mpm_gpu.runner import runtime
+    from mpm_gpu.validate import validate_runner
+
+    report = validate_runner(runtime())
+    failures = [row for row in report["cases"] if row["status"] != "passed"]
+    assert not failures, failures

@@ -149,3 +149,37 @@ void abi_probe(uint3 tid : SV_DispatchThreadID, uniform uint count,
         real_output[tid.x] = 2.0 * reals[tid.x] + 0.25;
     }
 }
+
+[shader("compute")]
+[numthreads(256, 1, 1)]
+void reduce_columns(uint3 lane : SV_GroupThreadID, uint3 group : SV_GroupID, uniform uint count,
+                    uniform uint groups, StructuredBuffer<uint> operations,
+                    StructuredBuffer<float> input, RWStructuredBuffer<float> output,
+                    RWStructuredBuffer<uint> status)
+{
+    // Workgroup g reduces tile g % groups of column g / groups. Column-major
+    // input and output, so each level feeds the next unchanged.
+    uint column = group.x / groups, tile = group.x % groups;
+    uint operation = operations[column];
+    uint i = tile * 256 + lane.x;
+    float identity = operation == 0 ? 0.0 : (operation == 1 ? -3.402823466e38 : 3.402823466e38);
+    float value = i < count ? input[column * count + i] : identity;
+    if (i < count && !isfinite(value))
+    {
+        uint ignored;
+        InterlockedOr(status[0], 2, ignored);
+        value = identity;
+    }
+    reduce_values[lane.x] = value;
+    GroupMemoryBarrierWithGroupSync();
+    for (uint offset = 128; offset > 0; offset /= 2)
+    {
+        if (lane.x < offset)
+        {
+            float a = reduce_values[lane.x], b = reduce_values[lane.x + offset];
+            reduce_values[lane.x] = operation == 0 ? a + b : (operation == 1 ? max(a, b) : min(a, b));
+        }
+        GroupMemoryBarrierWithGroupSync();
+    }
+    if (lane.x == 0) output[column * groups + tile] = reduce_values[0];
+}

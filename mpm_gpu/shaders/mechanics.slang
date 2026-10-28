@@ -53,7 +53,8 @@ void assemble_gradients(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
                         StructuredBuffer<uint> cell_offsets, StructuredBuffer<uint> cell_counts,
                         StructuredBuffer<uint> permutation, StructuredBuffer<float> local_x,
                         StructuredBuffer<float> local_y, StructuredBuffer<float> volume,
-                        RWStructuredBuffer<float> gradients, RWStructuredBuffer<uint> status)
+                        RWStructuredBuffer<float> gradients, RWStructuredBuffer<float> occupied,
+                        RWStructuredBuffer<uint> status)
 {
     uint a = tid.x;
     if (a >= row_count) return;
@@ -63,6 +64,7 @@ void assemble_gradients(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
     int columns = int(nx) - 1;
     float2 sum[9];
     for (uint s = 0; s < 9; s++) sum[s] = float2(0.0, 0.0);
+    float occupancy = 0.0;
     int previous = -1;
     for (int ox = -1; ox <= 0; ox++)
     {
@@ -111,6 +113,7 @@ void assemble_gradients(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
                 for (uint c = 0; c < 4; c++) weight += stress[c] * w[c];
                 if (weight == 0.0) continue;
                 float scale = volume[p] * weight;
+                occupancy += scale;
                 float2 g[4] = {
                     float2(-(1 - fy) / dx, -(1 - fx) / dy),
                     float2((1 - fy) / dx, -fx / dy),
@@ -126,6 +129,7 @@ void assemble_gradients(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
         gradients[2 * (9 * a + s)] = sum[s].x;
         gradients[2 * (9 * a + s) + 1] = sum[s].y;
     }
+    occupied[a] = occupancy;
 }
 
 [shader("compute")]
@@ -463,7 +467,7 @@ void g2p_particles(uint3 tid : SV_DispatchThreadID, uniform uint count,
                    RWStructuredBuffer<uint> cell_x, RWStructuredBuffer<uint> cell_y,
                    RWStructuredBuffer<float> fraction_x, RWStructuredBuffer<float> fraction_y,
                    RWStructuredBuffer<float> particle_velocity,
-                   RWStructuredBuffer<float> particle_gradient)
+                   RWStructuredBuffer<float> particle_gradient, RWStructuredBuffer<float> shift)
 {
     // transfer: 0 FLIP with PIC blend, 1 PIC, 2 apic_gradient. Uses the
     // start-of-step stencil, as particles.move_material_points does.
@@ -513,8 +517,9 @@ void g2p_particles(uint3 tid : SV_DispatchThreadID, uniform uint count,
     // Rounding can leave exactly one after subtraction of the carry.
     if (local.x >= 1.0) { local.x = 0.0; carry.x += 1.0; }
     if (local.y >= 1.0) { local.y = 0.0; carry.y += 1.0; }
-    int nextx = int(cx) + int(carry.x);
-    if (periodic != 0) nextx = ((nextx % int(columns)) + int(columns)) % int(columns);
+    int unwrapped = int(cx) + int(carry.x);
+    int nextx = periodic != 0 ? ((unwrapped % int(columns)) + int(columns)) % int(columns) : unwrapped;
+    shift[p] = float(unwrapped - nextx);
     cell_x[p] = asuint(nextx);
     cell_y[p] = asuint(int(cy) + int(carry.y));
     fraction_x[p] = local.x;

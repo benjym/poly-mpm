@@ -2,13 +2,17 @@
 
 For continuation on the target Mac, start with the [agent handoff](gpu-handoff.md).
 
-The first implementation milestone supplies the optional Metal runtime, resident
-integer binning, hierarchical scans/reductions, static Q1 incidence, split
-particle coordinates and a hardware validation command. The runtime gate passed
-on an Apple M4 (macOS 27.0.1, SlangPy 0.43.1, Metal toolchain 32023.921); the
-report is `benchmarks/metal_runtime_m4.json`. **The GPU MPM timestep
-is not implemented yet.** Selecting `P.backend = "metal"` raises an explicit
-`ValidationPending` error. It never runs CPU mechanics as a fallback.
+`P.backend = "metal"` runs the granular rigid-grain timestep
+(`granular.step` with the compact velocity solver) resident on an Apple
+silicon GPU, in FP32. All four hardware gates (runtime, mechanics kernels,
+nonlinear solver, runner and science) passed on an Apple M4 (macOS 27.0.1,
+SlangPy 0.43.1, Metal toolchain 32023.921); the complete report is
+`benchmarks/metal_runner_m4.json`. A Metal run never runs CPU mechanics as a
+fallback: unsupported settings are rejected, and a missing device or an
+unconverged solve raises.
+
+The current implementation is slower than the CPU on the sizes tested (see
+the runner gate below). There is no measured GPU speedup.
 
 The baseline is commit `3d72a69`, without the concurrent density experiments.
 The scientific model and CPU numerical defaults remain unchanged.
@@ -80,10 +84,10 @@ POLY_MPM_TEST_METAL=1 python -m pytest tests/test_gpu_hardware.py -q
 
 An explicitly requested but unavailable GPU fails rather than skipping.
 
-`--stage all` runs the runtime, mechanics and solver gates and records the
-runner as `not_implemented`; its exit code is 3 after those gates pass. A
-single `--stage` also runs every preceding stage, and a stage runs only after
-the previous one has passed.
+`--stage all` runs the runtime, mechanics, solver and runner gates. A single
+`--stage` also runs every preceding stage, and a stage runs only after the
+previous one has passed. Exit 3 is reserved for requested stages that are not
+implemented; none remain.
 Exit 0 means the requested implemented gate passed (or explicitly requested CPU
 checks passed); exit 1 means failure/unavailable; argument errors use exit 2.
 A runtime result cannot certify mechanics or solver convergence.
@@ -212,12 +216,77 @@ independent and avoid a CPU solver fallback.
    rounding level. The same moving wall fixture took between 112 and 155 sweeps
    over five runs; every run converged. The packing gap was computed on the CPU for
    these checks; computing it on the device is part of gate 4.
-4. **Runner and science validation.** Preserve full timestep ordering, stress,
-   work and diagnostics; reduce scalar records on device; snapshot NumPy arrays
-   at output times and final return, and on standalone `step()`. Preserve plots,
-   Rich progress, output formats and save frequency. Cover static/freefall,
-   collapse, incline, periodic support, transfers, CFL and output scheduling.
-   Reject custom live-array callbacks explicitly.
+4. **Runner and science validation (passed on Apple M4).** Report:
+   `benchmarks/metal_runner_m4.json` (`python -m mpm_gpu.validate --stage runner`
+   or `--stage all`). `mpm_gpu/runner.py` and `shaders/runner.slang` implement
+   the step; `MPM.step` and `MPM.run` select it for `P.backend = "metal"`.
+   - Step order follows `granular.step`: start-of-step binning, P2G with
+     gravity, wall masks and trial velocity; occupancy and packing gap; the
+     preconditioner; the solve, warm-started from the previous contact on rows
+     that hold grain volume; final velocity, internal force and the constraint
+     and external impulse/work budgets on unique nodes; G2P with advection in
+     split coordinates; deformation; stress gathered from the nodal contact
+     and scaled by `rho / rho_s`; strain and material/plastic work (Kahan
+     summation per particle); the inventory; end-of-step binning, which gives
+     the packing diagnostics and is reused as the next step's start-of-step
+     binning. Every workspace is allocated once per runner.
+   - Per step the host reads the solver's state record between batches and one
+     reduced record (30 numbers) at the end. These drive `P.timestep_limits`,
+     the dynamic timestep, `Diagnostics.finish` (through new `now`/`support`
+     arguments, so the history rows have the CPU format) and
+     `G.granular_stats`. Budgets are reduced in FP32 per step and accumulated
+     in FP64 on the host. Particle mass is constant on the device, so the mass
+     error is zero.
+   - `run()` uploads the state once and calls `snapshot()` before each save-time
+     callback and on return; standalone `step()` uploads, steps and snapshots.
+     A snapshot writes all particle fields and the mechanical grid fields. The
+     deposited grid diagnostics (`deposit_diagnostics`, grain fractions,
+     `shear_rate`) are formed at snapshot time with the CPU routines from the
+     snapshot and the last step's start-of-step stencil, which is how the CPU
+     step forms them. They do not feed back into the mechanics.
+   - Rejected for Metal: custom `after_every_timestep` callbacks (they would see
+     stale arrays), `O.measure_energy`, custom timestep controllers, damping,
+     `O.check_positions` and the anisotropy mode. Save-time, start and end
+     callbacks are supported and receive snapshots.
+   - FP32 thresholds: packing clearances within `64 eps_32` of the capacity are
+     set to zero (the CPU uses `64 eps_64`, for the same purpose of not turning
+     summation roundoff into an opening gap), and stencil coverage counts as
+     incomplete below `1 - 1e-6` (CPU `1 - 1e-10`). The CPU prototype's
+     `granular_max_nodes` limit is not applied on Metal.
+   - Results against the CPU at the same tolerance `1e-4` and state:
+     | Case | Result | Gate |
+     | --- | --- | --- |
+     | FP64 frozen natural residual of one Metal step (static, collapse, periodic incline) | at most 1.08e-4 | ≤ 2e-4 |
+     | Relative mass error, static column | 0 | ≤ 1e-5 |
+     | Static column displacement, 0.2 s at `dt = 0.02` | 9.1e-6 grid spacings | ≤ 1e-3 |
+     | Periodic incline, slope 0.75: speed against `g (sin θ - μ cos θ) t` | 0.23% (CPU 0.28%) | ≤ 1% |
+     | Periodic incline, slope 0.25 | static | — |
+     | Collapse positions/runout, FLIP, FLIP+PIC 0.3, PIC, `apic_gradient`, dynamic CFL | at most 7.3e-6 grid spacings | ≤ 1% |
+     | Integrated nodal overpacking, Metal minus CPU | at most 1.6e-7 | ≤ 1e-3 |
+     | Free fall at low packing | stress free; velocity change within 1e-6 of `g dt` | — |
+   - Budgets: momentum residuals relative to the external impulse are at most
+     1.5e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
+     larger of external and constraint work agree with the CPU to 5e-6 in the
+     collapses (for example -0.04197 and -0.04198 for FLIP). In the static
+     column and static incline the work terms are close to zero, so these
+     ratios are dominated by solver-tolerance noise and differ between
+     backends (static incline 0.14 CPU, -0.08 Metal).
+   - Output: save times, files (figures and `data/diagnostics.json`) and
+     snapshot contents at each save match a CPU run; a custom
+     `after_every_timestep` is rejected.
+   - Scale: a collapse with 3,200 particles and 1,271 stress rows (3 steps)
+     agrees with the CPU to 1.1e-6 grid spacings. Neither solver converges to
+     `1e-4` within the default 2,000 sweeps on the first step of this state
+     (CPU residual 1.4e-4, so this is a property of `solve_velocity`, not of the
+     port); with 20,000 both need about 2,330 sweeps. At 20,000 particles both
+     reach about 3e-2 after 2,000 sweeps. Larger problems will need a solver
+     with better scaling before the 10k/100k benchmark is meaningful.
+   - Speed: in that 3,200-particle case the Metal run took 24 s and the CPU
+     15 s (single warm samples). Encoding costs about 10 µs per dispatch; GPU
+     time is about 27 µs per dispatch, almost independent of size, because
+     every dispatch ends with a global barrier. A sweep is about 33 dispatches
+     and a Newton polish about 3,100. Fewer, fused dispatches are the next
+     performance step.
 
 Final science criteria:
 
@@ -240,7 +309,7 @@ time steps, diagnostics and tolerance on the same target Mac. Keep cold startup
 and compilation separate from warm timings; record wall time per waited
 submission (kernel timestamps are unavailable in the current backend), transfer
 bytes/time, memory, iteration counts and plotting cost. There is no measured
-GPU MPM speedup yet.
+GPU MPM speedup.
 
 Segregation and packing corrections can extend this package after the mechanics
 gates pass; no separate package or GPU-specific input/output format is needed.

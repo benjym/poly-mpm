@@ -2,8 +2,6 @@
 
 import math
 
-from . import ValidationPending
-
 
 def defaults(P):
     backend = getattr(P, "backend", "cpu")
@@ -60,16 +58,10 @@ def validate(P):
     ):
         if getattr(P.B, name, False):
             raise ValueError(f"Metal does not support boundary flag {name}")
-    for name in ("packing_correction", "density_correction", "granular_density_correction"):
+    for name in ("packing_correction", "density_correction", "granular_density_correction", "damping"):
         if getattr(P, name, False):
             raise ValueError(f"Metal does not support {name}")
-
-
-def require_runner():
-    # Keep backend selection from accidentally running the CPU granular solver.
-    raise ValidationPending(
-        "The resident Metal MPM runner is not implemented yet. "
-        "First validate the runtime on Apple silicon with "
-        "python -m mpm_gpu.validate --stage runtime --benchmark --output metal-validation.json; "
-        "see docs/gpu.md for the remaining hardware gates. No CPU fallback was used."
-    )
+    if getattr(P.O, "check_positions", False):
+        raise ValueError("Metal does not support O.check_positions")
+    if getattr(P, "mode", None) == "anisotropy":
+        raise ValueError("Metal does not support the anisotropy mode")

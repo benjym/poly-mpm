@@ -36,10 +36,13 @@ def fingerprint():
         "fixtures.py",
         "solver.py",
         "solver_checks.py",
+        "runner.py",
+        "runner_checks.py",
         "validate.py",
         "shaders/primitives.slang",
         "shaders/mechanics.slang",
         "shaders/solver.slang",
+        "shaders/runner.slang",
     ]
     return {name: hashlib.sha256(root.joinpath(name).read_bytes()).hexdigest() for name in names}
 
@@ -60,6 +63,8 @@ def cpu_checks():
         ),
         "solver shader missing",
     )
+    runner = resources.files("mpm_gpu.shaders").joinpath("runner.slang").read_text()
+    require("void grid_finish" in runner and "void particle_update" in runner, "runner shader missing")
     from types import SimpleNamespace
     from .config import defaults
 
@@ -380,6 +385,19 @@ def validate_solver(rt):
     return _validate_cases(solver_checks, rt)
 
 
+def validate_runner(rt):
+    from . import runner, runner_checks
+
+    # MPM.run and MPM.step reach the device through the runner's shared runtime.
+    previous = runner._runtime
+    runner._runtime = rt
+    try:
+        return _validate_cases(runner_checks, rt)
+    finally:
+        runner._runtime = previous
+        runner._runners.clear()
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--stage", choices=(*STAGES, "all"), default="all")
@@ -417,7 +435,11 @@ def main(argv=None):
                 last = len(STAGES) if args.stage == "all" else STAGES.index(args.stage) + 1
                 requested = STAGES[1:last]
                 previous = report["stages"]["runtime"]["status"]
-                for stage, validate in (("mechanics", validate_mechanics), ("solver", validate_solver)):
+                for stage, validate in (
+                    ("mechanics", validate_mechanics),
+                    ("solver", validate_solver),
+                    ("runner", validate_runner),
+                ):
                     if stage in requested and previous == "passed":
                         report["stages"][stage] = validate(rt)
                         previous = report["stages"][stage]["status"]

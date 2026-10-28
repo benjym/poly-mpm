@@ -11,7 +11,7 @@ import pytest
 
 from inputs.granular_column import Params
 from initialise import prepare
-from mpm_gpu import GPUUnavailable, ValidationPending
+from mpm_gpu import GPUError, GPUUnavailable
 from mpm_gpu.config import defaults
 from mpm_gpu.primitives import MAX_COUNT, check_count
 from mpm_gpu.runtime import check_platform
@@ -65,19 +65,31 @@ def test_unknown_backend_is_rejected(backend):
         prepare(P)
 
 
-def test_metal_opt_in_cannot_fall_through_to_cpu():
-    with pytest.raises(ValidationPending, match="No CPU fallback"):
-        prepare(metal_params())
+def test_metal_opt_in_cannot_fall_through_to_cpu(monkeypatch):
+    """A Metal step either runs on the device or fails; it never calls the CPU step."""
+    import granular
+    from MPM import step
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("the CPU granular step ran for a Metal backend")
+
+    monkeypatch.setattr(granular, "step", refuse)
+    P, G, L = prepare(metal_params())
+    try:
+        step(P, G, L)
+    except GPUError:
+        pass  # no usable Metal device on this host
 
 
-def test_switching_an_already_prepared_state_also_cannot_fall_through():
+def test_switching_an_already_prepared_state_is_validated():
     from MPM import run, step
 
     P, G, L = prepare(Params([]))
     original = L.materials[0].x.copy()
     P.backend = "metal"
     for function in (step, run):
-        with pytest.raises(ValidationPending):
+        # The CPU defaults (hybrid solver, 1e-9 tolerance) are not Metal configurations.
+        with pytest.raises(ValueError, match="Metal"):
             function(P, G, L)
         assert_allclose(L.materials[0].x, original, rtol=0, atol=0)
 
@@ -96,8 +108,7 @@ def test_metal_precision_contract_never_silently_loosens_tolerance(tolerance):
 def test_supported_tolerance_reaches_hardware_gate(tolerance):
     P = metal_params()
     P.granular_tolerance = tolerance
-    with pytest.raises(ValidationPending):
-        prepare(P)
+    prepare(P)
     assert P.granular_tolerance == tolerance
 
 

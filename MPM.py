@@ -10,9 +10,13 @@ import initialise
 def step(P, G, L, *, _limit_cache=None):
     """Advance one complete timestep, without output or changing the clock."""
     if getattr(P, "backend", "cpu") == "metal":
-        from mpm_gpu.config import require_runner
+        from mpm_gpu.config import validate
+        from mpm_gpu.runner import step as metal_step
 
-        require_runner()
+        validate(P)
+        if _limit_cache is not None:
+            _limit_cache.clear()
+        return metal_step(P, G, L)
     if P.solver == "granular":
         from granular import step as granular_step
 
@@ -63,10 +67,17 @@ def step(P, G, L, *, _limit_cache=None):
 
 def run(P, G, L, *, max_steps=None, output=True, progress=False):
     """Run prepared state. max_steps permits bounded smoke tests and previews."""
+    engine = None
     if getattr(P, "backend", "cpu") == "metal":
-        from mpm_gpu.config import require_runner
+        # Resident state: arrays are synchronised only at output times and on return.
+        from mpm_gpu.config import validate
+        from mpm_gpu.runner import check_callbacks, runner_for
 
-        require_runner()
+        validate(P)
+        if output:
+            check_callbacks(P)
+        engine = runner_for(P, G, L)
+        engine.upload(P, G, L)
     with Progress(
         TextColumn("{task.description}"),
         BarColumn(),
@@ -95,29 +106,40 @@ def run(P, G, L, *, max_steps=None, output=True, progress=False):
             if P.time_stepping == "dynamic" and P.mechanics == "updated":
                 from stability import limits
 
-                restrictions = limits(P, G, L, cache=limit_cache)
+                restrictions = engine.limits(P) if engine else limits(P, G, L, cache=limit_cache)
                 if restrictions:
                     P.dt = min(P.dt, min(restrictions.values()))
             used_dt = P.dt
-            step(P, G, L, _limit_cache=limit_cache)
+            if engine:
+                engine.step(P, G, L)
+            else:
+                step(P, G, L, _limit_cache=limit_cache)
             P.t += used_dt
             P.tstep += 1
             count += 1
             if progress:
                 display.update(task, completed=P.t, time=P.t)
             if output:
-                P.O.after_every_timestep(L, P, G)
+                if not engine:
+                    # check_callbacks admits only the built-in no-op for Metal.
+                    P.O.after_every_timestep(L, P, G)
                 if P.t >= next_save:
                     if progress:
                         display.update(task, description="Saving output")
+                    if engine:
+                        engine.snapshot(P, G, L)
                     P.O.after_every_savetime(L, P, G)
                     next_save += (np.floor((P.t - next_save) / P.savetime) + 1) * P.savetime
             P.dt = nominal_dt
             if P.time_stepping == "dynamic" and P.t < P.t_f:
-                if getattr(P.update_timestep, "_uses_limit_cache", False):
+                if engine:
+                    engine.update_timestep(P)
+                elif getattr(P.update_timestep, "_uses_limit_cache", False):
                     P.update_timestep(P, G, _limit_cache=limit_cache)
                 else:
                     P.update_timestep(P, G)
+        if engine:
+            engine.snapshot(P, G, L)
         if L.diagnostics is not None:
             L.diagnostics.complete()
         if output:

@@ -103,8 +103,11 @@ class Diagnostics:
             self.initial = inventory(P, L)
             self.started = True
 
-    def finish(self, P, G, L, boundary_before):
-        now = inventory(P, L)
+    def finish(self, P, G, L, boundary_before, *, now=None, support=None):
+        """Record one step. A resident backend passes its device-reduced inventory
+        and (incomplete support, incomplete gradient support) particle counts."""
+        if now is None:
+            now = inventory(P, L)
         self.boundary_mass += now["mass"] - boundary_before["mass"]
         self.boundary_species += np.asarray(now["species_mass"]) - boundary_before["species_mass"]
         self.boundary_momentum += np.asarray(now["momentum"]) - boundary_before["momentum"]
@@ -122,13 +125,16 @@ class Diagnostics:
         self.constraint_angular_impulse += G.constraint_angular_impulse
         self.force_scaling_impulse += G.force_scaling_impulse
         self.force_scaling_angular_impulse += G.force_scaling_angular_impulse
-        supported = 0
-        gradient_missing = 0
-        for b in L.materials:
-            if len(b):
-                gradient_missing += int(np.count_nonzero(b.gradient_support_missing))
-                coverage = np.sum(b.N * G.valid_nodes[b.n], axis=1)
-                supported += int(np.count_nonzero(coverage < 1 - 1e-10))
+        if support is None:
+            supported = 0
+            gradient_missing = 0
+            for b in L.materials:
+                if len(b):
+                    gradient_missing += int(np.count_nonzero(b.gradient_support_missing))
+                    coverage = np.sum(b.N * G.valid_nodes[b.n], axis=1)
+                    supported += int(np.count_nonzero(coverage < 1 - 1e-10))
+        else:
+            supported, gradient_missing = support
         row = dict(
             time=float(P.t + P.dt),
             timestep=int(P.tstep + 1),

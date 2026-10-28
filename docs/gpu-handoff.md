@@ -25,11 +25,10 @@ the task is larger than running the first validation command.
   preserve unrelated changes. The other agent's density changes were left in
   the original checkout and are not included in this branch.
 
-**The MPM GPU timestep does not exist yet.** The current `ValidationPending`
-exceptions in `initialise.prepare`, `MPM.step` and `MPM.run` are deliberate.
-They prevent selecting Metal and accidentally running CPU mechanics. Replace
-these guards only when the corresponding resident implementation exists and
-passes its gates. There is no GPU MPM speedup measurement yet.
+The resident GPU timestep exists and passed all four gates on an Apple M4.
+`MPM.step` and `MPM.run` select `mpm_gpu.runner` for `P.backend = "metal"`;
+it never falls back to CPU mechanics. It is currently slower than the CPU on
+the sizes tested, and there is no GPU MPM speedup.
 
 ## Status on the Apple M4 (29 October 2026)
 
@@ -58,12 +57,27 @@ in the solver's colored sweeps), transfers and deformation;
 Gate 3 (resident nonlinear solver) passed (`benchmarks/metal_solver_m4.json`).
 `mpm_gpu/solver.py` and `shaders/solver.slang` implement the device-controlled
 solve; `mpm_gpu/solver_checks.py` checks it against `solve_velocity` and FP64
-references, including failure paths. `Solver` preallocates every workspace and
-`primitives.Reduction` is a preallocated reduction. The mechanics encoders
-(`assemble`, `preconditioner`, `p2g`) still allocate their outputs on each call
-and must be moved to preallocated workspaces for the runner. The packing gap
-and occupancy are still computed on the CPU. Gate 4 (runner and science
-validation) is next; `--stage all` exits 3 with the runner `not_implemented`.
+references, including failure paths.
+
+Gate 4 (runner and science) passed (`benchmarks/metal_runner_m4.json`, the
+complete `--stage all` report). `mpm_gpu/runner.py` and `shaders/runner.slang`
+implement the step, snapshots and device budgets; `mpm_gpu/runner_checks.py`
+compares complete runs with the CPU. The mechanics encoders take preallocated
+workspaces (`mechanics.Operator`, `Preconditioner`, `GridState`,
+`primitives.Binner`, `Scan`, `Reduction`, `ColumnReduction`).
+
+Next work, in order:
+
+1. Performance. A sweep is about 33 dispatches and a Newton polish about
+   3,100; each dispatch costs about 27 µs of GPU time because it ends with a
+   global barrier. Fuse kernels (residual with refresh, the CGS2 passes and
+   dot products, candidate evaluation) and drop barriers between independent
+   dispatches, then run the matched benchmark protocol in `gpu.md`.
+2. Solver scaling. `solve_velocity` itself needs more than 2,000 sweeps on the
+   first step of a 3,200-particle collapse and does not reach `1e-4` at 20,000
+   particles. The 10k/100k benchmark needs a better-scaling solver; that is a
+   numerical change and must be validated on the CPU first.
+3. Segregation and the other unsupported settings listed in `gpu.md`.
 
 ## First action on the target Mac
 
@@ -97,10 +111,7 @@ POLY_MPM_TEST_METAL=1 uv run --locked --extra gpu --extra dev python -m pytest t
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 uv run --locked --extra gpu --extra dev python -m pytest -q
 ```
 
-`--stage runtime`, `--stage mechanics` and `--stage solver` should exit 0 with
-status `passed`. At this checkpoint `--stage all` runs those three gates, then
-exits 3 and labels the runner `not_implemented`. That is an implementation
-status, not a hardware failure or permission to mark the whole port validated.
+Every `--stage`, including `all`, should exit 0 with status `passed`.
 
 ## What is already written
 
@@ -113,13 +124,13 @@ status, not a hardware failure or permission to mark the whole port validated.
 | `mpm_gpu/config.py` | Backend defaults, supported configuration validation and temporary runner guard |
 | `mpm_gpu/mechanics.py`, `shaders/mechanics.slang` | Compact operator, preconditioner, exact local Coulomb solve, transfers and deformation (gate 2) |
 | `mpm_gpu/solver.py`, `shaders/solver.slang` | Resident sweeps, residual, Anderson (TSQR, Jacobi SVD) and Newton/GMRES with device control (gate 3) |
-| `mpm_gpu/fixtures.py`, `mechanics_checks.py`, `solver_checks.py` | FP64 CPU reference states and the gate 2 and 3 checks |
+| `mpm_gpu/runner.py`, `shaders/runner.slang` | Resident timestep, snapshots, device budgets and diagnostics records (gate 4) |
+| `mpm_gpu/fixtures.py`, `mechanics_checks.py`, `solver_checks.py`, `runner_checks.py` | FP64 CPU reference states and the gate 2, 3 and 4 checks |
 | `mpm_gpu/validate.py` | JSON hardware-gate reports and 10k/100k binning benchmarks |
 | `tests/test_gpu_contract.py` | CPU-verifiable packaging, topology, coordinates, configuration and error-report contracts |
 | `tests/test_gpu_hardware.py` | Actual Metal runtime, mechanics and solver gates, opt-in via environment variable; unavailable hardware fails when explicitly requested |
 
-No GPU runner, GPU diagnostic adapter or snapshot integration has been
-implemented. The runner validation stage must be implemented with it.
+The runner, diagnostic adapter and snapshot integration are implemented.
 
 ## Numerical references and next implementation work
 
@@ -132,8 +143,8 @@ reference, and `granular_mixed.py:GradientOperator`, `diagonal_coulomb` and
 Our nodal-stress rigid-grain model is an adaptation, not the paper's complete
 constitutive model/discretization. P0 remains outside the first GPU release.
 
-The mechanics and solver gates have passed; runner integration is next,
-following the quantitative acceptance criteria in [gpu.md](gpu.md).
+All four gates have passed against the quantitative acceptance criteria in
+[gpu.md](gpu.md).
 The following details are easy to miss:
 
 - Assemble two integrated gradient components per stress/velocity pair using
