@@ -1,0 +1,788 @@
+{
+  "environment": {
+    "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "thread_settings": {
+      "OPENBLAS_NUM_THREADS": null,
+      "OMP_NUM_THREADS": null
+    }
+  },
+  "source_sha256": {
+    "granular.py": "a225d59f76f0e4a93a2f6479c82399a99cea82cd39d1184fa750d9180443638b",
+    "granular_mixed.py": "7316b4459ad29fc28fb82ff5622c992fdb33d49f21007975c6c69fb980d1b70e",
+    "initialise.py": "c6eb01a5b896e2ace753e86ec9cc7ab651d485511f3295e4c4d94383953ff500",
+    "benchmarks/granular_discretization.py": "f8e9f1ac67fbdfb12160d09a1f19ddfa2cc45f57f6743db398b67b2951db0f43",
+    "benchmarks/granular_prototype.py": "ed6d7f03bb2e8dabd996e9589941e2ba08deed83c7e8d1199f8648fdb0b2d363",
+    "inputs/granular_column.py": "defd4034e5d2ec7eed612424fd2b751559591bc487eae3975673829267064860",
+    "inputs/granular_collapse.py": "3baa07d51701c2c6cf33f7771605e5fd888ec43ed43c50e941fff01f335100bb"
+  },
+  "timing": "Warm each basis, then alternate 3 paired runs; setup and output excluded, diagnostics enabled. Warmup failures are retained without repeat timing.",
+  "scope": "Different discrete models: compare physical/packing accuracy separately from cost. Neither is established inf-sup stable.",
+  "cases": [
+    {
+      "case": "static",
+      "configurations": {
+        "nodal": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.13987483398523182,
+          "completed_time": 0.2,
+          "requested_time": 0.2,
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.02,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            1.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 4.56174086205025e-10,
+          "rightmost_particle": 0.9375000000043763,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6000000000148192,
+          "max_deformation_based_packing": 0.6000000001582805,
+          "max_integrated_nodal_overpacking": 2.978953889121172e-12,
+          "max_residual": 9.620743092303177e-10,
+          "max_active_stress_nodes": 25,
+          "max_colors": 9,
+          "max_sweeps": 37,
+          "max_momentum_residual": 1.3646971525495233e-12,
+          "static_support_passed": true
+        },
+        "P0": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.06961848598439246,
+          "completed_time": 0.2,
+          "requested_time": 0.2,
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.02,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            1.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 1.0483373711505006e-14,
+          "rightmost_particle": 0.9375,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6000000000000008,
+          "max_deformation_based_packing": 0.6000000000000015,
+          "max_integrated_nodal_overpacking": 3.2381504884900393e-16,
+          "max_residual": 3.200216664857519e-14,
+          "max_active_stress_nodes": 16,
+          "max_colors": 4,
+          "max_sweeps": 25,
+          "max_momentum_residual": 2.2775047022816194e-13,
+          "static_support_passed": true
+        }
+      },
+      "samples_seconds": {
+        "nodal": [
+          0.13920914399204776,
+          0.14932515899999999,
+          0.13987483398523182
+        ],
+        "P0": [
+          0.06553210798301734,
+          0.06693651698878966,
+          0.06961848598439246
+        ]
+      },
+      "median_seconds": {
+        "nodal": 0.13987483398523182,
+        "P0": 0.06693651698878966
+      },
+      "runtime_ratio_nodal_to_P0": 2.0896640619746867,
+      "different_discretization_max_state_difference": {
+        "x": 2.384378805508902e-11,
+        "v": 4.485017764542048e-10
+      }
+    },
+    {
+      "case": "collapse_ppc2",
+      "configurations": {
+        "nodal": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.9978612750128377,
+          "completed_time": 0.3,
+          "requested_time": 0.3,
+          "steps": 60,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 2.1240446089941423,
+          "rightmost_particle": 0.5624798649537631,
+          "final_cell_packing_maximum": 0.75,
+          "final_cell_overpacking": 0.03125000000000001,
+          "max_nodal_packing": 0.6212208610903732,
+          "max_deformation_based_packing": 0.808242720316658,
+          "max_integrated_nodal_overpacking": 0.008180238613967026,
+          "max_residual": 9.500893658128956e-10,
+          "max_active_stress_nodes": 19,
+          "max_colors": 9,
+          "max_sweeps": 26,
+          "max_momentum_residual": 2.5012719116479957e-12
+        },
+        "P0": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.7346548520145006,
+          "completed_time": 0.3,
+          "requested_time": 0.3,
+          "steps": 60,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 2.137672080413128,
+          "rightmost_particle": 0.5605589699413857,
+          "final_cell_packing_maximum": 0.75,
+          "final_cell_overpacking": 0.03125000000000001,
+          "max_nodal_packing": 0.6459965533656501,
+          "max_deformation_based_packing": 0.7496561093570836,
+          "max_integrated_nodal_overpacking": 0.00958261528451044,
+          "max_residual": 9.912292932740707e-10,
+          "max_active_stress_nodes": 11,
+          "max_colors": 4,
+          "max_sweeps": 21,
+          "max_momentum_residual": 2.0481386655088124e-12
+        }
+      },
+      "samples_seconds": {
+        "nodal": [
+          0.9841391649970319,
+          0.986820413992973,
+          0.9978612750128377
+        ],
+        "P0": [
+          0.7358426529972348,
+          0.736987523996504,
+          0.7346548520145006
+        ]
+      },
+      "median_seconds": {
+        "nodal": 0.986820413992973,
+        "P0": 0.7358426529972348
+      },
+      "runtime_ratio_nodal_to_P0": 1.3410753100183244,
+      "different_discretization_max_state_difference": {
+        "x": 0.03842262643354882,
+        "v": 0.6579109387860618
+      }
+    },
+    {
+      "case": "collapse_ppc4",
+      "configurations": {
+        "nodal": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.979100105992984,
+          "completed_time": 0.3,
+          "requested_time": 0.3,
+          "steps": 60,
+          "particles": 128,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 2.2433876050698225,
+          "rightmost_particle": 0.617156503323717,
+          "final_cell_packing_maximum": 0.7124999999999998,
+          "final_cell_overpacking": 0.03124999999999994,
+          "max_nodal_packing": 0.6066141543927004,
+          "max_deformation_based_packing": 0.8712839567616578,
+          "max_integrated_nodal_overpacking": 0.0018233532861646382,
+          "max_residual": 9.902583510259092e-10,
+          "max_active_stress_nodes": 20,
+          "max_colors": 9,
+          "max_sweeps": 25,
+          "max_momentum_residual": 2.5011104298755527e-12
+        },
+        "P0": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.7795752990059555,
+          "completed_time": 0.3,
+          "requested_time": 0.3,
+          "steps": 60,
+          "particles": 128,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 2.0320576261880676,
+          "rightmost_particle": 0.5996774787021353,
+          "final_cell_packing_maximum": 0.7499999999999998,
+          "final_cell_overpacking": 0.031249999999999965,
+          "max_nodal_packing": 0.6342118658169181,
+          "max_deformation_based_packing": 0.7887144971213327,
+          "max_integrated_nodal_overpacking": 0.009775395714210223,
+          "max_residual": 9.891276754728857e-10,
+          "max_active_stress_nodes": 12,
+          "max_colors": 4,
+          "max_sweeps": 21,
+          "max_momentum_residual": 2.7284841053187847e-12
+        }
+      },
+      "samples_seconds": {
+        "nodal": [
+          0.9731575839978177,
+          0.9962449189915787,
+          0.979100105992984
+        ],
+        "P0": [
+          0.790751997003099,
+          0.7743457350006793,
+          0.7795752990059555
+        ]
+      },
+      "median_seconds": {
+        "nodal": 0.979100105992984,
+        "P0": 0.7795752990059555
+      },
+      "runtime_ratio_nodal_to_P0": 1.2559403911866431,
+      "different_discretization_max_state_difference": {
+        "x": 0.02801290601961398,
+        "v": 0.6056481000626794
+      }
+    },
+    {
+      "case": "collapse_coarse_short",
+      "configurations": {
+        "nodal": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.3915715550247114,
+          "completed_time": 0.05,
+          "requested_time": 0.05,
+          "steps": 20,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.3882967779442661,
+          "rightmost_particle": 0.44110141558585014,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6000000014864291,
+          "max_deformation_based_packing": 0.6037623599481764,
+          "max_integrated_nodal_overpacking": 3.0967272727592616e-10,
+          "max_residual": 9.457978109499298e-10,
+          "max_active_stress_nodes": 15,
+          "max_colors": 9,
+          "max_sweeps": 26,
+          "max_momentum_residual": 5.728578676879116e-14
+        },
+        "P0": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.2720245590026025,
+          "completed_time": 0.05,
+          "requested_time": 0.05,
+          "steps": 20,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.38783847877420907,
+          "rightmost_particle": 0.4410039613627531,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6003780752773133,
+          "max_deformation_based_packing": 0.6028294873394695,
+          "max_integrated_nodal_overpacking": 0.0001563517317953432,
+          "max_residual": 9.58108201296742e-10,
+          "max_active_stress_nodes": 8,
+          "max_colors": 4,
+          "max_sweeps": 21,
+          "max_momentum_residual": 1.139086659085919e-13
+        }
+      },
+      "samples_seconds": {
+        "nodal": [
+          0.3950950099970214,
+          0.40408168101566844,
+          0.3915715550247114
+        ],
+        "P0": [
+          0.28471034500398673,
+          0.27957043499918655,
+          0.2720245590026025
+        ]
+      },
+      "median_seconds": {
+        "nodal": 0.3950950099970214,
+        "P0": 0.27957043499918655
+      },
+      "runtime_ratio_nodal_to_P0": 1.4132217163741616,
+      "different_discretization_max_state_difference": {
+        "x": 0.00042389031225986695,
+        "v": 0.043487737289205075
+      }
+    },
+    {
+      "case": "collapse_refined",
+      "configurations": {
+        "P0": {
+          "status": "failed",
+          "error": "granular velocity solve did not converge: residual=3.41e-05, sweeps=2000",
+          "seconds": 12.348066865990404,
+          "completed_time": 0.0,
+          "requested_time": 0.05,
+          "steps": 0,
+          "particles": 128,
+          "grid": [
+            17,
+            13
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.0,
+          "rightmost_particle": 0.46875,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0
+        },
+        "nodal": {
+          "status": "completed",
+          "error": null,
+          "seconds": 3.354537044011522,
+          "completed_time": 0.05,
+          "requested_time": 0.05,
+          "steps": 20,
+          "particles": 128,
+          "grid": [
+            17,
+            13
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            2.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.41711828361757586,
+          "rightmost_particle": 0.4745402161622467,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6002573318956581,
+          "max_deformation_based_packing": 0.6081664421574343,
+          "max_integrated_nodal_overpacking": 4.496408926250745e-05,
+          "max_residual": 9.915719661955877e-10,
+          "max_active_stress_nodes": 45,
+          "max_colors": 9,
+          "max_sweeps": 155,
+          "max_momentum_residual": 8.556067554929069e-14
+        }
+      },
+      "samples_seconds": {
+        "nodal": [
+          3.3534158900147304,
+          3.385713768977439,
+          3.354537044011522
+        ],
+        "P0": []
+      },
+      "median_seconds": {
+        "nodal": 3.354537044011522,
+        "P0": null
+      },
+      "P0_first_step_assembled_reference": {
+        "status": "completed",
+        "solve_seconds": 7.996312427014345,
+        "residual": 9.9324992675065e-10,
+        "sweeps": 1653,
+        "evaluations": 200
+      }
+    },
+    {
+      "case": "incline_coarse",
+      "configurations": {
+        "nodal": {
+          "status": "completed",
+          "error": null,
+          "seconds": 3.266774568008259,
+          "completed_time": 0.05,
+          "requested_time": 0.05,
+          "steps": 20,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            1.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.09810008741569742,
+          "rightmost_particle": 0.9370208060591403,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6000000000887151,
+          "max_deformation_based_packing": 0.6000000143561492,
+          "max_integrated_nodal_overpacking": 3.33918425317788e-11,
+          "max_residual": 9.940517545375047e-10,
+          "max_active_stress_nodes": 20,
+          "max_colors": 12,
+          "max_sweeps": 401,
+          "max_momentum_residual": 1.2710574864626038e-13,
+          "uniform_sliding_reference_speed": 0.09809999999999999,
+          "maximum_downslope_speed": 0.09810008741569742,
+          "sliding_relative_error": 8.910876394561506e-07,
+          "sliding_reference_passed": true
+        },
+        "P0": {
+          "status": "completed",
+          "error": null,
+          "seconds": 0.5914507360139396,
+          "completed_time": 0.05,
+          "requested_time": 0.05,
+          "steps": 20,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            1.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.10174601176776821,
+          "rightmost_particle": 0.9370296253041875,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6000172412859496,
+          "max_deformation_based_packing": 0.6000344817780744,
+          "max_integrated_nodal_overpacking": 5.472198936132035e-06,
+          "max_residual": 9.91900404510376e-10,
+          "max_active_stress_nodes": 16,
+          "max_colors": 4,
+          "max_sweeps": 75,
+          "max_momentum_residual": 2.0495186137532011e-13,
+          "uniform_sliding_reference_speed": 0.09809999999999999,
+          "maximum_downslope_speed": 0.10174599067640519,
+          "sliding_relative_error": 0.03716606194092964,
+          "sliding_reference_passed": false
+        }
+      },
+      "samples_seconds": {
+        "nodal": [
+          3.150559803994838,
+          2.3605365559924394,
+          3.266774568008259
+        ],
+        "P0": [
+          0.6035777069919277,
+          0.5854262989887502,
+          0.5914507360139396
+        ]
+      },
+      "median_seconds": {
+        "nodal": 3.150559803994838,
+        "P0": 0.5914507360139396
+      },
+      "runtime_ratio_nodal_to_P0": 5.32683385471446,
+      "different_discretization_max_state_difference": {
+        "x": 0.00017678981513280512,
+        "v": 0.0036459219650291086
+      }
+    },
+    {
+      "case": "incline_refined",
+      "configurations": {
+        "nodal": {
+          "status": "failed",
+          "error": "granular velocity solve did not converge: residual=8.71e-09, sweeps=2000",
+          "seconds": 20.75145440499182,
+          "completed_time": 0.0,
+          "requested_time": 0.05,
+          "steps": 0,
+          "particles": 256,
+          "grid": [
+            9,
+            13
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "nodal",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            1.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.0,
+          "rightmost_particle": 0.96875,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0
+        },
+        "P0": {
+          "status": "failed",
+          "error": "granular velocity solve did not converge: residual=7.63e-05, sweeps=2000",
+          "seconds": 14.49070203898009,
+          "completed_time": 0.0025,
+          "requested_time": 0.05,
+          "steps": 1,
+          "particles": 256,
+          "grid": [
+            9,
+            13
+          ],
+          "dt": 0.0025,
+          "tolerance": 1e-09,
+          "stress_basis": "P0",
+          "solver": "velocity",
+          "transfer": "flip",
+          "material": {
+            "rho_s": 2500.0,
+            "packing_max": 0.6,
+            "mu": 0.5
+          },
+          "extent": [
+            0.0,
+            1.0,
+            0.0,
+            1.5
+          ],
+          "output": false,
+          "diagnostics": true,
+          "maximum_speed": 0.008806192252692116,
+          "rightmost_particle": 0.9687478980389929,
+          "final_cell_packing_maximum": 0.6,
+          "final_cell_overpacking": 0.0,
+          "max_nodal_packing": 0.6000100894128302,
+          "max_deformation_based_packing": 0.6000201791650026,
+          "max_integrated_nodal_overpacking": 1.3107569188115095e-06,
+          "max_residual": 5.446895599876693e-10,
+          "max_active_stress_nodes": 64,
+          "max_colors": 4,
+          "max_sweeps": 26,
+          "max_momentum_residual": 3.972054645195637e-15
+        }
+      },
+      "samples_seconds": {
+        "nodal": [],
+        "P0": []
+      },
+      "median_seconds": {
+        "nodal": null,
+        "P0": null
+      }
+    }
+  ]
+}

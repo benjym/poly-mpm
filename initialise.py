@@ -58,6 +58,7 @@ def prepare(P, mode="simulation"):
         granular_tolerance=1e-9,
         granular_solver="hybrid",
         granular_stress="intrinsic",
+        granular_stress_basis="nodal",
         granular_viscosity=0.0,
         granular_max_iterations=200,
         granular_max_nodes=256,
@@ -114,6 +115,8 @@ def prepare(P, mode="simulation"):
     for S in P.S:
         get_law(S.law)
     if P.solver == "granular":
+        if P.granular_stress_basis not in ("nodal", "P0"):
+            raise ValueError("granular_stress_basis must be nodal or P0")
         if P.granular_stress not in ("intrinsic", "plane_strain"):
             raise ValueError("granular_stress must be intrinsic or plane_strain")
         if P.granular_stress == "plane_strain" and P.granular_solver == "block":

@@ -381,6 +381,29 @@ def packing_fraction(P, G, batch):
     return np.divide(occupied, volumes, out=np.zeros_like(occupied), where=volumes > 0)
 
 
+def cell_indices(P, G, positions):
+    """Q1 cell ownership, including the closed upper edge and periodic wrap."""
+    x = positions[:, 0]
+    if P.B.cyclic_lr:
+        x = P.G.x_m + (x - P.G.x_m) % (P.G.x_M - P.G.x_m)
+    ix = np.minimum(np.floor((x - P.G.x_m) / G.dx).astype(int), P.G.nx - 2)
+    iy = np.minimum(np.floor((positions[:, 1] - P.G.y_m) / G.dy).astype(int), P.G.ny - 2)
+    return ix + (P.G.nx - 1) * iy
+
+
+def cell_packing_fraction(P, G, batch):
+    """Cell-average fixed grain volume; distinct from nodal/F-derived packing."""
+    volume = G.dx * G.dy * P.G.thickness
+    return (
+        np.bincount(
+            cell_indices(P, G, batch.x),
+            weights=batch.m / batch.material.rho_s,
+            minlength=(P.G.nx - 1) * (P.G.ny - 1),
+        )
+        / volume
+    )
+
+
 def assemble(P, G, batch, *, compact=False):
     """Build b(tau,u)=sum_p V_grain*N_stress*tau:D(u) and packing gap."""
     basis, dimension = stress_space(P)
@@ -391,25 +414,34 @@ def assemble(P, G, batch, *, compact=False):
     if np.any((~valid[nodes]) & (np.linalg.norm(batch.G, axis=2) > 1e-12)):
         raise ValueError("granular solver requires mass on every derivative-support node")
     solid_volume = batch.m / batch.material.rho_s
+    if P.granular_stress_basis == "P0":
+        stress_nodes = cell_indices(P, G, batch.x)[:, None]
+        stress_weights = np.ones_like(stress_nodes, dtype=float)
+        volumes = np.full((P.G.nx - 1) * (P.G.ny - 1), G.dx * G.dy * P.G.thickness)
+        unique = np.ones(len(volumes), dtype=bool)
+    else:
+        stress_nodes, stress_weights = nodes, batch.N
+        volumes = basis_volumes(P, G)
+        unique = canonical == np.arange(len(G.m))
     occupied = np.bincount(
-        nodes.ravel(), weights=(solid_volume[:, None] * batch.N).ravel(), minlength=len(G.m)
+        stress_nodes.ravel(), weights=(solid_volume[:, None] * stress_weights).ravel(), minlength=len(volumes)
     )
-    active = np.flatnonzero((canonical == np.arange(len(G.m))) & (occupied > 0))
+    active = np.flatnonzero(unique & (occupied > 0))
     if len(active) > P.granular_max_nodes:
         raise ValueError(f"granular prototype supports at most {P.granular_max_nodes} active stress nodes")
-    index = np.full(len(G.m), -1, dtype=int)
+    index = np.full(len(volumes), -1, dtype=int)
     index[active] = np.arange(len(active))
-    index = index[canonical]
     # Each row has all tensor components at one stress node; integration and
     # momentum use exactly the same B and its transpose.
     count, support = nodes.shape
+    shape = (count, stress_nodes.shape[1], support)
     rows, cols, data = [], [], []
     for mode in range(0 if compact else components):
         for component in range(2):
             derivative = np.einsum("j,prj->pr", basis[mode, component], batch.G)
-            contribution = solid_volume[:, None, None] * batch.N[:, :, None] * derivative[:, None, :]
-            row = np.broadcast_to(components * index[nodes][:, :, None] + mode, (count, support, support))
-            col = np.broadcast_to(2 * nodes[:, None, :] + component, (count, support, support))
+            contribution = solid_volume[:, None, None] * stress_weights[:, :, None] * derivative[:, None, :]
+            row = np.broadcast_to(components * index[stress_nodes][:, :, None] + mode, shape)
+            col = np.broadcast_to(2 * nodes[:, None, :] + component, shape)
             keep = contribution != 0
             rows.append(row[keep])
             cols.append(col[keep])
@@ -417,10 +449,11 @@ def assemble(P, G, batch, *, compact=False):
     if compact:
         from granular_mixed import GradientOperator
 
-        contribution = solid_volume[:, None, None, None] * batch.N[:, :, None, None] * batch.G[:, None, :, :2]
-        shape = contribution.shape[:-1]
+        contribution = (
+            solid_volume[:, None, None, None] * stress_weights[:, :, None, None] * batch.G[:, None, :, :2]
+        )
         B = GradientOperator(
-            np.broadcast_to(index[nodes][:, :, None], shape).ravel(),
+            np.broadcast_to(index[stress_nodes][:, :, None], shape).ravel(),
             np.broadcast_to(nodes[:, None, :], shape).ravel(),
             contribution.reshape(-1, 2),
             len(active),
@@ -439,7 +472,7 @@ def assemble(P, G, batch, *, compact=False):
         free[2 * np.flatnonzero(G.boundary_h)] = False
         free[2 * np.flatnonzero(G.boundary_v) + 1] = False
     gap = np.zeros((len(active), components))
-    capacity = batch.material.packing_max * basis_volumes(P, G)[active]
+    capacity = batch.material.packing_max * volumes[active]
     # Positive-part gap follows the paper's dissipative packing linearisation.
     # It does not geometrically repair pre-existing overpacking.
     clearance = capacity - occupied[active]
@@ -494,7 +527,7 @@ def step(P, G, L):
             periodic_velocity[P.G.nx - 1 :: P.G.nx] = periodic_velocity[:: P.G.nx]
         viscous_force = stiffness @ trial
         viscous_dissipation = float(P.dt * trial @ viscous_force)
-    old = getattr(G, "granular_contact", np.zeros((len(G.m), components)))
+    old = getattr(G, "granular_contact", np.zeros((len(occupied), components)))
     options = dict(
         tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=old[active]
     )
@@ -522,9 +555,9 @@ def step(P, G, L):
             value = getattr(G, name)
             value[P.G.nx - 1 :: P.G.nx] = value[:: P.G.nx]
     velocity = nodal_velocity(G, P)
-    G.granular_contact = np.zeros((len(G.m), components))
+    G.granular_contact = np.zeros((len(occupied), components))
     G.granular_contact[active] = contact
-    if P.B.cyclic_lr:
+    if P.B.cyclic_lr and P.granular_stress_basis == "nodal":
         G.granular_contact[P.G.nx - 1 :: P.G.nx] = G.granular_contact[:: P.G.nx]
     # Recompute physical work/impulse budgets with the final contact response.
     unique = canonical_nodes(P, len(G.m)) == np.arange(len(G.m))
@@ -546,7 +579,11 @@ def step(P, G, L):
     b.dstrain = 0.5 * (b.L + b.L_T) * P.dt
     b.strain += b.dstrain
     advance(b, P)
-    phase_stress = -np.einsum("pk,kij->pij", gather(G.granular_contact, b.n, b.N, G.valid_nodes), basis)
+    if P.granular_stress_basis == "P0":
+        stress_coefficients = G.granular_contact[cell_indices(P, G, b.x)]
+    else:
+        stress_coefficients = gather(G.granular_contact, b.n, b.N, G.valid_nodes)
+    phase_stress = -np.einsum("pk,kij->pij", stress_coefficients, basis)
     phase_pressure_2d = -np.trace(phase_stress[:, :2, :2], axis1=1, axis2=2) / 2
     if dimension == 2:
         phase_stress[:, 2, 2] = -phase_pressure_2d
@@ -592,18 +629,29 @@ def step(P, G, L):
         G.update_pk(P, G)
         G.calculate_phi_increment(P, L)
         L.move_grainsize_on_grid(P, G)
+    if P.granular_stress_basis == "P0":
+        initial_nodal_packing = float(np.max(packing_fraction(P, G, b), initial=0))
+        stats["maximum_stress_packing"] = float(np.max(occupied, initial=0) / (G.dx * G.dy * P.G.thickness))
     L.move_material_points(P, G)
     stats.update(
         active_nodes=len(active),
         stress_dimension=dimension,
+        stress_basis=P.granular_stress_basis,
         viscosity_trial_dissipation=viscous_dissipation,
         contact_power=float(contact.ravel() @ (B @ velocity[:, :2].ravel())),
-        maximum_packing=float(
-            np.max(
-                np.divide(
-                    occupied, basis_volumes(P, G), out=np.zeros_like(occupied), where=basis_volumes(P, G) > 0
-                ),
-                initial=0,
+        maximum_packing=(
+            initial_nodal_packing
+            if P.granular_stress_basis == "P0"
+            else float(
+                np.max(
+                    np.divide(
+                        occupied,
+                        basis_volumes(P, G),
+                        out=np.zeros_like(occupied),
+                        where=basis_volumes(P, G) > 0,
+                    ),
+                    initial=0,
+                )
             )
         ),
     )
@@ -621,4 +669,15 @@ def step(P, G, L):
             else 0.0
         )
         stats["maximum_particle_packing"] = float(np.max(b.rho / b.material.rho_s, initial=0))
+        if P.granular_stress_basis == "P0":
+            cell_packing = cell_packing_fraction(P, G, b)
+            stats["maximum_stress_packing_after"] = float(np.max(cell_packing, initial=0))
+            stats["integrated_stress_overpacking_fraction"] = (
+                float(
+                    np.maximum(cell_packing - b.material.packing_max, 0).sum() * G.dx * G.dy * P.G.thickness
+                )
+                / solid_volume
+                if solid_volume
+                else 0.0
+            )
         L.diagnostics.finish(P, G, L, before)

@@ -107,6 +107,9 @@ scalability.
 with cached local metrics and scalar sliding solves inspired by Daviet (2026).
 It supports both stress spaces while retaining the existing discrete equations;
 the hybrid reference remains the default.
+`granular_stress_basis='P0'` enables the separate cellwise-constant stress
+experiment; nodal stresses remain default. Its convergence and flow-accuracy
+limits are documented in the same guide.
 Elastic-wave and effective-viscosity estimates do not apply to this branch.
 Advection, segregation and custom material timestep restrictions still apply.
 Timestep accuracy and contact convergence must also be checked.

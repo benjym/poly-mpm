@@ -7,9 +7,10 @@ remains `"hybrid"`, which is the small-problem reference solver.
 
 This pass adapts the stress iteration and nonassociated local flow-rule solver
 from [Daviet (2026), sections 5.2–5.3](https://research.nvidia.com/labs/prl/mixed_mpm/files/mixed_mpm.pdf).
-It retains our current bilinear velocity and **nodal** stress spaces, particle
+The first pass retains our bilinear velocity and **nodal** stress spaces, particle
 quadrature, packing gap, transfer options, wall constraints and viscosity split.
-It does not yet implement the paper's discontinuous stress spaces or GPU backend.
+The separate Q1–P0 experiment below changes the stress space. No GPU backend
+is implemented yet.
 
 ## Operator and iteration
 
@@ -112,7 +113,8 @@ It warms each solver, alternates three paired timed runs and reports medians.
 Setup, plotting and progress are excluded; diagnostics, grids, particles,
 timesteps, transfers and requested tolerances match. The committed
 [report](../benchmarks/granular_mixed.json) records the environment and source
-hashes. Its separately labeled pre-change baseline used single cold runs;
+hashes for the nodal first pass at commit `c8eefdd`; the subsequent P0 study
+has its own source-fingerprinted report. Its separately labeled pre-change baseline used single cold runs;
 use the paired warmed measurements for speed comparisons.
 
 On the Intel development Mac, this report measured:
@@ -154,7 +156,90 @@ segregation conservation, viscosity work, saved output and explicit failure
 under an insufficient iteration budget.
 
 This pass does not correct the packing drift discussed in the
-[source audit](granular-source-audit.md). Q1–P0 is a separate next experiment:
-it changes the spatial discretization and requires new accuracy and packing
-studies before a GPU port. Particle-carried stress warmstarts also remain a
-separate experiment; current grid stress warmstarts are retained for comparison.
+[source audit](granular-source-audit.md). Particle-carried stress warmstarts
+remain a separate experiment; current grid stress warmstarts are retained for
+comparison.
+
+## Experimental Q1–P0 stress space
+
+Set `P.granular_stress_basis = "P0"` before `prepare(P)` to use one constant
+stress per occupied cell. `"nodal"` remains the default. This option is
+independent of `granular_stress`, which still chooses intrinsic 2D or plane
+strain, and `granular_solver`, which chooses the solution algorithm.
+
+For P0, a particle contributes its full grain volume to its containing cell,
+and the stress shape function is one in that cell. The coupling and packing
+clearance become
+
+```text
+B_cell,j = sum(particles in cell, Vgrain * BASIS : grad N_velocity,j)
+gap_n = max(phi_max * cell_volume - sum(particles in cell, Vgrain), 0)
+        / (sqrt(dimension) * dt)
+```
+
+The volume is the geometric cell volume, including thickness. Empty cells have
+no stress unknown. Stresses are transferred to particles as cell constants,
+using their positions before advection. Periodic velocities share seam nodes;
+cell stresses remain separate unknowns on each side of the domain. Both the
+assembled reference and compact path use this same definition. Four colors
+suffice for the nonperiodic Q1–P0 interior stencil in 2D; the generic coloring
+also handles periodic grids whose dimensions need additional colors.
+
+This is an adaptation to our existing fixed-grain-volume rigid model, not a
+reproduction of the complete 2026 constitutive implementation. The pressure
+constraint still uses the positive-part gap and does not geometrically repair
+overpacking. Cell packing also jumps when point particles cross cell edges;
+it is distinct from both nodal reconstruction and deformation-based density.
+
+Existing `maximum_packing` and `maximum_packing_after` diagnostics continue to
+refer to nodal reconstruction for comparison across spaces. P0 additionally
+reports `maximum_stress_packing`, `maximum_stress_packing_after`, and
+`integrated_stress_overpacking_fraction`, using cell grain volumes. Material
+and segregation outputs, plot formats and save callbacks remain unchanged.
+
+Run the controlled spatial experiment with:
+
+```sh
+uv run --locked python -m benchmarks.granular_discretization --output /tmp/granular-discretization.json
+```
+
+The [report](../benchmarks/granular_discretization.json) retains warmup failures,
+completed time, residuals, sampling/grid changes, packing diagnostics and
+inclined-layer reference errors. Cost ratios compare different discrete
+models; they are not equivalent-behavior solver speedups.
+
+Independent scalar assembly checks, affine/constant velocity patches, adjoint
+work, mass/packing inventory, static support, both stress reductions and
+short evolving comparisons against the assembled solver pass. Periodic
+segregation conservation and saved plot cadence are checked for P0 too.
+These implementation checks do not establish spatial convergence: the refined
+collapse exposes an iterative-solver failure, and coarse inclined flow has a
+larger discrepancy with the sliding reference. The report includes an assembled
+first-step replay when the compact iteration fails immediately, to distinguish
+iteration failure from an infeasible constraint problem.
+
+The recorded pre-density-fix checkpoint gives these bounded costs:
+
+| Case | Nodal median (s) | P0 median (s) | Observation |
+| --- | ---: | ---: | --- |
+| Static column | 0.140 | 0.067 | Both remain static |
+| Collapse, 2 particles per cell axis | 0.987 | 0.736 | Peak nodal packing: 0.621 vs 0.646 |
+| Collapse, 4 particles per cell axis | 0.979 | 0.780 | Peak nodal packing: 0.607 vs 0.634 |
+| Short coarse collapse | 0.395 | 0.280 | Same time and dt as the refined case |
+| Refined collapse | 3.355 | Failed | Assembled P0 first step converges |
+| Coarse incline | 3.151 | 0.591 | P0 sliding reference error: 3.72% |
+| Refined incline | Failed | Failed | Neither compact solve meets tolerance |
+
+The grid comparisons hold `dt=0.0025` and final time `0.05` fixed. The
+particle-count comparison holds grid, `dt=0.005` and final time `0.3` fixed.
+The successful assembled replay of the failed P0 collapse first step requires
+200 least-squares evaluations plus 1,653 block sweeps, reaching residual
+`9.93e-10`. Thus the compact iteration's failure is not evidence that this
+frozen constraint problem has no solution. The inclination and packing results
+also prevent treating P0's lower coarse-case costs as an accepted physical
+accuracy/performance improvement.
+
+P0 remains experimental. Resolve these iteration and accuracy gates, and
+consider the paper's dP1 alternative, before selecting a compact stress space
+for the GPU port. Neither the paper's compact mixed pairs nor this experiment
+establish an inf-sup stability guarantee.

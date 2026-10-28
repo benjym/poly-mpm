@@ -50,6 +50,8 @@ passed its stated tests; it is not a guarantee for every application.
       runnable `domain_column` example and integration-mode diagnostics.
 - [x] Opt-in compact velocity-based rigid-grain iteration, scalar local flow
       solves and cached metrics, with coupled reference and physical checks.
+- [x] Experimental Q1–P0 stress space, independent assembly checks and a
+      controlled sampling/grid/packing study that retains failed gates.
 
 ## Acceptance evidence
 
@@ -66,8 +68,8 @@ experimental validation and application calibration remain separate tasks.
 ## Deferred implementation backlog
 
 - [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
-- [ ] Evaluate Q1–P0 discontinuous granular stresses against the nodal reference,
-      including collapse, packing and spatial-refinement studies, before GPU porting.
+- [ ] Resolve Q1–P0 iterative convergence and flow-accuracy limits, or evaluate
+      dP1 stresses, before selecting a compact discretization for GPU porting.
 
 - [ ] Control remaining gaps/overlaps of independently convected domains, and
       verify convergence for broader nonuniform deformation and material interfaces.

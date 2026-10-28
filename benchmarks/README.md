@@ -36,6 +36,13 @@ identical frozen problems with the original residual criterion. The committed
 [report](granular_mixed.json) and [method guide](../docs/granular-mixed.md)
 describe the algorithm, measured costs and remaining discretization work.
 
+`uv run --locked python -m benchmarks.granular_discretization --output /tmp/granular-discretization.json`
+compares nodal and experimental Q1–P0 stresses with the compact solver, varying
+particle sampling and grid spacing independently. Failed runs and inclined-flow
+reference errors remain in the [report](granular_discretization.json). These
+cost ratios compare different discrete models and do not establish equivalent
+numerical behavior or spatial convergence.
+
 ```sh
 uv run --locked python -m benchmarks.broader_verification --output /tmp/poly-mpm-broader.json --figure /tmp/poly-mpm-broader.png
 uv run --locked python -m benchmarks.verification --output /tmp/poly-mpm-wave.json

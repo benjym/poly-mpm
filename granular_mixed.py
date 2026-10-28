@@ -1,7 +1,8 @@
 """Compact, velocity-based Coulomb iteration inspired by Daviet (2026), §5.
 
-This implements the rigid, nonassociated limit on our existing nodal stress
-space. It does not implement the paper's discontinuous discretizations.
+This implements the rigid, nonassociated limit. The supplied operator can use
+nodal or cellwise constant stresses; finite-strain elastoplasticity is outside
+this module's scope.
 """
 
 import numpy as np

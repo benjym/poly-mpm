@@ -212,6 +212,7 @@ def test_nonconvergence_is_not_silently_accepted():
         dict(damping=True),
         dict(solver="invalid"),
         dict(granular_solver="unknown"),
+        dict(granular_stress_basis="unknown"),
     ],
 )
 def test_unsupported_formulations_fail_early(setting):
