@@ -9,6 +9,14 @@ committed reports.
 
 ## Analytical solver verification
 
+For the opt-in rigid-grain branch, run
+`uv run --locked python -m benchmarks.granular_prototype --output /tmp/granular-prototype.json`.
+The committed [report](granular_prototype.json) checks static support and
+coarse-grid collapse timestep sensitivity. See the [prototype guide](../docs/granular-prototype.md)
+for its constitutive assumptions, size limits and remaining validation work.
+This changes the physical model and does not measure an equivalent-behavior
+speedup against explicit elastic MPM.
+
 ```sh
 uv run --locked python -m benchmarks.broader_verification --output /tmp/poly-mpm-broader.json --figure /tmp/poly-mpm-broader.png
 uv run --locked python -m benchmarks.verification --output /tmp/poly-mpm-wave.json

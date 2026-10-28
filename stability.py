@@ -16,6 +16,10 @@ def _state_limits(P, G, L):
         if not len(b) or b.material.law == "rigid":
             continue
         S = b.material
+        if S.law == "granular":
+            # Contact pressure/friction are solved implicitly; no artificial
+            # elastic stiffness or capped effective viscosity is introduced.
+            continue
         rho = b.rho.min()
         shear = getattr(S, "G", 0.0) if S.law in ("elastic", "von_mises", "dp", "dp_rate") else 0.0
         if S.law == "elastic" and P.mechanics == "updated":

@@ -194,6 +194,8 @@ remain enabled where configured. Durations, loading, and output frequency are co
 | `python MPM.py flow` | supported smoke-tested |
 | `python MPM.py fluid` | unsupported material law: Unsupported material law 'compressible' in legacy P.F; use supported P.S materials |
 | `python MPM.py francois 11` | supported smoke-tested |
+| `python MPM.py granular_collapse` | supported smoke-tested; experimental rigid-grain solver |
+| `python MPM.py granular_column` | supported smoke-tested; experimental rigid-grain solver |
 | `python MPM.py gsd` | supported smoke-tested |
 | `python MPM.py incline` | supported smoke-tested |
 | `python MPM.py macro` | supported smoke-tested |

@@ -54,6 +54,10 @@ def prepare(P, mode="simulation"):
         diagnostics_stride=1,
         timestep_policy="report",
         mechanics="updated",
+        solver="explicit",
+        granular_tolerance=1e-9,
+        granular_max_iterations=200,
+        granular_max_nodes=256,
         interpolation="linear",
         quadrature="point",
         domain_max_support=256,
@@ -77,6 +81,8 @@ def prepare(P, mode="simulation"):
         raise ValueError("timestep_policy must be report or enforce")
     if P.mechanics not in ("updated", "legacy"):
         raise ValueError("mechanics must be updated or legacy")
+    if P.solver not in ("explicit", "granular"):
+        raise ValueError("solver must be explicit or granular")
     if P.interpolation not in ("linear", "quadratic"):
         raise ValueError("interpolation must be linear or quadratic")
     if P.quadrature not in ("point", "domain"):
@@ -102,6 +108,26 @@ def prepare(P, mode="simulation"):
     P.phases = len(P.S)
     for S in P.S:
         get_law(S.law)
+    if P.solver == "granular":
+        if P.mechanics != "updated" or P.quadrature != "point":
+            raise ValueError("granular prototype requires updated mechanics and point quadrature")
+        if P.interpolation != "linear":
+            raise ValueError("granular prototype currently requires linear interpolation")
+        if len(P.S) != 1 or P.S[0].law != "granular":
+            raise ValueError("granular prototype requires one granular material")
+        if P.pressure is not None or P.damping:
+            raise ValueError("granular prototype solves pressure directly and requires damping=False")
+        if not np.isfinite(P.granular_tolerance) or P.granular_tolerance <= 0:
+            raise ValueError("granular_tolerance must be positive and finite")
+        for name in ("granular_max_iterations", "granular_max_nodes"):
+            if (
+                not np.isfinite(getattr(P, name))
+                or int(getattr(P, name)) != getattr(P, name)
+                or getattr(P, name) < 1
+            ):
+                raise ValueError(f"{name} must be a positive integer")
+    elif any(S.law == "granular" for S in P.S):
+        raise ValueError("granular material requires solver='granular'")
     if getattr(getattr(P, "F", None), "n", 0):
         raise ValueError(
             f"Unsupported material law {getattr(P.F, 'law', 'legacy fluid')!r} in legacy P.F; use supported P.S materials"
@@ -141,6 +167,12 @@ def prepare(P, mode="simulation"):
     ):
         defaults(P.B, **{name: False})
     defaults(P.G, thickness=1.0, ns=1, s=[0.001])
+    if P.solver == "granular" and (P.B.wall_mu or P.B.conveyor):
+        raise ValueError(
+            "granular prototype supports frictionless or no-slip fixed walls, not wall_mu/conveyor"
+        )
+    if P.solver == "granular" and (P.B.vertical_force or P.B.horizontal_force):
+        raise ValueError("granular prototype does not support traction boundary flags")
     P.G.s = np.asarray(P.G.s, dtype=float)
     if P.G.s.shape != (P.G.ns,) or not np.isfinite(P.G.s).all() or np.any(P.G.s <= 0):
         raise ValueError("s must contain ns positive finite grain sizes")

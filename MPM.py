@@ -9,6 +9,12 @@ import initialise
 
 def step(P, G, L, *, _limit_cache=None):
     """Advance one complete timestep, without output or changing the clock."""
+    if P.solver == "granular":
+        from granular import step as granular_step
+
+        if _limit_cache is not None:
+            _limit_cache.clear()
+        return granular_step(P, G, L)
     if not np.isfinite(P.dt) or P.dt <= 0:
         raise ValueError("dt must be finite and positive")
     from stability import limits

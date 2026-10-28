@@ -24,6 +24,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.
    :caption: Methods and reference
 
    numerical-foundations
+   granular-prototype
    quadrature
    verification
    implementation-todo

@@ -7,7 +7,18 @@ Kernels update history and dstress; update_stress selects the integration scheme
 import numpy as np
 
 EYE = np.eye(3)
-SUPPORTED = ("rigid", "elastic", "von_mises", "viscous", "pouliquen", "bingham", "dp", "dp_rate", "linear_mu")
+SUPPORTED = (
+    "rigid",
+    "elastic",
+    "von_mises",
+    "viscous",
+    "pouliquen",
+    "bingham",
+    "dp",
+    "dp_rate",
+    "linear_mu",
+    "granular",
+)
 ALGEBRAIC = ("bingham", "linear_mu")
 FLUIDS = ("viscous", "bingham", "pouliquen", "linear_mu")
 COROTATIONAL = ("dp", "dp_rate")
@@ -36,6 +47,12 @@ def validate_material(material, mechanics="updated"):
             raise ValueError(f"{name}: {key} must be a finite scalar {comparison} {lower}")
         return value
 
+    if name == "granular":
+        scalar("rho_s", strict=True)
+        scalar("mu")
+        if scalar("packing_max", strict=True) > 1:
+            raise ValueError("granular: packing_max must be <= 1")
+        return
     scalar("K", strict=name in COROTATIONAL + ("elastic", "von_mises"))
     if name in ("elastic", "von_mises"):
         scalar("G", strict=True)
@@ -88,6 +105,10 @@ def invariants(a):
 
 def rigid(mp, material, params):
     mp.dstress.fill(0)
+
+
+def granular(mp, material, params):
+    raise RuntimeError("granular material requires solver='granular'; no explicit stress update exists")
 
 
 def elastic(mp, material, params):

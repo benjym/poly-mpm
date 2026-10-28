@@ -1,0 +1,195 @@
+{
+  "environment": {
+    "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O"
+  },
+  "source_sha256": {
+    "granular.py": "6e93f47dc65c1ff3ced2665539580ea3633ce1adb44529182a2bb87a40971553",
+    "initialise.py": "07d2545aea90adce8f68b5f89e95b50bed14ef99724f80f092b3c9367d2b6275",
+    "MPM.py": "8494e49a0beee8942ea2343b128331101e2b19bc7aff20c89012297db19b97e2",
+    "constit.py": "df61f22b901ae937808aedbc87f7294e95c2dcdf6f0ea218e3ac86c55480e522",
+    "particles.py": "74bc8b5088ce8e043793ebd786103190bf1f9e68a7ea309f01f4952d8dc12d2d",
+    "stability.py": "0a3eefb82e8523e1b4130a03f4476b73ac3ce6115a5dd82ebedd3941a1aba958",
+    "inputs/granular_column.py": "defd4034e5d2ec7eed612424fd2b751559591bc487eae3975673829267064860",
+    "inputs/granular_collapse.py": "3baa07d51701c2c6cf33f7771605e5fd888ec43ed43c50e941fff01f335100bb"
+  },
+  "scope": "Intrinsic 2D rigid-grain prototype; no experimental validation or continuum well-posedness claim.",
+  "timing": "One bounded run per configuration, setup and plotting excluded; diagnostics enabled.",
+  "cases": [
+    {
+      "case": "static",
+      "dt": 0.02,
+      "steps": 10,
+      "seconds": 0.29693183999916073,
+      "particles": 64,
+      "grid": {
+        "nx": 5,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.2,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "max_displacement": 5.551115123125783e-16,
+      "max_speed": 7.309050714703296e-15,
+      "rightmost_particle": 0.9375,
+      "centre_of_mass": [
+        0.5,
+        0.5,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 4.724640200699433e-13,
+      "max_natural_map_residual": 1.7763568394002505e-14,
+      "maximum_initial_nodal_packing": 0.6000000000000003,
+      "maximum_contact_power": 2.2693019338659962e-11,
+      "max_fallback_sweeps": 0,
+      "accumulated_contact_dissipation": -2.630246020984842e-12,
+      "energy_residual": -4.221300921737703e-13,
+      "timestep_limits": {
+        "advection": 3798839566671.0195
+      }
+    },
+    {
+      "case": "collapse",
+      "dt": 0.01,
+      "steps": 30,
+      "seconds": 0.6074219360016286,
+      "particles": 32,
+      "grid": {
+        "nx": 9,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "max_displacement": 0.29655709538541175,
+      "max_speed": 2.111369259000217,
+      "rightmost_particle": 0.5654926615529812,
+      "centre_of_mass": [
+        0.29569263977986476,
+        0.3998895317299886,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 1.1400613357256805e-12,
+      "max_natural_map_residual": 9.645295673266219e-10,
+      "maximum_initial_nodal_packing": 0.6210749008714177,
+      "maximum_contact_power": -60.53703263415284,
+      "max_fallback_sweeps": 11,
+      "accumulated_contact_dissipation": 274.9691671895302,
+      "energy_residual": -29.578176911014545,
+      "timestep_limits": {
+        "advection": 0.0118861013255896
+      }
+    },
+    {
+      "case": "collapse",
+      "dt": 0.005,
+      "steps": 60,
+      "seconds": 0.6146486920042662,
+      "particles": 32,
+      "grid": {
+        "nx": 9,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "max_displacement": 0.28888061796955794,
+      "max_speed": 2.1240446093277594,
+      "rightmost_particle": 0.5624798649573197,
+      "centre_of_mass": [
+        0.29401095833751406,
+        0.40309226097862355,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 2.2765771512355045e-12,
+      "max_natural_map_residual": 1.2889689315898067e-13,
+      "maximum_initial_nodal_packing": 0.6208740456690052,
+      "maximum_contact_power": -30.26851631707634,
+      "max_fallback_sweeps": 0,
+      "accumulated_contact_dissipation": 268.5141847025303,
+      "energy_residual": -29.52947541198023,
+      "timestep_limits": {
+        "advection": 0.011608908460435817
+      }
+    },
+    {
+      "case": "collapse",
+      "dt": 0.0025,
+      "steps": 120,
+      "seconds": 1.0126879549934529,
+      "particles": 32,
+      "grid": {
+        "nx": 9,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "max_displacement": 0.2858438142487294,
+      "max_speed": 2.131854521522147,
+      "rightmost_particle": 0.5608362364272943,
+      "centre_of_mass": [
+        0.29294229457604315,
+        0.40470531007898536,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 3.8654569727014176e-12,
+      "max_natural_map_residual": 6.705747068735946e-14,
+      "maximum_initial_nodal_packing": 0.6201752151408773,
+      "maximum_contact_power": -15.134258158538199,
+      "max_fallback_sweeps": 0,
+      "accumulated_contact_dissipation": 267.88159404934504,
+      "energy_residual": -28.813465325340267,
+      "timestep_limits": {
+        "advection": 0.011511303328105009
+      }
+    }
+  ],
+  "timestep_comparison": {
+    "rightmost_particle_differences": [
+      0.003012796595661449,
+      0.0016436285300254205
+    ],
+    "interpretation": "Single coarse-grid temporal sensitivity check; not spatial convergence or experimental validation."
+  }
+}

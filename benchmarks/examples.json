@@ -216,6 +216,26 @@
     ]
   },
   {
+    "example": "granular_collapse",
+    "args": [
+      "granular_collapse"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      32
+    ]
+  },
+  {
+    "example": "granular_column",
+    "args": [
+      "granular_column"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      64
+    ]
+  },
+  {
     "example": "gsd",
     "args": [
       "gsd"

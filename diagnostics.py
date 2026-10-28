@@ -145,6 +145,8 @@ class Diagnostics:
             particles_with_incomplete_gradient_support=gradient_missing,
             timestep_limits=getattr(P, "timestep_limits", {}),
         )
+        if P.solver == "granular":
+            row["granular_solver"] = G.granular_stats.copy()
         initial_energy = (
             self.initial["kinetic"] + self.initial["affine_kinetic"] + self.initial["elastic_energy"]
         )

@@ -97,6 +97,11 @@ class Particles:
         self.initial_rho = self.rho.copy()
         self.V = field(S.A, (count,), "A") * P.G.thickness
         self.m = self.rho * self.V
+        if S.law == "granular":
+            if np.any(self.rho > S.rho_s * S.packing_max * (1 + 1e-12)):
+                raise ValueError("granular initial density exceeds rho_s * packing_max")
+            if np.any(self.v[:, 2] != 0):
+                raise ValueError("granular prototype requires planar initial velocities")
         self.V0 = self.V.copy()
         self.domain_halfsize = np.zeros((count, 2))
         if self.quadrature == "domain":

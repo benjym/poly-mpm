@@ -1,0 +1,452 @@
+"""Experimental inertial, rigid-grain MPM with coupled nonsmooth friction.
+
+Inspired by Daviet & Bertails-Descoubes (2016), equations (7)--(14).
+This independent small-problem implementation uses the existing nodal bases,
+intrinsic 2D symmetric tensors, lumped mass and a nonlinear least-squares
+solve with a dense Jacobian and block Gauss-Seidel fallback. It is NOT a reproduction of Sand6
+or a claim of continuum well-posedness. See docs/granular-prototype.md.
+"""
+
+import numpy as np
+from scipy import sparse
+from scipy.optimize import brentq, least_squares
+
+from interpolation import stencil
+from kinematics import advance
+from transfers import gather, nodal_velocity, scatter
+
+# Frobenius-orthonormal intrinsic 2D stress basis, embedded for output.
+BASIS = np.array(
+    [
+        np.diag([1.0, 1.0, 0.0]) / np.sqrt(2),
+        np.diag([1.0, -1.0, 0.0]) / np.sqrt(2),
+        [[0.0, 1 / np.sqrt(2), 0.0], [1 / np.sqrt(2), 0.0, 0.0], [0.0, 0.0, 0.0]],
+    ]
+)
+COMPONENTS = len(BASIS)
+
+
+def cone_projection(x, mu):
+    """Euclidean projection and a generalized derivative for |r_t| <= mu*r_n."""
+    x = np.asarray(x)
+    components = x.shape[-1]
+    x = x.reshape(-1, components)
+    out = np.zeros_like(x)
+    jac = np.zeros((len(x), components, components))
+    for i, (value, friction) in enumerate(zip(x, np.broadcast_to(mu, len(x)))):
+        n, t = value[0], value[1:]
+        length = np.linalg.norm(t)
+        if friction == 0:
+            out[i, 0] = max(n, 0)
+            jac[i, 0, 0] = float(n > 0)
+        elif length <= friction * n:
+            out[i] = value
+            jac[i] = np.eye(components)
+        elif n + friction * length > 0:
+            direction = t / length
+            normal = (n + friction * length) / (1 + friction**2)
+            out[i, 0] = normal
+            out[i, 1:] = friction * normal * direction
+            jac[i, 0, 0] = 1 / (1 + friction**2)
+            jac[i, 0, 1:] = jac[i, 1:, 0] = friction * direction / (1 + friction**2)
+            outer = np.outer(direction, direction)
+            jac[i, 1:, 1:] = friction**2 / (1 + friction**2) * outer + friction * normal / length * (
+                np.eye(components - 1) - outer
+            )
+    return out, jac
+
+
+def _local_coulomb(W, q, mu, previous):
+    """Exact 2D local contact update for nonlinear block Gauss-Seidel."""
+    if q[0] >= 0:
+        return np.zeros(3)
+    stuck = np.linalg.lstsq(W, -q, rcond=1e-12)[0]
+    scale = max(np.linalg.norm(q), 1e-30)
+    if (
+        stuck[0] >= 0
+        and np.linalg.norm(stuck[1:]) <= mu * stuck[0]
+        and np.linalg.norm(W @ stuck + q) <= 1e-10 * scale
+    ):
+        return stuck
+    if mu == 0:
+        if W[0, 0] <= 0:
+            raise RuntimeError("packing constraint has no normal support")
+        return np.array([-q[0] / W[0, 0], 0.0, 0.0])
+
+    def sliding(angle):
+        direction = np.array([np.cos(angle), np.sin(angle)])
+        perpendicular = np.array([-direction[1], direction[0]])
+        denominator = W[0, 0] - mu * (W[0, 1:] @ direction)
+        if denominator <= 0:
+            return None
+        normal = -q[0] / denominator
+        value = np.r_[normal, -mu * normal * direction]
+        velocity = W @ value + q
+        dn = normal * mu * (W[0, 1:] @ perpendicular) / denominator
+        dv = dn * (W[1:, 0] - mu * W[1:, 1:] @ direction) - mu * normal * (W[1:, 1:] @ perpendicular)
+        f = perpendicular @ velocity[1:]
+        derivative = -direction @ velocity[1:] + perpendicular @ dv
+        return value, f, derivative, direction @ velocity[1:]
+
+    direction = (
+        -previous[1:] if np.linalg.norm(previous[1:]) else q[1:] - W[1:, 0] * q[0] / max(W[0, 0], 1e-30)
+    )
+    angle = np.arctan2(direction[1], direction[0])
+    for _ in range(15):
+        candidate = sliding(angle)
+        if candidate is None:
+            break
+        value, f, df, slip = candidate
+        if abs(f) <= 1e-11 * scale and slip >= -1e-11 * scale:
+            return value
+        if abs(df) <= 1e-30:
+            break
+        angle -= np.clip(f / df, -0.5, 0.5)
+    # Bracket every orientation to select the sliding, not reversed-slip root.
+    angles = np.linspace(-np.pi, np.pi, 65)
+    for left, right in zip(angles[:-1], angles[1:]):
+        a, b = sliding(left), sliding(right)
+        if a is None or b is None or a[1] * b[1] > 0:
+            continue
+        root = brentq(lambda x: sliding(x)[1], left, right, xtol=1e-13)
+        value, f, df, slip = sliding(root)
+        if slip >= -1e-10 * scale:
+            return value
+    raise RuntimeError("granular local sliding problem could not be resolved")
+
+
+def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None):
+    """Solve w=W*r+q and non-associated Coulomb complementarity.
+
+    r_n >= 0, w_n >= 0, r_n*w_n=0; |r_t|<=mu*r_n; sliding
+    r_t=-mu*r_n*w_t/|w_t|. Normal complementarity and the tangential friction disk are enforced
+    separately: an uncorrected joint cone projection would give associated dilation.
+    Input friction is the tensor-cone coefficient (equal to tau_eq/p in 2D).
+    """
+    W = sparse.csr_matrix(W)
+    q = np.asarray(q, dtype=float)
+    components = 4 if q.ndim == 1 else q.shape[-1]
+    q = q.reshape(-1, components)
+    mu = np.broadcast_to(np.asarray(mu, dtype=float), len(q))
+    if W.shape != (q.size, q.size) or not np.isfinite(W.data).all() or not np.isfinite(q).all():
+        raise ValueError("invalid Coulomb problem dimensions or nonfinite data")
+    if (
+        np.any(~np.isfinite(mu))
+        or np.any(mu < 0)
+        or not np.isfinite(tolerance)
+        or tolerance <= 0
+        or not np.isfinite(max_iterations)
+        or max_iterations < 1
+        or int(max_iterations) != max_iterations
+    ):
+        raise ValueError("invalid friction or solver controls")
+    if not len(q):
+        return q.copy(), dict(residual=0.0, evaluations=0, converged=True)
+    norm = float(np.max(np.asarray(abs(W).sum(axis=1)), initial=0))
+    if norm == 0:
+        if np.any(q[:, 0] < 0):
+            raise RuntimeError("packing constraint has no free velocity support")
+        return np.zeros_like(q), dict(residual=0.0, evaluations=0, converged=True)
+    # Dimensionless unknowns and residual, with no constitutive compliance.
+    # Large positive packing clearances are already feasible. Including them
+    # in the residual scale could hide small compressive violations elsewhere
+    # (especially as dt -> 0, when the clearance grows like 1/dt).
+    magnitude = max(float(np.max(-q[:, 0], initial=0)), float(np.max(np.abs(q[:, 1:]), initial=0)))
+    stress_scale = max(magnitude, 1e-30) / norm
+    operator = W / norm
+    rhs = q / max(magnitude, 1e-30)
+    identity = sparse.eye(q.size, format="csr")
+
+    def evaluate(z, jacobian=False):
+        reaction = z.reshape(-1, components)
+        w = (operator @ z).reshape(-1, components) + rhs
+        argument = reaction - w
+        radius = mu * np.maximum(reaction[:, 0], 0)
+        length = np.linalg.norm(argument[:, 1:], axis=1)
+        factor = np.divide(radius, length, out=np.ones_like(radius), where=length > 0)
+        projected = argument.copy()
+        projected[:, 0] = np.maximum(argument[:, 0], 0)
+        projected[:, 1:] *= np.minimum(1, factor)[:, None]
+        residual = reaction - projected
+        if not jacobian:
+            return residual.ravel()
+        derivative = np.zeros((len(q), components, components))
+        radius_derivative = np.zeros_like(derivative)
+        derivative[:, 0, 0] = argument[:, 0] > 0
+        for i in range(len(q)):
+            if length[i] <= radius[i]:
+                derivative[i, 1:, 1:] = np.eye(components - 1)
+            else:
+                unit = argument[i, 1:] / length[i]
+                derivative[i, 1:, 1:] = (
+                    radius[i] / length[i] * (np.eye(components - 1) - np.outer(unit, unit))
+                )
+                if reaction[i, 0] >= 0:
+                    radius_derivative[i, 1:, 0] = mu[i] * unit
+
+        def blocks(values):
+            return sparse.bsr_matrix(
+                (values, np.arange(len(q)), np.arange(len(q) + 1)), shape=W.shape
+            ).tocsr()
+
+        return identity - blocks(derivative) @ (identity - operator) - blocks(radius_derivative)
+
+    start = (
+        np.zeros(q.size) if initial is None or magnitude == 0 else np.asarray(initial).ravel() / stress_scale
+    )
+    solution = least_squares(
+        evaluate,
+        start,
+        jac=lambda z: evaluate(z, True).toarray(),
+        tr_solver="exact",
+        ftol=1e-13,
+        xtol=1e-13,
+        gtol=1e-13,
+        max_nfev=max_iterations,
+    )
+    candidate = solution.x
+    residual = float(np.max(np.abs(evaluate(candidate)), initial=0))
+    sweeps = 0
+    if residual > tolerance and components == 3:
+        # Newton/least-squares can settle at a nonzero local minimum of a
+        # non-associated residual. A block contact solve is an independent
+        # fallback, not acceptance of that stationary point.
+        dense = operator.toarray()
+        candidate = start.copy()
+        velocity = dense @ candidate + rhs.ravel()
+        for sweeps in range(1, max_iterations * 10 + 1):
+            for i in range(len(q)):
+                sl = slice(3 * i, 3 * i + 3)
+                local = dense[sl, sl]
+                other = velocity[sl] - local @ candidate[sl]
+                updated = _local_coulomb(local, other, mu[i], candidate[sl])
+                delta = updated - candidate[sl]
+                candidate[sl] = updated
+                velocity += dense[:, sl] @ delta
+            residual = float(np.max(np.abs(evaluate(candidate)), initial=0))
+            if residual <= tolerance:
+                break
+
+    if not np.isfinite(residual) or residual > tolerance:
+        raise RuntimeError(
+            f"granular Coulomb solve did not converge: residual={residual:.3g}, "
+            f"evaluations={solution.nfev}; reduce dt or inspect particle support"
+        )
+    reaction = candidate.reshape(-1, components) * stress_scale
+    return reaction, dict(residual=residual, evaluations=solution.nfev, sweeps=sweeps, converged=True)
+
+
+def canonical_nodes(P, count):
+    nodes = np.arange(count)
+    if P.B.cyclic_lr:
+        nodes[P.G.nx - 1 :: P.G.nx] -= P.G.nx - 1
+    return nodes
+
+
+def basis_volumes(P, G):
+    """Integrate the actual nodal basis, including modified quadratic edges."""
+    key = (P.interpolation, P.B.cyclic_lr, P.G.nx, P.G.ny, P.G.thickness, P.G.x_m, P.G.x_M, P.G.y_m, P.G.y_M)
+    cached = getattr(G, "_granular_basis_volumes", None)
+    if cached is not None and cached[0] == key:
+        return cached[1]
+    xi, wi = np.polynomial.legendre.leggauss(3)
+    axes, weights = [], []
+    for lo, hi, n in ((P.G.x_m, P.G.x_M, P.G.nx), (P.G.y_m, P.G.y_M, P.G.ny)):
+        edges = np.linspace(lo, hi, 2 * (n - 1) + 1)
+        half = np.diff(edges) / 2
+        axes.append(((edges[:-1] + half)[:, None] + half[:, None] * xi).ravel())
+        weights.append((half[:, None] * wi).ravel())
+    xx, yy = np.meshgrid(*axes)
+    points = np.column_stack((xx.ravel(), yy.ravel(), np.zeros(xx.size)))
+    volume = (weights[1][:, None] * weights[0][None, :]).ravel() * P.G.thickness
+    nodes, shape, _, _ = stencil(points, P, G)
+    nodes = canonical_nodes(P, len(G.m))[nodes]
+    result = np.bincount(nodes.ravel(), weights=(volume[:, None] * shape).ravel(), minlength=len(G.m))
+    G._granular_basis_volumes = key, result
+    return result
+
+
+def assemble(P, G, batch):
+    """Build b(tau,u)=sum_p V_grain*N_stress*tau:D(u) and packing gap."""
+    canonical = canonical_nodes(P, len(G.m))
+    nodes = canonical[batch.n]
+    valid = G.valid_nodes[canonical]
+    if np.any((~valid[nodes]) & (np.linalg.norm(batch.G, axis=2) > 1e-12)):
+        raise ValueError("granular solver requires mass on every derivative-support node")
+    solid_volume = batch.m / batch.material.rho_s
+    occupied = np.bincount(
+        nodes.ravel(), weights=(solid_volume[:, None] * batch.N).ravel(), minlength=len(G.m)
+    )
+    active = np.flatnonzero((canonical == np.arange(len(G.m))) & (occupied > 0))
+    if len(active) > P.granular_max_nodes:
+        raise ValueError(f"granular prototype supports at most {P.granular_max_nodes} active stress nodes")
+    index = np.full(len(G.m), -1, dtype=int)
+    index[active] = np.arange(len(active))
+    index = index[canonical]
+    # Each row has all tensor components at one stress node; integration and
+    # momentum use exactly the same B and its transpose.
+    count, support = nodes.shape
+    rows, cols, data = [], [], []
+    for mode in range(COMPONENTS):
+        for component in range(2):
+            derivative = np.einsum("j,prj->pr", BASIS[mode, component], batch.G)
+            contribution = solid_volume[:, None, None] * batch.N[:, :, None] * derivative[:, None, :]
+            row = np.broadcast_to(COMPONENTS * index[nodes][:, :, None] + mode, (count, support, support))
+            col = np.broadcast_to(2 * nodes[:, None, :] + component, (count, support, support))
+            keep = contribution != 0
+            rows.append(row[keep])
+            cols.append(col[keep])
+            data.append(contribution[keep])
+    B = sparse.coo_matrix(
+        (np.concatenate(data), (np.concatenate(rows), np.concatenate(cols))),
+        shape=(COMPONENTS * len(active), 2 * len(G.m)),
+    ).tocsr()
+    free = np.repeat(G.valid_nodes & (canonical == np.arange(len(G.m))), 2)
+    free[2 * np.flatnonzero(G.boundary_v)] = False
+    free[2 * np.flatnonzero(G.boundary_h) + 1] = False
+    if P.B.roughness:
+        free[2 * np.flatnonzero(G.boundary_h)] = False
+        free[2 * np.flatnonzero(G.boundary_v) + 1] = False
+    gap = np.zeros((len(active), COMPONENTS))
+    capacity = batch.material.packing_max * basis_volumes(P, G)[active]
+    # Positive-part gap follows the paper's dissipative packing linearisation.
+    # It does not geometrically repair pre-existing overpacking.
+    clearance = capacity - occupied[active]
+    # Do not amplify quadrature/summation roundoff into an artificial opening
+    # velocity as dt becomes small. Resolve meaningful physical clearance.
+    roundoff = 64 * np.finfo(float).eps * np.maximum(capacity, occupied[active])
+    clearance[np.abs(clearance) <= roundoff] = 0
+    gap[:, 0] = np.maximum(clearance, 0) / (np.sqrt(2) * P.dt)
+    return B, free, active, occupied, gap
+
+
+def step(P, G, L):
+    """Advance the experimental rigid-grain branch using end-of-step stresses."""
+    from stability import limits
+    from diagnostics import inventory
+
+    if not np.isfinite(P.dt) or P.dt <= 0:
+        raise ValueError("dt must be finite and positive")
+    P.timestep_limits = limits(P, G, L)
+    if P.timestep_policy == "enforce" and P.dt > min(P.timestep_limits.values(), default=P.dt) * (1 + 1e-12):
+        raise ValueError("granular dt exceeds transport timestep estimate")
+    if L.diagnostics is not None:
+        L.diagnostics.begin(P, L)
+    G.wipe(P)
+    P.update_forces()
+    L.get_reference_nodes(P, G)
+    L.get_basis_functions(P, G)
+    if P.O.check_positions:
+        L.recover_position(P, G)
+    L.get_nodal_mass_momentum(P, G)
+    b = L.materials[0]
+    body = np.array([P.g * np.sin(P.theta), P.g * np.cos(P.theta), 0.0])
+    scatter(G.fe, b.n, b.N[:, :, None] * b.m[:, None, None] * body)
+    if P.B.cyclic_lr:
+        G.make_cyclic(P, G, ["fe"])
+    G.BCs(P)
+    G.update_momentum(P)
+    trial = nodal_velocity(G, P)[:, :2].ravel()
+    B, free, active, occupied, gap = assemble(P, G, b)
+    inverse_mass = 1 / np.repeat(G.m, 2)[free]
+    operator = B[:, free]
+    W = (operator.multiply(inverse_mass) @ operator.T) * P.dt
+    q = (B @ trial).reshape(-1, COMPONENTS) + gap
+    old = getattr(G, "granular_contact", np.zeros((len(G.m), COMPONENTS)))
+    contact, stats = solve_coulomb(
+        W,
+        q,
+        b.material.mu,
+        tolerance=P.granular_tolerance,
+        max_iterations=P.granular_max_iterations,
+        initial=old[active],
+    )
+    force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
+    final = trial.copy()
+    final[free] += P.dt * inverse_mass * force.ravel()[free]
+    velocity = np.column_stack((final.reshape(-1, 2), np.zeros(len(G.m))))
+    G.fi[:, :2] = -force
+    G.q = G.m[:, None] * velocity
+    G.q_dot = (G.q - G.q_reference) / P.dt
+    if P.B.cyclic_lr:
+        for name in ("q", "q_dot", "fi"):
+            value = getattr(G, name)
+            value[P.G.nx - 1 :: P.G.nx] = value[:: P.G.nx]
+    velocity = nodal_velocity(G, P)
+    G.granular_contact = np.zeros((len(G.m), COMPONENTS))
+    G.granular_contact[active] = contact
+    if P.B.cyclic_lr:
+        G.granular_contact[P.G.nx - 1 :: P.G.nx] = G.granular_contact[:: P.G.nx]
+    # Recompute physical work/impulse budgets with the final contact response.
+    unique = canonical_nodes(P, len(G.m)) == np.arange(len(G.m))
+    midpoint = 0.5 * (
+        np.divide(G.q_reference, G.m[:, None], out=np.zeros_like(G.q), where=G.m[:, None] > P.M_tol)
+        + velocity
+    )
+    reaction = G.q - G.q_reference - P.dt * (G.fe - G.fi)
+    coordinates = np.column_stack((G.X, G.Y, np.zeros_like(G.X)))
+    G.constraint_impulse = reaction[unique].sum(axis=0)
+    G.constraint_angular_impulse = np.cross(coordinates[unique], reaction[unique]).sum(axis=0)
+    G.constraint_work = float(np.sum(reaction[unique] * midpoint[unique]))
+    G.external_work = float(P.dt * np.sum(G.fe[unique] * midpoint[unique]))
+    # Phase contact stresses are converted to bulk Cauchy stress for the existing
+    # output API. This branch does not evolve an elastic pressure history.
+    old_stress = b.stress.copy()
+    old_pressure = b.pressure.copy()
+    b.L = np.einsum("pri,prj->pij", velocity[b.n], b.G)
+    b.dstrain = 0.5 * (b.L + b.L_T) * P.dt
+    b.strain += b.dstrain
+    advance(b, P)
+    phase_stress = -np.einsum("pk,kij->pij", gather(G.granular_contact, b.n, b.N, G.valid_nodes), BASIS)
+    phase_pressure_2d = -np.trace(phase_stress[:, :2, :2], axis1=1, axis2=2) / 2
+    phase_stress[:, 2, 2] = -phase_pressure_2d
+    b.stress = (b.rho / b.material.rho_s)[:, None, None] * phase_stress
+    b.dstress = b.stress - old_stress
+    b.pressure = np.trace(b.stress, axis1=1, axis2=2) / 3
+    b.dp = b.pressure - old_pressure
+    b.sigma_kk = 3 * b.pressure
+    b.dev_stress = b.stress - b.pressure[:, None, None] * np.eye(3)
+    b.dev_dstress = b.dstress - np.trace(b.dstress, axis1=1, axis2=2)[:, None, None] * np.eye(3) / 3
+    rate = 0.5 * (b.L + b.L_T)
+    dev = rate.copy()
+    dev[:, :2, :2] -= np.trace(rate[:, :2, :2], axis1=1, axis2=2)[:, None, None] * np.eye(2) / 2
+    b.gammadot = np.sqrt(2) * np.linalg.norm(dev, axis=(1, 2))
+    phase_pressure = -np.trace(phase_stress, axis1=1, axis2=2) / 3
+    size = b.phi @ P.G.s
+    b.I = np.divide(
+        size * b.gammadot * np.sqrt(b.material.rho_s),
+        np.sqrt(np.maximum(phase_pressure, 0)),
+        out=np.zeros_like(phase_pressure),
+        where=phase_pressure > 0,
+    )
+    b.mu.fill(b.material.mu)
+    b.yieldfunction = np.linalg.norm(b.dev_stress, axis=(1, 2)) / np.sqrt(2) + b.material.mu * b.pressure
+    b.material_work += b.V * np.sum(b.stress * b.dstrain, axis=(1, 2))
+    b.plastic_work += b.V * np.sum(b.stress * b.dstrain, axis=(1, 2))
+    b.deposit_diagnostics(P, G)
+    if P.B.cyclic_lr:
+        G.make_cyclic(P, G, G.diagnostic_fields)
+    G.calculate_gammadot(P, G, P.smooth_gamma_dot)
+    if P.segregate:
+        G.update_pk(P, G)
+        G.calculate_phi_increment(P, L)
+        L.move_grainsize_on_grid(P, G)
+    L.move_material_points(P, G)
+    stats.update(
+        active_nodes=len(active),
+        contact_power=float(contact.ravel() @ (B @ velocity[:, :2].ravel())),
+        maximum_packing=float(
+            np.max(
+                np.divide(
+                    occupied, basis_volumes(P, G), out=np.zeros_like(occupied), where=basis_volumes(P, G) > 0
+                ),
+                initial=0,
+            )
+        ),
+    )
+    G.granular_stats = stats
+    if L.diagnostics is not None:
+        before = inventory(P, L)
+    L.process_boundaries(P, G)
+    if L.diagnostics is not None:
+        L.diagnostics.finish(P, G, L, before)
