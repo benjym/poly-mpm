@@ -1,0 +1,108 @@
+"""Resident scan, binning and reductions. No intermediate GPU readbacks."""
+
+from dataclasses import dataclass
+
+import numpy as np
+
+TILE = 256
+MAX_COUNT = 2**32 - TILE
+
+
+def check_count(count, *, name="count"):
+    if isinstance(count, bool) or int(count) != count or not 1 <= count <= MAX_COUNT:
+        raise ValueError(f"{name} must be an integer in [1, {MAX_COUNT}]")
+    return int(count)
+
+
+@dataclass
+class Bins:
+    counts: object
+    offsets: object
+    cursors: object
+    permutation: object
+    status: object
+    scratch: list
+
+
+def exclusive_scan(runtime, encoder, source, count):
+    """Hierarchical uint32 scan. Caller guarantees total fits uint32.
+
+    Returns output and retained temporary resources, since a command buffer may
+    outlive this call. At most ceil(log_256(count)) levels; zero host transfers.
+    """
+    count = check_count(count)
+    groups = (count + TILE - 1) // TILE
+    output = runtime.buffer(count=count)
+    totals = runtime.buffer(count=groups)
+    retained = [output, totals]
+    runtime.dispatch(
+        encoder, "scan_tiles", groups * TILE, count=count, input=source, output=output, totals=totals
+    )
+    if groups > 1:
+        offsets, scratch = exclusive_scan(runtime, encoder, totals, groups)
+        retained.extend(scratch)
+        runtime.dispatch(encoder, "scan_offsets", count, count=count, offsets=offsets, output=output)
+    return output, retained
+
+
+def bins(runtime, encoder, keys, count, bin_count):
+    """Integer histogram -> scan -> scatter, with explicit invalid-key status.
+
+    Ordering within a bin is unspecified; each particle index appears once.
+    Only integer atomics are used. Consumers gather by bin on the device.
+    """
+    count = check_count(count)
+    bin_count = check_count(bin_count, name="bin_count")
+    counts = runtime.buffer(count=bin_count)
+    cursors = runtime.buffer(count=bin_count)
+    status = runtime.buffer(count=1)
+    permutation = runtime.buffer(count=count)
+    for buffer, size in ((counts, bin_count), (cursors, bin_count), (status, 1)):
+        runtime.dispatch(encoder, "fill_u32", size, count=size, value=0, output=buffer)
+    # Make invalid entries recognizable instead of reading uninitialized memory.
+    runtime.dispatch(encoder, "fill_u32", count, count=count, value=2**32 - 1, output=permutation)
+    runtime.dispatch(
+        encoder, "histogram", count, count=count, bin_count=bin_count, keys=keys, counts=counts, status=status
+    )
+    offsets, scratch = exclusive_scan(runtime, encoder, counts, bin_count)
+    runtime.dispatch(
+        encoder,
+        "scatter_bins",
+        count,
+        count=count,
+        bin_count=bin_count,
+        keys=keys,
+        offsets=offsets,
+        cursors=cursors,
+        permutation=permutation,
+    )
+    return Bins(counts, offsets, cursors, permutation, status, scratch)
+
+
+def reduce(runtime, encoder, source, count, *, operation="sum", status=None):
+    """Hierarchical FP32 tree reduction, including nonfinite/overflow status."""
+    if operation not in ("sum", "max", "min"):
+        raise ValueError("operation must be sum, max or min")
+    count = check_count(count)
+    retained = []
+    if status is None:
+        status = runtime.buffer(count=1)
+        retained.append(status)
+        runtime.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=status)
+    while True:
+        groups = (count + TILE - 1) // TILE
+        result = runtime.buffer(count=groups, dtype=np.float32)
+        retained.append(result)
+        runtime.dispatch(
+            encoder,
+            "reduce_tiles",
+            groups * TILE,
+            count=count,
+            operation=("sum", "max", "min").index(operation),
+            input=source,
+            output=result,
+            status=status,
+        )
+        if groups == 1:
+            return result, status, retained
+        source, count = result, groups

@@ -36,6 +36,9 @@ def update_timestep(P, G):
 
 def prepare(P, mode="simulation"):
     """Normalise a Params instance; also used by deterministic test fixtures."""
+    from mpm_gpu.config import defaults as backend_defaults
+
+    backend_defaults(P)
     defaults(
         P,
         t=0.0,
@@ -189,6 +192,11 @@ def prepare(P, mode="simulation"):
         )
     if P.solver == "granular" and (P.B.vertical_force or P.B.horizontal_force):
         raise ValueError("granular prototype does not support traction boundary flags")
+    from mpm_gpu.config import validate as validate_backend, require_runner
+
+    validate_backend(P)
+    if P.backend == "metal":
+        require_runner()
     P.G.s = np.asarray(P.G.s, dtype=float)
     if P.G.s.shape != (P.G.ns,) or not np.isfinite(P.G.s).all() or np.any(P.G.s <= 0):
         raise ValueError("s must contain ns positive finite grain sizes")

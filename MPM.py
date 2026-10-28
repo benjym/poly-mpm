@@ -9,6 +9,10 @@ import initialise
 
 def step(P, G, L, *, _limit_cache=None):
     """Advance one complete timestep, without output or changing the clock."""
+    if getattr(P, "backend", "cpu") == "metal":
+        from mpm_gpu.config import require_runner
+
+        require_runner()
     if P.solver == "granular":
         from granular import step as granular_step
 
@@ -59,6 +63,10 @@ def step(P, G, L, *, _limit_cache=None):
 
 def run(P, G, L, *, max_steps=None, output=True, progress=False):
     """Run prepared state. max_steps permits bounded smoke tests and previews."""
+    if getattr(P, "backend", "cpu") == "metal":
+        from mpm_gpu.config import require_runner
+
+        require_runner()
     with Progress(
         TextColumn("{task.description}"),
         BarColumn(),

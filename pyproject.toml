@@ -33,6 +33,7 @@ required-version = '26.10.1'
 extend-exclude = '^/legacy/'
 
 [project.optional-dependencies]
+gpu = ["slangpy==0.43.1; sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.14'"]
 dev = ["pytest>=9.2", "pytest-cov>=7.1", "black==26.10.1"]
 release = ["build>=1.3", "twine>=6.2"]
 docs = ["sphinx>=8.2", "myst-parser>=4"]
@@ -44,7 +45,10 @@ poly-mpm = "MPM:main"
 py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed"]
 
 [tool.setuptools.packages.find]
-include = ["inputs"]
+include = ["inputs", "mpm_gpu", "mpm_gpu.*"]
+
+[tool.setuptools.package-data]
+"mpm_gpu.shaders" = ["*.slang"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

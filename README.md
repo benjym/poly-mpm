@@ -153,3 +153,9 @@ Originally authored by Benjy Marks, University of Sydney. NumPy, SciPy, Astropy,
 and Matplotlib provide the numerical and plotting environment.
 
 Licensed under the [GNU GPL v3](https://github.com/benjym/poly-mpm/blob/main/LICENSE).
+
+### Experimental GPU port
+
+An optional Apple silicon/SlangPy backend is under development. The first
+milestone provides runtime primitives and a [hardware validation command](docs/gpu.md);
+the GPU MPM runner is not enabled yet. CPU execution remains the default.
