@@ -222,8 +222,10 @@ class Particles:
             self.rho = gather(divide(G.m, G.V), self.n, self.N, G.valid_nodes)
         self.check_finite(P)
 
-    def move_grainsize_on_grid(self, P, G):
-        self.phi += gather(G.dphi, self.n, self.N, G.valid_nodes)
+    def move_grainsize_on_grid(self, P, G, increment=None):
+        if increment is None:
+            increment = gather(G.dphi, self.n, self.N, G.valid_nodes)
+        self.phi += increment
         self.pk += gather(G.dpk, self.n, self.N, G.valid_nodes)
         if P.normalise_phi:
             self.phi = np.clip(self.phi, 0, 1)
@@ -262,10 +264,22 @@ class ParticleSystem:
             batch.get_basis_functions(P, G)
 
     def get_nodal_mass_momentum(self, P, G):
+        if P.segregate:
+            G.segregation_m = np.zeros_like(G.m)
+            G.segregation_phim = np.zeros_like(G.phim)
         for batch in self.materials:
             batch.get_nodal_mass_momentum(P, G)
+            if P.segregate and batch.material.law != 'rigid':
+                weight = batch.N*batch.m[:, None]
+                scatter(G.segregation_m, batch.n, weight)
+                scatter(G.segregation_phim, batch.n, weight[:, :, None]*batch.phi[:, None, :])
         if P.B.cyclic_lr:
-            G.make_cyclic(P, G, ['m', 'q', 'phim', 'pkm'])
+            fields = ['m', 'q', 'phim', 'pkm']
+            if P.segregate:
+                fields += ['segregation_m', 'segregation_phim']
+            G.make_cyclic(P, G, fields)
+        if P.segregate:
+            G.segregation_phi = divide(G.segregation_phim, G.segregation_m[:, None])
         G.get_valid_nodes(P)
         G.phi = divide(G.phim, G.m[:, None])
         G.s_bar = G.phi @ P.G.s
@@ -294,9 +308,10 @@ class ParticleSystem:
             batch.move_material_points(P, G)
 
     def move_grainsize_on_grid(self, P, G):
-        for batch in self.materials:
+        for i, batch in enumerate(self.materials):
             if batch.material.law != 'rigid':
-                batch.move_grainsize_on_grid(P, G)
+                increments = G.segregation_particle_dphi
+                batch.move_grainsize_on_grid(P, G, None if increments is None else increments[i])
 
     def cyclic_lr(self, P, G=None):
         for batch in self.materials:

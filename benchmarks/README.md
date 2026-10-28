@@ -67,10 +67,16 @@ diagnostic deposition, followed by force mapping and movement. Allocation reuse
 or compiled kernels can be evaluated against these stages in later work.
 No Numba/GPU path or new integration/constitutive scheme was added here.
 
-The [segregation drift report](segregation_drift.json) is separate from the
-performance measurements. It records the retained method's non-conservation
-without silently clipping fractions. See [conversion notes](../docs/array-conversion.md)
-for validation, example status, and numerical limitations.
+The original performance table above predates the segregation correction and
+Python upgrade. It remains a historical measurement. Current 1,000-particle
+Pouliquen timings (three-run medians, Python 3.14.10) are recorded in
+[the correction performance report](segregation_correction_performance.json).
+
+The [current conservation report](segregation_drift.json) and
+[before-correction report](segregation_drift_before.json) separately measure
+composition sums, bounds, and species mass without clipping or normalisation.
+See [the source and correction](../docs/segregation-conservation.md) and
+[conversion notes](../docs/array-conversion.md) for the derivation and limitations.
 
 Reproduce from the repository root with:
 

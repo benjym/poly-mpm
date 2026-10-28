@@ -1,0 +1,97 @@
+{
+  "environment": {
+    "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O",
+    "versions": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "matplotlib": "3.11.2",
+      "astropy": "8.0.2"
+    }
+  },
+  "repeats": 3,
+  "warmups": 1,
+  "cases": [
+    {
+      "particles": 1000,
+      "law": "pouliquen",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.03221499000210315,
+        "constitutive_and_diagnostics": 0.11771085399959702,
+        "forces": 0.020164410991128534,
+        "grid": 0.0015990129904821515,
+        "segregation": 4.859903128817677e-07,
+        "movement": 0.02535213499504607,
+        "total": 0.19745895599771757
+      },
+      "array": {
+        "transfers": 0.0003812119975918904,
+        "constitutive_and_diagnostics": 0.0011904919956577942,
+        "forces": 0.0004117430071346462,
+        "grid": 0.0014504569990094751,
+        "segregation": 3.57002136297524e-07,
+        "movement": 0.0007957819907460362,
+        "total": 0.004249844001606107
+      },
+      "array_timestep_peak_allocated_bytes": 1370320,
+      "particle_state_bytes": 704000,
+      "speedup": 46.46263625749407
+    },
+    {
+      "particles": 1000,
+      "law": "pouliquen",
+      "grain_classes": 2,
+      "segregation": true,
+      "scalar": {
+        "transfers": 0.029778746000374667,
+        "constitutive_and_diagnostics": 0.11867571499897167,
+        "forces": 0.02019678198848851,
+        "grid": 0.0016793089889688417,
+        "segregation": 0.00546496499737259,
+        "movement": 0.025487830003839917,
+        "total": 0.2032190379977692
+      },
+      "array": {
+        "transfers": 0.0005873330082977191,
+        "constitutive_and_diagnostics": 0.0013363540056161582,
+        "forces": 0.00043379300041124225,
+        "grid": 0.0015437450056197122,
+        "segregation": 0.005338296003174037,
+        "movement": 0.0008443480037385598,
+        "total": 0.010033403013949282
+      },
+      "array_timestep_peak_allocated_bytes": 2206607,
+      "particle_state_bytes": 712000,
+      "speedup": 20.254248505241637
+    },
+    {
+      "particles": 1000,
+      "law": "pouliquen",
+      "grain_classes": 8,
+      "segregation": true,
+      "scalar": {
+        "transfers": 0.02989113100920804,
+        "constitutive_and_diagnostics": 0.11697593600547407,
+        "forces": 0.020327136997366324,
+        "grid": 0.0017130419873865321,
+        "segregation": 0.009691995990579017,
+        "movement": 0.025274177009123378,
+        "total": 0.20291710802121088
+      },
+      "array": {
+        "transfers": 0.0008136920077959076,
+        "constitutive_and_diagnostics": 0.0012421739957062528,
+        "forces": 0.0004180140094831586,
+        "grid": 0.0015170000115176663,
+        "segregation": 0.009427066004718654,
+        "movement": 0.0008590910001657903,
+        "total": 0.01439483901776839
+      },
+      "array_timestep_peak_allocated_bytes": 4573941,
+      "particle_state_bytes": 760000,
+      "speedup": 14.096518048638018
+    }
+  ]
+}

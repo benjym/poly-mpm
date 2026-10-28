@@ -1,4 +1,4 @@
-"""Measure the existing KT/remapping scheme's composition drift without clipping."""
+"""Measure species conservation and fraction bounds without clipping or normalising."""
 import argparse
 import json
 from pathlib import Path
@@ -17,11 +17,15 @@ def measure(ns, steps=100):
                 minimum_fraction=float(b.phi.min()), maximum_fraction=float(b.phi.max()),
                 maximum_fraction_sum_error=float(np.max(np.abs(b.phi.sum(axis=1)-1))),
                 initial_species_mass=before.tolist(), final_species_mass=after.tolist(),
-                species_mass_change=(after-before).tolist())
+                species_mass_change=(after-before).tolist(),
+                maximum_relative_species_mass_error=float(np.max(np.abs(after-before)/np.maximum(before, np.finfo(float).tiny))),
+                maximum_fraction_bound_violation=float(max(0., -b.phi.min(), b.phi.max()-1)))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument('--output', default='benchmarks/segregation_drift.json')
+    parser.add_argument('--steps', type=int, nargs='+', default=[100, 1000])
     args = parser.parse_args()
-    Path(args.output).write_text(json.dumps([measure(ns) for ns in [2, 3, 8]], indent=2)+'\n')
+    rows = [measure(ns, steps) for steps in args.steps for ns in [2, 3, 8]]
+    Path(args.output).write_text(json.dumps(rows, indent=2)+'\n')

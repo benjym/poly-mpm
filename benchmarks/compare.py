@@ -59,7 +59,7 @@ def stages(P, G, L):
     start = perf_counter()
     if P.segregate:
         G.update_pk(P, G)
-        G.calculate_phi_increment(P)
+        G.calculate_phi_increment(P, L)
         L.move_grainsize_on_grid(P, G)
     times['segregation'] = perf_counter()-start
     start = perf_counter()

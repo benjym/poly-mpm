@@ -4,54 +4,58 @@
     "steps": 100,
     "time": 0.0025201385681488594,
     "normalise_phi": false,
-    "minimum_fraction": 0.4727055737607655,
-    "maximum_fraction": 0.5272790710346243,
-    "maximum_fraction_sum_error": 0.00015658977490629056,
+    "minimum_fraction": 0.4486403574641361,
+    "maximum_fraction": 0.551359642535864,
+    "maximum_fraction_sum_error": 6.661338147750939e-16,
     "initial_species_mass": [
       135.0,
       135.0
     ],
     "final_species_mass": [
-      135.18096865874958,
-      134.81973435629982
+      134.99999999999997,
+      134.99999999999994
     ],
     "species_mass_change": [
-      0.18096865874957757,
-      -0.1802656437001815
-    ]
+      -2.842170943040401e-14,
+      -5.684341886080802e-14
+    ],
+    "maximum_relative_species_mass_error": 4.2106236193191124e-16,
+    "maximum_fraction_bound_violation": 0.0
   },
   {
     "grain_classes": 3,
     "steps": 100,
     "time": 0.0025201385681488594,
     "normalise_phi": false,
-    "minimum_fraction": 0.3019887446002188,
-    "maximum_fraction": 0.35744506515212626,
-    "maximum_fraction_sum_error": 0.0003488155912423352,
+    "minimum_fraction": 0.2751792827389398,
+    "maximum_fraction": 0.38467029981304596,
+    "maximum_fraction_sum_error": 4.440892098500626e-16,
     "initial_species_mass": [
       90.0,
       90.0,
       90.0
     ],
     "final_species_mass": [
-      90.20351338570454,
-      89.94270102435982,
-      89.85193990719948
+      90.0,
+      89.99999999999999,
+      90.00000000000007
     ],
     "species_mass_change": [
-      0.20351338570453947,
-      -0.057298975640179606,
-      -0.14806009280052024
-    ]
+      0.0,
+      -1.4210854715202004e-14,
+      7.105427357601002e-14
+    ],
+    "maximum_relative_species_mass_error": 7.894919286223335e-16,
+    "maximum_fraction_bound_violation": 0.0
   },
   {
     "grain_classes": 8,
     "steps": 100,
     "time": 0.0025201385681488594,
     "normalise_phi": false,
-    "minimum_fraction": 0.10065095649696844,
-    "maximum_fraction": 0.14424370796911357,
-    "maximum_fraction_sum_error": 0.0006732008034422421,
+    "minimum_fraction": 0.08274143541845407,
+    "maximum_fraction": 0.16604054678122906,
+    "maximum_fraction_sum_error": 4.440892098500626e-16,
     "initial_species_mass": [
       33.75,
       33.75,
@@ -63,24 +67,116 @@
       33.75
     ],
     "final_species_mass": [
-      33.893775275019685,
-      33.81035286761492,
-      33.76287256017823,
-      33.73387661057601,
-      33.714978144488875,
-      33.70171635186515,
-      33.691902029139,
-      33.68434761414392
+      33.75,
+      33.75000000000003,
+      33.750000000000014,
+      33.75000000000001,
+      33.750000000000014,
+      33.74999999999997,
+      33.749999999999964,
+      33.75
     ],
     "species_mass_change": [
-      0.143775275019685,
-      0.06035286761491676,
-      0.012872560178230685,
-      -0.0161233894239885,
-      -0.035021855511125466,
-      -0.048283648134848534,
-      -0.05809797086099877,
-      -0.06565238585608313
-    ]
+      0.0,
+      2.842170943040401e-14,
+      1.4210854715202004e-14,
+      7.105427357601002e-15,
+      1.4210854715202004e-14,
+      -2.842170943040401e-14,
+      -3.552713678800501e-14,
+      0.0
+    ],
+    "maximum_relative_species_mass_error": 1.052655904829778e-15,
+    "maximum_fraction_bound_violation": 0.0
+  },
+  {
+    "grain_classes": 2,
+    "steps": 1000,
+    "time": 0.025430398278593256,
+    "normalise_phi": false,
+    "minimum_fraction": 0.131013941410771,
+    "maximum_fraction": 0.8689860585892283,
+    "maximum_fraction_sum_error": 3.1086244689504383e-15,
+    "initial_species_mass": [
+      135.0,
+      135.0
+    ],
+    "final_species_mass": [
+      134.9999999999999,
+      135.00000000000006
+    ],
+    "species_mass_change": [
+      -1.1368683772161603e-13,
+      5.684341886080802e-14
+    ],
+    "maximum_relative_species_mass_error": 8.421247238638225e-16,
+    "maximum_fraction_bound_violation": 0.0
+  },
+  {
+    "grain_classes": 3,
+    "steps": 1000,
+    "time": 0.025430398278593256,
+    "normalise_phi": false,
+    "minimum_fraction": 0.03397242703200868,
+    "maximum_fraction": 0.5934253588199969,
+    "maximum_fraction_sum_error": 2.1094237467877974e-15,
+    "initial_species_mass": [
+      90.0,
+      90.0,
+      90.0
+    ],
+    "final_species_mass": [
+      89.99999999999994,
+      90.00000000000003,
+      89.99999999999997
+    ],
+    "species_mass_change": [
+      -5.684341886080802e-14,
+      2.842170943040401e-14,
+      -2.842170943040401e-14
+    ],
+    "maximum_relative_species_mass_error": 6.315935428978669e-16,
+    "maximum_fraction_bound_violation": 0.0
+  },
+  {
+    "grain_classes": 8,
+    "steps": 1000,
+    "time": 0.025430398278593256,
+    "normalise_phi": false,
+    "minimum_fraction": 0.0009588219777375652,
+    "maximum_fraction": 0.3287227725117544,
+    "maximum_fraction_sum_error": 1.5543122344752192e-15,
+    "initial_species_mass": [
+      33.75,
+      33.75,
+      33.75,
+      33.75,
+      33.75,
+      33.75,
+      33.75,
+      33.75
+    ],
+    "final_species_mass": [
+      33.74999999999999,
+      33.74999999999999,
+      33.75000000000003,
+      33.75000000000003,
+      33.749999999999986,
+      33.74999999999998,
+      33.75000000000002,
+      33.75
+    ],
+    "species_mass_change": [
+      -7.105427357601002e-15,
+      -7.105427357601002e-15,
+      2.842170943040401e-14,
+      2.842170943040401e-14,
+      -1.4210854715202004e-14,
+      -2.1316282072803006e-14,
+      2.1316282072803006e-14,
+      0.0
+    ],
+    "maximum_relative_species_mass_error": 8.421247238638225e-16,
+    "maximum_fraction_bound_violation": 0.0
   }
 ]

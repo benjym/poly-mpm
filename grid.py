@@ -1,7 +1,7 @@
 """Regular two-dimensional grid; node numbering is x-fastest."""
 import numpy as np
 from transfers import divide, nodal_velocity
-from integrators import increment_grainsize
+from integrators import segregation_update
 
 class Grid:
     diagnostic_fields = ('pressure', 'gammadot', 'yieldfunction', 'sigmah', 'sigmav',
@@ -93,6 +93,9 @@ class Grid:
             setattr(self, name, np.zeros((count, P.G.ns)))
         self.valid_nodes = np.zeros(count, dtype=np.bool_)
         self.shear_rate = np.zeros(count)
+        self.segregation_m = None
+        self.segregation_phi = None
+        self.segregation_particle_dphi = None
 
     def get_valid_nodes(self, P):
         self.valid_nodes = self.m > P.M_tol
@@ -180,8 +183,8 @@ class Grid:
     def calculate_grad_gammadot(self, P, G):
         self.grad_gammadot = self.calculate_gradient(P, G, np.abs(self.shear_rate), P.smooth_grad2)
 
-    def calculate_phi_increment(self, P):
-        self.dphi = increment_grainsize(P, self)
+    def calculate_phi_increment(self, P, L=None):
+        self.dphi, self.segregation_particle_dphi = segregation_update(P, self, None if L is None else L.materials)
         if not np.isfinite(self.dphi).all():
             raise FloatingPointError(f'non-finite segregation increment at timestep {P.tstep}')
 

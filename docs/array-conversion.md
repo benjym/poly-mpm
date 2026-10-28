@@ -42,6 +42,9 @@ diagnostics as **mass-weighted sums**. Call `G.physical(name)` to divide once by
 nodal mass. `G.phi`, `G.s_bar`, `G.pk`, and `G.shear_rate` are already physical
 fields. `G.shear_rate` is the bulk velocity-gradient measure formerly written over
 the deposited `gammadot` field. Empty-node quotients contribute zero.
+`G.segregation_m`, `G.segregation_phim`, and `G.segregation_phi` hold the deformable
+transport inventory separately from rigid material. `G.segregation_particle_dphi`
+stages the bounded species-aware increments for the next composition update.
 
 Periodic left/right grid endpoints duplicate one physical node. Sum unique
 columns (`array.reshape(ny, nx, ...)[:, :-1]`) when measuring periodic totals.
@@ -57,8 +60,9 @@ The supported timestep keeps the existing strain-before-force order:
 3. Merge periodic sums, calculate valid nodes, and impose momentum constraints.
 4. Gather velocity, update strain/history/stress, and deposit diagnostics.
 5. Deposit forces, impose force boundaries, and update grid momentum.
-6. Calculate bulk shear rate and, if enabled, segregation increments.
-7. Update composition and particle position/velocity; handle particle boundaries.
+6. Calculate bulk shear rate and, if enabled, conservative segregation exchanges.
+7. Return species-aware composition exchanges, then update particle position and
+   velocity and handle particle boundaries.
 
 Mass and volume remain fixed during deformable motion. Reconstructed density is
 a diagnostic retained from the scalar solver, including its use in the existing
@@ -123,9 +127,11 @@ or zero-segregation-rate limits. Invalid resulting timesteps fail explicitly.
   particle's zero x-coordinate in the old angle-based expression.
 
 The constitutive equations, coefficients, tension convention, viscosity cap,
-stress-rate formulation, and KT flux/reconstruction equations are otherwise
-retained. Changes are checked against analytical cases and independent corrected
-scalar kernels, not blind parity with known defects in `master`.
+and stress-rate formulation are otherwise retained. The segregation flux,
+reconstruction, and return transfer were subsequently corrected to enforce mixture
+and species conservation; see [the segregation correction](segregation-conservation.md).
+Changes are checked against analytical cases and independent corrected scalar
+kernels, not blind parity with known defects in `master`.
 
 ## Runtime and dependency baseline
 
@@ -142,20 +148,27 @@ Tests cover shape functions, affine flow, pure rotation, repeated-node transfers
 unequal particle properties, body/internal forces, constitutive histories, pressure
 and flow initialisation, multiple materials, empty batches, domain boundaries,
 periodic seams, inlets/outlets, dynamic timestep selection, callbacks, saved array
-shapes, and readable nonempty figures. The complete ball run and 100-step
+shapes, and readable nonempty figures. The complete ball run and 100-/1,000-step
 bidisperse/three-class/eight-class segregation runs are included.
 
 Kernel reference comparisons use `rtol=1e-10`, `atol=1e-12`; short trajectories use
 `rtol=1e-8`, `atol=1e-12`. Tests run with runtime warnings treated as errors.
 
-Closed-flux KT stages and particle deposition are tested independently for
-conservation. The complete segregation/remapping scheme is **not** exactly
-composition- or species-mass-conserving. The reproducible report in
-`benchmarks/segregation_drift.json` records this without clipping. For the 100-step
-slope fixtures, the maximum particle fraction-sum error is approximately
-0.00016, 0.00035, and 0.00067 for two, three, and eight classes. Those results are
-numerical diagnostics, not validation of the segregation physics. The explicit
-legacy `normalise_phi=True` option clips and renormalises; the default is false.
+The corrected segregation operator conserves participating species masses and
+particle fraction sums to roundoff. A common slope limiter and numerical speed
+preserve mixture closure; physical diffusion is a separate flux. Nodal updates
+use species mass and the actual nodal control volumes. The particle return
+transfer exchanges equal mass locally and limits outgoing inventories before
+updating fractions, including across both spatial directions. Pure layers mix
+without freezing or acquiring negative fractions.
+
+The reproducible before/after reports are `benchmarks/segregation_drift_before.json`
+and `benchmarks/segregation_drift.json`. They include 100- and 1,000-step runs with
+normalisation disabled. The explicit legacy `normalise_phi` option remains for
+compatibility and is unnecessary for the corrected operator. It should not be
+used to hide conservation errors. The old performance report predates this
+numerical correction; current small-case timings are recorded separately in
+`benchmarks/segregation_correction_performance.json`.
 
 Unsupported experimental laws remain archived outside the active registry. Mixed
 materials share the existing momentum grid; this work adds neither contact

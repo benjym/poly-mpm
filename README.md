@@ -56,7 +56,7 @@ peak allocations during an array timestep. The complete default run includes
 100,000-particle scalar cases and takes several minutes.
 
 The original performance report was measured on Python 3.12.8 before the runtime
-upgrade. It remains a historical comparison; those timings have not been relabelled
+upgrade and segregation correction. It remains a historical comparison; those timings have not been relabelled
 as Python 3.14 measurements. The full test suite and example smoke tests also pass
 on Python 3.14 with the locked dependencies.
 
@@ -81,10 +81,12 @@ callbacks replace default output for their stage. See
 [conversion details](docs/array-conversion.md) for shapes, conventions, intentional
 numerical corrections, and remaining limitations.
 
-The segregation equations and KT scheme are retained. The coupled scheme has
-composition and species-mass drift; clipping is disabled by default and this
-conversion does not claim exact conservation of the coupled method. The reported
-100-step drift measurements make this limitation reproducible.
+Segregation now transports conservative species-mass exchanges, with coupled
+mixture fluxes and a bounded, inventory-aware return transfer. The 100- and
+1,000-step checks preserve species mass and fraction sums to roundoff without
+clipping or normalisation. See [the source and correction of the segregation
+drift](docs/segregation-conservation.md) for the derivation, before/after results,
+and numerical limitations.
 
 ## Project
 

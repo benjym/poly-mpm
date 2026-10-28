@@ -23,7 +23,7 @@ def step(P, G, L):
     G.calculate_gammadot(P, G, P.smooth_gamma_dot)
     if P.segregate:
         G.update_pk(P, G)
-        G.calculate_phi_increment(P)
+        G.calculate_phi_increment(P, L)
         L.move_grainsize_on_grid(P, G)
     L.move_material_points(P, G)
     L.process_boundaries(P, G)
