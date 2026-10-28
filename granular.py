@@ -381,6 +381,62 @@ def packing_fraction(P, G, batch):
     return np.divide(occupied, volumes, out=np.zeros_like(occupied), where=volumes > 0)
 
 
+def coarse_factor(P):
+    return int(getattr(P, "granular_stress_coarsening", 2))
+
+
+def coarse_shape(P):
+    """Coarse stress grid: every k-th velocity node in each direction (k = 2 by default)."""
+    k = coarse_factor(P)
+    if (P.G.nx - 1) % k or (P.G.ny - 1) % k:
+        raise ValueError(f"coarse stress basis requires cell counts divisible by {k} in x and y")
+    return (P.G.nx - 1) // k + 1, (P.G.ny - 1) // k + 1
+
+
+def coarse_canonical(P):
+    nx, ny = coarse_shape(P)
+    nodes = np.arange(nx * ny)
+    if P.B.cyclic_lr:
+        nodes[nx - 1 :: nx] -= nx - 1
+    return nodes
+
+
+def coarse_stencil(P, G, positions):
+    """Bilinear shape functions of the coarse stress grid (spacing k dx, k dy).
+
+    Returns canonical coarse nodes and weights in the corner order of
+    interpolation.stencil, including the closed upper edge and periodic wrap.
+    """
+    nx, ny = coarse_shape(P)
+    x = positions[:, 0]
+    if P.B.cyclic_lr:
+        x = P.G.x_m + (x - P.G.x_m) % (P.G.x_M - P.G.x_m)
+    k = coarse_factor(P)
+    local_x = (x - P.G.x_m) / (k * G.dx)
+    local_y = (positions[:, 1] - P.G.y_m) / (k * G.dy)
+    cx = np.minimum(np.floor(local_x).astype(int), nx - 2)
+    cy = np.minimum(np.floor(local_y).astype(int), ny - 2)
+    fx, fy = local_x - cx, local_y - cy
+    base = cx + nx * cy
+    nodes = base[:, None] + [0, 1, nx + 1, nx]
+    weights = np.stack(((1 - fx) * (1 - fy), fx * (1 - fy), fx * fy, (1 - fx) * fy), axis=1)
+    return coarse_canonical(P)[nodes], weights
+
+
+def coarse_volumes(P, G):
+    """Exact integrals of the coarse bilinear basis over the domain."""
+    nx, ny = coarse_shape(P)
+    k = coarse_factor(P)
+    wx = np.full(nx, k * G.dx)
+    wy = np.full(ny, k * G.dy)
+    wy[[0, -1]] = k * G.dy / 2
+    if P.B.cyclic_lr:
+        wx[-1] = 0  # alias column; its canonical node carries the full support
+    else:
+        wx[[0, -1]] = k * G.dx / 2
+    return (wy[:, None] * wx[None, :]).ravel() * P.G.thickness
+
+
 def cell_indices(P, G, positions):
     """Q1 cell ownership, including the closed upper edge and periodic wrap."""
     x = positions[:, 0]
@@ -419,6 +475,10 @@ def assemble(P, G, batch, *, compact=False):
         stress_weights = np.ones_like(stress_nodes, dtype=float)
         volumes = np.full((P.G.nx - 1) * (P.G.ny - 1), G.dx * G.dy * P.G.thickness)
         unique = np.ones(len(volumes), dtype=bool)
+    elif P.granular_stress_basis == "coarse":
+        stress_nodes, stress_weights = coarse_stencil(P, G, batch.x)
+        volumes = coarse_volumes(P, G)
+        unique = coarse_canonical(P) == np.arange(len(volumes))
     else:
         stress_nodes, stress_weights = nodes, batch.N
         volumes = basis_volumes(P, G)
@@ -581,6 +641,9 @@ def step(P, G, L):
     advance(b, P)
     if P.granular_stress_basis == "P0":
         stress_coefficients = G.granular_contact[cell_indices(P, G, b.x)]
+    elif P.granular_stress_basis == "coarse":
+        nodes, weights = coarse_stencil(P, G, b.x)
+        stress_coefficients = np.einsum("pr,prk->pk", weights, G.granular_contact[nodes])
     else:
         stress_coefficients = gather(G.granular_contact, b.n, b.N, G.valid_nodes)
     phase_stress = -np.einsum("pk,kij->pij", stress_coefficients, basis)
@@ -632,6 +695,12 @@ def step(P, G, L):
     if P.granular_stress_basis == "P0":
         initial_nodal_packing = float(np.max(packing_fraction(P, G, b), initial=0))
         stats["maximum_stress_packing"] = float(np.max(occupied, initial=0) / (G.dx * G.dy * P.G.thickness))
+    elif P.granular_stress_basis == "coarse":
+        initial_nodal_packing = float(np.max(packing_fraction(P, G, b), initial=0))
+        volumes = coarse_volumes(P, G)
+        stats["maximum_stress_packing"] = float(
+            np.max(np.divide(occupied, volumes, out=np.zeros_like(occupied), where=volumes > 0), initial=0)
+        )
     L.move_material_points(P, G)
     stats.update(
         active_nodes=len(active),
@@ -641,7 +710,7 @@ def step(P, G, L):
         contact_power=float(contact.ravel() @ (B @ velocity[:, :2].ravel())),
         maximum_packing=(
             initial_nodal_packing
-            if P.granular_stress_basis == "P0"
+            if P.granular_stress_basis in ("P0", "coarse")
             else float(
                 np.max(
                     np.divide(

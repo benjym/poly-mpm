@@ -1,0 +1,266 @@
+{
+  "python": "3.14.10",
+  "machine": "arm64",
+  "tolerance": 0.0001,
+  "max_sweeps": 3000,
+  "cases": [
+    {
+      "name": "nodal_h0.05",
+      "spacing": 0.05,
+      "particles": 3200,
+      "stress_unknowns": 693,
+      "free_velocity": 400,
+      "mu": 0.5,
+      "seconds": 15.152818458969705,
+      "converged": true,
+      "residual": 9.319366294814868e-05,
+      "sweeps": 2329
+    },
+    {
+      "name": "nodal_h0.025",
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 2583,
+      "free_velocity": 1600,
+      "mu": 0.5,
+      "seconds": 15.444148457958363,
+      "converged": false,
+      "residual": 0.0175,
+      "sweeps": 3000
+    },
+    {
+      "name": "p0_h0.05",
+      "spacing": 0.05,
+      "particles": 3200,
+      "stress_unknowns": 600,
+      "free_velocity": 400,
+      "mu": 0.5,
+      "seconds": 9.73108575004153,
+      "basis": "P0",
+      "converged": false,
+      "residual": 0.000525,
+      "sweeps": 3000
+    },
+    {
+      "name": "p0_h0.025",
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 2400,
+      "free_velocity": 1600,
+      "mu": 0.5,
+      "seconds": 7.592077333945781,
+      "basis": "P0",
+      "converged": false,
+      "residual": 0.0137,
+      "sweeps": 3000
+    },
+    {
+      "name": "coarse2_h0.05",
+      "spacing": 0.05,
+      "particles": 3200,
+      "stress_unknowns": 198,
+      "free_velocity": 400,
+      "mu": 0.5,
+      "seconds": 0.3697694590082392,
+      "basis": "coarse",
+      "coarsening": 2,
+      "converged": true,
+      "residual": 9.905596822020329e-05,
+      "sweeps": 95
+    },
+    {
+      "name": "coarse2_h0.025",
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 693,
+      "free_velocity": 1600,
+      "mu": 0.5,
+      "seconds": 46.71706170903053,
+      "basis": "coarse",
+      "coarsening": 2,
+      "converged": true,
+      "residual": 9.99816946167973e-05,
+      "sweeps": 3000
+    },
+    {
+      "name": "coarse2_h0.0125",
+      "spacing": 0.0125,
+      "particles": 51200,
+      "stress_unknowns": 2583,
+      "free_velocity": 6400,
+      "mu": 0.5,
+      "seconds": 37.94469220895553,
+      "basis": "coarse",
+      "coarsening": 2,
+      "converged": false,
+      "residual": 0.00441,
+      "sweeps": 3000
+    },
+    {
+      "name": "nodal_h0.025_frictionless",
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 2583,
+      "free_velocity": 1600,
+      "mu": 0.0,
+      "seconds": 0.2548332500155084,
+      "converged": true,
+      "residual": 9.8688097786237e-05,
+      "sweeps": 44
+    },
+    {
+      "name": "nodal_h0.025_mu0.1",
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 2583,
+      "free_velocity": 1600,
+      "mu": 0.1,
+      "seconds": 25.015205541974865,
+      "converged": true,
+      "residual": 8.87815614379257e-05,
+      "sweeps": 1232
+    },
+    {
+      "name": "coarse2_h0.0125_frictionless",
+      "spacing": 0.0125,
+      "particles": 51200,
+      "stress_unknowns": 2583,
+      "free_velocity": 6400,
+      "mu": 0.0,
+      "seconds": 0.4598841250408441,
+      "basis": "coarse",
+      "coarsening": 2,
+      "converged": true,
+      "residual": 7.746292365595764e-05,
+      "sweeps": 30
+    },
+    {
+      "name": "coarse2_h0.0125_mu0.1",
+      "spacing": 0.0125,
+      "particles": 51200,
+      "stress_unknowns": 2583,
+      "free_velocity": 6400,
+      "mu": 0.1,
+      "seconds": 79.87679870799184,
+      "basis": "coarse",
+      "coarsening": 2,
+      "converged": true,
+      "residual": 9.568222783370757e-05,
+      "sweeps": 1500
+    },
+    {
+      "name": "stress0.05_h0.025",
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 693,
+      "free_velocity": 1600,
+      "mu": 0.5,
+      "seconds": 46.46602179197362,
+      "basis": "coarse",
+      "coarsening": 2,
+      "converged": true,
+      "residual": 9.99816946167973e-05,
+      "sweeps": 3000
+    },
+    {
+      "name": "stress0.05_h0.0125",
+      "spacing": 0.0125,
+      "particles": 51200,
+      "stress_unknowns": 693,
+      "free_velocity": 6400,
+      "mu": 0.5,
+      "seconds": 19.282769749988802,
+      "basis": "coarse",
+      "coarsening": 4,
+      "converged": true,
+      "residual": 9.511475141229575e-05,
+      "sweeps": 1275
+    },
+    {
+      "name": "stress0.05_h0.00625",
+      "spacing": 0.00625,
+      "particles": 204800,
+      "stress_unknowns": 693,
+      "free_velocity": 25600,
+      "mu": 0.5,
+      "seconds": 45.60212416603463,
+      "basis": "coarse",
+      "coarsening": 8,
+      "converged": true,
+      "residual": 9.274822128183585e-05,
+      "sweeps": 1223
+    }
+  ],
+  "nested": [
+    {
+      "name": "nested_h0.025",
+      "spacing": 0.025,
+      "levels": [
+        {
+          "coarsening": 4,
+          "stress_unknowns": 198,
+          "converged": true,
+          "residual": 7.289422921642558e-05,
+          "sweeps": 48
+        },
+        {
+          "coarsening": 2,
+          "stress_unknowns": 693,
+          "converged": true,
+          "residual": 8.665331710514706e-05,
+          "sweeps": 175
+        }
+      ],
+      "seconds": 2.723269459034782
+    },
+    {
+      "name": "nested_h0.0125",
+      "spacing": 0.0125,
+      "levels": [
+        {
+          "coarsening": 8,
+          "stress_unknowns": 198,
+          "converged": true,
+          "residual": 8.770596101445775e-05,
+          "sweeps": 50
+        },
+        {
+          "coarsening": 4,
+          "stress_unknowns": 693,
+          "converged": true,
+          "residual": 9.676771550741202e-05,
+          "sweeps": 150
+        },
+        {
+          "coarsening": 2,
+          "stress_unknowns": 2583,
+          "converged": false,
+          "residual": 0.0118,
+          "sweeps": 3000
+        }
+      ],
+      "seconds": 45.29304979101289
+    },
+    {
+      "name": "nested_stress0.05_h0.00625",
+      "spacing": 0.00625,
+      "levels": [
+        {
+          "coarsening": 16,
+          "stress_unknowns": 198,
+          "converged": true,
+          "residual": 7.487929145919719e-05,
+          "sweeps": 41
+        },
+        {
+          "coarsening": 8,
+          "stress_unknowns": 693,
+          "converged": true,
+          "residual": 9.486186980723053e-05,
+          "sweeps": 197
+        }
+      ],
+      "seconds": 28.61153470800491
+    }
+  ]
+}

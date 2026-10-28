@@ -243,3 +243,62 @@ P0 remains experimental. Resolve these iteration and accuracy gates, and
 consider the paper's dP1 alternative, before selecting a compact stress space
 for the GPU port. Neither the paper's compact mixed pairs nor this experiment
 establish an inf-sup stability guarantee.
+
+## Coarse Q1 stress space and refinement study
+
+Set `P.granular_stress_basis = "coarse"` to place bilinear stresses on a grid
+whose spacing is `P.granular_stress_coarsening` (default 2) times the velocity
+grid spacing. The cell counts in x and y must be divisible by that factor. The
+velocity space, rigid-grain equations, packing gap, solvers and particle stress
+transfer are unchanged; the stress shape functions and their exact basis
+volumes are the only differences from `"nodal"`. Stresses are transferred to
+particles with the coarse shape functions at their start-of-step positions.
+Nodal packing diagnostics keep their nodal reconstruction;
+`maximum_stress_packing` uses the coarse basis volumes. This option is CPU
+only and experimental.
+
+The [refinement study](../benchmarks/granular_stress_scaling.json)
+(`uv run --locked python -m benchmarks.granular_stress_scaling`) freezes the
+first contact problem of a column collapse from rest (0.5 m wide, 1 m high,
+4 particles per cell, `dt = 0.002`) and runs the compact velocity solver at
+tolerance `1e-4` with a 3,000-sweep budget:
+
+| Stress space | Grid spacing | Particles | Stress unknowns | Result |
+| --- | ---: | ---: | ---: | --- |
+| nodal | 0.05 | 3,200 | 693 | converged, 2,329 sweeps |
+| nodal | 0.025 | 12,800 | 2,583 | stalls at 1.75e-2 |
+| P0 | 0.05 | 3,200 | 600 | 5.3e-4 after 3,000 sweeps |
+| P0 | 0.025 | 12,800 | 2,400 | stalls at 1.37e-2 |
+| coarse, k = 2 | 0.05 | 3,200 | 198 | converged, 95 sweeps |
+| coarse, k = 2 | 0.025 | 12,800 | 693 | converged at the budget (3,000 sweeps) |
+| coarse, k = 2 | 0.0125 | 51,200 | 2,583 | stalls at 4.4e-3 |
+
+The assembled reference solver (`hybrid`) also stalls on the nodal problem at
+0.025, at 1.9e-2, so the stall is not specific to the compact iteration. The
+stalled level does not change with `dt`: from rest with zero packing gaps the
+scaled first-step problem is independent of the timestep.
+
+Friction sets the difficulty. Without friction the nodal problem at 0.025
+converges in 44 sweeps and the coarse problem at 0.0125 in 30; with `mu = 0.1`
+they need 1,232 and 1,500 sweeps; with the input's `mu = 0.5` both stall. The
+stall therefore follows the stress resolution of the frictional problem, not
+the ratio of stress to velocity unknowns (nodal at 0.025 and coarse k = 2 at
+0.0125 share a 0.025 m stress spacing and both stall). This is consistent with
+the known ill-posedness of incompressible, rate-independent non-associated
+Coulomb flow under refinement, but that mechanism has not been demonstrated
+here.
+
+Holding the stress spacing at 0.05 m while the velocity grid refines, every
+case converges: 3,000, 1,275 and 1,223 sweeps at 12,800, 51,200 and 204,800
+particles. Nested iteration (solve on a coarser stress grid, interpolate the
+stress field, which stays admissible because the Coulomb cone is convex, and
+use it as the warm start) reduces the 12,800-particle case to 48 + 175 sweeps
+(3 s against 46 s) and the 204,800-particle case to 41 + 197 sweeps. It does
+not rescue the stalled 0.025 m stress spacing.
+
+A fixed physical stress spacing is a regularisation: it sets a minimum length
+for the stress field independent of the velocity grid. Whether it, a rheology
+change such as dilatancy or a rate-dependent friction law, or another
+regularisation is appropriate is a modelling decision that has not been made.
+The coarse space has not been compared with the nodal space for accuracy on
+evolving flows.
