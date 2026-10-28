@@ -1,48 +1,109 @@
-.. _getting_started:
-
-
-***************
 Getting started
-***************
+===============
 
-.. _installation:
+Requirements and installation
+-----------------------------
 
-Installation
-=============================
+Use a checkout of this repository, Git, and a current version of
+`uv <https://docs.astral.sh/uv/getting-started/installation/>`_. Python 3.14 is the
+tested baseline; ``.python-version`` pins 3.14.10. uv can download the pinned
+interpreter if it is absent. Initial setup requires network access and disk
+space for Python, NumPy, SciPy, Astropy, and Matplotlib.
 
-For this to run, you will need the following installed
+From a terminal::
 
-    * Python 2.7+/3+
-    * NumPy
-    * Matplotlib
+    git clone https://github.com/benjym/poly-mpm.git
+    cd poly-mpm
+    uv sync --extra dev --locked
+    uv run --locked python -c "import numpy; from constit import SUPPORTED; print(SUPPORTED)"
 
-If running on Mac OS X, I recommend installing the Anaconda_ package. On Ubuntu, just type::
-    
-    sudo apt-get install python python-numpy python-matplotlib
+``uv sync`` installs the project as well as its dependencies. ``--extra dev``
+includes pytest; omit it if you only want to run simulations. Run the commands
+below from the checkout root. The snippets use ``uv run`` so activation is not
+required. An existing checkout should use the branch containing these docs;
+older branches may still contain the scalar implementation.
 
-.. _Anaconda: https://www.continuum.io/downloads
+Alternatively, with Python 3.14 already installed::
 
-.. _example:
+    python3.14 -m venv .venv
+    source .venv/bin/activate
+    python -m pip install -e '.[dev]'
 
-Running an example
-=============================
+On Windows PowerShell, activate with ``.venv\Scripts\Activate.ps1`` instead.
+For this pip workflow, replace ``uv run --locked python`` below with ``python``.
+The pip install resolves compatible dependency versions; ``uv.lock`` records the
+exact tested environment. Updating Python alone does not modernise an old checkout.
 
-Parameters for each simulation are contained in separate files in the inputs directory. For example, to run the simulation described by :file:`inputs/ball.py`, run the following in the terminal::
+First complete simulation
+-------------------------
 
-  python MPM.py ball
+Run the small elastic ball example::
 
-By default, the output files should be contained in :file:`~/Documents/poly-mpm`.
+    uv run --locked python MPM.py ball
 
+It simulates one second with 500 particles and 1,000 timesteps. The terminal shows
+progress and ends with a newline. Matplotlib runs without a GUI; figures are saved
+to disk, not opened in a window. Expect ``Continuum/*.png`` and ``MP/*.png``
+under ``im/ball/elastic/``. Wall-clock duration depends on your machine and plot
+rendering. Repeating a run in the same directory can overwrite its files.
 
-Loading example data
-=============================
+The installed command is equivalent::
 
-This is a fairly convoluted process, but is kind of summarised here:
+    uv run --locked poly-mpm ball
 
-.. graphviz::
+A bounded preview
+-----------------
 
-   digraph foo {
-      "input file" -> "inititalise" -> "params.Params instance";
-   }
-   
-Any data which is not provided in the input file will be created with a default value in :file:`initialise.py`. This complete data is then passed into the params.Params instance, which is used for the rest of the simulation.
+Some examples request millions of steps. The CLI takes an example name and its
+positional arguments; it has no ``--max-steps`` or ``--output`` options. Use the
+Python API for a short preview and a separate output directory::
+
+    uv run --locked python - <<'PY'
+    from initialise import get_parameters
+    from MPM import run
+
+    P, G, L = get_parameters(['ball'])
+    P.save_dir = 'im/ball-preview/'
+    P.savetime = P.dt
+    run(P, G, L, max_steps=3)
+    print(P.t, P.tstep, P.save_dir)
+    PY
+
+This shell heredoc works in macOS/Linux shells. On Windows, put its Python body
+in ``preview.py`` and run ``uv run --locked python preview.py``. Set
+``output=False`` in ``run`` to suppress all output callbacks, including custom
+history recording. In that mode there will be no saved plots or arrays.
+
+Choosing an example
+-------------------
+
+* ``ball``: a small first run with elastic material and saved plots.
+* ``dp_unit_test`` / ``dp_rate_unit_test``: Drucker-Prager loading histories;
+  full runs have 50,000 / 5,000 steps respectively.
+* ``bi_seg_test 22 2 11``: segregation at 22 degrees, two grain-size classes,
+  and 11 vertical grid nodes. Replace ``2`` with ``8`` for eight classes. The
+  input converts its angle argument to its internal signed-radian convention.
+  This is a long research example; start with a bounded run.
+
+The :doc:`complete example matrix <array-conversion>` gives all required
+arguments and identifies unsupported inputs. Examples with arguments must receive
+them in the listed order; there is no general argument parser for their settings.
+Bounded smoke checks establish compatibility, not stability over every original
+run duration or physical calibration.
+
+Supported material names are ``rigid``, ``elastic``, ``viscous``, ``von_mises``,
+``pouliquen``, ``bingham``, ``dp``, ``dp_rate``, and ``linear_mu``. See
+:doc:`constitutive-models` before selecting parameters. Retired and missing laws
+fail at initialisation; they are not silently replaced.
+
+Checking the installation
+-------------------------
+
+With the dev extra installed::
+
+    uv run --locked --extra dev python -m pytest -q -W error::RuntimeWarning
+    uv run --locked python -m benchmarks.audit_examples --output /tmp/poly-mpm-examples.json
+
+The tests and benchmark modules require the source checkout. The audit performs
+five bounded timesteps per supported example; its output file records each
+example's status. On Windows, choose a writable output path instead of ``/tmp``.

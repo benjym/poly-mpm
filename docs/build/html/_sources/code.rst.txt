@@ -1,69 +1,54 @@
-Documentation
-**************************
+Python API reference
+====================
 
-The code is made up of the following modules:
+Run scripts from the checkout root or install the project first. Start with
+:doc:`outputs` for the state and callback conventions. These signatures are
+imported from the current source, not copied from the former scalar interface.
 
-    * `Main Module`_
-    * `Material Points`_
-    * `Material Point Lists`_
-    * `Grid Operators`_
-    * `Constitutive Models`_
-    * `Integrators`_
-    * `Plotting`_
+Construction and defaults
+-------------------------
 
-.. _main_module:
+.. automodule:: initialise
+   :members:
 
-Main Module
-==========================
+Run loop
+--------
 
 .. automodule:: MPM
    :members:
 
-.. _material_points:
+Particle state and material coordination
+----------------------------------------
 
-Material Points
-==========================
-
-.. autoclass:: particle.Particle
+.. automodule:: particles
    :members:
 
-.. _material_point_lists:
-
-Material Point Lists
-==========================
-
-.. automodule:: mplist
-   :members:
-
-.. _grid_operators:
-
-Grid Operators
-==========================
+Grid operators
+--------------
 
 .. automodule:: grid
    :members:
 
-.. _constitutive_models:
+Particle-grid transfers
+-----------------------
 
-Constitutive Models
-==========================
+.. automodule:: transfers
+   :members:
+
+Constitutive kernels
+--------------------
 
 .. automodule:: constit
    :members:
 
-.. _pde_integrators:
-
-Integrators
-==========================
+Segregation operators
+---------------------
 
 .. automodule:: integrators
-  :members:
+   :members:
 
-
-.. _custom_plotting:
-
-Plotting
-==========================
+Output adapters
+---------------
 
 .. automodule:: plotting
    :members:

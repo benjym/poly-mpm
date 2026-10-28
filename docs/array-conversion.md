@@ -181,8 +181,9 @@ materials share the existing momentum grid; this work adds neither contact
 resolution nor a separate velocity field per material. Legacy traction scaling
 still uses the first material's uniform reference density.
 
-Generated historical HTML under `docs/build` is not regenerated. This document
-and the root README describe the current solver.
+The user manual builds the current reStructuredText and Markdown sources together.
+See [documentation maintenance](README.md) for build instructions and the checked-in
+HTML layout.
 
 ## Example compatibility
 

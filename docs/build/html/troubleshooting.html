@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Troubleshooting and limitations &#8212; poly-mpm user guide</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Constitutive model audit" href="constitutive-models.html" />
+    <link rel="prev" title="Output and Python API" href="outputs.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="troubleshooting-and-limitations">
+<h1>Troubleshooting and limitations<a class="headerlink" href="#troubleshooting-and-limitations" title="Link to this heading">¶</a></h1>
+<section id="installation-and-command-errors">
+<h2>Installation and command errors<a class="headerlink" href="#installation-and-command-errors" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">uv</span></code> cannot find the pinned Python</dt><dd><p>Update uv using the installation method you originally used, then retry
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--extra</span> <span class="pre">dev</span> <span class="pre">--locked</span></code>. If your platform has no compatible
+interpreter or dependency wheel, inspect that package’s error rather than
+silently changing numerical dependencies. Python 3.14.10 is the tested pin;
+an arbitrary later minor version is not necessarily supported by every wheel.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">ModuleNotFoundError</span></code> or <code class="docutils literal notranslate"><span class="pre">poly-mpm:</span> <span class="pre">command</span> <span class="pre">not</span> <span class="pre">found</span></code></dt><dd><p>From the checkout root, run <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span> <span class="pre">--extra</span> <span class="pre">dev</span> <span class="pre">--locked</span></code> and use
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">ball</span></code>. For a pip environment, activate it
+first. <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">pip</span></code> may be absent from a uv-created environment; use
+<code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code> to manage that environment.</p>
+</dd>
+<dt>The example cannot be imported</dt><dd><p>Use its module name, such as <code class="docutils literal notranslate"><span class="pre">ball</span></code>, rather than <code class="docutils literal notranslate"><span class="pre">inputs/ball.py</span></code>. Put new
+modules under <code class="docutils literal notranslate"><span class="pre">inputs/</span></code> and expose <code class="docutils literal notranslate"><span class="pre">Params(args)</span></code>. Run the documented
+commands from the checkout root.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">IndexError</span></code> while loading an example</dt><dd><p>Some legacy examples access positional arguments directly. Check the
+<a class="reference internal" href="array-conversion.html"><span class="doc">example matrix</span></a> and supply every listed argument in
+order. Arguments are specific to the chosen input.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Unsupported</span> <span class="pre">material</span> <span class="pre">law</span></code></dt><dd><p>Check the exact registry name and <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a>. The retired
+<code class="docutils literal notranslate"><span class="pre">elastic_time</span></code>, <code class="docutils literal notranslate"><span class="pre">ken_kamrin</span></code>, and <code class="docutils literal notranslate"><span class="pre">ken_simple</span></code> implementations are not
+available. <code class="docutils literal notranslate"><span class="pre">viscous_size</span></code> and the separate legacy <code class="docutils literal notranslate"><span class="pre">P.F</span></code> compressible-fluid
+path are unimplemented. Four inputs remain deliberately unsupported:
+<code class="docutils literal notranslate"><span class="pre">tunnel</span></code>, <code class="docutils literal notranslate"><span class="pre">poly_avalanche</span></code>, <code class="docutils literal notranslate"><span class="pre">tri_seg_test</span></code>, and <code class="docutils literal notranslate"><span class="pre">fluid</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="output-and-runtime">
+<h2>Output and runtime<a class="headerlink" href="#output-and-runtime" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>No plot window appears</dt><dd><p>Expected: figures are saved as PNGs. Check <code class="docutils literal notranslate"><span class="pre">P.save_dir</span></code>, the output flags,
+and whether the input replaces a default callback. <code class="docutils literal notranslate"><span class="pre">output=False</span></code> disables
+all output, including custom histories.</p>
+</dd>
+<dt>No files after a short preview</dt><dd><p>The preview may end before <code class="docutils literal notranslate"><span class="pre">savetime</span></code>, and an input’s custom callback may
+save only at save times. Set <code class="docutils literal notranslate"><span class="pre">P.savetime=P.dt</span></code> for a few steps and choose a
+separate directory, as in <a class="reference internal" href="getting_started.html"><span class="doc">Getting started</span></a>.</p>
+</dd>
+<dt>A run appears to take forever</dt><dd><p>Check <code class="docutils literal notranslate"><span class="pre">dt</span></code>, <code class="docutils literal notranslate"><span class="pre">t_f</span></code>, and plot frequency in the input. Some original examples
+request millions of steps. Start with <code class="docutils literal notranslate"><span class="pre">run(...,</span> <span class="pre">max_steps=100,</span> <span class="pre">output=False)</span></code>.
+The CLI has no generic duration or maximum-step switch. Ctrl-C interrupts a
+run but does not create a restart checkpoint or guarantee end callbacks run.</p>
+</dd>
+<dt>A Matplotlib cache warning appears</dt><dd><p>Matplotlib needs a writable cache/config directory. If your home directory
+is read-only, set <code class="docutils literal notranslate"><span class="pre">MPLCONFIGDIR</span></code> to a writable directory before starting
+Python; for example on macOS/Linux,
+<code class="docutils literal notranslate"><span class="pre">MPLCONFIGDIR=/tmp/poly-mpm-mpl</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">--locked</span> <span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">ball</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="numerical-errors">
+<h2>Numerical errors<a class="headerlink" href="#numerical-errors" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>A particle leaves the domain</dt><dd><p>The solver fails before invalid cell lookup. Check domain extents, inlet/
+outlet or periodic configuration, velocity and loading, then timestep. Moving
+beyond an unconstrained grid edge is not an implicit free-surface boundary
+extension or an automatically expanding computational domain.</p>
+</dd>
+<dt>A model reports nonfinite state</dt><dd><p>The error identifies the law, material, timestep, field, and particle rows.
+Check parameter units, initial conditions, model domain, and timestep. Reduce
+the timestep as a diagnostic, then perform convergence checks. Finite output
+alone is not proof of an accurate or physically valid solution.</p>
+</dd>
+<dt>Grain fractions do not sum to one</dt><dd><p>Initial rows must be nonnegative and sum to one. Use <code class="docutils literal notranslate"><span class="pre">phi</span></code> of shape
+<code class="docutils literal notranslate"><span class="pre">(ns,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">ns)</span></code>. The corrected segregation tests conserve species mass
+without clipping or renormalisation. Investigate inventory and boundary fluxes
+rather than enabling <code class="docutils literal notranslate"><span class="pre">normalise_phi</span></code> to hide drift.</p>
+</dd>
+</dl>
+</section>
+<section id="what-the-solver-currently-does">
+<h2>What the solver currently does<a class="headerlink" href="#what-the-solver-currently-does" title="Link to this heading">¶</a></h2>
+<p>This is a research solver with a regular 2D grid, bilinear particle-grid
+interpolation, explicit mechanics, and a shared nodal momentum field. It has no
+GIMP/B-spline interpolation, APIC, deformation-gradient volume evolution,
+independent multi-body contact, general curved boundaries, implicit/quasistatic
+solve, or checkpoint/restart. Particle mass and represented volume remain fixed;
+reconstructed density is a diagnostic, also used by the retained Pouliquen cutoff.
+The original five material laws retain legacy conventions; the four restored laws
+have separate physical corrections and analytical tests.</p>
+<p>See <a class="reference internal" href="array-conversion.html"><span class="doc">NumPy array conversion</span></a>, <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a>, and
+<a class="reference internal" href="segregation-conservation.html"><span class="doc">Source and correction of segregation drift</span></a> for exact scope. Smoke-tested examples, equation
+checks, conservation tests, experimental validation, and convergence studies are
+different levels of evidence. Choose the evidence required for your application.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">poly-mpm</a></h1>
+
+
+
+<p class="blurb">2D material point method with grain-size segregation</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Using the solver</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Create a simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="materials.html">Choosing a material</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Output and Python API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshooting and limitations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation-and-command-errors">Installation and command errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output-and-runtime">Output and runtime</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#numerical-errors">Numerical errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-the-solver-currently-does">What the solver currently does</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
+</ul>
+
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Benjy Marks.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.2.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/troubleshooting.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

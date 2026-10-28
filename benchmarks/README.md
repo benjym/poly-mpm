@@ -1,5 +1,9 @@
 # Array conversion benchmark results
 
+This is a historical performance report, measured before the segregation correction
+and constitutive-model restoration. For installation and a first simulation, start
+with the [user guide](../docs/getting_started.rst).
+
 Five-run median solver timings after one warmup, on identical initial states.
 Initialisation, state copying, plotting, logging, and file output are excluded.
 The scalar baseline is the corrected test reference derived from the original
@@ -78,10 +82,18 @@ composition sums, bounds, and species mass without clipping or normalisation.
 See [the source and correction](../docs/segregation-conservation.md) and
 [conversion notes](../docs/array-conversion.md) for the derivation and limitations.
 
-Reproduce from the repository root with:
+Install the dev dependencies with `uv sync --extra dev --locked`, activate the
+environment (`source .venv/bin/activate` on macOS/Linux), then reproduce from the
+repository root with:
 
 ```sh
-OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m benchmarks.compare
-python -m benchmarks.audit_examples
-python -m benchmarks.segregation_drift
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m benchmarks.compare --sizes 1000 --repeats 3 --output /tmp/poly-mpm-timings.json
+python -m benchmarks.audit_examples --output /tmp/poly-mpm-examples.json
+python -m benchmarks.segregation_drift --output /tmp/poly-mpm-segregation.json
 ```
+
+These commands write fresh reports separately from the committed measurements.
+Choose another writable path on Windows. Omitting `--sizes`/`--repeats` runs the
+full timing suite, including slow 100,000-particle scalar cases. Omitting `--output`
+overwrites the corresponding report in `benchmarks/`. Runtime, tests, and benchmark
+modules must be available from an activated source-checkout environment.

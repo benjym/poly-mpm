@@ -31,6 +31,7 @@ target-version = ['py314']
 
 [project.optional-dependencies]
 dev = ["pytest>=9.2"]
+docs = ["sphinx>=8.2", "myst-parser>=4"]
 
 [project.scripts]
 poly-mpm = "MPM:main"

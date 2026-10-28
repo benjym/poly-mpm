@@ -1,0 +1,2 @@
+# Generated manual: collapse rendered assets in review and keep upstream formatting.
+docs/build/** linguist-generated=true -whitespace
