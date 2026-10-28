@@ -122,7 +122,9 @@ class Solid_Params():
                 c = [0,0]#G.x_m+(x)*(G.x_M-G.x_m)/nx,G.y_m+(y)*(G.y_M-G.y_m)/ny] # centre
 
                 for i in linspace(0,r,nr):
-                    dnphi = around(nphi*i/r) # number in this ring
+                    dnphi = int(around(nphi*i/r)) # number in this ring
+                    if dnphi == 0:
+                        continue
                     for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
                         self.X.append(c[0]+i*sin(j))
                         self.Y.append(c[1]+i*cos(j))
@@ -141,17 +143,9 @@ class Output_Params():
         self.measure_stiffness = False
         self.check_positions = False
         self.plot_fluid = True
-        self.energy = zeros((nt+1,4)) # energy
+        self.energy = [] # energy
         self.continuum_fig_size = [12,6]
         self.mp_fig_size = [10,4]
-    def measure_E(self,P,L):
-        print('Measuring macro and micro stress/strain for each material point... ')
-        for i in range(P.S.n):
-            original_position = array((P.S.X[i],P.S.Y[i],0))
-            macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
-            macro_stress = P.max_conf#/(P.S.L*P.S.W)
-            print('From macroscopic stress/strain:' +
-                  str(macro_stress/macro_strain/P.S.E) +
-                  'From microscopic stress/strain:' +
-                  str(L.S[i].dstress/L.S[i].dstrain/P.S.E)
-                  )
+    def measure_E(self, L, P, G):
+        from plotting import Plotting
+        Plotting().measure_E(L, P, G)

@@ -61,7 +61,7 @@ class Solid_Params():
 #         self.size = 1.0 # particle diameter (m)
 #         self.conc = 0.5 # volumetric concentration
         self.phi = [0.333,0.334,0.333]
-        self.mu = [1e3, 1e3]
+        self.mu = [1e3, 1e3, 1e3]
 #         self.pressure = 5e3
         self.law = 'viscous_size'
 

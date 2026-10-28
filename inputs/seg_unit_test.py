@@ -7,11 +7,12 @@ class Params():
         self.dt = 1e-8 # timestep (s)
         self.savetime = 10*self.dt # 0.1
         self.t_f = 100.0 # 100*self.dt # final time (s)
+        self.max_q = 0.
         self.max_g = -9.81 # gravity (ms^-2)
 
         self.G = Grid_Params()
         self.B = Boundary_Params()
-        self.O = Output_Params(self.nt)
+        self.O = Output_Params(0)
         self.S = [Solid_Params(self.G,self)]
 
         self.segregate_grid = True
@@ -41,6 +42,9 @@ class Grid_Params():
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
         self.dy = self.y[1] - self.y[0] # grid spacing (m)
+        # Match the solver defaults omitted by this legacy setup.
+        self.ns = 1
+        self.s = array([0.001])
         self.thickness = 1. # (m)
 
 class Boundary_Params():

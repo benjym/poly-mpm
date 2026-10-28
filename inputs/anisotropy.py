@@ -41,7 +41,7 @@ class Grid_Params():
         self.y_m = 0.0 # (m)
         self.y_M = 2.0 # (m)
         self.nx = int(self.x_M-self.x_m)*self.scale+1
-        self.ny = int(self.y_M-self.y_m)*self.scale/2+1
+        self.ny = int(self.y_M-self.y_m)*self.scale//2+1
         self.x = linspace(self.x_m,self.x_M,self.nx)
         self.y = linspace(self.y_m,self.y_M,self.ny)
         self.dx = self.x[1] - self.x[0] # grid spacing (m)
@@ -81,7 +81,7 @@ class Solid_Params():
         yp = linspace(G.y_m+gap,G.y_M-gap,self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
-        for i in xrange(self.x*self.y):
+        for i in range(self.x*self.y):
             self.X.append(X[i])
             self.Y.append(Y[i])
             self.n += 1
@@ -97,18 +97,11 @@ class Output_Params():
         self.check_positions = False
         self.plot_fluid = False
         self.plot_gamma_dot = True
-        self.energy = zeros((nt+1,4)) # energy
+        self.energy = [] # energy
         
-    def measure_E(self,P,L):
-        print 'Measuring macro and micro stress/strain for each material point... '
-        for i in xrange(P.S.n):
-            original_position = array((P.S.X[i],P.S.Y[i],0))
-            macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
-            macro_stress = P.max_conf#/(P.S.L*P.S.W)
-            print 'From macroscopic stress/strain:'
-            print macro_stress/macro_strain/P.S.E
-            print 'From microscopic stress/strain:'
-            print L.S[i].dstress/L.S[i].dstrain/P.S.E
+    def measure_E(self, L, P, G):
+        from plotting import Plotting
+        Plotting().measure_E(L, P, G)
 
             
 class Fluid_Params():

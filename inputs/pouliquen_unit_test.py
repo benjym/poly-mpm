@@ -109,75 +109,31 @@ class Solid_Params():
         print('CFL from momentum diffusion: ' + str(critical_diff_time/P.dt))
         print('Current CFL: ' + str(CFL))
 
-class Output_Params():
-    def __init__(self,nt,n):
-        # self.plot_continuum = True
-        # self.plot_material_points = True
-        self.energy = zeros([nt+1,4]) # energy
-        self.mu = zeros([nt+2,n])
-        self.I = zeros_like(self.mu)
-        self.tau = zeros_like(self.mu)
-        self.eta = zeros_like(self.mu)
-        self.t = zeros_like(self.mu)
-        self.pressure = zeros_like(self.mu)
-        self.gammadot = zeros_like(self.mu)
-        self.dstrain = zeros([nt+2,n,3,3])
-        self.dev_stress = zeros_like(self.dstrain)
+class Output_Params:
+    """Array-valued constitutive history for the loading-path example."""
+    def __init__(self, nt, n):
+        self.history = []
 
-    def store_mu(self,P,G,L,tstep):
-        if tstep > 1:
-            for i in range(P.S[0].n):
-                self.mu[tstep,i] = L.S[0][i].mu
-                self.dev_stress[tstep,i] = L.S[0][i].dev_stress
-                self.I[tstep,i] = L.S[0][i].I
-                self.eta[tstep,i] = L.S[0][i].eta
-                self.t[tstep,i] = P.t
-                self.pressure[tstep,i] = L.S[0][i].pressure
-                self.dstrain[tstep,i] = L.S[0][i].dstrain
-                self.gammadot[tstep,i] = L.S[0][i].gammadot
-                self.tau[tstep,i] = linalg.norm(L.S[0][i].dev_stress)/sqrt(2)
+    def after_every_timestep(self, L, P, G):
+        batch = L.materials[0]
+        self.history.append(dict(t=P.t, **{name: getattr(batch, name).copy() for name in
+            ('mu', 'I', 'eta', 'eta_limited', 'pressure', 'dstrain', 'dev_stress', 'gammadot')}))
 
-    def draw_mu(self,P,G,L,plot,tstep):
-        plt.figure(figsize=[12,6])
-        # for i in range(P.S[0].n):
-        for i in [0]:
-            plt.clf()
-
-            plt.subplot(231)
-            plt.plot(self.t[:tstep-1],self.I[:tstep-1,i],'k.')
-            plt.xlabel(r'$t$',rotation='horizontal')
-            plt.ylabel(r'$I$',rotation='horizontal')
-
-            plt.subplot(232)
-            plt.plot(self.t[:tstep-1,i],-self.pressure[:tstep-1,i],'k.')
-            plt.plot(self.t[:tstep-1,i],self.tau[:tstep-1,i],'b.')
-            plt.xlabel(r'$t$',rotation='horizontal')
-            plt.ylabel(r'$\sigma_{ij}$',rotation='horizontal')
-
-            plt.subplot(233)
-            plt.semilogx(self.I[:tstep-1,i],self.mu[:tstep-1,i],'k.')
-            plt.semilogx(self.I[:tstep-1,i],-self.tau[:tstep-1,i]/self.pressure[:tstep-1,i],'b.')
-            plt.xlabel(r'$I$',rotation='horizontal')
-            plt.ylabel(r'$\mu$',rotation='horizontal')
-
-            plt.subplot(234)
-            plt.plot(self.t[:tstep-1],self.eta[:tstep-1,i],'k.')
-            plt.xlabel(r'$t$',rotation='horizontal')
-            plt.ylabel(r'$\eta$',rotation='horizontal')
-
-            plt.subplot(235)
-            plt.plot(self.t[:tstep-1],self.dstrain[:tstep-1,i,0,0]/P.dt,'r.',label=r'$\dot\varepsilon_{xx}$')
-            plt.plot(self.t[:tstep-1],self.dstrain[:tstep-1,i,0,1]/P.dt,'g.',label=r'$\dot\varepsilon_{xy}$')
-            plt.plot(self.t[:tstep-1],self.dstrain[:tstep-1,i,1,1]/P.dt,'b.',label=r'$\dot\varepsilon_{yy}$')
-            plt.plot(self.t[:tstep-1],self.gammadot[:tstep-1,i],'k.',label=r'$\dot\gamma$')
-            plt.xlabel(r'$t$',rotation='horizontal')
-            plt.ylabel(r'$\dot\varepsilon_{ij}$',rotation='horizontal')
-
-            plt.subplot(236)
-            plt.semilogx(self.t[:tstep-1],self.mu[:tstep-1,i]/(-self.tau[:tstep-1,i]/self.pressure[:tstep-1,i]),'k.')
-            plt.xlabel(r'$t$',rotation='horizontal')
-            plt.ylabel(r'$\mu/\mu_{applied}$',rotation='horizontal')
-            plt.ylim(0.5,1.5)
-
-            plot.savefig(P,str(i))
-        #print (self.q[tstep-1,0]-self.q[1,0])/(self.p[tstep-1,0]-self.p[1,0])
+    def at_end(self, L, P, G):
+        from pathlib import Path
+        from plotting import Plotting
+        if not self.history:
+            return
+        history = {name: array([row[name] for row in self.history]) for name in self.history[0]}
+        directory = Path(P.save_dir) / 'data'
+        directory.mkdir(parents=True, exist_ok=True)
+        savez_compressed(directory / 'constitutive_history.npz', **history)
+        fig, axes = plt.subplots(2, 3, figsize=(12, 7), layout='constrained')
+        time = history['t']
+        for ax, name in zip(axes.flat, ('I', 'pressure', 'mu', 'eta_limited', 'gammadot')):
+            ax.plot(time, history[name][:, 0])
+            ax.set(xlabel='time', ylabel=name)
+        tau = linalg.norm(history['dev_stress'][:, 0], axis=(1, 2)) / sqrt(2)
+        axes.flat[-1].plot(time, tau)
+        axes.flat[-1].set(xlabel='time', ylabel='deviatoric stress norm')
+        Plotting().savefig(P, '0')

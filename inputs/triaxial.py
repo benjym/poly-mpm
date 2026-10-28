@@ -91,13 +91,6 @@ class Output_Params():
         # self.check_positions = True
         self.energy = zeros((10*nt+1,4)) # energy
 
-    def measure_E(self,L,P,G):
-        print('Measuring macro and micro stress/strain for each material point... ')
-        for i in range(P.S[0].n):
-            original_position = array((P.S[0].X[i],P.S[0].Y[i],0))
-            macro_strain = (original_position-L.S[0][i].x)/array((P.G.x_M - P.G.x_m,P.G.y_M - P.G.y_m,1.)) #original_position
-            macro_stress = P.max_q/2.
-            print('From macroscopic stress/strain:')
-            print(macro_stress/macro_strain/P.S[0].E)
-            print('From microscopic stress/strain:')
-            print(L.S[i].dstress/L.S[i].dstrain/P.S[0].E)
+    def measure_E(self, L, P, G):
+        from plotting import Plotting
+        Plotting().measure_E(L, P, G)

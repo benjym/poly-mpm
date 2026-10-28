@@ -99,7 +99,7 @@ class Output_Params():
         self.measure_stiffness = False
         self.check_positions = False
         self.plot_fluid = False
-        self.energy = zeros((nt+1,4)) # energy
+        self.energy = [] # energy
         self.continuum_fig_size = [10,6]
             
 class Fluid_Params():

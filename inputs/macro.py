@@ -4,7 +4,7 @@ from numpy import random
 import matplotlib.pyplot as plt
 
 class Params():
-    def __init__(self):
+    def __init__(self, mode=None):
         self.dt = 1e-3 # timestep (s)
         self.t = 0. # physical time (s)
         self.tstep = 0
@@ -96,17 +96,9 @@ class Output_Params():
         self.plot_fluid = False
         self.energy = zeros((nt+1,3)) # energy
         
-    def measure_E(self,P,L):
-        print('Measuring macro and micro stress/strain for each material point... ')
-        for i in range(P.S.n):
-            original_position = array((P.S.X[i],P.S.Y[i],0))
-            macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
-            macro_stress = P.max_q/2.
-            print('From macroscopic stress/strain:' +
-                  str(macro_stress/macro_strain/P.S.E) +
-                  'From microscopic stress/strain:' +
-                  str(L.S[i].dstress/L.S[i].dstrain/P.S.E)
-                  )
+    def measure_E(self, L, P, G):
+        from plotting import Plotting
+        Plotting().measure_E(L, P, G)
                   
 class Fluid_Params():
     def __init__(self):

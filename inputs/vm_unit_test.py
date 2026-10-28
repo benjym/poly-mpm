@@ -81,13 +81,6 @@ class Output_Params():
         self.measure_energy = True
         self.measure_stiffness = True
 
-    def measure_E(self,P,L):
-        print('Measuring macro and micro stress/strain for each material point... ')
-        for p in range(P.phases):
-            for i in range(P.S[p].n):
-                original_position = array((P.S[p].X[i],P.S[p].Y[i],0))
-                macro_stress = P.max_q/2.
-                macro_strain = (original_position-L.S[p][i].x)/array((P.S[p].L,P.S[p].W,1.)) #original_position
-                print('MP ' + str(i))
-                print('Macro response:' + str(macro_stress/macro_strain/P.S[p].E) + '*E')
-                print('Micro values:' + str(L.S[p][i].dstress/L.S[p][i].dstrain/P.S[p].E) + '*E')
+    def measure_E(self, L, P, G):
+        from plotting import Plotting
+        Plotting().measure_E(L, P, G)

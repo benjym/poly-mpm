@@ -80,7 +80,6 @@ class Solid_Params():
         self.rho = 2700. # density (kg/m^3)
         self.packing = 0.6 # packing fraction
         self.rho_s = self.rho/self.packing # solid density
-        self.PHI = []
 
         self.law = 'pouliquen'
         # # self.law = 'ken_simple'

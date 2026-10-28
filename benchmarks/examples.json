@@ -1,0 +1,372 @@
+[
+  {
+    "example": "anisotropy",
+    "args": [
+      "anisotropy"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      6400
+    ]
+  },
+  {
+    "example": "avalanche",
+    "args": [
+      "avalanche"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      480
+    ]
+  },
+  {
+    "example": "ball",
+    "args": [
+      "ball"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      500
+    ]
+  },
+  {
+    "example": "bi_conveyor",
+    "args": [
+      "bi_conveyor"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      1890
+    ]
+  },
+  {
+    "example": "bi_dam_break",
+    "args": [
+      "bi_dam_break",
+      "11",
+      "mix",
+      "0",
+      "2"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      900
+    ]
+  },
+  {
+    "example": "bi_double_insets",
+    "args": [
+      "bi_double_insets",
+      "11"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      900
+    ]
+  },
+  {
+    "example": "bi_drum",
+    "args": [
+      "bi_drum",
+      "11",
+      "2"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      292,
+      286
+    ]
+  },
+  {
+    "example": "bi_seg_test",
+    "args": [
+      "bi_seg_test",
+      "22",
+      "2",
+      "11"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      90
+    ]
+  },
+  {
+    "example": "bi_square_drum",
+    "args": [
+      "bi_square_drum",
+      "11",
+      "2"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      450
+    ]
+  },
+  {
+    "example": "bi_vertical_chute",
+    "args": [
+      "bi_vertical_chute",
+      "2",
+      "11"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      90
+    ]
+  },
+  {
+    "example": "bingham_unit_test",
+    "args": [
+      "bingham_unit_test"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'bingham'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "brazillian",
+    "args": [
+      "brazillian"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      7500
+    ]
+  },
+  {
+    "example": "chuteflow",
+    "args": [
+      "chuteflow"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      360
+    ]
+  },
+  {
+    "example": "dam_break",
+    "args": [
+      "dam_break"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'dp_rate'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "dp_rate_unit_test",
+    "args": [
+      "dp_rate_unit_test"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'dp_rate'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "dp_unit_test",
+    "args": [
+      "dp_unit_test"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'dp'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "flow",
+    "args": [
+      "flow"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      324,
+      120
+    ]
+  },
+  {
+    "example": "fluid",
+    "args": [
+      "fluid"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'compressible' in legacy P.F; use supported P.S materials"
+  },
+  {
+    "example": "francois",
+    "args": [
+      "francois",
+      "11"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      4024,
+      26
+    ]
+  },
+  {
+    "example": "gsd",
+    "args": [
+      "gsd"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      288
+    ]
+  },
+  {
+    "example": "incline",
+    "args": [
+      "incline"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      171
+    ]
+  },
+  {
+    "example": "macro",
+    "args": [
+      "macro"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      4
+    ]
+  },
+  {
+    "example": "pierre",
+    "args": [
+      "pierre"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'bingham'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "poly_avalanche",
+    "args": [
+      "poly_avalanche"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'viscous_size'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "poly_seg_test",
+    "args": [
+      "poly_seg_test",
+      "22"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      1800
+    ]
+  },
+  {
+    "example": "pouliquen_unit_test",
+    "args": [
+      "pouliquen_unit_test"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      9
+    ]
+  },
+  {
+    "example": "seg_unit_test",
+    "args": [
+      "seg_unit_test"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      900
+    ]
+  },
+  {
+    "example": "silo",
+    "args": [
+      "silo",
+      "11",
+      "2"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      450
+    ]
+  },
+  {
+    "example": "slope_stab",
+    "args": [
+      "slope_stab"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'dp'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "stokes",
+    "args": [
+      "stokes"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      728,
+      10
+    ]
+  },
+  {
+    "example": "tri_seg_test",
+    "args": [
+      "tri_seg_test"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'viscous_size'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "triaxial",
+    "args": [
+      "triaxial"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      127
+    ]
+  },
+  {
+    "example": "tunnel",
+    "args": [
+      "tunnel"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'elastic_time'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "vicky",
+    "args": [
+      "vicky"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      324
+    ]
+  },
+  {
+    "example": "vicky_latest",
+    "args": [
+      "vicky_latest"
+    ],
+    "status": "unsupported material law",
+    "error": "ValueError: Unsupported material law 'bingham'. Supported: rigid, elastic, von_mises, viscous, pouliquen. Experimental laws have not been converted or validated."
+  },
+  {
+    "example": "viscous_unit_test",
+    "args": [
+      "viscous_unit_test"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      900
+    ]
+  },
+  {
+    "example": "vm_unit_test",
+    "args": [
+      "vm_unit_test"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      9
+    ]
+  }
+]

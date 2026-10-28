@@ -88,13 +88,13 @@ class Fluid_Params():
         
         self.pts_per_cell = 3
         self.x = (G.nx-1)*self.pts_per_cell # particles in x direction
-        self.y = (G.ny-1)*self.pts_per_cell/4 # particles in y direction
+        self.y = (G.ny-1)*self.pts_per_cell//4 # particles in y direction
         gap = array((G.dx,G.dy))/(2*self.pts_per_cell)
         xp = linspace(G.x_m+gap[0],G.x_M-gap[0],self.x)
         yp = linspace(3.*G.y_M/4.+gap[1],G.y_M-gap[1],self.y)
         X = tile(xp,self.y)
         Y = repeat(yp,self.x)
-        for i in xrange(self.x*self.y):
+        for i in range(self.x*self.y):
             self.X.append(X[i])
             self.Y.append(Y[i])
             self.n += 1
@@ -120,7 +120,9 @@ class Solid_Params():
                 c = [G.x_m+(x+0.5)*(G.x_M-G.x_m)/nx,G.y_m+(y+0.5)*(G.y_M-G.y_m-0.5)/ny] # centre
 
                 for i in linspace(0,r,nr):
-                    dnphi = around(nphi*i/r) # number in this ring
+                    dnphi = int(around(nphi*i/r)) # number in this ring
+                    if dnphi == 0:
+                        continue
                     for j in linspace(0,(1.-1./(dnphi))*2*pi,dnphi):
                         self.X.append(c[0]+i*sin(j))
                         self.Y.append(c[1]+i*cos(j))
@@ -140,16 +142,9 @@ class Output_Params():
         self.measure_stiffness = False
         self.check_positions = False
         self.plot_fluid = False
-        self.energy = zeros((nt+1,4)) # energy
+        self.energy = [] # energy
         self.continuum_fig_size = [6,4]
         self.mp_fig_size = [10,4]
-    def measure_E(self,P,L):
-        print 'Measuring macro and micro stress/strain for each material point... '
-        for i in xrange(P.S.n):
-            original_position = array((P.S.X[i],P.S.Y[i],0))
-            macro_strain = (original_position-L.S[i].x)/array((P.S.L,P.S.W,1.)) #original_position
-            macro_stress = P.max_conf#/(P.S.L*P.S.W)
-            print 'From macroscopic stress/strain:'
-            print macro_stress/macro_strain/P.S.E
-            print 'From microscopic stress/strain:'
-            print L.S[i].dstress/L.S[i].dstrain/P.S.E
+    def measure_E(self, L, P, G):
+        from plotting import Plotting
+        Plotting().measure_E(L, P, G)
