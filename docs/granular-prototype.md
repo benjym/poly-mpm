@@ -5,6 +5,10 @@ zones and free surfaces. It replaces elastic pressure evolution and capped
 apparent viscosity with a coupled unilateral packing and Coulomb friction solve.
 The existing explicit solver remains the default.
 
+The [source-code audit and citing-paper review](granular-source-audit.md) adds
+controlled gradient-transfer, plane-strain and viscosity options. Those options
+are separate from the baseline described here.
+
 ```sh
 uv run --locked python MPM.py granular_column
 uv run --locked python MPM.py granular_collapse

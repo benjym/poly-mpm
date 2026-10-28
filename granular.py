@@ -11,6 +11,7 @@ or a claim of continuum well-posedness. See docs/granular-prototype.md.
 import numpy as np
 from scipy import sparse
 from scipy.optimize import brentq, least_squares
+from scipy.sparse.linalg import spsolve
 
 from interpolation import stencil
 from kinematics import advance
@@ -25,6 +26,42 @@ BASIS = np.array(
     ]
 )
 COMPONENTS = len(BASIS)
+PLANE_BASIS = np.array(
+    [
+        np.eye(3) / np.sqrt(3),
+        np.diag([1.0, -1.0, 0.0]) / np.sqrt(2),
+        np.diag([-1.0, -1.0, 2.0]) / np.sqrt(6),
+        BASIS[2],
+    ]
+)
+
+
+def stress_space(P):
+    """Plane strain retains the 3D trace/deviator, with Dzz=Dxz=Dyz=0."""
+    return (PLANE_BASIS, 3) if P.granular_stress == "plane_strain" else (BASIS, 2)
+
+
+def viscosity_matrix(P, G, batch):
+    """2 eta sum(Vgrain D(u):D(v)), matching Sand6's trial solve."""
+    nodes = canonical_nodes(P, len(G.m))[batch.n]
+    gradients = batch.G[:, :, :2]
+    weight = P.granular_viscosity * batch.m / batch.material.rho_s
+    dot = np.einsum("pia,pja->pij", gradients, gradients)
+    rows, cols, data = [], [], []
+    for a in range(2):
+        for b in range(2):
+            value = weight[:, None, None] * (
+                (dot if a == b else 0) + gradients[:, :, b, None] * gradients[:, None, :, a]
+            )
+            rows.append(np.broadcast_to(2 * nodes[:, :, None] + a, value.shape).ravel())
+            cols.append(np.broadcast_to(2 * nodes[:, None, :] + b, value.shape).ravel())
+            data.append(value.ravel())
+    result = sparse.coo_matrix(
+        (np.concatenate(data), (np.concatenate(rows), np.concatenate(cols))),
+        shape=(2 * len(G.m), 2 * len(G.m)),
+    ).tocsr()
+    result.eliminate_zeros()
+    return result
 
 
 def cone_projection(x, mu):
@@ -55,6 +92,28 @@ def cone_projection(x, mu):
                 np.eye(components - 1) - outer
             )
     return out, jac
+
+
+def coulomb_mfb(reaction, velocity, mu):
+    """SOC Fischer-Burmeister residual with the nonassociated Coulomb shift.
+
+    The reciprocal cone scaling and de Saxce velocity correction reduce
+    Signorini-Coulomb to self-dual second-order-cone complementarity.
+    mu must be strictly positive. This is used as an independent merit map.
+    """
+    mu = np.broadcast_to(mu, reaction.shape[:-1])
+    a, b = reaction.copy(), velocity.copy()
+    a[..., 0] *= mu
+    b[..., 0] = b[..., 0] / mu + np.linalg.norm(b[..., 1:], axis=-1)
+    normal = np.sum(a * a + b * b, axis=-1)
+    tangent = 2 * (a[..., :1] * a[..., 1:] + b[..., :1] * b[..., 1:])
+    length = np.linalg.norm(tangent, axis=-1)
+    plus, minus = np.sqrt(np.maximum(normal + length, 0)), np.sqrt(np.maximum(normal - length, 0))
+    root = np.zeros_like(a)
+    root[..., 0] = 0.5 * (plus + minus)
+    factor = np.divide(plus - minus, 2 * length, out=np.zeros_like(length), where=length > 0)
+    root[..., 1:] = factor[..., None] * tangent
+    return a + b - root
 
 
 def _local_coulomb(W, q, mu, previous):
@@ -214,6 +273,19 @@ def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None,
         evaluations = solution.nfev
     residual = float(np.max(np.abs(evaluate(candidate)), initial=0))
     sweeps = 0
+    mfb_evaluations = 0
+    if residual > tolerance and components == 4 and np.all(mu > 0):
+        # A different equivalent merit map can escape a nonzero minimum of
+        # the natural-map least squares in the dependent plane-strain space.
+        def mfb(z):
+            velocity = (operator @ z).reshape(-1, components) + rhs
+            return coulomb_mfb(z.reshape(-1, components), velocity, mu).ravel()
+
+        alternative = least_squares(mfb, start, ftol=1e-13, xtol=1e-13, gtol=1e-13, max_nfev=max_iterations)
+        alternative_residual = float(np.max(np.abs(evaluate(alternative.x)), initial=0))
+        mfb_evaluations = alternative.nfev
+        if alternative_residual < residual:
+            candidate, residual = alternative.x, alternative_residual
     if residual > tolerance and components == 3:
         # Newton/least-squares can settle at a nonzero local minimum of a
         # non-associated residual. A block contact solve is an independent
@@ -254,6 +326,7 @@ def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None,
         sweeps=sweeps,
         converged=True,
         method=method,
+        mfb_evaluations=mfb_evaluations,
         operator_nnz=W.nnz,
         operator_storage_bytes=W.data.nbytes + W.indices.nbytes + W.indptr.nbytes,
     )
@@ -308,6 +381,8 @@ def packing_fraction(P, G, batch):
 
 def assemble(P, G, batch):
     """Build b(tau,u)=sum_p V_grain*N_stress*tau:D(u) and packing gap."""
+    basis, dimension = stress_space(P)
+    components = len(basis)
     canonical = canonical_nodes(P, len(G.m))
     nodes = canonical[batch.n]
     valid = G.valid_nodes[canonical]
@@ -327,11 +402,11 @@ def assemble(P, G, batch):
     # momentum use exactly the same B and its transpose.
     count, support = nodes.shape
     rows, cols, data = [], [], []
-    for mode in range(COMPONENTS):
+    for mode in range(components):
         for component in range(2):
-            derivative = np.einsum("j,prj->pr", BASIS[mode, component], batch.G)
+            derivative = np.einsum("j,prj->pr", basis[mode, component], batch.G)
             contribution = solid_volume[:, None, None] * batch.N[:, :, None] * derivative[:, None, :]
-            row = np.broadcast_to(COMPONENTS * index[nodes][:, :, None] + mode, (count, support, support))
+            row = np.broadcast_to(components * index[nodes][:, :, None] + mode, (count, support, support))
             col = np.broadcast_to(2 * nodes[:, None, :] + component, (count, support, support))
             keep = contribution != 0
             rows.append(row[keep])
@@ -339,7 +414,7 @@ def assemble(P, G, batch):
             data.append(contribution[keep])
     B = sparse.coo_matrix(
         (np.concatenate(data), (np.concatenate(rows), np.concatenate(cols))),
-        shape=(COMPONENTS * len(active), 2 * len(G.m)),
+        shape=(components * len(active), 2 * len(G.m)),
     ).tocsr()
     free = np.repeat(G.valid_nodes & (canonical == np.arange(len(G.m))), 2)
     free[2 * np.flatnonzero(G.boundary_v)] = False
@@ -347,7 +422,7 @@ def assemble(P, G, batch):
     if P.B.roughness:
         free[2 * np.flatnonzero(G.boundary_h)] = False
         free[2 * np.flatnonzero(G.boundary_v) + 1] = False
-    gap = np.zeros((len(active), COMPONENTS))
+    gap = np.zeros((len(active), components))
     capacity = batch.material.packing_max * basis_volumes(P, G)[active]
     # Positive-part gap follows the paper's dissipative packing linearisation.
     # It does not geometrically repair pre-existing overpacking.
@@ -356,7 +431,7 @@ def assemble(P, G, batch):
     # velocity as dt becomes small. Resolve meaningful physical clearance.
     roundoff = 64 * np.finfo(float).eps * np.maximum(capacity, occupied[active])
     clearance[np.abs(clearance) <= roundoff] = 0
-    gap[:, 0] = np.maximum(clearance, 0) / (np.sqrt(2) * P.dt)
+    gap[:, 0] = np.maximum(clearance, 0) / (np.sqrt(dimension) * P.dt)
     return B, free, active, occupied, gap
 
 
@@ -380,6 +455,8 @@ def step(P, G, L):
         L.recover_position(P, G)
     L.get_nodal_mass_momentum(P, G)
     b = L.materials[0]
+    basis, dimension = stress_space(P)
+    components = len(basis)
     body = np.array([P.g * np.sin(P.theta), P.g * np.cos(P.theta), 0.0])
     scatter(G.fe, b.n, b.N[:, :, None] * b.m[:, None, None] * body)
     if P.B.cyclic_lr:
@@ -389,14 +466,26 @@ def step(P, G, L):
     trial = nodal_velocity(G, P)[:, :2].ravel()
     B, free, active, occupied, gap = assemble(P, G, b)
     inverse_mass = 1 / np.repeat(G.m, 2)[free]
+    viscous_force = np.zeros_like(trial)
+    viscous_dissipation = 0.0
+    if P.granular_viscosity:
+        stiffness = viscosity_matrix(P, G, b)
+        mass = 1 / inverse_mass
+        system = sparse.diags(mass) + P.dt * stiffness[free][:, free]
+        trial[free] = spsolve(system, mass * trial[free])
+        if P.B.cyclic_lr:
+            periodic_velocity = trial.reshape(-1, 2)
+            periodic_velocity[P.G.nx - 1 :: P.G.nx] = periodic_velocity[:: P.G.nx]
+        viscous_force = stiffness @ trial
+        viscous_dissipation = float(P.dt * trial @ viscous_force)
     operator = B[:, free]
     W = (operator.multiply(inverse_mass) @ operator.T) * P.dt
-    q = (B @ trial).reshape(-1, COMPONENTS) + gap
-    old = getattr(G, "granular_contact", np.zeros((len(G.m), COMPONENTS)))
+    q = (B @ trial).reshape(-1, components) + gap
+    old = getattr(G, "granular_contact", np.zeros((len(G.m), components)))
     contact, stats = solve_coulomb(
         W,
         q,
-        b.material.mu,
+        b.material.mu * np.sqrt(2 / dimension),
         tolerance=P.granular_tolerance,
         max_iterations=P.granular_max_iterations,
         initial=old[active],
@@ -406,7 +495,7 @@ def step(P, G, L):
     final = trial.copy()
     final[free] += P.dt * inverse_mass * force.ravel()[free]
     velocity = np.column_stack((final.reshape(-1, 2), np.zeros(len(G.m))))
-    G.fi[:, :2] = -force
+    G.fi[:, :2] = -force + viscous_force.reshape(-1, 2)
     G.q = G.m[:, None] * velocity
     G.q_dot = (G.q - G.q_reference) / P.dt
     if P.B.cyclic_lr:
@@ -414,7 +503,7 @@ def step(P, G, L):
             value = getattr(G, name)
             value[P.G.nx - 1 :: P.G.nx] = value[:: P.G.nx]
     velocity = nodal_velocity(G, P)
-    G.granular_contact = np.zeros((len(G.m), COMPONENTS))
+    G.granular_contact = np.zeros((len(G.m), components))
     G.granular_contact[active] = contact
     if P.B.cyclic_lr:
         G.granular_contact[P.G.nx - 1 :: P.G.nx] = G.granular_contact[:: P.G.nx]
@@ -438,9 +527,10 @@ def step(P, G, L):
     b.dstrain = 0.5 * (b.L + b.L_T) * P.dt
     b.strain += b.dstrain
     advance(b, P)
-    phase_stress = -np.einsum("pk,kij->pij", gather(G.granular_contact, b.n, b.N, G.valid_nodes), BASIS)
+    phase_stress = -np.einsum("pk,kij->pij", gather(G.granular_contact, b.n, b.N, G.valid_nodes), basis)
     phase_pressure_2d = -np.trace(phase_stress[:, :2, :2], axis1=1, axis2=2) / 2
-    phase_stress[:, 2, 2] = -phase_pressure_2d
+    if dimension == 2:
+        phase_stress[:, 2, 2] = -phase_pressure_2d
     b.stress = (b.rho / b.material.rho_s)[:, None, None] * phase_stress
     b.dstress = b.stress - old_stress
     b.pressure = np.trace(b.stress, axis1=1, axis2=2) / 3
@@ -450,7 +540,9 @@ def step(P, G, L):
     b.dev_dstress = b.dstress - np.trace(b.dstress, axis1=1, axis2=2)[:, None, None] * np.eye(3) / 3
     rate = 0.5 * (b.L + b.L_T)
     dev = rate.copy()
-    dev[:, :2, :2] -= np.trace(rate[:, :2, :2], axis1=1, axis2=2)[:, None, None] * np.eye(2) / 2
+    dev[:, :dimension, :dimension] -= (
+        np.trace(rate, axis1=1, axis2=2)[:, None, None] * np.eye(dimension) / dimension
+    )
     b.gammadot = np.sqrt(2) * np.linalg.norm(dev, axis=(1, 2))
     phase_pressure = -np.trace(phase_stress, axis1=1, axis2=2) / 3
     size = b.phi @ P.G.s
@@ -464,6 +556,15 @@ def step(P, G, L):
     b.yieldfunction = np.linalg.norm(b.dev_stress, axis=(1, 2)) / np.sqrt(2) + b.material.mu * b.pressure
     b.material_work += b.V * np.sum(b.stress * b.dstrain, axis=(1, 2))
     b.plastic_work += b.V * np.sum(b.stress * b.dstrain, axis=(1, 2))
+    if P.granular_viscosity:
+        trial_velocity = np.column_stack((trial.reshape(-1, 2), np.zeros(len(G.m))))
+        trial_gradient = np.einsum("pri,prj->pij", trial_velocity[b.n], b.G)
+        trial_rate = 0.5 * (trial_gradient + trial_gradient.transpose(0, 2, 1))
+        dissipation = (
+            2 * P.dt * P.granular_viscosity * b.m / b.material.rho_s * np.sum(trial_rate**2, axis=(1, 2))
+        )
+        b.viscous_work += dissipation
+        b.material_work += dissipation
     b.deposit_diagnostics(P, G)
     if P.B.cyclic_lr:
         G.make_cyclic(P, G, G.diagnostic_fields)
@@ -475,6 +576,8 @@ def step(P, G, L):
     L.move_material_points(P, G)
     stats.update(
         active_nodes=len(active),
+        stress_dimension=dimension,
+        viscosity_trial_dissipation=viscous_dissipation,
         contact_power=float(contact.ravel() @ (B @ velocity[:, :2].ravel())),
         maximum_packing=float(
             np.max(
@@ -490,6 +593,13 @@ def step(P, G, L):
         before = inventory(P, L)
     L.process_boundaries(P, G)
     if L.diagnostics is not None:
-        stats["maximum_packing_after"] = float(np.max(packing_fraction(P, G, b), initial=0))
+        packing = packing_fraction(P, G, b)
+        stats["maximum_packing_after"] = float(np.max(packing, initial=0))
+        solid_volume = float(np.sum(b.m / b.material.rho_s))
+        stats["integrated_overpacking_fraction"] = (
+            float(np.maximum(packing - b.material.packing_max, 0) @ basis_volumes(P, G)) / solid_volume
+            if solid_volume
+            else 0.0
+        )
         stats["maximum_particle_packing"] = float(np.max(b.rho / b.material.rho_s, initial=0))
         L.diagnostics.finish(P, G, L, before)

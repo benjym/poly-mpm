@@ -27,6 +27,23 @@ def inventory(P, L):
             )
             _, inverse = b.apic_matrices()
             affine_kinetic += 0.5 * np.sum(b.m * np.einsum("nij,njk,nik->n", B, inverse, B))
+        elif P.transfer == "apic_gradient":
+            # Current bilinear support covariance, not the stale pre-advection
+            # stencil: this is the affine state carried into the next P2G.
+            h = np.array([(P.G.x_M - P.G.x_m) / (P.G.nx - 1), (P.G.y_M - P.G.y_m) / (P.G.ny - 1)])
+            coordinate = (b.x[:, :2] - [P.G.x_m, P.G.y_m]) / h
+            fraction = coordinate - np.floor(coordinate)
+            diagonal = h**2 * fraction * (1 - fraction)
+            B = np.zeros_like(b.L)
+            B[:, :, :2] = b.L[:, :, :2] * diagonal[:, None, :]
+            angular += np.sum(
+                b.m[:, None]
+                * np.stack(
+                    (B[:, 2, 1] - B[:, 1, 2], B[:, 0, 2] - B[:, 2, 0], B[:, 1, 0] - B[:, 0, 1]), axis=1
+                ),
+                axis=0,
+            )
+            affine_kinetic += 0.5 * np.sum(b.m * np.sum(b.L * B, axis=(1, 2)))
         elastic += b.elastic_energy.sum()
         plastic += b.plastic_work.sum()
         viscous += b.viscous_work.sum()

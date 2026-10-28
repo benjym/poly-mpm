@@ -141,6 +141,10 @@ class Particles:
             if np.any(initial_C[:, :, 2] != 0) or np.any(initial_C[:, 2, :] != 0):
                 raise ValueError("initial_C must be planar in 2D")
             self.affine_momentum = initial_C @ moment(self.N, self.offsets)
+        if self.transfer == "apic_gradient" and hasattr(S, "initial_C"):
+            self.L = field(S.initial_C, (count, 3, 3), "initial_C")
+            if np.any(self.L[:, :, 2] != 0) or np.any(self.L[:, 2, :] != 0):
+                raise ValueError("initial_C must be planar in 2D")
         self.check_finite(P)
 
     def __len__(self):
@@ -323,6 +327,10 @@ class Particles:
                     "APIC support lost an affine mode; cannot conservatively project affine momentum"
                 )
             velocity = velocity + np.einsum("nij,nrj->nri", C, self.offsets)
+        elif self.transfer == "apic_gradient":
+            # Sand6 1.0 carries C=grad(u) directly, rather than B=C*D across
+            # changing bilinear support moments. L is retained between steps.
+            velocity = velocity + np.einsum("nij,nrj->nri", self.L, self.offsets)
         scatter(G.q, self.n, weight[:, :, None] * velocity)
         scatter(G.phim, self.n, weight[:, :, None] * self.phi[:, None, :])
         scatter(G.pkm, self.n, weight * self.pk[:, None])
@@ -400,7 +408,7 @@ class Particles:
                     raise ValueError("APIC currently requires planar grid motion (v_z=0)")
                 self.affine_momentum = np.einsum("nr,nri,nrj->nij", self.N, velocity[self.n], self.offsets)
                 self.v = pic
-            elif self.transfer == "pic":
+            elif self.transfer in ("pic", "apic_gradient"):
                 self.v = pic
             else:
                 if P.mechanics == "legacy":

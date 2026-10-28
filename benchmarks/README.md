@@ -23,6 +23,11 @@ grid refinement and inclined-layer yield checks. The committed
 [report](granular_packing.json) includes a failed block-only contact solve and
 packing errors; it does not claim spatial convergence or a solver speedup.
 
+`uv run --locked python -m benchmarks.granular_source_audit --output /tmp/granular-source-audit.json`
+compares source-style affine transfer, plane-strain stress and the small-viscosity
+split on a matched cloud. The [source audit](../docs/granular-source-audit.md)
+also records the original C++ matrix oracle and direct citing-paper findings.
+
 ```sh
 uv run --locked python -m benchmarks.broader_verification --output /tmp/poly-mpm-broader.json --figure /tmp/poly-mpm-broader.png
 uv run --locked python -m benchmarks.verification --output /tmp/poly-mpm-wave.json

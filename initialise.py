@@ -57,6 +57,8 @@ def prepare(P, mode="simulation"):
         solver="explicit",
         granular_tolerance=1e-9,
         granular_solver="hybrid",
+        granular_stress="intrinsic",
+        granular_viscosity=0.0,
         granular_max_iterations=200,
         granular_max_nodes=256,
         interpolation="linear",
@@ -92,8 +94,10 @@ def prepare(P, mode="simulation"):
         raise ValueError("domain quadrature requires updated mechanics")
     if int(P.domain_max_support) != P.domain_max_support or P.domain_max_support < 4:
         raise ValueError("domain_max_support must be an integer >= 4")
-    if P.transfer not in ("flip", "pic", "apic"):
-        raise ValueError("transfer must be flip, pic, or apic")
+    if P.transfer not in ("flip", "pic", "apic", "apic_gradient"):
+        raise ValueError("transfer must be flip, pic, apic, or apic_gradient")
+    if P.transfer == "apic_gradient" and P.solver != "granular":
+        raise ValueError("apic_gradient is restricted to the granular source audit")
     if not np.isfinite(P.pic_fraction) or not 0 <= P.pic_fraction <= 1:
         raise ValueError("pic_fraction must be between zero and one")
     if P.transfer != "flip" and P.pic_fraction:
@@ -110,6 +114,12 @@ def prepare(P, mode="simulation"):
     for S in P.S:
         get_law(S.law)
     if P.solver == "granular":
+        if P.granular_stress not in ("intrinsic", "plane_strain"):
+            raise ValueError("granular_stress must be intrinsic or plane_strain")
+        if P.granular_stress == "plane_strain" and P.granular_solver != "hybrid":
+            raise ValueError("plane_strain requires the hybrid contact solver")
+        if not np.isfinite(P.granular_viscosity) or P.granular_viscosity < 0:
+            raise ValueError("granular_viscosity must be finite and nonnegative")
         if P.granular_solver not in ("block", "hybrid"):
             raise ValueError("granular_solver must be block or hybrid")
         if P.mechanics != "updated" or P.quadrature != "point":
