@@ -66,8 +66,10 @@ def test_source_gradient_transfer_uses_carried_gradient_and_affine_inventory():
 
 
 @pytest.mark.parametrize("periodic", [False, True])
-def test_source_viscosity_stage_is_dissipative_and_work_is_accounted(periodic):
+@pytest.mark.parametrize("method", ["hybrid", "velocity"])
+def test_source_viscosity_stage_is_dissipative_and_work_is_accounted(periodic, method):
     P = configuration("static", 0.005)
+    P.granular_solver = method
     P.transfer = "apic_gradient"
     P.granular_viscosity = 10.0
     P.max_g = 0.0

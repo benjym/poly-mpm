@@ -134,7 +134,7 @@ the underlying granular model lacks a solution.
   Existing moment-based quadratic APIC is unchanged. Affine energy/angular
   diagnostics include the current bilinear support moment.
 - `granular_stress='plane_strain'` retains the 3D trace and deviator with planar
-  motion and independent sigma_zz. It requires the hybrid solver. Cone friction
+  motion and independent sigma_zz. It requires the hybrid or velocity solver. Cone friction
   is `sqrt(2/3)*mu`, keeping physical `tau_eq/p=mu`. Intrinsic 2D remains default.
 - `granular_viscosity` defaults to zero. A positive value solves the implicit
   Newtonian trial stage, then uses the mass-only contact increment, matching

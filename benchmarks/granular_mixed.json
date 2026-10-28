@@ -1,0 +1,818 @@
+{
+  "environment": {
+    "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "thread_settings": {
+      "OPENBLAS_NUM_THREADS": null,
+      "OMP_NUM_THREADS": null
+    }
+  },
+  "source_sha256": {
+    "granular.py": "55966e1bffe8ebfbab90bc90fe478849a9b2755ad068f24c11a635eba106fa3b",
+    "granular_mixed.py": "a08a9afa25260958e12e617428fb9fea38aad04f1f88f2afaafbafcc83483c25",
+    "initialise.py": "c22bc51ac9a4d2ac58c10149304e4eb78994b648595f24b68b321b37605c6acc",
+    "benchmarks/granular_mixed.py": "5156fba845701112cf0a9ba670713a0b43c4aeb935a26be502b3d6d3ea5f6b35",
+    "benchmarks/granular_prototype.py": "ed6d7f03bb2e8dabd996e9589941e2ba08deed83c7e8d1199f8648fdb0b2d363",
+    "inputs/granular_column.py": "defd4034e5d2ec7eed612424fd2b751559591bc487eae3975673829267064860",
+    "inputs/granular_collapse.py": "3baa07d51701c2c6cf33f7771605e5fd888ec43ed43c50e941fff01f335100bb"
+  },
+  "timing": "One warmup per method, then alternating paired runs; medians. Setup/output/progress excluded, diagnostics enabled.",
+  "scope": "Current Q1-Q1 nodal stress space and rigid nonassociated law; no density fix or general GPU speedup claim.",
+  "cases": [
+    {
+      "case": "static",
+      "samples_seconds": {
+        "hybrid": [
+          0.10381388699170202,
+          0.15082708801492117,
+          0.15642627200577408
+        ],
+        "velocity": [
+          0.14046373302699067,
+          0.14087651000590995,
+          0.14317804499296471
+        ]
+      },
+      "median_seconds": {
+        "hybrid": 0.15082708801492117,
+        "velocity": 0.14087651000590995
+      },
+      "speedup": 1.0706333370168937,
+      "configurations": {
+        "hybrid": {
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.02,
+          "final_time": 0.2,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 25,
+          "max_residual": 5.702105454474804e-13,
+          "max_sweeps": 0,
+          "max_momentum_residual": 4.906810483864673e-13,
+          "max_integrated_overpacking": 5.4932910072598875e-17,
+          "max_packing": 0.6000000000000001
+        },
+        "velocity": {
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.02,
+          "final_time": 0.2,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 25,
+          "max_residual": 9.620743092303177e-10,
+          "max_sweeps": 37,
+          "max_momentum_residual": 1.3646971525495233e-12,
+          "max_integrated_overpacking": 2.978953889121172e-12,
+          "max_packing": 0.6000000000148192
+        }
+      },
+      "evolving_max_absolute_difference": {
+        "x": 2.384412112199641e-11,
+        "v": 4.485011839692184e-10
+      },
+      "frozen_last_step": {
+        "original_residual": 1.4016565685892601e-14,
+        "requested_tolerance": 1e-09,
+        "max_grid_velocity_difference": 2.7412558254651764e-17,
+        "residual_passed": true,
+        "velocity_match": true,
+        "velocity_acceptance_bound": 2e-08,
+        "solve_seconds": 0.0012031910009682178,
+        "stats": {
+          "residual": 1.8633564657951035e-14,
+          "evaluations": 0,
+          "sweeps": 0,
+          "converged": true,
+          "method": "velocity",
+          "operator_nnz": 169,
+          "operator_storage_bytes": 5496,
+          "operator_format": "padded gradient blocks",
+          "assembled_delassus": false,
+          "residual_norm": "conservative block Euclidean",
+          "colors": 9,
+          "preconditioner_storage_bytes": 2600,
+          "acceleration_steps": 0,
+          "newton_steps": 0
+        },
+        "velocity_equivalence_verified": true
+      }
+    },
+    {
+      "case": "collapse",
+      "samples_seconds": {
+        "hybrid": [
+          0.6069781190017238,
+          0.7941461969749071,
+          0.7886539819883183
+        ],
+        "velocity": [
+          1.005187507980736,
+          0.9928690929955337,
+          1.011140289978357
+        ]
+      },
+      "median_seconds": {
+        "hybrid": 0.7886539819883183,
+        "velocity": 1.005187507980736
+      },
+      "speedup": 0.78458394650427,
+      "configurations": {
+        "hybrid": {
+          "steps": 60,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.3,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 19,
+          "max_residual": 5.211058251575196e-10,
+          "max_sweeps": 8,
+          "max_momentum_residual": 2.280122671451361e-12,
+          "max_integrated_overpacking": 0.008180238615440477,
+          "max_packing": 0.6212208610997872
+        },
+        "velocity": {
+          "steps": 60,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.3,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 19,
+          "max_residual": 9.500893658128956e-10,
+          "max_sweeps": 26,
+          "max_momentum_residual": 2.5012719116479957e-12,
+          "max_integrated_overpacking": 0.008180238613967026,
+          "max_packing": 0.6212208610903732
+        }
+      },
+      "evolving_max_absolute_difference": {
+        "x": 1.1159628776624686e-11,
+        "v": 4.686489807337324e-10
+      },
+      "frozen_last_step": {
+        "original_residual": 2.891618056111156e-10,
+        "requested_tolerance": 1e-09,
+        "max_grid_velocity_difference": 5.538186675544848e-10,
+        "residual_passed": true,
+        "velocity_match": true,
+        "velocity_acceptance_bound": 2e-08,
+        "solve_seconds": 0.014836396992905065,
+        "stats": {
+          "residual": 3.7548499140118784e-10,
+          "evaluations": 0,
+          "sweeps": 8,
+          "converged": true,
+          "method": "velocity",
+          "operator_nnz": 112,
+          "operator_storage_bytes": 3984,
+          "operator_format": "padded gradient blocks",
+          "assembled_delassus": false,
+          "residual_norm": "conservative block Euclidean",
+          "colors": 9,
+          "preconditioner_storage_bytes": 1872,
+          "acceleration_steps": 4,
+          "newton_steps": 0
+        },
+        "velocity_equivalence_verified": true
+      }
+    },
+    {
+      "case": "refined",
+      "samples_seconds": {
+        "hybrid": [
+          4.991265180025948,
+          4.996918474993436,
+          4.976470115012489
+        ],
+        "velocity": [
+          3.3004424310056493,
+          3.2989327640098054,
+          3.2723343890102115
+        ]
+      },
+      "median_seconds": {
+        "hybrid": 4.991265180025948,
+        "velocity": 3.2989327640098054
+      },
+      "speedup": 1.5129939095694502,
+      "configurations": {
+        "hybrid": {
+          "steps": 20,
+          "particles": 128,
+          "grid": [
+            17,
+            13
+          ],
+          "dt": 0.0025,
+          "final_time": 0.05,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 45,
+          "max_residual": 9.700400482870464e-10,
+          "max_sweeps": 788,
+          "max_momentum_residual": 1.7053025658242404e-13,
+          "max_integrated_overpacking": 4.496408994375649e-05,
+          "max_packing": 0.6002573318971904
+        },
+        "velocity": {
+          "steps": 20,
+          "particles": 128,
+          "grid": [
+            17,
+            13
+          ],
+          "dt": 0.0025,
+          "final_time": 0.05,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 45,
+          "max_residual": 9.915719661955877e-10,
+          "max_sweeps": 155,
+          "max_momentum_residual": 8.556067554929069e-14,
+          "max_integrated_overpacking": 4.496408926250745e-05,
+          "max_packing": 0.6002573318956581
+        }
+      },
+      "evolving_max_absolute_difference": {
+        "x": 1.5900614158681492e-12,
+        "v": 4.6351866789251517e-10
+      },
+      "frozen_last_step": {
+        "original_residual": 9.213928509055336e-10,
+        "requested_tolerance": 1e-09,
+        "max_grid_velocity_difference": 5.249315944477669e-10,
+        "residual_passed": true,
+        "velocity_match": true,
+        "velocity_acceptance_bound": 2e-08,
+        "solve_seconds": 0.05374660200322978,
+        "stats": {
+          "residual": 9.561037509495382e-10,
+          "evaluations": 0,
+          "sweeps": 23,
+          "converged": true,
+          "method": "velocity",
+          "operator_nnz": 325,
+          "operator_storage_bytes": 9816,
+          "operator_format": "padded gradient blocks",
+          "assembled_delassus": false,
+          "residual_norm": "conservative block Euclidean",
+          "colors": 9,
+          "preconditioner_storage_bytes": 4680,
+          "acceleration_steps": 18,
+          "newton_steps": 0
+        },
+        "velocity_equivalence_verified": true
+      }
+    },
+    {
+      "case": "incline_static",
+      "samples_seconds": {
+        "hybrid": [
+          0.09998468300909735,
+          0.11925327699282207,
+          0.11631706400658004
+        ],
+        "velocity": [
+          1.0743061170214787,
+          0.4802170349867083,
+          0.4401581079873722
+        ]
+      },
+      "median_seconds": {
+        "hybrid": 0.11631706400658004,
+        "velocity": 0.4802170349867083
+      },
+      "speedup": 0.2422176964417756,
+      "configurations": {
+        "hybrid": {
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.05,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 20,
+          "max_residual": 2.3359092438113294e-13,
+          "max_sweeps": 0,
+          "max_momentum_residual": 2.428351918216984e-13,
+          "max_integrated_overpacking": 1.0986582014519775e-16,
+          "max_packing": 0.6000000000000002
+        },
+        "velocity": {
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.05,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 20,
+          "max_residual": 9.941029967286111e-10,
+          "max_sweeps": 92,
+          "max_momentum_residual": 1.2710574864626038e-13,
+          "max_integrated_overpacking": 5.913961450184263e-13,
+          "max_packing": 0.600000000001025
+        }
+      },
+      "evolving_max_absolute_difference": {
+        "x": 1.2669865157022286e-12,
+        "v": 5.2628138378775994e-11
+      },
+      "frozen_last_step": {
+        "original_residual": 1.4210854715202004e-14,
+        "requested_tolerance": 1e-09,
+        "max_grid_velocity_difference": 2.8538000529036295e-16,
+        "residual_passed": true,
+        "velocity_match": true,
+        "velocity_acceptance_bound": 2e-08,
+        "solve_seconds": 0.0010498370102141052,
+        "stats": {
+          "residual": 1.591302455776226e-14,
+          "evaluations": 0,
+          "sweeps": 0,
+          "converged": true,
+          "method": "velocity",
+          "operator_nnz": 156,
+          "operator_storage_bytes": 4416,
+          "operator_format": "padded gradient blocks",
+          "assembled_delassus": false,
+          "residual_norm": "conservative block Euclidean",
+          "colors": 12,
+          "preconditioner_storage_bytes": 2080,
+          "acceleration_steps": 0,
+          "newton_steps": 0
+        },
+        "velocity_equivalence_verified": true
+      }
+    },
+    {
+      "case": "incline_sliding",
+      "samples_seconds": {
+        "hybrid": [
+          2.0977393180073705,
+          2.1405740290065296,
+          2.105239554977743
+        ],
+        "velocity": [
+          2.1754898770013824,
+          1.8692297280067578,
+          2.080265122000128
+        ]
+      },
+      "median_seconds": {
+        "hybrid": 2.105239554977743,
+        "velocity": 2.080265122000128
+      },
+      "speedup": 1.0120054086921395,
+      "configurations": {
+        "hybrid": {
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.05,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 20,
+          "max_residual": 9.995995142730862e-10,
+          "max_sweeps": 958,
+          "max_momentum_residual": 1.2710574864626038e-13,
+          "max_integrated_overpacking": 1.1379855391346892e-11,
+          "max_packing": 0.6000000000420861
+        },
+        "velocity": {
+          "steps": 10,
+          "particles": 64,
+          "grid": [
+            5,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.05,
+          "tolerance": 1e-09,
+          "transfer": "flip",
+          "stress": "intrinsic",
+          "viscosity": 0.0,
+          "max_active_nodes": 20,
+          "max_residual": 9.819009756868416e-10,
+          "max_sweeps": 326,
+          "max_momentum_residual": 5.684341886080802e-14,
+          "max_integrated_overpacking": 4.5700804252035696e-11,
+          "max_packing": 0.6000000001081334
+        }
+      },
+      "evolving_max_absolute_difference": {
+        "x": 2.888527084188297e-09,
+        "v": 5.396339484986523e-07
+      },
+      "frozen_last_step": {
+        "original_residual": 7.193110368367329e-10,
+        "requested_tolerance": 1e-09,
+        "max_grid_velocity_difference": 5.497366339403192e-07,
+        "residual_passed": true,
+        "velocity_match": false,
+        "velocity_acceptance_bound": 2e-08,
+        "solve_seconds": 0.04361159697873518,
+        "stats": {
+          "residual": 8.109638370967378e-10,
+          "evaluations": 0,
+          "sweeps": 18,
+          "converged": true,
+          "method": "velocity",
+          "operator_nnz": 156,
+          "operator_storage_bytes": 4416,
+          "operator_format": "padded gradient blocks",
+          "assembled_delassus": false,
+          "residual_norm": "conservative block Euclidean",
+          "colors": 12,
+          "preconditioner_storage_bytes": 2080,
+          "acceleration_steps": 14,
+          "newton_steps": 0
+        },
+        "velocity_equivalence_verified": true,
+        "tolerance_study": [
+          {
+            "tolerance": 1e-11,
+            "reference_residual": 1.7763568394002505e-15,
+            "compact_original_residual": 5.595524044110789e-14,
+            "max_grid_velocity_difference": 4.970526444339615e-12,
+            "compact_sweeps": 75
+          },
+          {
+            "tolerance": 1e-12,
+            "reference_residual": 1.7763568394002505e-15,
+            "compact_original_residual": 5.684341886080802e-14,
+            "max_grid_velocity_difference": 4.9753083732075e-12,
+            "compact_sweeps": 75
+          }
+        ]
+      }
+    },
+    {
+      "case": "plane_strain",
+      "samples_seconds": {
+        "hybrid": [
+          0.9927779169811402,
+          1.0442454009898938,
+          1.0141603410011157
+        ],
+        "velocity": [
+          1.3863001370045822,
+          1.375836363993585,
+          1.3933609380037524
+        ]
+      },
+      "median_seconds": {
+        "hybrid": 1.0141603410011157,
+        "velocity": 1.3863001370045822
+      },
+      "speedup": 0.7315589993321653,
+      "configurations": {
+        "hybrid": {
+          "steps": 60,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.3,
+          "tolerance": 1e-09,
+          "transfer": "apic_gradient",
+          "stress": "plane_strain",
+          "viscosity": 0.001,
+          "max_active_nodes": 19,
+          "max_residual": 4.973799150320701e-14,
+          "max_sweeps": 0,
+          "max_momentum_residual": 2.5025633907125685e-12,
+          "max_integrated_overpacking": 0.013801838306304508,
+          "max_packing": 0.6342283235183837
+        },
+        "velocity": {
+          "steps": 60,
+          "particles": 32,
+          "grid": [
+            9,
+            7
+          ],
+          "dt": 0.005,
+          "final_time": 0.3,
+          "tolerance": 1e-09,
+          "transfer": "apic_gradient",
+          "stress": "plane_strain",
+          "viscosity": 0.001,
+          "max_active_nodes": 19,
+          "max_residual": 9.959504934250205e-10,
+          "max_sweeps": 34,
+          "max_momentum_residual": 2.0481386655088124e-12,
+          "max_integrated_overpacking": 0.01380183829095622,
+          "max_packing": 0.6342283234633541
+        }
+      },
+      "evolving_max_absolute_difference": {
+        "x": 2.3906765456160883e-11,
+        "v": 1.5939161102096477e-10
+      },
+      "frozen_last_step": {
+        "original_residual": 1.651674352842747e-10,
+        "requested_tolerance": 1e-09,
+        "max_grid_velocity_difference": 3.11068673843169e-10,
+        "residual_passed": true,
+        "velocity_match": true,
+        "velocity_acceptance_bound": 2e-08,
+        "solve_seconds": 0.024955044995294884,
+        "stats": {
+          "residual": 1.6750226467831468e-10,
+          "evaluations": 0,
+          "sweeps": 11,
+          "converged": true,
+          "method": "velocity",
+          "operator_nnz": 112,
+          "operator_storage_bytes": 4016,
+          "operator_format": "padded gradient blocks",
+          "assembled_delassus": false,
+          "residual_norm": "conservative block Euclidean",
+          "colors": 9,
+          "preconditioner_storage_bytes": 3024,
+          "acceleration_steps": 5,
+          "newton_steps": 0
+        },
+        "velocity_equivalence_verified": true
+      }
+    }
+  ],
+  "prechange_baseline": {
+    "environment": {
+      "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+      "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O"
+    },
+    "source_sha256": {
+      "granular.py": "b89fd0221df86001adffb43f7e17a2226cd652223213612d3f32c70653936a51",
+      "initialise.py": "01cfe5b176b2794f86bef632c71315cedeab8d5818e89244d990b7604dade4cb",
+      "MPM.py": "8494e49a0beee8942ea2343b128331101e2b19bc7aff20c89012297db19b97e2",
+      "constit.py": "df61f22b901ae937808aedbc87f7294e95c2dcdf6f0ea218e3ac86c55480e522",
+      "particles.py": "299a216bf40622652deb62a67a69d823581f6af4497ae5287d291f918007571c",
+      "stability.py": "0a3eefb82e8523e1b4130a03f4476b73ac3ce6115a5dd82ebedd3941a1aba958",
+      "inputs/granular_column.py": "defd4034e5d2ec7eed612424fd2b751559591bc487eae3975673829267064860",
+      "inputs/granular_collapse.py": "3baa07d51701c2c6cf33f7771605e5fd888ec43ed43c50e941fff01f335100bb"
+    },
+    "scope": "Intrinsic 2D rigid-grain prototype; no experimental validation or continuum well-posedness claim.",
+    "timing": "One bounded run per configuration, setup and plotting excluded; diagnostics enabled.",
+    "cases": [
+      {
+        "case": "static",
+        "dt": 0.02,
+        "steps": 10,
+        "seconds": 0.5570510440011276,
+        "particles": 64,
+        "grid": {
+          "nx": 5,
+          "ny": 7,
+          "dx": 0.25,
+          "dy": 0.25
+        },
+        "material": {
+          "rho_s": 2500.0,
+          "packing_max": 0.6,
+          "mu": 0.5
+        },
+        "final_time": 0.2,
+        "output": false,
+        "diagnostics": true,
+        "interpolation": "linear",
+        "transfer": "flip",
+        "contact_solver": "hybrid",
+        "max_displacement": 2.220446049250313e-16,
+        "max_speed": 7.770158219151431e-15,
+        "rightmost_particle": 0.9375,
+        "centre_of_mass": [
+          0.5,
+          0.5,
+          0.0
+        ],
+        "max_mass_error": 0.0,
+        "max_momentum_residual": 4.763629874461438e-13,
+        "max_natural_map_residual": 1.4210854715202004e-14,
+        "maximum_initial_nodal_packing": 0.6000000000000004,
+        "maximum_final_nodal_packing": 0.6000000000000004,
+        "maximum_particle_packing": 0.6000000000000016,
+        "maximum_contact_nodes": 25,
+        "maximum_operator_nnz": 3122,
+        "maximum_operator_storage_bytes": 37768,
+        "maximum_contact_power": 7.696226468623189e-12,
+        "max_fallback_sweeps": 0,
+        "accumulated_contact_dissipation": -8.912562094593009e-13,
+        "energy_residual": -1.2243471196330923e-13,
+        "timestep_limits": {
+          "advection": 3576939776030.1196
+        }
+      },
+      {
+        "case": "collapse",
+        "dt": 0.01,
+        "steps": 30,
+        "seconds": 0.5216527730080998,
+        "particles": 32,
+        "grid": {
+          "nx": 9,
+          "ny": 7,
+          "dx": 0.25,
+          "dy": 0.25
+        },
+        "material": {
+          "rho_s": 2500.0,
+          "packing_max": 0.6,
+          "mu": 0.5
+        },
+        "final_time": 0.3,
+        "output": false,
+        "diagnostics": true,
+        "interpolation": "linear",
+        "transfer": "flip",
+        "contact_solver": "hybrid",
+        "max_displacement": 0.2965570953854116,
+        "max_speed": 2.111369259000216,
+        "rightmost_particle": 0.565492661552981,
+        "centre_of_mass": [
+          0.29569263977986476,
+          0.3998895317299887,
+          0.0
+        ],
+        "max_mass_error": 0.0,
+        "max_momentum_residual": 1.3645380800150865e-12,
+        "max_natural_map_residual": 9.645297893712268e-10,
+        "maximum_initial_nodal_packing": 0.6210749008714175,
+        "maximum_final_nodal_packing": 0.6237894557683015,
+        "maximum_particle_packing": 0.8263211085642131,
+        "maximum_contact_nodes": 19,
+        "maximum_operator_nnz": 2222,
+        "maximum_operator_storage_bytes": 26896,
+        "maximum_contact_power": -60.53703263415267,
+        "max_fallback_sweeps": 11,
+        "accumulated_contact_dissipation": 274.96916718953094,
+        "energy_residual": -29.57817691101355,
+        "timestep_limits": {
+          "advection": 0.011886101325589616
+        }
+      },
+      {
+        "case": "collapse",
+        "dt": 0.005,
+        "steps": 60,
+        "seconds": 0.6120697580045089,
+        "particles": 32,
+        "grid": {
+          "nx": 9,
+          "ny": 7,
+          "dx": 0.25,
+          "dy": 0.25
+        },
+        "material": {
+          "rho_s": 2500.0,
+          "packing_max": 0.6,
+          "mu": 0.5
+        },
+        "final_time": 0.3,
+        "output": false,
+        "diagnostics": true,
+        "interpolation": "linear",
+        "transfer": "flip",
+        "contact_solver": "hybrid",
+        "max_displacement": 0.28888061796955833,
+        "max_speed": 2.124044609327776,
+        "rightmost_particle": 0.5624798649573199,
+        "centre_of_mass": [
+          0.2940109583375141,
+          0.4030922609786235,
+          0.0
+        ],
+        "max_mass_error": 0.0,
+        "max_momentum_residual": 2.049518613753201e-12,
+        "max_natural_map_residual": 1.2889689315898067e-13,
+        "maximum_initial_nodal_packing": 0.6208740456690056,
+        "maximum_final_nodal_packing": 0.6212208610998352,
+        "maximum_particle_packing": 0.8082427203306272,
+        "maximum_contact_nodes": 19,
+        "maximum_operator_nnz": 2233,
+        "maximum_operator_storage_bytes": 27028,
+        "maximum_contact_power": -30.268516317076354,
+        "max_fallback_sweeps": 0,
+        "accumulated_contact_dissipation": 268.514184702527,
+        "energy_residual": -29.52947541198415,
+        "timestep_limits": {
+          "advection": 0.011608908460435712
+        }
+      },
+      {
+        "case": "collapse",
+        "dt": 0.0025,
+        "steps": 120,
+        "seconds": 1.0185804399952758,
+        "particles": 32,
+        "grid": {
+          "nx": 9,
+          "ny": 7,
+          "dx": 0.25,
+          "dy": 0.25
+        },
+        "material": {
+          "rho_s": 2500.0,
+          "packing_max": 0.6,
+          "mu": 0.5
+        },
+        "final_time": 0.3,
+        "output": false,
+        "diagnostics": true,
+        "interpolation": "linear",
+        "transfer": "flip",
+        "contact_solver": "hybrid",
+        "max_displacement": 0.2858438142487281,
+        "max_speed": 2.1318545215221856,
+        "rightmost_particle": 0.560836236427295,
+        "centre_of_mass": [
+          0.2929422945760452,
+          0.40470531007898536,
+          0.0
+        ],
+        "max_mass_error": 0.0,
+        "max_momentum_residual": 3.6407533066691155e-12,
+        "max_natural_map_residual": 1.2168044349891716e-13,
+        "maximum_initial_nodal_packing": 0.6201752151408808,
+        "maximum_final_nodal_packing": 0.6203746693593463,
+        "maximum_particle_packing": 0.7982329469715068,
+        "maximum_contact_nodes": 19,
+        "maximum_operator_nnz": 2232,
+        "maximum_operator_storage_bytes": 27016,
+        "maximum_contact_power": -15.134258158538197,
+        "max_fallback_sweeps": 0,
+        "accumulated_contact_dissipation": 267.88159404933504,
+        "energy_residual": -28.81346532533304,
+        "timestep_limits": {
+          "advection": 0.011511303328104839
+        }
+      }
+    ],
+    "timestep_comparison": {
+      "rightmost_particle_differences": [
+        0.0030127965956610048,
+        0.0016436285300249764
+      ],
+      "interpretation": "Single coarse-grid temporal sensitivity check; not spatial convergence or experimental validation."
+    }
+  },
+  "acceptance": {
+    "all_original_residuals_passed": true,
+    "all_same_tolerance_velocities_matched": false,
+    "all_velocity_equivalence_verified": true,
+    "interpretation": "A failed matched-tolerance velocity bound is retained and requires an independent tighter-tolerance study; it is not silently waived."
+  }
+}

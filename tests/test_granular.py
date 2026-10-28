@@ -99,8 +99,9 @@ def test_integrated_basis_volume_and_adjoint_operator(basis, periodic):
         assert_allclose(B @ translation.ravel(), 0, atol=1e-15)
 
 
-def test_static_column_at_large_timestep_without_viscosity_creep():
-    P, G, L = column(dt=0.02, t_f=0.2)
+@pytest.mark.parametrize("method", ["hybrid", "velocity"])
+def test_static_column_at_large_timestep_without_viscosity_creep(method):
+    P, G, L = column(dt=0.02, t_f=0.2, granular_solver=method)
     initial = L.materials[0].x.copy()
     run(P, G, L, output=False)
     b = L.materials[0]
@@ -117,8 +118,9 @@ def test_static_column_at_large_timestep_without_viscosity_creep():
     assert L.diagnostics.last["granular_solver"]["converged"]
 
 
-def test_low_packing_free_fall_and_recompaction_are_stress_free():
-    P, G, L = column(dt=0.005, t_f=0.01, max_g=-2.0)
+@pytest.mark.parametrize("method", ["hybrid", "velocity"])
+def test_low_packing_free_fall_and_recompaction_are_stress_free(method):
+    P, G, L = column(dt=0.005, t_f=0.01, max_g=-2.0, granular_solver=method)
     P.B.has_bottom = False
     G.boundary_h[:] = False
     P.B.has_left = P.B.has_right = False
@@ -163,10 +165,12 @@ def test_rigid_grain_response_independent_of_elastic_and_viscosity_parameters(mo
     assert_allclose(L.materials[0].v, reference[2].materials[0].v, rtol=0, atol=1e-8)
 
 
-def test_periodic_column_preserves_mass_and_species():
+@pytest.mark.parametrize("method", ["hybrid", "velocity"])
+def test_periodic_column_preserves_mass_and_species(method):
     from inputs.granular_column import Params
 
     P = Params([])
+    P.granular_solver = method
     P.interpolation = "linear"
     P.transfer = "flip"
     P.B = NS(cyclic_lr=True, has_bottom=True, roughness=True)
@@ -184,8 +188,10 @@ def test_periodic_column_preserves_mass_and_species():
     assert_allclose(G.q[:: P.G.nx], G.q[P.G.nx - 1 :: P.G.nx], atol=1e-12)
 
 
-def test_column_example_saves_figures_and_solver_diagnostics(tmp_path):
+@pytest.mark.parametrize("method", ["hybrid", "velocity"])
+def test_column_example_saves_figures_and_solver_diagnostics(tmp_path, method):
     P, G, L = get_parameters(["granular_column"])
+    P.granular_solver = method
     P.save_dir = str(tmp_path)
     run(P, G, L, max_steps=1)
     assert (tmp_path / "Continuum/00000.png").is_file()
@@ -226,8 +232,9 @@ def test_block_contact_fallback_solves_when_global_newton_budget_is_exhausted():
     )
 
 
-def test_tiny_timestep_does_not_hide_static_contact():
-    P, G, L = column(dt=1e-6, t_f=2e-6)
+@pytest.mark.parametrize("method", ["hybrid", "velocity"])
+def test_tiny_timestep_does_not_hide_static_contact(method):
+    P, G, L = column(dt=1e-6, t_f=2e-6, granular_solver=method)
     run(P, G, L, output=False)
     assert np.max(np.abs(L.materials[0].v)) < 1e-8
     assert L.materials[0].pressure.min() < -100

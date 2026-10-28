@@ -116,12 +116,12 @@ def prepare(P, mode="simulation"):
     if P.solver == "granular":
         if P.granular_stress not in ("intrinsic", "plane_strain"):
             raise ValueError("granular_stress must be intrinsic or plane_strain")
-        if P.granular_stress == "plane_strain" and P.granular_solver != "hybrid":
-            raise ValueError("plane_strain requires the hybrid contact solver")
+        if P.granular_stress == "plane_strain" and P.granular_solver == "block":
+            raise ValueError("plane_strain requires the hybrid or velocity contact solver")
         if not np.isfinite(P.granular_viscosity) or P.granular_viscosity < 0:
             raise ValueError("granular_viscosity must be finite and nonnegative")
-        if P.granular_solver not in ("block", "hybrid"):
-            raise ValueError("granular_solver must be block or hybrid")
+        if P.granular_solver not in ("block", "hybrid", "velocity"):
+            raise ValueError("granular_solver must be block, hybrid or velocity")
         if P.mechanics != "updated" or P.quadrature != "point":
             raise ValueError("granular prototype requires updated mechanics and point quadrature")
         if P.interpolation != "linear":

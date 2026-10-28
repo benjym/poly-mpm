@@ -103,6 +103,10 @@ This reduces storage, but does not guarantee fast convergence. It is optional
 because the inclined-flow acceptance study below fails for the block-only solve.
 The node cap remains a guard on research runs; raising it does not establish
 scalability.
+`granular_solver='velocity'` selects the [compact velocity-based iteration](granular-mixed.md),
+with cached local metrics and scalar sliding solves inspired by Daviet (2026).
+It supports both stress spaces while retaining the existing discrete equations;
+the hybrid reference remains the default.
 Elastic-wave and effective-viscosity estimates do not apply to this branch.
 Advection, segregation and custom material timestep restrictions still apply.
 Timestep accuracy and contact convergence must also be checked.

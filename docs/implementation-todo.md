@@ -48,6 +48,8 @@ passed its stated tests; it is not a guarantee for every application.
       segregation; conservation, power pairing and geometry/inlet/outlet checks.
 - [x] Controlled point/domain cell-phase and grid-refinement comparisons, plus a
       runnable `domain_column` example and integration-mode diagnostics.
+- [x] Opt-in compact velocity-based rigid-grain iteration, scalar local flow
+      solves and cached metrics, with coupled reference and physical checks.
 
 ## Acceptance evidence
 
@@ -64,6 +66,8 @@ experimental validation and application calibration remain separate tasks.
 ## Deferred implementation backlog
 
 - [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
+- [ ] Evaluate Q1–P0 discontinuous granular stresses against the nodal reference,
+      including collapse, packing and spatial-refinement studies, before GPU porting.
 
 - [ ] Control remaining gaps/overlaps of independently convected domains, and
       verify convergence for broader nonuniform deformation and material interfaces.

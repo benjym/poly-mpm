@@ -6,6 +6,8 @@ intrinsic 2D symmetric tensors and lumped mass. The default small-problem hybrid
 solve has a dense Jacobian and sparse block Gauss-Seidel fallback; a block-only
 mode avoids the global factorization. It is NOT a reproduction of Sand6
 or a claim of continuum well-posedness. See docs/granular-prototype.md.
+The opt-in velocity solver uses compact gradients and the local iteration from
+Daviet (2026); see granular_mixed.py and docs/granular-mixed.md.
 """
 
 import numpy as np
@@ -379,7 +381,7 @@ def packing_fraction(P, G, batch):
     return np.divide(occupied, volumes, out=np.zeros_like(occupied), where=volumes > 0)
 
 
-def assemble(P, G, batch):
+def assemble(P, G, batch, *, compact=False):
     """Build b(tau,u)=sum_p V_grain*N_stress*tau:D(u) and packing gap."""
     basis, dimension = stress_space(P)
     components = len(basis)
@@ -402,7 +404,7 @@ def assemble(P, G, batch):
     # momentum use exactly the same B and its transpose.
     count, support = nodes.shape
     rows, cols, data = [], [], []
-    for mode in range(components):
+    for mode in range(0 if compact else components):
         for component in range(2):
             derivative = np.einsum("j,prj->pr", basis[mode, component], batch.G)
             contribution = solid_volume[:, None, None] * batch.N[:, :, None] * derivative[:, None, :]
@@ -412,10 +414,24 @@ def assemble(P, G, batch):
             rows.append(row[keep])
             cols.append(col[keep])
             data.append(contribution[keep])
-    B = sparse.coo_matrix(
-        (np.concatenate(data), (np.concatenate(rows), np.concatenate(cols))),
-        shape=(components * len(active), 2 * len(G.m)),
-    ).tocsr()
+    if compact:
+        from granular_mixed import GradientOperator
+
+        contribution = solid_volume[:, None, None, None] * batch.N[:, :, None, None] * batch.G[:, None, :, :2]
+        shape = contribution.shape[:-1]
+        B = GradientOperator(
+            np.broadcast_to(index[nodes][:, :, None], shape).ravel(),
+            np.broadcast_to(nodes[:, None, :], shape).ravel(),
+            contribution.reshape(-1, 2),
+            len(active),
+            len(G.m),
+            basis,
+        )
+    else:
+        B = sparse.coo_matrix(
+            (np.concatenate(data), (np.concatenate(rows), np.concatenate(cols))),
+            shape=(components * len(active), 2 * len(G.m)),
+        ).tocsr()
     free = np.repeat(G.valid_nodes & (canonical == np.arange(len(G.m))), 2)
     free[2 * np.flatnonzero(G.boundary_v)] = False
     free[2 * np.flatnonzero(G.boundary_h) + 1] = False
@@ -464,7 +480,7 @@ def step(P, G, L):
     G.BCs(P)
     G.update_momentum(P)
     trial = nodal_velocity(G, P)[:, :2].ravel()
-    B, free, active, occupied, gap = assemble(P, G, b)
+    B, free, active, occupied, gap = assemble(P, G, b, compact=P.granular_solver == "velocity")
     inverse_mass = 1 / np.repeat(G.m, 2)[free]
     viscous_force = np.zeros_like(trial)
     viscous_dissipation = 0.0
@@ -478,19 +494,22 @@ def step(P, G, L):
             periodic_velocity[P.G.nx - 1 :: P.G.nx] = periodic_velocity[:: P.G.nx]
         viscous_force = stiffness @ trial
         viscous_dissipation = float(P.dt * trial @ viscous_force)
-    operator = B[:, free]
-    W = (operator.multiply(inverse_mass) @ operator.T) * P.dt
-    q = (B @ trial).reshape(-1, components) + gap
     old = getattr(G, "granular_contact", np.zeros((len(G.m), components)))
-    contact, stats = solve_coulomb(
-        W,
-        q,
-        b.material.mu * np.sqrt(2 / dimension),
-        tolerance=P.granular_tolerance,
-        max_iterations=P.granular_max_iterations,
-        initial=old[active],
-        method=P.granular_solver,
+    options = dict(
+        tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=old[active]
     )
+    mu = b.material.mu * np.sqrt(2 / dimension)
+    if P.granular_solver == "velocity":
+        from granular_mixed import solve_velocity
+
+        full_inverse_mass = np.zeros_like(trial)
+        full_inverse_mass[free] = inverse_mass
+        contact, stats = solve_velocity(B, trial, full_inverse_mass, gap, mu, P.dt, **options)
+    else:
+        operator = B[:, free]
+        W = (operator.multiply(inverse_mass) @ operator.T) * P.dt
+        q = (B @ trial).reshape(-1, components) + gap
+        contact, stats = solve_coulomb(W, q, mu, method=P.granular_solver, **options)
     force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
     final = trial.copy()
     final[free] += P.dt * inverse_mass * force.ravel()[free]

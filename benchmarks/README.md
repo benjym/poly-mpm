@@ -28,6 +28,14 @@ compares source-style affine transfer, plane-strain stress and the small-viscosi
 split on a matched cloud. The [source audit](../docs/granular-source-audit.md)
 also records the original C++ matrix oracle and direct citing-paper findings.
 
+`uv run --locked python -m benchmarks.granular_mixed --output /tmp/granular-mixed.json`
+compares the unchanged hybrid reference with the opt-in compact velocity solver
+on matched static, collapse, refined-grid, inclined and plane-strain fixtures.
+It uses a warmup and three alternating paired runs, and separately replays
+identical frozen problems with the original residual criterion. The committed
+[report](granular_mixed.json) and [method guide](../docs/granular-mixed.md)
+describe the algorithm, measured costs and remaining discretization work.
+
 ```sh
 uv run --locked python -m benchmarks.broader_verification --output /tmp/poly-mpm-broader.json --figure /tmp/poly-mpm-broader.png
 uv run --locked python -m benchmarks.verification --output /tmp/poly-mpm-wave.json

@@ -26,6 +26,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.
    numerical-foundations
    granular-prototype
    granular-source-audit
+   granular-mixed
    quadrature
    verification
    implementation-todo
