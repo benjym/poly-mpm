@@ -1,5 +1,7 @@
 # Experimental Apple silicon backend
 
+For continuation on the target Mac, start with the [agent handoff](gpu-handoff.md).
+
 The first implementation milestone supplies the optional Metal runtime, resident
 integer binning, hierarchical scans/reductions, static Q1 incidence, split
 particle coordinates and a hardware validation command. **The GPU MPM timestep
