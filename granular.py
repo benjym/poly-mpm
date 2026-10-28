@@ -2,8 +2,9 @@
 
 Inspired by Daviet & Bertails-Descoubes (2016), equations (7)--(14).
 This independent small-problem implementation uses the existing nodal bases,
-intrinsic 2D symmetric tensors, lumped mass and a nonlinear least-squares
-solve with a dense Jacobian and block Gauss-Seidel fallback. It is NOT a reproduction of Sand6
+intrinsic 2D symmetric tensors and lumped mass. The default small-problem hybrid
+solve has a dense Jacobian and sparse block Gauss-Seidel fallback; a block-only
+mode avoids the global factorization. It is NOT a reproduction of Sand6
 or a claim of continuum well-posedness. See docs/granular-prototype.md.
 """
 
@@ -115,7 +116,7 @@ def _local_coulomb(W, q, mu, previous):
     raise RuntimeError("granular local sliding problem could not be resolved")
 
 
-def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None):
+def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None, method="hybrid"):
     """Solve w=W*r+q and non-associated Coulomb complementarity.
 
     r_n >= 0, w_n >= 0, r_n*w_n=0; |r_t|<=mu*r_n; sliding
@@ -128,6 +129,8 @@ def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None)
     components = 4 if q.ndim == 1 else q.shape[-1]
     q = q.reshape(-1, components)
     mu = np.broadcast_to(np.asarray(mu, dtype=float), len(q))
+    if method not in ("hybrid", "block") or (method == "block" and components != 3):
+        raise ValueError("method must be hybrid, or block with three contact components")
     if W.shape != (q.size, q.size) or not np.isfinite(W.data).all() or not np.isfinite(q).all():
         raise ValueError("invalid Coulomb problem dimensions or nonfinite data")
     if (
@@ -194,35 +197,47 @@ def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None)
     start = (
         np.zeros(q.size) if initial is None or magnitude == 0 else np.asarray(initial).ravel() / stress_scale
     )
-    solution = least_squares(
-        evaluate,
-        start,
-        jac=lambda z: evaluate(z, True).toarray(),
-        tr_solver="exact",
-        ftol=1e-13,
-        xtol=1e-13,
-        gtol=1e-13,
-        max_nfev=max_iterations,
-    )
-    candidate = solution.x
+    candidate = start.copy()
+    evaluations = 0
+    if method == "hybrid":
+        solution = least_squares(
+            evaluate,
+            start,
+            jac=lambda z: evaluate(z, True).toarray(),
+            tr_solver="exact",
+            ftol=1e-13,
+            xtol=1e-13,
+            gtol=1e-13,
+            max_nfev=max_iterations,
+        )
+        candidate = solution.x
+        evaluations = solution.nfev
     residual = float(np.max(np.abs(evaluate(candidate)), initial=0))
     sweeps = 0
     if residual > tolerance and components == 3:
         # Newton/least-squares can settle at a nonzero local minimum of a
         # non-associated residual. A block contact solve is an independent
         # fallback, not acceptance of that stationary point.
-        dense = operator.toarray()
         candidate = start.copy()
-        velocity = dense @ candidate + rhs.ravel()
+        # Store sparse 3x3 columns. A local change only updates neighbouring
+        # contacts, without an O(nodes^2) dense Delassus matrix.
+        columns = operator.T.tobsr(blocksize=(3, 3))
+        columns.sum_duplicates()
+        columns.sort_indices()
+        local_blocks = [operator[3 * i : 3 * i + 3, 3 * i : 3 * i + 3].toarray() for i in range(len(q))]
+        velocity = (operator @ candidate).reshape(-1, 3) + rhs
         for sweeps in range(1, max_iterations * 10 + 1):
             for i in range(len(q)):
                 sl = slice(3 * i, 3 * i + 3)
-                local = dense[sl, sl]
-                other = velocity[sl] - local @ candidate[sl]
+                local = local_blocks[i]
+                other = velocity[i] - local @ candidate[sl]
                 updated = _local_coulomb(local, other, mu[i], candidate[sl])
                 delta = updated - candidate[sl]
                 candidate[sl] = updated
-                velocity += dense[:, sl] @ delta
+                lo, hi = columns.indptr[i : i + 2]
+                velocity[columns.indices[lo:hi]] += columns.data[lo:hi].transpose(0, 2, 1) @ delta
+            # Avoid accumulating incremental-update roundoff over many sweeps.
+            velocity = (operator @ candidate).reshape(-1, 3) + rhs
             residual = float(np.max(np.abs(evaluate(candidate)), initial=0))
             if residual <= tolerance:
                 break
@@ -230,10 +245,18 @@ def solve_coulomb(W, q, mu, *, tolerance=1e-9, max_iterations=200, initial=None)
     if not np.isfinite(residual) or residual > tolerance:
         raise RuntimeError(
             f"granular Coulomb solve did not converge: residual={residual:.3g}, "
-            f"evaluations={solution.nfev}; reduce dt or inspect particle support"
+            f"evaluations={evaluations}, sweeps={sweeps}; reduce dt or inspect particle support"
         )
     reaction = candidate.reshape(-1, components) * stress_scale
-    return reaction, dict(residual=residual, evaluations=solution.nfev, sweeps=sweeps, converged=True)
+    return reaction, dict(
+        residual=residual,
+        evaluations=evaluations,
+        sweeps=sweeps,
+        converged=True,
+        method=method,
+        operator_nnz=W.nnz,
+        operator_storage_bytes=W.data.nbytes + W.indices.nbytes + W.indptr.nbytes,
+    )
 
 
 def canonical_nodes(P, count):
@@ -264,6 +287,23 @@ def basis_volumes(P, G):
     result = np.bincount(nodes.ravel(), weights=(volume[:, None] * shape).ravel(), minlength=len(G.m))
     G._granular_basis_volumes = key, result
     return result
+
+
+def packing_fraction(P, G, batch):
+    """Reconstruct nodal packing from current positions, independently of F/J.
+
+    Call after boundary processing, so positions are inside the grid and any
+    periodic coordinates have been wrapped. No particle state is changed.
+    """
+    nodes, shape, _, _ = stencil(batch.x, P, G)
+    nodes = canonical_nodes(P, len(G.m))[nodes]
+    occupied = np.bincount(
+        nodes.ravel(),
+        weights=((batch.m / batch.material.rho_s)[:, None] * shape).ravel(),
+        minlength=len(G.m),
+    )
+    volumes = basis_volumes(P, G)
+    return np.divide(occupied, volumes, out=np.zeros_like(occupied), where=volumes > 0)
 
 
 def assemble(P, G, batch):
@@ -360,6 +400,7 @@ def step(P, G, L):
         tolerance=P.granular_tolerance,
         max_iterations=P.granular_max_iterations,
         initial=old[active],
+        method=P.granular_solver,
     )
     force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
     final = trial.copy()
@@ -449,4 +490,6 @@ def step(P, G, L):
         before = inventory(P, L)
     L.process_boundaries(P, G)
     if L.diagnostics is not None:
+        stats["maximum_packing_after"] = float(np.max(packing_fraction(P, G, b), initial=0))
+        stats["maximum_particle_packing"] = float(np.max(b.rho / b.material.rho_s, initial=0))
         L.diagnostics.finish(P, G, L, before)

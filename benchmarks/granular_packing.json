@@ -1,0 +1,298 @@
+{
+  "environment": {
+    "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O"
+  },
+  "source_sha256": {
+    "granular.py": "4c88eade8225475daafdae040c469b96915cd61ccb7b98aa4d96b1bcfcae4af0",
+    "initialise.py": "b898dbc3235a0e8807fbd2c5ce3124adbc66bdbb1485ea63520d4297174bc60c",
+    "benchmarks/granular_prototype.py": "ed6d7f03bb2e8dabd996e9589941e2ba08deed83c7e8d1199f8648fdb0b2d363",
+    "benchmarks/granular_packing.py": "8647fe7f9b9b1892c1f091e891059aa341e4eb355c000321b62ca54ce7779867",
+    "inputs/granular_column.py": "defd4034e5d2ec7eed612424fd2b751559591bc487eae3975673829267064860",
+    "inputs/granular_collapse.py": "3baa07d51701c2c6cf33f7771605e5fd888ec43ed43c50e941fff01f335100bb"
+  },
+  "scope": "Independent particle-density and grid-spacing sensitivity; no spatial convergence claim.",
+  "sampling": [
+    {
+      "particles_per_cell_axis": 2,
+      "particles": 64,
+      "affine_determinant": 1.0,
+      "exact_packing": 0.6,
+      "initial_peak": 0.6000000000000001,
+      "interior_peak": 0.5879899966660714,
+      "interior_max_error": 0.012010003333928765,
+      "total_solid_volume_error": 0.0
+    },
+    {
+      "particles_per_cell_axis": 4,
+      "particles": 256,
+      "affine_determinant": 1.0,
+      "exact_packing": 0.6,
+      "initial_peak": 0.6000000000000001,
+      "interior_peak": 0.5998498634944113,
+      "interior_max_error": 0.012010003333928876,
+      "total_solid_volume_error": -1.1102230246251565e-16
+    },
+    {
+      "particles_per_cell_axis": 8,
+      "particles": 1024,
+      "affine_determinant": 1.0,
+      "exact_packing": 0.6,
+      "initial_peak": 0.6000000000000002,
+      "interior_peak": 0.5991546307083997,
+      "interior_max_error": 0.0008453692916008393,
+      "total_solid_volume_error": -1.1102230246251565e-16
+    },
+    {
+      "particles_per_cell_axis": 16,
+      "particles": 4096,
+      "affine_determinant": 1.0,
+      "exact_packing": 0.6,
+      "initial_peak": 0.6000000000000003,
+      "interior_peak": 0.60045614308639,
+      "interior_max_error": 0.0008453692916007283,
+      "total_solid_volume_error": -1.1102230246251565e-16
+    }
+  ],
+  "collapse": [
+    {
+      "case": "collapse",
+      "dt": 0.005,
+      "steps": 60,
+      "seconds": 0.6403998810128542,
+      "particles": 32,
+      "grid": {
+        "nx": 9,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "contact_solver": "hybrid",
+      "max_displacement": 0.28888061796955805,
+      "max_speed": 2.124044609327782,
+      "rightmost_particle": 0.56247986495732,
+      "centre_of_mass": [
+        0.2940109583375141,
+        0.40309226097862333,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 2.5036928884157122e-12,
+      "max_natural_map_residual": 1.2889689315898067e-13,
+      "maximum_initial_nodal_packing": 0.6208740456690053,
+      "maximum_final_nodal_packing": 0.6212208610998349,
+      "maximum_particle_packing": 0.8082427203306289,
+      "maximum_contact_nodes": 19,
+      "maximum_operator_nnz": 2234,
+      "maximum_operator_storage_bytes": 27040,
+      "maximum_contact_power": -30.26851631707636,
+      "max_fallback_sweeps": 0,
+      "accumulated_contact_dissipation": 268.5141847025292,
+      "energy_residual": -29.529475411983228,
+      "timestep_limits": {
+        "advection": 0.01160890846043567
+      },
+      "particles_per_cell_axis": 2
+    },
+    {
+      "case": "collapse",
+      "dt": 0.005,
+      "steps": 60,
+      "seconds": 0.9891677359992173,
+      "particles": 32,
+      "grid": {
+        "nx": 9,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "contact_solver": "block",
+      "max_displacement": 0.28888061796220743,
+      "max_speed": 2.124044609349687,
+      "rightmost_particle": 0.5624798649454542,
+      "centre_of_mass": [
+        0.2940109583344071,
+        0.4030922609799447,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 2.2737367544323206e-12,
+      "max_natural_map_residual": 9.980745119264611e-10,
+      "maximum_initial_nodal_packing": 0.6208740456767454,
+      "maximum_final_nodal_packing": 0.621220861105192,
+      "maximum_particle_packing": 0.8082427203178822,
+      "maximum_contact_nodes": 19,
+      "maximum_operator_nnz": 2230,
+      "maximum_operator_storage_bytes": 26992,
+      "maximum_contact_power": -30.268516233642227,
+      "max_fallback_sweeps": 40,
+      "accumulated_contact_dissipation": 268.51418481912253,
+      "energy_residual": -29.529475139993906,
+      "timestep_limits": {
+        "advection": 0.011608908464813857
+      },
+      "particles_per_cell_axis": 2
+    },
+    {
+      "case": "collapse",
+      "dt": 0.005,
+      "steps": 60,
+      "seconds": 1.1406367820018204,
+      "particles": 128,
+      "grid": {
+        "nx": 9,
+        "ny": 7,
+        "dx": 0.25,
+        "dy": 0.25
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "contact_solver": "block",
+      "max_displacement": 0.30103041796658514,
+      "max_speed": 2.2433876053740933,
+      "rightmost_particle": 0.6171565033046331,
+      "centre_of_mass": [
+        0.2957965523116668,
+        0.4072385932115339,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 2.5069172205803562e-12,
+      "max_natural_map_residual": 9.845564363786252e-10,
+      "maximum_initial_nodal_packing": 0.6066141544104725,
+      "maximum_final_nodal_packing": 0.6066141544104725,
+      "maximum_particle_packing": 0.8712839569565335,
+      "maximum_contact_nodes": 20,
+      "maximum_operator_nnz": 2390,
+      "maximum_operator_storage_bytes": 28924,
+      "maximum_contact_power": -29.928878755299408,
+      "max_fallback_sweeps": 41,
+      "accumulated_contact_dissipation": 251.83044275619892,
+      "energy_residual": -13.904321404928247,
+      "timestep_limits": {
+        "advection": 0.011271667135401134
+      },
+      "particles_per_cell_axis": 4
+    },
+    {
+      "case": "collapse",
+      "dt": 0.0025,
+      "steps": 120,
+      "seconds": 33.362020316999406,
+      "particles": 128,
+      "grid": {
+        "nx": 17,
+        "ny": 13,
+        "dx": 0.125,
+        "dy": 0.125
+      },
+      "material": {
+        "rho_s": 2500.0,
+        "packing_max": 0.6,
+        "mu": 0.5
+      },
+      "final_time": 0.3,
+      "output": false,
+      "diagnostics": true,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "contact_solver": "block",
+      "max_displacement": 0.32888342573907464,
+      "max_speed": 2.388326581394193,
+      "rightmost_particle": 0.6662427892766829,
+      "centre_of_mass": [
+        0.3126180929991567,
+        0.3718363120683796,
+        0.0
+      ],
+      "max_mass_error": 0.0,
+      "max_momentum_residual": 3.6490641481814315e-12,
+      "max_natural_map_residual": 9.99715865646067e-10,
+      "maximum_initial_nodal_packing": 0.6934689691085557,
+      "maximum_final_nodal_packing": 0.6934689691085557,
+      "maximum_particle_packing": 0.8920550837111064,
+      "maximum_contact_nodes": 51,
+      "maximum_operator_nnz": 7866,
+      "maximum_operator_storage_bytes": 95008,
+      "maximum_contact_power": -18.25150929345394,
+      "max_fallback_sweeps": 788,
+      "accumulated_contact_dissipation": 425.7782422506781,
+      "energy_residual": -37.684692449094385,
+      "timestep_limits": {
+        "advection": 0.005309299741999021
+      },
+      "particles_per_cell_axis": 2
+    }
+  ],
+  "inclined_layers": [
+    {
+      "slope": 0.25,
+      "method": "hybrid",
+      "status": "completed",
+      "completed_time": 0.05,
+      "seconds": 0.10826622901367955,
+      "max_speed": 5.347985309040899e-15,
+      "maximum_downslope_speed": 4.9880824444281105e-15,
+      "uniform_sliding_reference_speed": 0.0,
+      "max_contact_residual": 2.184918912462308e-13,
+      "max_contact_power": 6.14657659736033e-12
+    },
+    {
+      "slope": 0.75,
+      "method": "hybrid",
+      "status": "completed",
+      "completed_time": 0.05,
+      "seconds": 2.255514714997844,
+      "max_speed": 0.09810053584789881,
+      "maximum_downslope_speed": 0.09810053584789881,
+      "uniform_sliding_reference_speed": 0.09809999999999999,
+      "max_contact_residual": 9.998095684693453e-10,
+      "max_contact_power": -50.52395250018505
+    },
+    {
+      "slope": 0.75,
+      "method": "block",
+      "status": "solver failed",
+      "completed_time": 0.0,
+      "seconds": 4.180985118000535,
+      "error": "granular Coulomb solve did not converge: residual=3.01e-06, evaluations=0, sweeps=2000; reduce dt or inspect particle support"
+    }
+  ],
+  "signed_gap_energy": {
+    "overlap": 0.01,
+    "initial_kinetic_energy": 0.0,
+    "final_kinetic_energy": 5e-05,
+    "external_work": 0.0,
+    "contact_power": 0.0001,
+    "conclusion": "Do not adopt signed-gap velocity repair without energy accounting."
+  },
+  "interpretation": "Point-sampling packing errors occur even under exact area-preserving motion. Collapse changes under particle/grid refinement; no packing or spatial-convergence gate passed. Sparse block storage avoids a dense global factorization but the block solver fails one inclined-flow case; retain hybrid as the default reference."
+}

@@ -19,10 +19,23 @@ from inputs.granular_column import Params as Column
 from inputs.granular_collapse import Params as Collapse
 
 
-def measure(kind, dt):
+def configuration(kind, dt, *, grid_spacing=0.25, particles_per_cell=2, solver="hybrid"):
     P = (Column if kind == "static" else Collapse)([])
+    P.G.nx = round((P.G.x_M - P.G.x_m) / grid_spacing) + 1
+    P.G.ny = round((P.G.y_M - P.G.y_m) / grid_spacing) + 1
+    spacing = grid_spacing / particles_per_cell
+    width = 1.0 if kind == "static" else 0.5
+    x, y = np.meshgrid(np.arange(spacing / 2, width, spacing), np.arange(spacing / 2, 1.0, spacing))
+    P.S.X, P.S.Y = x.ravel(), y.ravel()
+    P.S.n, P.S.A = x.size, spacing**2
     P.dt = dt
+    P.granular_solver = solver
     P.t_f = 0.2 if kind == "static" else 0.3
+    return P
+
+
+def measure(kind, dt, **options):
+    P = configuration(kind, dt, **options)
     P, G, L = prepare(P)
     initial = L.materials[0].x.copy()
     start = perf_counter()
@@ -43,6 +56,7 @@ def measure(kind, dt):
         diagnostics=True,
         interpolation=P.interpolation,
         transfer=P.transfer,
+        contact_solver=P.granular_solver,
         max_displacement=float(np.linalg.norm(b.x - initial, axis=1).max()),
         max_speed=float(np.linalg.norm(b.v, axis=1).max()),
         rightmost_particle=float(b.x[:, 0].max()),
@@ -51,6 +65,11 @@ def measure(kind, dt):
         max_momentum_residual=max(float(np.linalg.norm(r["momentum_residual"])) for r in rows),
         max_natural_map_residual=max(r["granular_solver"]["residual"] for r in rows),
         maximum_initial_nodal_packing=max(r["granular_solver"]["maximum_packing"] for r in rows),
+        maximum_final_nodal_packing=max(r["granular_solver"]["maximum_packing_after"] for r in rows),
+        maximum_particle_packing=max(r["granular_solver"]["maximum_particle_packing"] for r in rows),
+        maximum_contact_nodes=max(r["granular_solver"]["active_nodes"] for r in rows),
+        maximum_operator_nnz=max(r["granular_solver"]["operator_nnz"] for r in rows),
+        maximum_operator_storage_bytes=max(r["granular_solver"]["operator_storage_bytes"] for r in rows),
         maximum_contact_power=max(r["granular_solver"]["contact_power"] for r in rows),
         max_fallback_sweeps=max(r["granular_solver"].get("sweeps", 0) for r in rows),
         accumulated_contact_dissipation=float(b.plastic_work.sum()),

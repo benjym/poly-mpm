@@ -56,6 +56,7 @@ def prepare(P, mode="simulation"):
         mechanics="updated",
         solver="explicit",
         granular_tolerance=1e-9,
+        granular_solver="hybrid",
         granular_max_iterations=200,
         granular_max_nodes=256,
         interpolation="linear",
@@ -109,6 +110,8 @@ def prepare(P, mode="simulation"):
     for S in P.S:
         get_law(S.law)
     if P.solver == "granular":
+        if P.granular_solver not in ("block", "hybrid"):
+            raise ValueError("granular_solver must be block or hybrid")
         if P.mechanics != "updated" or P.quadrature != "point":
             raise ValueError("granular prototype requires updated mechanics and point quadrature")
         if P.interpolation != "linear":

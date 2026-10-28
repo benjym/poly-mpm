@@ -8,7 +8,7 @@ import pytest
 from numpy.testing import assert_allclose
 from scipy import sparse
 
-from granular import assemble, basis_volumes, cone_projection, solve_coulomb
+from granular import assemble, basis_volumes, cone_projection, packing_fraction, solve_coulomb
 from initialise import get_parameters, prepare
 from MPM import run, step
 from stability import limits
@@ -200,7 +200,13 @@ def test_nonconvergence_is_not_silently_accepted():
 
 @pytest.mark.parametrize(
     "setting",
-    [dict(quadrature="domain"), dict(interpolation="quadratic"), dict(damping=True), dict(solver="invalid")],
+    [
+        dict(quadrature="domain"),
+        dict(interpolation="quadratic"),
+        dict(damping=True),
+        dict(solver="invalid"),
+        dict(granular_solver="unknown"),
+    ],
 )
 def test_unsupported_formulations_fail_early(setting):
     with pytest.raises(ValueError):
@@ -240,3 +246,104 @@ def test_collapse_yields_and_contact_work_is_dissipative():
     assert_allclose(b.plastic_work.sum(), -work, rtol=1e-9, atol=1e-8)
     assert max(r["granular_solver"]["contact_power"] for r in L.diagnostics.history) <= 1e-7
     assert np.linalg.norm(L.diagnostics.last["momentum_residual"]) < 1e-8
+
+
+def test_sparse_block_solver_does_not_densify_the_global_operator(monkeypatch):
+    count = 256
+    diagonal = sparse.diags(
+        [-0.02 * np.ones(count - 1), np.ones(count), -0.02 * np.ones(count - 1)], [-1, 0, 1]
+    )
+    W = sparse.kron(diagonal, sparse.eye(3), format="csr")
+    original = sparse.csr_matrix.toarray
+
+    def local_only(matrix, *args, **kwargs):
+        assert max(matrix.shape) <= 3, "block solver densified a global matrix"
+        return original(matrix, *args, **kwargs)
+
+    monkeypatch.setattr(sparse.csr_matrix, "toarray", local_only)
+    q = np.tile([-1.0, 0.2, 0.1], (count, 1))
+    r, stats = solve_coulomb(W, q, 0.5, method="block")
+    assert_allclose(W @ r.ravel() + q.ravel(), 0, atol=1e-9)
+    assert stats["evaluations"] == 0
+    assert stats["operator_storage_bytes"] < q.size**2 * 8 / 10
+
+
+def test_block_and_hybrid_agree_on_collapse_velocities():
+    P, G, L = get_parameters(["granular_collapse"])
+    reference = deepcopy((P, G, L))
+    P.granular_solver = "block"
+    run(P, G, L, max_steps=12, output=False)
+    run(*reference, max_steps=12, output=False)
+    assert_allclose(L.materials[0].x, reference[2].materials[0].x, atol=1e-9)
+    assert_allclose(L.materials[0].v, reference[2].materials[0].v, atol=1e-8)
+
+
+@pytest.mark.parametrize("slope", [0.25, 0.75])
+def test_periodic_inclined_layer_static_and_yielding(slope):
+    P, G, L = column(theta=np.arctan(slope), t_f=0.05)
+    P.B.cyclic_lr = P.B.roughness = True
+    G.boundary_v[:] = False
+    run(P, G, L, output=False)
+    speed = -L.materials[0].v[:, 0]
+    if slope < P.S[0].mu:
+        assert np.max(np.abs(L.materials[0].v)) < 1e-8
+    else:
+        expected = 9.81 * (np.sin(P.theta) - P.S[0].mu * np.cos(P.theta)) * P.t
+        assert_allclose(speed.max(), expected, rtol=1e-3)
+        assert speed.mean() > 0.05
+
+
+def test_area_preserving_sampling_exposes_density_alias_without_losing_mass():
+    from benchmarks.granular_packing import sampling
+
+    coarse, fine = sampling(2), sampling(8)
+    assert coarse["affine_determinant"] == fine["affine_determinant"] == 1.0
+    assert coarse["interior_max_error"] > 1e-2
+    assert fine["interior_max_error"] < coarse["interior_max_error"] / 10
+    assert abs(coarse["total_solid_volume_error"]) < 1e-12
+    assert abs(fine["total_solid_volume_error"]) < 1e-12
+
+
+def test_end_of_step_packing_is_independent_of_particle_density_history():
+    P, G, L = column()
+    b = L.materials[0]
+    nodal = packing_fraction(P, G, b)
+    b.rho *= 1.5
+    assert_allclose(packing_fraction(P, G, b), nodal, atol=0)
+    b.rho /= 1.5
+    step(P, G, L)
+    assert_allclose(G.granular_stats["maximum_packing_after"], packing_fraction(P, G, b).max())
+    assert_allclose(G.granular_stats["maximum_particle_packing"], (b.rho / b.material.rho_s).max())
+
+
+def test_source_equation_affine_integrals_and_2d_friction_normalization():
+    """Check tensor factors against analytic affine integrals, not B.T itself."""
+    from granular import BASIS
+
+    P, G, L = column()
+    G.wipe(P)
+    L.get_reference_nodes(P, G)
+    L.get_basis_functions(P, G)
+    L.get_nodal_mass_momentum(P, G)
+    B, _, active, occupied, gap = assemble(P, G, L.materials[0])
+    gradient = np.array([[0.3, 0.7], [-0.2, -0.1]])
+    velocity = np.column_stack((G.X, G.Y)) @ gradient.T + [0.8, -0.4]
+    a, b, c, d = gradient.ravel()
+    # For affine velocity, each integral is occupied volume times a constant.
+    expected = occupied[active, None] * np.array([a + d, a - d, b + c]) / np.sqrt(2)
+    assert_allclose((B @ velocity.ravel()).reshape(-1, 3), expected, atol=2e-16)
+    # Domain integrals of bilinear basis functions are known analytically.
+    vx = np.full(P.G.nx, G.dx)
+    vy = np.full(P.G.ny, G.dy)
+    vx[[0, -1]] /= 2
+    vy[[0, -1]] /= 2
+    capacity = P.S[0].packing_max * np.outer(vy, vx).ravel()[active]
+    assert_allclose(gap[:, 0] * np.sqrt(2) * P.dt, np.maximum(capacity - occupied[active], 0), atol=2e-17)
+    # A cone-boundary coefficient must represent tau_eq/p = mu in 2D.
+    pressure, mu = 17.0, 0.5
+    reaction = np.array([np.sqrt(2) * pressure, mu * np.sqrt(2) * pressure, 0.0])
+    stress = -np.einsum("k,kij->ij", reaction, BASIS)[:2, :2]
+    mean = np.trace(stress) / 2
+    tau = np.linalg.norm(stress - mean * np.eye(2)) / np.sqrt(2)
+    assert_allclose(-mean, pressure)
+    assert_allclose(tau / pressure, mu)
