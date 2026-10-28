@@ -12,7 +12,9 @@ the task is larger than running the first validation command.
 - Runtime/primitives checkpoint: `4dd4ebf`.
 - CPU science baseline: `3d72a69`, before the separate density work.
 - Target: Apple silicon only, macOS 26+, native CPython 3.14, Metal via
-  SlangPy **0.43.1**. The Intel development Mac is not a job target.
+  SlangPy 0.43.1 or newer (0.43.1 is the latest release and has no CPython 3.15
+  wheel). Pins from the Intel development Mac were relaxed; backwards
+  compatibility with older toolchains is not required.
 - Keep this backend inside the existing package, under `mpm_gpu`, with the same
   inputs, outputs, plots, Rich progress and save frequency. Segregation will be
   added later through this package; implement mechanics first.
@@ -29,6 +31,23 @@ They prevent selecting Metal and accidentally running CPU mechanics. Replace
 these guards only when the corresponding resident implementation exists and
 passes its gates. There is no GPU MPM speedup measurement yet.
 
+## Status on the Apple M4 (29 October 2026)
+
+The runtime gate passed on an Apple M4, macOS 27.0.1, CPython 3.14.10,
+SlangPy 0.43.1, Xcode with Metal toolchain 32023.921
+(`benchmarks/metal_runtime_m4.json`). Two failed reports are kept:
+`metal_runtime_m4_no_toolchain_failed.json` (Command Line Tools only, with the
+compiler check bypassed to locate the dependency) and
+`metal_runtime_m4_backend_gaps_failed.json` (indirect dispatch and timestamps).
+
+SlangPy's Metal backend implements neither indirect compute dispatch (it
+warns and executes nothing) nor timestamp queries. Device-decided work extents
+use guarded dispatch: a host upper bound with each thread reading the active
+extent from a device record. Timings use host wall time around waited
+submissions. Metal command buffers are single-use, so replay requires
+re-encoding; mechanics and solver code should preallocate workspaces so that
+re-encoding allocates nothing. Gate 2 (mechanics kernels) is next.
+
 ## First action on the target Mac
 
 Fetch and check out `origin/codex/metal-backend` in a suitable clean checkout.
@@ -38,7 +57,7 @@ Then run:
 uname -m
 xcrun --find metal
 xcrun metal --version
-uv sync --locked --extra gpu --extra dev --python 3.14
+uv sync --locked --extra gpu --extra dev
 uv run --locked --extra gpu --extra dev python -m mpm_gpu.validate --stage runtime --benchmark --output metal-validation.json
 ```
 
@@ -70,8 +89,8 @@ hardware failure or permission to mark the whole port validated.
 
 | Files | Purpose |
 | --- | --- |
-| `mpm_gpu/runtime.py` | Lazy SlangPy import, explicit Metal device, compiler/platform checks, kernel cache, scalar buffers, dispatch/barriers, indirect dispatch, timestamps and transfer accounting |
-| `mpm_gpu/shaders/primitives.slang` | Nine entry points: fill, histogram, tiled scan, scan offsets, scatter, reduction, device dispatch arguments, indirect marker and ABI probe |
+| `mpm_gpu/runtime.py` | Lazy SlangPy import, explicit Metal device, compiler/platform checks, kernel cache, scalar buffers, dispatch/barriers and transfer accounting; indirect dispatch and timestamps are kept only for capability probes |
+| `mpm_gpu/shaders/primitives.slang` | Ten entry points: fill, histogram, tiled scan, scan offsets, scatter, reduction, guarded marker, device dispatch arguments and indirect marker (capability probe only) and ABI probe |
 | `mpm_gpu/primitives.py` | Hierarchical scans/reductions and histogram → scan → scatter; intermediate buffers remain on device |
 | `mpm_gpu/topology.py` | Static canonical Q1 neighbors, transpose incidence, conflict colors, split cell/fraction coordinates |
 | `mpm_gpu/config.py` | Backend defaults, supported configuration validation and temporary runner guard |

@@ -1,4 +1,4 @@
-"""Small SlangPy 0.43.1 Metal adapter with explicit synchronization/accounting."""
+"""Small SlangPy Metal adapter with explicit synchronization/accounting."""
 
 from contextlib import ExitStack
 from dataclasses import dataclass, asdict
@@ -11,7 +11,7 @@ from time import perf_counter
 
 import numpy as np
 
-from . import GPUError, GPUUnavailable, SLANGPY_VERSION
+from . import GPUError, GPUUnavailable, SLANGPY_MINIMUM
 
 
 def environment():
@@ -21,7 +21,7 @@ def environment():
         machine=platform.machine(),
         macos=platform.mac_ver()[0],
         platform=platform.platform(),
-        slangpy_required=SLANGPY_VERSION,
+        slangpy_minimum=".".join(map(str, SLANGPY_MINIMUM)),
     )
 
 
@@ -34,8 +34,6 @@ def check_platform():
         )
     if not info["macos"] or int(info["macos"].split(".")[0]) < 26:
         raise GPUUnavailable("The pinned SlangPy wheel requires macOS 26 or later")
-    if sys.version_info[:2] != (3, 14):
-        raise GPUUnavailable("This GPU backend currently validates CPython 3.14 only")
     try:
         result = subprocess.run(
             ["xcrun", "--find", "metal"], capture_output=True, text=True, timeout=15, check=False
@@ -90,8 +88,8 @@ class MetalRuntime:
             installed = metadata.version("slangpy")
         except metadata.PackageNotFoundError as exc:
             raise GPUUnavailable("Install the optional GPU dependency: pip install 'poly-mpm[gpu]'") from exc
-        if installed != SLANGPY_VERSION:
-            raise GPUUnavailable(f"Expected slangpy=={SLANGPY_VERSION}; found {installed}")
+        if tuple(int(part) for part in installed.split(".")[:3]) < SLANGPY_MINIMUM:
+            raise GPUUnavailable(f"slangpy {installed} is older than the validated minimum")
         self._resources = ExitStack()
         self.accounting = Accounting()
         self._kernels = {}

@@ -128,6 +128,17 @@ void indirect_marker(uint3 tid : SV_DispatchThreadID, uniform uint count,
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
+void guarded_marker(uint3 tid : SV_DispatchThreadID, uniform uint count,
+                    StructuredBuffer<uint> control, uniform uint value,
+                    RWStructuredBuffer<uint> output)
+{
+    // SlangPy 0.43.1 Metal has no indirect compute dispatch. The host launches
+    // an upper bound; a device record sets the active extent.
+    if (tid.x < min(count, control[0])) output[tid.x] = value;
+}
+
+[shader("compute")]
+[numthreads(256, 1, 1)]
 void abi_probe(uint3 tid : SV_DispatchThreadID, uniform uint count,
                StructuredBuffer<uint> integers, StructuredBuffer<float> reals,
                RWStructuredBuffer<uint> integer_output, RWStructuredBuffer<float> real_output)

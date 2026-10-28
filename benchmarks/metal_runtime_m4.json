@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python": "3.14.10 (main, Oct 25 2026, 17:12:00) [Clang 21.0.0 (clang-2100.3.34.2)]",
+    "system": "Darwin",
+    "machine": "arm64",
+    "macos": "27.0.1",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "slangpy_minimum": "0.43.1",
+    "metal_compiler": "/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/bin/metal",
+    "metal_compiler_version": "Apple metal version 32023.921 (metalfe-32023.921.6)\nTarget: air64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/metal/current/bin",
+    "slangpy": "0.43.1",
+    "adapter": "Apple M4",
+    "api": "Metal",
+    "timestamp_frequency": 0
+  },
+  "source_sha256": {
+    "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
+    "config.py": "e9810b9ae31472fc567c8fc1823ceef6c6e9e05017f71c65e04834fbd9c52a03",
+    "runtime.py": "ae8167fdddac85871b182336e789739f3f0b46a83f56e76eaeab1d218c5754e7",
+    "primitives.py": "22f2f015cc105d3d198baa61f0fbebde9ea160f2ec59661ae003ec56ff9248da",
+    "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
+    "validate.py": "06703a88e5619c5c731b81752ef1cd01aa4ffb6d2951c294f8b6acdd458bf620",
+    "shaders/primitives.slang": "097d62b6f37e8d0a7afd1c91832f033d4d1a574db2356d8b6b3279b97c481f87"
+  },
+  "requested_stage": "runtime",
+  "cpu_only": false,
+  "status": "passed",
+  "stages": {
+    "runtime": {
+      "status": "passed",
+      "cases": [
+        {
+          "name": "scalar_abi",
+          "status": "passed",
+          "seconds": 0.603013708954677,
+          "elements": 5
+        },
+        {
+          "name": "scan_1",
+          "status": "passed",
+          "seconds": 0.10480520798591897,
+          "elements": 1,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_255",
+          "status": "passed",
+          "seconds": 0.0006050419760867953,
+          "elements": 255,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_256",
+          "status": "passed",
+          "seconds": 0.00044341699685901403,
+          "elements": 256,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_257",
+          "status": "passed",
+          "seconds": 0.0330250000115484,
+          "elements": 257,
+          "scratch_buffers": 4
+        },
+        {
+          "name": "scan_65537",
+          "status": "passed",
+          "seconds": 0.0010191669571213424,
+          "elements": 65537,
+          "scratch_buffers": 6
+        },
+        {
+          "name": "scan_100003",
+          "status": "passed",
+          "seconds": 0.000960292003583163,
+          "elements": 100003,
+          "scratch_buffers": 6
+        },
+        {
+          "name": "bins_random",
+          "status": "passed",
+          "seconds": 0.1107090839650482,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "random"
+        },
+        {
+          "name": "bins_one_bin",
+          "status": "passed",
+          "seconds": 0.0017364169470965862,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "one_bin"
+        },
+        {
+          "name": "bins_sparse",
+          "status": "passed",
+          "seconds": 0.0016402080073021352,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "sparse"
+        },
+        {
+          "name": "bins_invalid",
+          "status": "passed",
+          "seconds": 0.0015878749545663595,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "invalid"
+        },
+        {
+          "name": "reduction_sum",
+          "status": "passed",
+          "seconds": 0.049175458028912544,
+          "elements": 100003,
+          "operation": "sum",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "reduction_min",
+          "status": "passed",
+          "seconds": 0.0010800420423038304,
+          "elements": 100003,
+          "operation": "min",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "reduction_max",
+          "status": "passed",
+          "seconds": 0.0009849999914877117,
+          "elements": 100003,
+          "operation": "max",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "nonfinite_nan",
+          "status": "passed",
+          "seconds": 0.0007183749694377184,
+          "elements": 100003,
+          "operation": "sum",
+          "expected_nonfinite": true
+        },
+        {
+          "name": "nonfinite_inf",
+          "status": "passed",
+          "seconds": 0.0007120000082068145,
+          "elements": 100003,
+          "operation": "max",
+          "expected_nonfinite": true
+        },
+        {
+          "name": "guarded_all",
+          "status": "passed",
+          "seconds": 0.03304100001696497,
+          "active": 1003,
+          "elements": 1003
+        },
+        {
+          "name": "guarded_none",
+          "status": "passed",
+          "seconds": 0.00038645899621769786,
+          "active": 0,
+          "elements": 1003
+        },
+        {
+          "name": "guarded_partial",
+          "status": "passed",
+          "seconds": 0.000359416997525841,
+          "active": 517,
+          "elements": 1003
+        },
+        {
+          "name": "barriers",
+          "status": "passed",
+          "seconds": 0.005999249988235533,
+          "dispatches": 8,
+          "elements": 100003,
+          "wall_seconds": 0.0056168329901993275
+        },
+        {
+          "name": "binning_benchmark_10000",
+          "status": "passed",
+          "seconds": 0.007811875024344772,
+          "elements": 10000,
+          "bin_count": 2500,
+          "samples": [
+            {
+              "pair": 0,
+              "order": "gpu-cpu",
+              "cpu": {
+                "wall_seconds": 0.0003417080151848495
+              },
+              "gpu": {
+                "wall_seconds": 0.0005313329747878015,
+                "encode_seconds": 0.00013499998021870852
+              }
+            },
+            {
+              "pair": 1,
+              "order": "cpu-gpu",
+              "cpu": {
+                "wall_seconds": 0.0003192909643985331
+              },
+              "gpu": {
+                "wall_seconds": 0.0005074170185253024,
+                "encode_seconds": 0.00010779197327792645
+              }
+            },
+            {
+              "pair": 2,
+              "order": "gpu-cpu",
+              "cpu": {
+                "wall_seconds": 0.0003587499959394336
+              },
+              "gpu": {
+                "wall_seconds": 0.0005089999758638442,
+                "encode_seconds": 0.00017975002992898226
+              }
+            },
+            {
+              "pair": 3,
+              "order": "cpu-gpu",
+              "cpu": {
+                "wall_seconds": 0.00033725000685080886
+              },
+              "gpu": {
+                "wall_seconds": 0.000654833042062819,
+                "encode_seconds": 0.00011683302000164986
+              }
+            },
+            {
+              "pair": 4,
+              "order": "gpu-cpu",
+              "cpu": {
+                "wall_seconds": 0.0003769160248339176
+              },
+              "gpu": {
+                "wall_seconds": 0.0006846250034868717,
+                "encode_seconds": 0.00011479097884148359
+              }
+            }
+          ],
+          "scope": "Resident integer binning only. NumPy stable sort and GPU unordered scatter differ within bins. Not an MPM speedup.",
+          "warmup_pairs": 1,
+          "setup_and_upload_in_timing": false,
+          "allocation_bytes_total": 4561204
+        },
+        {
+          "name": "binning_benchmark_100000",
+          "status": "passed",
+          "seconds": 0.0369551659678109,
+          "elements": 100000,
+          "bin_count": 25000,
+          "samples": [
+            {
+              "pair": 0,
+              "order": "gpu-cpu",
+              "cpu": {
+                "wall_seconds": 0.0052419170388020575
+              },
+              "gpu": {
+                "wall_seconds": 0.0008588749915361404,
+                "encode_seconds": 0.0001188750029541552
+              }
+            },
+            {
+              "pair": 1,
+              "order": "cpu-gpu",
+              "cpu": {
+                "wall_seconds": 0.005109958990942687
+              },
+              "gpu": {
+                "wall_seconds": 0.0008762080105952919,
+                "encode_seconds": 0.00012695800978690386
+              }
+            },
+            {
+              "pair": 2,
+              "order": "gpu-cpu",
+              "cpu": {
+                "wall_seconds": 0.0051083340076729655
+              },
+              "gpu": {
+                "wall_seconds": 0.00035429198760539293,
+                "encode_seconds": 0.00011199997970834374
+              }
+            },
+            {
+              "pair": 3,
+              "order": "cpu-gpu",
+              "cpu": {
+                "wall_seconds": 0.005059292016085237
+              },
+              "gpu": {
+                "wall_seconds": 0.0009276670170947909,
+                "encode_seconds": 0.00012683297973126173
+              }
+            },
+            {
+              "pair": 4,
+              "order": "gpu-cpu",
+              "cpu": {
+                "wall_seconds": 0.005005250044632703
+              },
+              "gpu": {
+                "wall_seconds": 0.0008927079616114497,
+                "encode_seconds": 0.00010845798533409834
+              }
+            }
+          ],
+          "scope": "Resident integer binning only. NumPy stable sort and GPU unordered scatter differ within bins. Not an MPM speedup.",
+          "warmup_pairs": 1,
+          "setup_and_upload_in_timing": false,
+          "allocation_bytes_total": 9165956
+        }
+      ],
+      "capabilities": {
+        "indirect_dispatch": {
+          "supported": false,
+          "elements_written": 0
+        },
+        "gpu_timestamps": {
+          "supported": false,
+          "timestamp_frequency": 0,
+          "error": "RuntimeError: m_rhi_query_pool->getResult(index, count, result.data()) failed with error: -2113929209 (SLANG_E_NOT_AVAILABLE)\n\n/Users/runner/work/slangpy/slangpy/src/sgl/device/query.cpp:52 in function get_results"
+        }
+      }
+    }
+  },
+  "cpu_checks": {
+    "status": "passed",
+    "evidence": "CPU packaging/configuration/topology checks only",
+    "topology": [
+      {
+        "nx": 2,
+        "ny": 2,
+        "periodic": false,
+        "colors": 4
+      },
+      {
+        "nx": 2,
+        "ny": 4,
+        "periodic": true,
+        "colors": 3
+      },
+      {
+        "nx": 3,
+        "ny": 5,
+        "periodic": true,
+        "colors": 6
+      },
+      {
+        "nx": 9,
+        "ny": 7,
+        "periodic": true,
+        "colors": 12
+      },
+      {
+        "nx": 9,
+        "ny": 7,
+        "periodic": false,
+        "colors": 9
+      }
+    ]
+  },
+  "startup_seconds": 0.10953558405162767,
+  "accounting": {
+    "uploaded_bytes": 3265400,
+    "readback_bytes": 1376064,
+    "readback_seconds": 0.020186667854432017,
+    "wait_seconds": 0.013438165071420372,
+    "allocated_bytes": 9174080,
+    "submissions": 34,
+    "dispatches": 199,
+    "compile_seconds": 0.02911795990075916
+  }
+}

@@ -40,7 +40,7 @@ def fingerprint():
 def cpu_checks():
     """Packaging and static-reference checks, explicitly not Metal validation."""
     shader = resources.files("mpm_gpu.shaders").joinpath("primitives.slang").read_text()
-    require("void scan_tiles" in shader and "void make_dispatch_args" in shader, "shader resources missing")
+    require("void scan_tiles" in shader and "void guarded_marker" in shader, "shader resources missing")
     from types import SimpleNamespace
     from .config import defaults
 
@@ -179,9 +179,37 @@ def reduction_check(rt, operation, *, bad=None):
     return dict(elements=len(values), operation=operation, expected_nonfinite=bad is not None)
 
 
-def indirect_check(rt, enabled):
+def guarded_check(rt, active):
     n = 1003
-    control = rt.buffer(np.array([enabled], dtype=np.uint32))
+    control = rt.buffer(np.array([active], dtype=np.uint32))
+    output = rt.buffer(count=n)
+    encoder = rt.device.create_command_encoder()
+    rt.dispatch(encoder, "fill_u32", n, count=n, value=7, output=output)
+    rt.dispatch(encoder, "guarded_marker", n, count=n, control=control, value=42, output=output)
+    rt.submit(encoder)
+    expected = np.where(np.arange(n) < active, 42, 7)
+    require(np.array_equal(rt.read(output, np.uint32), expected), "device-guarded dispatch mismatch")
+    return dict(active=active, elements=n)
+
+
+def barrier_check(rt):
+    n = 100003
+    buffer = rt.buffer(count=n)
+    encoder = rt.device.create_command_encoder()
+    for value in range(8):
+        rt.dispatch(encoder, "fill_u32", n, count=n, value=value, output=buffer)
+    started = perf_counter()
+    rt.submit(encoder)
+    rt.wait()
+    elapsed = perf_counter() - started
+    require(np.all(rt.read(buffer, np.uint32) == 7), "dispatch/barrier sequence mismatch")
+    return dict(dispatches=8, elements=n, wall_seconds=elapsed)
+
+
+def indirect_probe(rt):
+    """Capability record. An unsupported dispatch may silently do nothing."""
+    n = 1003
+    control = rt.buffer(np.array([1], dtype=np.uint32))
     args = rt.buffer(count=3, indirect=True)
     output = rt.buffer(count=n)
     encoder = rt.device.create_command_encoder()
@@ -189,28 +217,36 @@ def indirect_check(rt, enabled):
     rt.dispatch(encoder, "make_dispatch_args", 1, count=n, control=control, args=args)
     rt.dispatch_indirect(encoder, "indirect_marker", args, count=n, value=42, output=output)
     rt.submit(encoder)
-    require(
-        np.all(rt.read(output, np.uint32) == (42 if enabled else 7)),
-        "device-controlled indirect dispatch mismatch",
-    )
-    return dict(enabled=bool(enabled), elements=n)
+    values = rt.read(output, np.uint32)
+    return dict(supported=bool(np.all(values == 42)), elements_written=int(np.sum(values == 42)))
 
 
-def timestamp_check(rt):
+def timestamp_probe(rt):
     pool = rt.device.create_query_pool(type=rt.spy.QueryType.timestamp, count=2)
-    buffer = rt.buffer(count=100003)
+    buffer = rt.buffer(count=1024)
     encoder = rt.device.create_command_encoder()
     encoder.write_timestamp(pool, 0)
-    for value in range(8):
-        rt.dispatch(encoder, "fill_u32", 100003, count=100003, value=value, output=buffer)
+    rt.dispatch(encoder, "fill_u32", 1024, count=1024, value=1, output=buffer)
     encoder.write_timestamp(pool, 1)
     rt.submit(encoder)
     rt.wait()
-    ticks = rt.timestamps(pool)
     frequency = rt.device.info.timestamp_frequency
-    require(frequency > 0 and ticks[1] > ticks[0], "Metal timestamps unavailable or non-increasing")
-    require(np.all(rt.read(buffer, np.uint32) == 7), "dispatch/barrier sequence mismatch")
-    return dict(gpu_seconds=(ticks[1] - ticks[0]) / frequency, timestamp_frequency=frequency)
+    try:
+        ticks = rt.timestamps(pool)
+    except Exception as exc:
+        return dict(supported=False, timestamp_frequency=frequency, error=f"{type(exc).__name__}: {exc}")
+    return dict(supported=bool(frequency > 0 and ticks[1] > ticks[0]), timestamp_frequency=frequency)
+
+
+def capabilities(rt):
+    """Backend features recorded but not required; mechanics must not use unsupported ones."""
+    result = {}
+    for name, probe in (("indirect_dispatch", indirect_probe), ("gpu_timestamps", timestamp_probe)):
+        try:
+            result[name] = probe(rt)
+        except Exception as exc:
+            result[name] = dict(supported=False, error=f"{type(exc).__name__}: {exc}")
+    return result
 
 
 def primitive_benchmark(rt, size):
@@ -218,26 +254,23 @@ def primitive_benchmark(rt, size):
     bin_count = max(1, size // 4)
     keys = np.random.default_rng(size).integers(0, bin_count, size, dtype=np.uint32)
     source = rt.buffer(keys)
-    # Allocate and encode once; timed samples replay the same resident buffers.
-    encoder = rt.device.create_command_encoder()
-    pool = rt.device.create_query_pool(type=rt.spy.QueryType.timestamp, count=2)
-    encoder.write_timestamp(pool, 0)
-    result = bins(rt, encoder, source, size, bin_count)
-    encoder.write_timestamp(pool, 1)
-    command = encoder.finish()
+    result = None
 
     def gpu():
-        pool.reset()
+        # Metal command buffers are single-use: encode (and allocate) each sample
+        # outside the timed region. SlangPy 0.43.1 Metal has no timestamp
+        # queries, so host wall time covers submission, execution and wait.
+        nonlocal result
+        started = perf_counter()
+        encoder = rt.device.create_command_encoder()
+        result = bins(rt, encoder, source, size, bin_count)
+        command = encoder.finish()
+        encode = perf_counter() - started
         started = perf_counter()
         rt.device.submit_command_buffer(command)
         rt.accounting.submissions += 1
         rt.wait()
-        elapsed = perf_counter() - started
-        ticks = rt.timestamps(pool)
-        require(ticks[1] > ticks[0], "invalid benchmark timestamps")
-        return dict(
-            wall_seconds=elapsed, gpu_seconds=(ticks[1] - ticks[0]) / rt.device.info.timestamp_frequency
-        )
+        return dict(wall_seconds=perf_counter() - started, encode_seconds=encode)
 
     def cpu():
         started = perf_counter()
@@ -288,16 +321,21 @@ def validate_runtime(rt, *, benchmark=False):
         ("nonfinite_inf", lambda: reduction_check(rt, "max", bad=np.inf)),
     ]
     checks += [
-        ("indirect_enabled", lambda: indirect_check(rt, 1)),
-        ("indirect_disabled", lambda: indirect_check(rt, 0)),
-        ("timestamps_and_barriers", lambda: timestamp_check(rt)),
+        ("guarded_all", lambda: guarded_check(rt, 1003)),
+        ("guarded_none", lambda: guarded_check(rt, 0)),
+        ("guarded_partial", lambda: guarded_check(rt, 517)),
+        ("barriers", lambda: barrier_check(rt)),
     ]
     for name, check in checks:
         _case(results, name, check)
     if benchmark and all(r["status"] == "passed" for r in results):
         for size in (10000, 100000):
             _case(results, f"binning_benchmark_{size}", lambda size=size: primitive_benchmark(rt, size))
-    return dict(status="passed" if all(r["status"] == "passed" for r in results) else "failed", cases=results)
+    return dict(
+        status="passed" if all(r["status"] == "passed" for r in results) else "failed",
+        cases=results,
+        capabilities=capabilities(rt),
+    )
 
 
 def main(argv=None):

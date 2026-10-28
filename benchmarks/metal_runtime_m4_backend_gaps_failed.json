@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "system": "Darwin",
+    "machine": "arm64",
+    "macos": "27.0.1",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "slangpy_required": "0.43.1",
+    "metal_compiler": "/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/bin/metal",
+    "metal_compiler_version": "Apple metal version 32023.921 (metalfe-32023.921.6)\nTarget: air64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/metal/current/bin",
+    "slangpy": "0.43.1",
+    "adapter": "Apple M4",
+    "api": "Metal",
+    "timestamp_frequency": 0
+  },
+  "source_sha256": {
+    "__init__.py": "37665f5a88129a2e37855c48fcb8b48dd1b155bb10b4ca2861619cd952c85dc0",
+    "config.py": "e9810b9ae31472fc567c8fc1823ceef6c6e9e05017f71c65e04834fbd9c52a03",
+    "runtime.py": "8b6af9fa683cf56587758b8c968beffd28fb8d8bf706c6cccf3f141aae99ceac",
+    "primitives.py": "22f2f015cc105d3d198baa61f0fbebde9ea160f2ec59661ae003ec56ff9248da",
+    "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
+    "validate.py": "e820f5550c85fcf10abeda5b4c528fb939b1ea7e5c2d373e3bd4978a31bad0fd",
+    "shaders/primitives.slang": "a66780b9050c6e975ef2b8f3fda4374d6d2ba0b8aac8a9e61ef3853d4efd4224"
+  },
+  "requested_stage": "runtime",
+  "cpu_only": false,
+  "status": "failed",
+  "stages": {
+    "runtime": {
+      "status": "failed",
+      "cases": [
+        {
+          "name": "scalar_abi",
+          "status": "passed",
+          "seconds": 1.6261501669650897,
+          "elements": 5
+        },
+        {
+          "name": "scan_1",
+          "status": "passed",
+          "seconds": 0.1830392080009915,
+          "elements": 1,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_255",
+          "status": "passed",
+          "seconds": 0.0007048749830573797,
+          "elements": 255,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_256",
+          "status": "passed",
+          "seconds": 0.0004888749681413174,
+          "elements": 256,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_257",
+          "status": "passed",
+          "seconds": 0.043159541964996606,
+          "elements": 257,
+          "scratch_buffers": 4
+        },
+        {
+          "name": "scan_65537",
+          "status": "passed",
+          "seconds": 0.00561041699256748,
+          "elements": 65537,
+          "scratch_buffers": 6
+        },
+        {
+          "name": "scan_100003",
+          "status": "passed",
+          "seconds": 0.0011014590272679925,
+          "elements": 100003,
+          "scratch_buffers": 6
+        },
+        {
+          "name": "bins_random",
+          "status": "passed",
+          "seconds": 0.1268367919838056,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "random"
+        },
+        {
+          "name": "bins_one_bin",
+          "status": "passed",
+          "seconds": 0.006826416996773332,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "one_bin"
+        },
+        {
+          "name": "bins_sparse",
+          "status": "passed",
+          "seconds": 0.0022600829834118485,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "sparse"
+        },
+        {
+          "name": "bins_invalid",
+          "status": "passed",
+          "seconds": 0.0019376249983906746,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "invalid"
+        },
+        {
+          "name": "reduction_sum",
+          "status": "passed",
+          "seconds": 0.06072512501850724,
+          "elements": 100003,
+          "operation": "sum",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "reduction_min",
+          "status": "passed",
+          "seconds": 0.0012804169673472643,
+          "elements": 100003,
+          "operation": "min",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "reduction_max",
+          "status": "passed",
+          "seconds": 0.000917541969101876,
+          "elements": 100003,
+          "operation": "max",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "nonfinite_nan",
+          "status": "passed",
+          "seconds": 0.0008214159752242267,
+          "elements": 100003,
+          "operation": "sum",
+          "expected_nonfinite": true
+        },
+        {
+          "name": "nonfinite_inf",
+          "status": "passed",
+          "seconds": 0.0007799589657224715,
+          "elements": 100003,
+          "operation": "max",
+          "expected_nonfinite": true
+        },
+        {
+          "name": "indirect_enabled",
+          "status": "failed",
+          "seconds": 0.0713452500058338,
+          "error": "AssertionError: device-controlled indirect dispatch mismatch",
+          "traceback": "Traceback (most recent call last):\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 82, in _case\n    details = function() or {}\n              ~~~~~~~~^^\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 291, in <lambda>\n    (\"indirect_enabled\", lambda: indirect_check(rt, 1)),\n                                 ~~~~~~~~~~~~~~^^^^^^^\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 192, in indirect_check\n    require(\n    ~~~~~~~^\n        np.all(rt.read(output, np.uint32) == (42 if enabled else 7)),\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        \"device-controlled indirect dispatch mismatch\",\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 23, in require\n    raise AssertionError(message)\nAssertionError: device-controlled indirect dispatch mismatch\n"
+        },
+        {
+          "name": "indirect_disabled",
+          "status": "passed",
+          "seconds": 0.0005617919960059226,
+          "enabled": false,
+          "elements": 1003
+        },
+        {
+          "name": "timestamps_and_barriers",
+          "status": "failed",
+          "seconds": 0.001412666984833777,
+          "error": "RuntimeError: m_rhi_query_pool->getResult(index, count, result.data()) failed with error: -2113929209 (SLANG_E_NOT_AVAILABLE)\n\n/Users/runner/work/slangpy/slangpy/src/sgl/device/query.cpp:52 in function get_results",
+          "traceback": "Traceback (most recent call last):\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 82, in _case\n    details = function() or {}\n              ~~~~~~~~^^\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 293, in <lambda>\n    (\"timestamps_and_barriers\", lambda: timestamp_check(rt)),\n                                        ~~~~~~~~~~~~~~~^^^^\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/validate.py\", line 209, in timestamp_check\n    ticks = rt.timestamps(pool)\n  File \"/Users/benjy/code/poly-mpm/mpm_gpu/runtime.py\", line 215, in timestamps\n    ticks = pool.get_results(0, 2)\nRuntimeError: m_rhi_query_pool->getResult(index, count, result.data()) failed with error: -2113929209 (SLANG_E_NOT_AVAILABLE)\n\n/Users/runner/work/slangpy/slangpy/src/sgl/device/query.cpp:52 in function get_results\n"
+        }
+      ]
+    }
+  },
+  "cpu_checks": {
+    "status": "passed",
+    "evidence": "CPU packaging/configuration/topology checks only",
+    "topology": [
+      {
+        "nx": 2,
+        "ny": 2,
+        "periodic": false,
+        "colors": 4
+      },
+      {
+        "nx": 2,
+        "ny": 4,
+        "periodic": true,
+        "colors": 3
+      },
+      {
+        "nx": 3,
+        "ny": 5,
+        "periodic": true,
+        "colors": 6
+      },
+      {
+        "nx": 9,
+        "ny": 7,
+        "periodic": true,
+        "colors": 12
+      },
+      {
+        "nx": 9,
+        "ny": 7,
+        "periodic": false,
+        "colors": 9
+      }
+    ]
+  },
+  "startup_seconds": 1.2580592919839546,
+  "accounting": {
+    "uploaded_bytes": 2825392,
+    "readback_bytes": 858020,
+    "readback_seconds": 0.025425289175473154,
+    "wait_seconds": 0.0003635830362327397,
+    "allocated_bytes": 4096684,
+    "submissions": 19,
+    "dispatches": 87,
+    "compile_seconds": 0.034368874912615865
+  }
+}

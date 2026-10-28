@@ -4,7 +4,9 @@ For continuation on the target Mac, start with the [agent handoff](gpu-handoff.m
 
 The first implementation milestone supplies the optional Metal runtime, resident
 integer binning, hierarchical scans/reductions, static Q1 incidence, split
-particle coordinates and a hardware validation command. **The GPU MPM timestep
+particle coordinates and a hardware validation command. The runtime gate passed
+on an Apple M4 (macOS 27.0.1, SlangPy 0.43.1, Metal toolchain 32023.921); the
+report is `benchmarks/metal_runtime_m4.json`. **The GPU MPM timestep
 is not implemented yet.** Selecting `P.backend = "metal"` raises an explicit
 `ValidationPending` error. It never runs CPU mechanics as a fallback.
 
@@ -15,10 +17,13 @@ The scientific model and CPU numerical defaults remain unchanged.
 
 Use an Apple silicon Mac, macOS 26 or newer, native CPython 3.14, Xcode and its
 Metal compiler toolchain. Both `xcrun --find metal` and
-`xcrun metal --version` must succeed. Xcode may provide a forwarding executable
-even when its Metal Toolchain component is missing. The GPU extra pins
-SlangPy 0.43.1; its Apple silicon wheel requires macOS 26. The extra is platform
-marked so CPU installation still works on Intel and other platforms.
+`xcrun metal --version` must succeed. The Command Line Tools alone are not
+enough: shaders translate, but pipeline creation fails with "pass-through
+compiler not found". Xcode may also provide a forwarding executable even when
+its Metal Toolchain component is missing (`xcodebuild -downloadComponent
+MetalToolchain` installs it). The GPU extra requires SlangPy 0.43.1 or newer;
+its Apple silicon wheel requires macOS 26 and has no CPython 3.15 build yet.
+The extra is platform marked so CPU installation still works elsewhere.
 
 From this branch:
 
@@ -32,20 +37,31 @@ Send back `metal-validation.json`, including failures. Run with `--debug` for
 API validation layers if a case fails; omit it for timings.
 
 The runtime gate checks shader-resource packaging and compilation, scalar
-uint32/FP32 ABI, integer atomics, histogram/scan/scatter, dispatch barriers,
-device-controlled indirect dispatch and GPU timestamps. Scan cases straddle
+uint32/FP32 ABI, integer atomics, histogram/scan/scatter, dispatch barriers
+and device-guarded dispatch. Scan cases straddle
 workgroup boundaries and include hierarchical recursion. Binning checks dense,
 sparse, single-bin and invalid-key distributions. Reductions check sum/min/max,
 NaN and infinity handling. Invalid data sets a device status bit instead of
 being silently treated as a valid result.
 
+SlangPy 0.43.1 on Metal implements neither indirect compute dispatch nor
+timestamp queries. Indirect dispatch logs a warning and executes nothing;
+timestamp reads return `SLANG_E_NOT_AVAILABLE` and the device reports a
+timestamp frequency of zero. Both are recorded under `capabilities` in the
+report and are not gate requirements. Work whose extent is decided on the
+device is launched with a host upper bound, and each thread reads the active
+extent from a device record (`guarded_marker`). Timings are host wall time
+around a waited submission; command buffers are encoded outside the timed
+region because Metal command buffers cannot be resubmitted.
+
 The optional 10,000/100,000-element benchmarks warm up once and alternate CPU/GPU
-order across five pairs. They time **binning primitives only**, with resident
+order across five pairs. On the M4 the median resident binning time was 0.88 ms
+against 5.1 ms for NumPy at 100,000 keys, and 0.53 ms against 0.34 ms at
+10,000 keys, where submission and wait latency dominates. They time **binning primitives only**, with resident
 GPU inputs. NumPy uses stable sorting; GPU scatter has unspecified within-bin
 order. These measurements are not MPM speedups. Setup/upload, compilation,
-readback and waits are reported separately; allocation bytes are cumulative,
-not a measured device-memory peak. GPU timer intervals include the recorded
-barriers. Hardware/compiler errors retain their tracebacks in the JSON report.
+encoding and readback are reported separately; allocation bytes are cumulative,
+not a measured device-memory peak. Hardware/compiler errors retain their tracebacks in the JSON report.
 
 On an Intel development Mac:
 
@@ -98,9 +114,10 @@ Each gate needs a real Apple silicon result before dependent integration is
 called verified. Implementations must retain failures, keep the CPU reference
 independent and avoid a CPU solver fallback.
 
-1. **Runtime/primitives (implemented, hardware validation pending).** Run the
-   command above before relying on scan, atomics, synchronization or indirect
-   dispatch in mechanics.
+1. **Runtime/primitives (passed on Apple M4).** Scans, integer atomics,
+   binning, reductions, barriers and guarded dispatch are validated. Indirect
+   dispatch and GPU timestamps are unavailable in the current SlangPy Metal
+   backend and must not be used.
 2. **Mechanics kernels.** Node-owned gathers using device bins; compact paired
    `B`/`B.T`; periodic aliases merged; local metric and analytic tangential
    eigensystem; exact opening/sticking/sliding local solves; planar exponential
@@ -141,19 +158,19 @@ must not silently incorporate a density-model change.
 The eventual full benchmark will use science fixtures plus connected and
 repeated disconnected 10k/100k-particle domains, with identical CPU/GPU states,
 time steps, diagnostics and tolerance on the same target Mac. Keep cold startup
-and compilation separate from warm timings; record kernel timestamps, wall
-time, transfer bytes/time, memory, iteration counts and plotting cost. There is
-no measured GPU MPM speedup yet.
+and compilation separate from warm timings; record wall time per waited
+submission (kernel timestamps are unavailable in the current backend), transfer
+bytes/time, memory, iteration counts and plotting cost. There is no measured
+GPU MPM speedup yet.
 
 Segregation and packing corrections can extend this package after the mechanics
 gates pass; no separate package or GPU-specific input/output format is needed.
 
 ## Sources
 
-- [SlangPy 0.43.1 release and wheel metadata](https://pypi.org/project/slangpy/0.43.1/).
+- [SlangPy release and wheel metadata](https://pypi.org/project/slangpy/).
 - [Low-level compute kernel API](https://slangpy.shader-slang.org/en/stable/src/tutorials/compute_shader.html).
 - [SlangPy API reference](https://slangpy.shader-slang.org/en/stable/src/api_reference.html).
 
-Runtime signatures were checked against the `.pyi` API shipped inside the pinned
-0.43.1 Apple silicon wheel. Documentation for newer versions is not an execution
-test of this pin.
+Runtime signatures were checked against the `.pyi` API shipped inside the
+0.43.1 Apple silicon wheel. A newer SlangPy must re-pass the runtime gate.

@@ -4,7 +4,8 @@ The Metal runtime and primitives are experimental. The resident MPM runner is
 not enabled until the hardware validation gates documented in docs/gpu.md pass.
 """
 
-SLANGPY_VERSION = "0.43.1"
+# Oldest SlangPy validated on Apple silicon; newer releases must re-pass the gates.
+SLANGPY_MINIMUM = (0, 43, 1)
 
 
 class GPUError(RuntimeError):
