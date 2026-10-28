@@ -7,7 +7,18 @@ packaged. Particles are perturbed off the lattice so every cell is crossed.
 import numpy as np
 
 
-def column(spacing, particles_per_cell, *, periodic=False, perturbation=0.3, seed=7, edges=False):
+def column(
+    spacing,
+    particles_per_cell,
+    *,
+    periodic=False,
+    perturbation=0.3,
+    seed=7,
+    edges=False,
+    transfer="flip",
+    pic_fraction=0.0,
+    motion=False,
+):
     """Prepared granular column with the CPU compact operator assembled in FP64."""
     from granular import assemble
     from initialise import prepare
@@ -24,6 +35,7 @@ def column(spacing, particles_per_cell, *, periodic=False, perturbation=0.3, see
     P.S.n, P.S.A = x.size, s**2
     P.dt = 0.005
     P.granular_solver = "velocity"
+    P.transfer, P.pic_fraction = transfer, pic_fraction
     if periodic:
         P.B.has_left = P.B.has_right = False
         P.B.cyclic_lr = True
@@ -35,6 +47,12 @@ def column(spacing, particles_per_cell, *, periodic=False, perturbation=0.3, see
         b.x[np.argmax(b.x[:, 1]), 1] = P.G.y_M
         if not periodic:
             b.x[np.argmax(b.x[:, 0]), 0] = P.G.x_M
+    if motion:
+        # Particle velocities and a retained planar velocity gradient (apic_gradient).
+        rng = np.random.default_rng(seed + 1)
+        b.v[:, :2] = rng.normal(scale=0.1, size=(len(b), 2))
+        b.L = np.zeros((len(b), 3, 3))
+        b.L[:, :2, :2] = rng.normal(scale=0.5, size=(len(b), 2, 2))
     G.wipe(P)
     L.get_reference_nodes(P, G)
     L.get_basis_functions(P, G)

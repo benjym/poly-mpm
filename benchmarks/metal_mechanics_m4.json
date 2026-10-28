@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "environment": {
+    "python": "3.14.10 (main, Oct 25 2026, 17:12:00) [Clang 21.0.0 (clang-2100.3.34.2)]",
+    "system": "Darwin",
+    "machine": "arm64",
+    "macos": "27.0.1",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "slangpy_minimum": "0.43.1",
+    "metal_compiler": "/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/bin/metal",
+    "metal_compiler_version": "Apple metal version 32023.921 (metalfe-32023.921.6)\nTarget: air64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /private/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v27.1.266.1.NAC7x7/Metal.xctoolchain/usr/metal/current/bin",
+    "slangpy": "0.43.1",
+    "adapter": "Apple M4",
+    "api": "Metal",
+    "timestamp_frequency": 0
+  },
+  "source_sha256": {
+    "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
+    "config.py": "e9810b9ae31472fc567c8fc1823ceef6c6e9e05017f71c65e04834fbd9c52a03",
+    "runtime.py": "ae8167fdddac85871b182336e789739f3f0b46a83f56e76eaeab1d218c5754e7",
+    "primitives.py": "22f2f015cc105d3d198baa61f0fbebde9ea160f2ec59661ae003ec56ff9248da",
+    "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
+    "mechanics.py": "a9d07d5417f80615c3da027a225ae976f82a51bee592e34f56646626570eaeb7",
+    "mechanics_checks.py": "617f3ea4b4ac44f141444c5108255df98e012739dbb9f9ce2e9a4c450999bc2c",
+    "fixtures.py": "b4d42f99bd7feaaf21a4942524eb6c2f72f625022c4a63f2f1fd4429fc006a3c",
+    "validate.py": "4136161db96e04a0a4e6b7931f3a7e55b6a2ee9bd0167f8ccad15bc2661babb8",
+    "shaders/primitives.slang": "097d62b6f37e8d0a7afd1c91832f033d4d1a574db2356d8b6b3279b97c481f87",
+    "shaders/mechanics.slang": "516e9046756148af5c4fa3c35fc88f2d327918ede0ca864c2595f3aafc063399"
+  },
+  "requested_stage": "mechanics",
+  "cpu_only": false,
+  "status": "passed",
+  "stages": {
+    "runtime": {
+      "status": "passed",
+      "cases": [
+        {
+          "name": "scalar_abi",
+          "status": "passed",
+          "seconds": 0.06012099998770282,
+          "elements": 5
+        },
+        {
+          "name": "scan_1",
+          "status": "passed",
+          "seconds": 0.046055749990046024,
+          "elements": 1,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_255",
+          "status": "passed",
+          "seconds": 0.0007242499850690365,
+          "elements": 255,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_256",
+          "status": "passed",
+          "seconds": 0.0004581249668262899,
+          "elements": 256,
+          "scratch_buffers": 2
+        },
+        {
+          "name": "scan_257",
+          "status": "passed",
+          "seconds": 0.03338433295721188,
+          "elements": 257,
+          "scratch_buffers": 4
+        },
+        {
+          "name": "scan_65537",
+          "status": "passed",
+          "seconds": 0.0013826669892296195,
+          "elements": 65537,
+          "scratch_buffers": 6
+        },
+        {
+          "name": "scan_100003",
+          "status": "passed",
+          "seconds": 0.0009868750348687172,
+          "elements": 100003,
+          "scratch_buffers": 6
+        },
+        {
+          "name": "bins_random",
+          "status": "passed",
+          "seconds": 0.10050345800118521,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "random"
+        },
+        {
+          "name": "bins_one_bin",
+          "status": "passed",
+          "seconds": 0.0017612919909879565,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "one_bin"
+        },
+        {
+          "name": "bins_sparse",
+          "status": "passed",
+          "seconds": 0.0014922079863026738,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "sparse"
+        },
+        {
+          "name": "bins_invalid",
+          "status": "passed",
+          "seconds": 0.001460125029552728,
+          "elements": 10003,
+          "bin_count": 513,
+          "distribution": "invalid"
+        },
+        {
+          "name": "reduction_sum",
+          "status": "passed",
+          "seconds": 0.04052083397982642,
+          "elements": 100003,
+          "operation": "sum",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "reduction_min",
+          "status": "passed",
+          "seconds": 0.0009755409555509686,
+          "elements": 100003,
+          "operation": "min",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "reduction_max",
+          "status": "passed",
+          "seconds": 0.00089366699103266,
+          "elements": 100003,
+          "operation": "max",
+          "expected_nonfinite": false
+        },
+        {
+          "name": "nonfinite_nan",
+          "status": "passed",
+          "seconds": 0.000681250006891787,
+          "elements": 100003,
+          "operation": "sum",
+          "expected_nonfinite": true
+        },
+        {
+          "name": "nonfinite_inf",
+          "status": "passed",
+          "seconds": 0.0006127080414444208,
+          "elements": 100003,
+          "operation": "max",
+          "expected_nonfinite": true
+        },
+        {
+          "name": "guarded_all",
+          "status": "passed",
+          "seconds": 0.03330554103013128,
+          "active": 1003,
+          "elements": 1003
+        },
+        {
+          "name": "guarded_none",
+          "status": "passed",
+          "seconds": 0.0003922909963876009,
+          "active": 0,
+          "elements": 1003
+        },
+        {
+          "name": "guarded_partial",
+          "status": "passed",
+          "seconds": 0.0003132080310024321,
+          "active": 517,
+          "elements": 1003
+        },
+        {
+          "name": "barriers",
+          "status": "passed",
+          "seconds": 0.0006753329653292894,
+          "dispatches": 8,
+          "elements": 100003,
+          "wall_seconds": 0.00034849997609853745
+        }
+      ],
+      "capabilities": {
+        "indirect_dispatch": {
+          "supported": false,
+          "elements_written": 0
+        },
+        "gpu_timestamps": {
+          "supported": false,
+          "timestamp_frequency": 0,
+          "error": "RuntimeError: m_rhi_query_pool->getResult(index, count, result.data()) failed with error: -2113929209 (SLANG_E_NOT_AVAILABLE)\n\n/Users/runner/work/slangpy/slangpy/src/sgl/device/query.cpp:52 in function get_results"
+        }
+      }
+    },
+    "mechanics": {
+      "status": "passed",
+      "cases": [
+        {
+          "name": "operator_h0.25_ppc2_walls",
+          "status": "passed",
+          "seconds": 1.140074458962772,
+          "particles": 64,
+          "rows": 35,
+          "active_rows": 25,
+          "periodic": false,
+          "edges": false,
+          "block_error": 1.249312855304252e-07,
+          "strain_error": 1.6987716999873264e-07,
+          "force_error": 1.58037467417639e-07,
+          "adjoint_error": 2.268695780184922e-09
+        },
+        {
+          "name": "operator_h0.25_ppc2_periodic",
+          "status": "passed",
+          "seconds": 0.003101333975791931,
+          "particles": 64,
+          "rows": 28,
+          "active_rows": 20,
+          "periodic": true,
+          "edges": false,
+          "block_error": 1.249312855304252e-07,
+          "strain_error": 1.625885555990289e-07,
+          "force_error": 6.194822370263631e-08,
+          "adjoint_error": 2.7049666683358738e-09
+        },
+        {
+          "name": "operator_h0.1_ppc3_walls",
+          "status": "passed",
+          "seconds": 0.005768416973296553,
+          "particles": 900,
+          "rows": 176,
+          "active_rows": 121,
+          "periodic": false,
+          "edges": false,
+          "block_error": 2.43454538428872e-07,
+          "strain_error": 1.610627419656026e-07,
+          "force_error": 1.3014987480071677e-07,
+          "adjoint_error": 1.5473576646406193e-08
+        },
+        {
+          "name": "operator_h0.1_ppc3_periodic",
+          "status": "passed",
+          "seconds": 0.005710500001441687,
+          "particles": 900,
+          "rows": 160,
+          "active_rows": 110,
+          "periodic": true,
+          "edges": false,
+          "block_error": 2.104460229093212e-07,
+          "strain_error": 2.1968142990940887e-07,
+          "force_error": 1.7639902435322107e-07,
+          "adjoint_error": 7.562867349915453e-10
+        },
+        {
+          "name": "operator_h0.5_ppc4_periodic",
+          "status": "passed",
+          "seconds": 0.003001832985319197,
+          "particles": 64,
+          "rows": 8,
+          "active_rows": 6,
+          "periodic": true,
+          "edges": false,
+          "block_error": 1.0004904837180924e-07,
+          "strain_error": 2.1132117360239838e-07,
+          "force_error": 1.760076050671037e-07,
+          "adjoint_error": 4.8069132477132654e-08
+        },
+        {
+          "name": "operator_h1.0_ppc6_periodic",
+          "status": "passed",
+          "seconds": 0.002355750009883195,
+          "particles": 36,
+          "rows": 3,
+          "active_rows": 3,
+          "periodic": true,
+          "edges": false,
+          "block_error": 3.134129544774285e-07,
+          "strain_error": 3.665768266705529e-07,
+          "force_error": 4.458274956386004e-07,
+          "adjoint_error": 1.1967367889000656e-08
+        },
+        {
+          "name": "operator_edges_walls",
+          "status": "passed",
+          "seconds": 0.002786041994113475,
+          "particles": 96,
+          "rows": 35,
+          "active_rows": 35,
+          "periodic": false,
+          "edges": true,
+          "block_error": 1.4775058776027988e-07,
+          "strain_error": 1.3777956721431567e-07,
+          "force_error": 1.58037467417639e-07,
+          "adjoint_error": 3.3920919395101982e-09
+        },
+        {
+          "name": "operator_edges_periodic",
+          "status": "passed",
+          "seconds": 0.00280904199462384,
+          "particles": 96,
+          "rows": 28,
+          "active_rows": 28,
+          "periodic": true,
+          "edges": true,
+          "block_error": 1.4775058776027988e-07,
+          "strain_error": 1.625885555990289e-07,
+          "force_error": 9.641212750700258e-08,
+          "adjoint_error": 8.556718011079384e-09
+        },
+        {
+          "name": "invalid_particles",
+          "status": "passed",
+          "seconds": 0.0023261660244315863,
+          "particles": 4
+        },
+        {
+          "name": "metric_h0.25_walls",
+          "status": "passed",
+          "seconds": 0.1553233340382576,
+          "rows": 25,
+          "norm_error": 2.939124985742869e-08,
+          "metric_error": 1.5461219171182247e-07,
+          "orthogonality_error": 9.707580317375175e-08,
+          "eigensystem_error": 1.60207739455393e-07,
+          "eigenvalue_error": 1.5938310161519872e-07,
+          "normal_diagonal_error": 1.289254965761521e-07
+        },
+        {
+          "name": "metric_h0.1_periodic",
+          "status": "passed",
+          "seconds": 0.005812749965116382,
+          "rows": 110,
+          "norm_error": 1.9447758223356112e-07,
+          "metric_error": 3.131898177094934e-07,
+          "orthogonality_error": 1.0338844802504354e-07,
+          "eigensystem_error": 3.1406999207532985e-07,
+          "eigenvalue_error": 3.114106319139051e-07,
+          "normal_diagonal_error": 2.2079777209070625e-07
+        },
+        {
+          "name": "metric_h1.0_periodic",
+          "status": "passed",
+          "seconds": 0.0026406249962747097,
+          "rows": 3,
+          "norm_error": 1.983295896359831e-07,
+          "metric_error": 1.534229839960784e-07,
+          "orthogonality_error": 0.0,
+          "eigensystem_error": 1.6527102824940525e-07,
+          "eigenvalue_error": 1.6527102824940525e-07,
+          "normal_diagonal_error": 4.9174704541939905e-08
+        },
+        {
+          "name": "local_coulomb",
+          "status": "passed",
+          "seconds": 0.04306654096581042,
+          "rows": 4007,
+          "reaction_error": 2.1485019075495384e-07,
+          "complementarity_error": 8.339771386697735e-08,
+          "cone_error": 2.00455792665668e-07,
+          "branches": {
+            "opening": 1980,
+            "frictionless": 266,
+            "sticking": 464,
+            "sliding": 1297
+          }
+        },
+        {
+          "name": "transfer_flip_walls",
+          "status": "passed",
+          "seconds": 0.11695183400297537,
+          "particles": 900,
+          "transfer": "flip",
+          "pic_fraction": 0.0,
+          "mass_error": 2.0744608866349548e-07,
+          "reference_momentum_error": 2.2503810602684146e-07,
+          "momentum_error": 1.271466009525755e-07,
+          "trial_velocity_error": 1.9434937633201476e-07,
+          "inverse_mass_error": 9.994578544645092e-08,
+          "particle_velocity_error": 8.956143445053873e-08,
+          "velocity_gradient_error": 1.4676378213184336e-07,
+          "position_error": 5.614780862472912e-08
+        },
+        {
+          "name": "transfer_flip_blend_periodic",
+          "status": "passed",
+          "seconds": 0.007986084034200758,
+          "particles": 900,
+          "transfer": "flip",
+          "pic_fraction": 0.3,
+          "mass_error": 2.0163014105537776e-07,
+          "reference_momentum_error": 2.2503810602684146e-07,
+          "momentum_error": 1.271466009525755e-07,
+          "trial_velocity_error": 1.1314521031934621e-07,
+          "inverse_mass_error": 1.4246145342668432e-07,
+          "particle_velocity_error": 9.123251419212296e-08,
+          "velocity_gradient_error": 1.4697340539357242e-07,
+          "position_error": 5.614780862472912e-08
+        },
+        {
+          "name": "transfer_pic_walls",
+          "status": "passed",
+          "seconds": 0.005531750037334859,
+          "particles": 64,
+          "transfer": "pic",
+          "pic_fraction": 0.0,
+          "mass_error": 1.0812860334672417e-07,
+          "reference_momentum_error": 1.6512247637292605e-07,
+          "momentum_error": 1.5847411049823507e-07,
+          "trial_velocity_error": 8.865486567235822e-08,
+          "inverse_mass_error": 7.344987372826092e-08,
+          "particle_velocity_error": 1.5284800620297817e-07,
+          "velocity_gradient_error": 7.029770120987916e-08,
+          "position_error": 5.16419221829878e-08
+        },
+        {
+          "name": "transfer_apic_gradient_walls",
+          "status": "passed",
+          "seconds": 0.009128957986831665,
+          "particles": 900,
+          "transfer": "apic_gradient",
+          "pic_fraction": 0.0,
+          "mass_error": 1.984700800072941e-07,
+          "reference_momentum_error": 1.8909504662757335e-07,
+          "momentum_error": 1.1653478010615157e-07,
+          "trial_velocity_error": 2.185400144082524e-07,
+          "inverse_mass_error": 9.994578544645092e-08,
+          "particle_velocity_error": 1.425537476832255e-07,
+          "velocity_gradient_error": 1.4676378213184336e-07,
+          "position_error": 5.614780862472912e-08
+        },
+        {
+          "name": "transfer_apic_gradient_periodic",
+          "status": "passed",
+          "seconds": 0.00521937501616776,
+          "particles": 64,
+          "transfer": "apic_gradient",
+          "pic_fraction": 0.0,
+          "mass_error": 5.03002628898285e-08,
+          "reference_momentum_error": 7.149058980971153e-08,
+          "momentum_error": 5.5436087896673716e-08,
+          "trial_velocity_error": 6.570384474460053e-08,
+          "inverse_mass_error": 6.519437289737673e-08,
+          "particle_velocity_error": 9.307024922917473e-08,
+          "velocity_gradient_error": 9.653157957959094e-08,
+          "position_error": 5.337396769000691e-08
+        },
+        {
+          "name": "deformation",
+          "status": "passed",
+          "seconds": 0.08473437500651926,
+          "cases": {
+            "tiny": {
+              "F_error": 1.1000760995847518e-07,
+              "J_error": 1.2461214691570864e-07,
+              "V_error": 1.568692458674944e-07,
+              "rho_error": 2.0283697838760697e-07
+            },
+            "moderate": {
+              "F_error": 5.422565096943589e-07,
+              "J_error": 1.5155768758370204e-07,
+              "V_error": 1.9761446005201435e-07,
+              "rho_error": 2.258056956305788e-07
+            },
+            "rotation": {
+              "F_error": 4.646943543131664e-06,
+              "J_error": 5.6874102985511065e-08,
+              "V_error": 9.361941625256656e-08,
+              "rho_error": 1.461590062474966e-07
+            },
+            "shear": {
+              "F_error": 4.640558335207241e-08,
+              "J_error": 5.687410320021726e-08,
+              "V_error": 9.361939071549721e-08,
+              "rho_error": 1.4615899124915514e-07
+            },
+            "extension": {
+              "F_error": 1.0687605662682686e-06,
+              "J_error": 5.687410320021726e-08,
+              "V_error": 9.361939087121105e-08,
+              "rho_error": 1.4615899124915514e-07
+            },
+            "large": {
+              "F_error": 4.870956923773615e-06,
+              "J_error": 1.0286114927427756e-06,
+              "V_error": 1.0388188430353253e-06,
+              "rho_error": 1.006440645760952e-06
+            }
+          },
+          "worst_relative_error": 4.870956923773615e-06
+        }
+      ],
+      "pending": []
+    }
+  },
+  "cpu_checks": {
+    "status": "passed",
+    "evidence": "CPU packaging/configuration/topology checks only",
+    "topology": [
+      {
+        "nx": 2,
+        "ny": 2,
+        "periodic": false,
+        "colors": 4
+      },
+      {
+        "nx": 2,
+        "ny": 4,
+        "periodic": true,
+        "colors": 3
+      },
+      {
+        "nx": 3,
+        "ny": 5,
+        "periodic": true,
+        "colors": 6
+      },
+      {
+        "nx": 9,
+        "ny": 7,
+        "periodic": true,
+        "colors": 12
+      },
+      {
+        "nx": 9,
+        "ny": 7,
+        "periodic": false,
+        "colors": 9
+      }
+    ]
+  },
+  "startup_seconds": 0.0786758330068551,
+  "accounting": {
+    "uploaded_bytes": 3341224,
+    "readback_bytes": 1544356,
+    "readback_seconds": 0.0619907938526012,
+    "wait_seconds": 0.0007200010004453361,
+    "allocated_bytes": 4935888,
+    "submissions": 47,
+    "dispatches": 307,
+    "compile_seconds": 0.03777045605238527
+  }
+}

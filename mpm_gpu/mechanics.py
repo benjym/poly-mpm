@@ -271,3 +271,155 @@ def local_coulomb(rt, encoder, diagonal, q, mu, output, status, count):
         output=output,
         status=status,
     )
+
+
+TRANSFERS = {"flip": 0, "pic": 1, "apic_gradient": 2}
+
+
+def fixed_components(boundary_v, boundary_h, roughness):
+    """Static per-node wall mask: bit 1 fixes x, bit 2 fixes y (grid.update_momentum)."""
+    boundary_v, boundary_h = np.asarray(boundary_v, bool), np.asarray(boundary_h, bool)
+    fixed_x = boundary_v | (bool(roughness) & boundary_h)
+    fixed_y = boundary_h | (bool(roughness) & boundary_v)
+    return (fixed_x * 1 + fixed_y * 2).astype(np.uint32)
+
+
+@dataclass
+class GridState:
+    mass: object
+    reference: object
+    momentum: object
+    trial: object
+    inverse_mass: object
+
+
+def p2g(rt, encoder, grid, operator, fixed, particle_mass, velocity, gradient, *, dt, m_tol, body, affine):
+    """Nodal mass, raw momentum, masked momentum after dt*m*g, trial velocity, free inverse mass.
+
+    Uses the particle bins and local coordinates from assemble(). velocity has
+    two and gradient four (row-major 2x2 L) components per particle.
+    """
+    n = grid.nodes
+    state = GridState(
+        rt.buffer(count=n, dtype=np.float32),
+        rt.buffer(count=2 * n, dtype=np.float32),
+        rt.buffer(count=2 * n, dtype=np.float32),
+        rt.buffer(count=2 * n, dtype=np.float32),
+        rt.buffer(count=2 * n, dtype=np.float32),
+    )
+    rt.dispatch(
+        encoder,
+        "p2g_nodes",
+        n,
+        module=MODULE,
+        node_count=n,
+        nx=grid.nx,
+        ny=grid.ny,
+        periodic=int(grid.periodic),
+        dx=grid.dx,
+        dy=grid.dy,
+        dt=float(dt),
+        m_tol=float(m_tol),
+        body_x=float(body[0]),
+        body_y=float(body[1]),
+        affine=int(bool(affine)),
+        fixed=fixed,
+        cell_offsets=operator.bins.offsets,
+        cell_counts=operator.bins.counts,
+        permutation=operator.bins.permutation,
+        local_x=operator.local_x,
+        local_y=operator.local_y,
+        particle_mass=particle_mass,
+        particle_velocity=velocity,
+        particle_gradient=gradient,
+        mass=state.mass,
+        reference=state.reference,
+        momentum=state.momentum,
+        trial=state.trial,
+        inverse_mass=state.inverse_mass,
+    )
+    return state
+
+
+def g2p(
+    rt,
+    encoder,
+    grid,
+    operator,
+    particles,
+    state,
+    nodal_velocity,
+    velocity,
+    gradient,
+    *,
+    dt,
+    m_tol,
+    transfer,
+    pic_fraction,
+):
+    """Particle velocity, velocity gradient L and split-coordinate advection (in place)."""
+    rt.dispatch(
+        encoder,
+        "g2p_particles",
+        particles.count,
+        module=MODULE,
+        count=particles.count,
+        nx=grid.nx,
+        periodic=int(grid.periodic),
+        dx=grid.dx,
+        dy=grid.dy,
+        dt=float(dt),
+        m_tol=float(m_tol),
+        transfer=TRANSFERS[transfer],
+        pic_fraction=float(pic_fraction),
+        keys=operator.keys,
+        local_x=operator.local_x,
+        local_y=operator.local_y,
+        mass=state.mass,
+        reference=state.reference,
+        velocity=nodal_velocity,
+        cell_x=particles.cell_x,
+        cell_y=particles.cell_y,
+        fraction_x=particles.fraction_x,
+        fraction_y=particles.fraction_y,
+        particle_velocity=velocity,
+        particle_gradient=gradient,
+    )
+
+
+def deform(
+    rt,
+    encoder,
+    count,
+    gradient,
+    reference_volume,
+    particle_mass,
+    deformation,
+    jacobian,
+    volume,
+    density,
+    status,
+    *,
+    dt,
+):
+    """F <- blockdiag(exp(L dt), 1) F; J <- J exp(tr L dt); V and rho.
+
+    jacobian holds det(F) on entry. Status bit 64: nonpositive or nonfinite
+    J or F, in which case that particle's state is left unchanged.
+    """
+    rt.dispatch(
+        encoder,
+        "deform_particles",
+        count,
+        module=MODULE,
+        count=count,
+        dt=float(dt),
+        particle_gradient=gradient,
+        reference_volume=reference_volume,
+        particle_mass=particle_mass,
+        deformation=deformation,
+        jacobian=jacobian,
+        volume=volume,
+        density=density,
+        status=status,
+    )

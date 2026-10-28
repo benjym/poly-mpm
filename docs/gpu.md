@@ -118,31 +118,42 @@ independent and avoid a CPU solver fallback.
    binning, reductions, barriers and guarded dispatch are validated. Indirect
    dispatch and GPU timestamps are unavailable in the current SlangPy Metal
    backend and must not be used.
-2. **Mechanics kernels (operator passed on Apple M4; remainder pending).**
-   `mpm_gpu/mechanics.py` bins particles by cell on the device and assembles
-   nine integrated gradient 2-vectors per stress row by row-owned gathers,
-   with periodic aliases matched by canonical index. `B u` gathers by stress
-   row and `B.T z` by velocity node through the static transpose incidence.
-   Against the FP64 CPU `assemble(..., compact=True)` on wall and periodic
-   columns (including one- and two-cell periodic strips and particles on the
-   closed upper edge), relative block, `B u` and `B.T z` errors are at most
-   4.5e-7 and the adjoint pairing error is at most 5e-8
-   (`python -m mpm_gpu.validate --stage mechanics`). The local 3×3 metrics,
-   conservative norm bound (reduced on the device), regulariser and tangential
-   eigensystem agree with the FP64 set-up in `solve_velocity` to at most
-   2.7e-7. The tangential rotation uses the symmetric Jacobi formula; Metal's
-   `atan2(0, 0)` produced a degenerate rotation for isotropic blocks. The exact
-   local Coulomb solve (opening, frictionless, sticking and safeguarded sliding,
-   with FP32 bracket-collapse and stagnation exits and an unconverged status
-   bit) agrees with `diagonal_coulomb` to 2.2e-7 relative to the unconstrained
-   response on 4,007 rows spanning sixteen decades of load and six of metric.
-   Particle-grid transfers and the planar exponential are not yet implemented,
-   and the stage reports `partial`. Full scope: node-owned gathers using device bins; compact paired
-   `B`/`B.T`; periodic aliases merged; local metric and analytic tangential
-   eigensystem; exact opening/sticking/sliding local solves; planar exponential
-   with scaling/squaring and the full compatible 3×3 deformation gradient.
-   Compare transfers, adjoint pairing and deformation against independent FP64
-   fixtures before integration.
+2. **Mechanics kernels (passed on Apple M4).** Report:
+   `benchmarks/metal_mechanics_m4.json`
+   (`python -m mpm_gpu.validate --stage mechanics`). All comparisons are with
+   independent FP64 CPU references on wall and periodic columns, including
+   one- and two-cell periodic strips and particles on the closed upper edge.
+   - Compact operator (`mpm_gpu/mechanics.py`): device cell binning and
+     row-owned assembly of nine integrated gradient 2-vectors per stress row,
+     with periodic aliases matched by canonical index; `B u` gathers by stress
+     row and `B.T z` by velocity node through the static transpose incidence.
+     Relative block, `B u` and `B.T z` errors against
+     `assemble(..., compact=True)` are at most 4.5e-7; adjoint pairing errors
+     at most 5e-8.
+   - Local metrics, conservative norm bound (reduced on the device),
+     regulariser and tangential eigensystem agree with the `solve_velocity`
+     set-up to at most 2.7e-7. The rotation uses the symmetric Jacobi formula,
+     since Metal's `atan2(0, 0)` gave a degenerate rotation for isotropic blocks.
+   - The exact local Coulomb solve (opening, frictionless, sticking and
+     safeguarded sliding, with FP32 bracket-collapse/stagnation exits and an
+     unconverged status bit) agrees with `diagonal_coulomb` to 2.2e-7 relative
+     to the unconstrained response on 4,007 rows spanning sixteen decades of
+     load and six of metric.
+   - Transfers: node-owned P2G (mass, raw and masked momentum, `dt m g`, trial
+     velocity, free inverse mass; the periodic merge is part of the gather) and
+     particle-owned G2P (FLIP with PIC blend, PIC, `apic_gradient`, `L`, and
+     advection in split coordinates) agree with the CPU `granular.step` grid
+     sequence and `move_material_points` to at most 2.3e-7, and positions to
+     6e-8 grid spacings.
+   - Deformation: `F <- blockdiag(exp(L dt), 1) F` on the full 3×3 `F`, with a
+     closed-form 2×2 exponential after scaling and squaring, agrees with SciPy
+     `expm` to at most 4.9e-6 (rotations up to 20 rad and stretches near
+     `e^10` in one step). `J` is updated as `J exp(tr L dt)`, which equals
+     `det F`: an FP32 3×3 determinant of a strongly stretched `F` was in error by
+     6%. `J`, `V` and `rho` agree to 1e-6. Nonfinite or nonpositive results set a
+     status bit and leave the particle unchanged.
+
+   Stress, work and diagnostic updates are part of runner integration (gate 4).
 3. **Resident nonlinear solver.** Colored contact sweeps and exact velocity
    refresh; natural residual with positive gaps excluded from scaling; Anderson
    memory 12 with hierarchical TSQR and device-side Jacobi SVD; matrix-free

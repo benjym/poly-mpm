@@ -11,7 +11,10 @@ OPERATOR_TOLERANCE = 2e-6
 ADJOINT_TOLERANCE = 1e-6
 METRIC_TOLERANCE = 2e-6
 LOCAL_TOLERANCE = 1e-5
-PENDING = ("particle-grid transfers", "planar exponential deformation")
+TRANSFER_TOLERANCE = 2e-6
+POSITION_TOLERANCE = 1e-6  # in grid spacings
+DEFORMATION_TOLERANCE = 2e-5
+PENDING = ()
 
 
 def _require(condition, message):
@@ -233,6 +236,219 @@ def local_coulomb_check(rt):
     )
 
 
+def _cpu_grid_step(state):
+    """The grid part of granular.step before the contact solve, in FP64."""
+    from transfers import nodal_velocity, scatter
+
+    P, G, b = state["P"], state["G"], state["batch"]
+    body = np.array([P.g * np.sin(P.theta), P.g * np.cos(P.theta), 0.0])
+    scatter(G.fe, b.n, b.N[:, :, None] * b.m[:, None, None] * body)
+    if P.B.cyclic_lr:
+        G.make_cyclic(P, G, ["fe"])
+    G.BCs(P)
+    G.update_momentum(P)
+    return body, nodal_velocity(G, P)[:, :2]
+
+
+def transfer_check(rt, spacing, particles_per_cell, periodic, transfer, pic_fraction=0.0):
+    from copy import deepcopy
+    from transfers import nodal_velocity
+
+    from .topology import join_positions
+
+    state = column(
+        spacing,
+        particles_per_cell,
+        periodic=periodic,
+        transfer=transfer,
+        pic_fraction=pic_fraction,
+        motion=True,
+    )
+    P, G, b = state["P"], state["G"], state["batch"]
+    body, trial_reference = _cpu_grid_step(state)
+    grid, particles = _upload(rt, state)
+    fixed = rt.buffer(mechanics.fixed_components(G.boundary_v, G.boundary_h, P.B.roughness))
+    masses = rt.buffer(b.m, dtype=np.float32)
+    velocity = rt.buffer(b.v[:, :2], dtype=np.float32)
+    gradient = rt.buffer(b.L[:, :2, :2], dtype=np.float32)
+    # Arbitrary end-of-solve nodal velocity on resolved nodes, aliases copied.
+    final = np.random.default_rng(3).normal(scale=0.2, size=(grid.nodes, 2))
+    final[~G.valid_nodes] = 0
+    canonical = grid.topology.canonical
+    final = final[canonical]
+    encoder = rt.device.create_command_encoder()
+    operator = mechanics.assemble(rt, encoder, grid, particles)
+    nodal = mechanics.p2g(
+        rt,
+        encoder,
+        grid,
+        operator,
+        fixed,
+        masses,
+        velocity,
+        gradient,
+        dt=P.dt,
+        m_tol=P.M_tol,
+        body=body,
+        affine=transfer == "apic_gradient",
+    )
+    final_device = rt.buffer(final, dtype=np.float32)
+    mechanics.g2p(
+        rt,
+        encoder,
+        grid,
+        operator,
+        particles,
+        nodal,
+        final_device,
+        velocity,
+        gradient,
+        dt=P.dt,
+        m_tol=P.M_tol,
+        transfer=transfer,
+        pic_fraction=pic_fraction,
+    )
+    rt.submit(encoder)
+    _require(int(rt.read(operator.status, np.uint32)[0]) == 0, "unexpected assembly status")
+
+    def relative(actual, expected):
+        return float(np.abs(actual - expected).max() / np.abs(expected).max())
+
+    inverse_reference = _inverse_mass(state)
+    inverse_device = rt.read(nodal.inverse_mass, np.float32).reshape(-1, 2)
+    _require(np.array_equal(inverse_device > 0, inverse_reference > 0), "free-component pattern differs")
+    errors = dict(
+        mass_error=relative(rt.read(nodal.mass, np.float32), G.m),
+        reference_momentum_error=relative(
+            rt.read(nodal.reference, np.float32).reshape(-1, 2), G.q_reference[:, :2]
+        ),
+        momentum_error=relative(rt.read(nodal.momentum, np.float32).reshape(-1, 2), G.q[:, :2]),
+        trial_velocity_error=relative(rt.read(nodal.trial, np.float32).reshape(-1, 2), trial_reference),
+        inverse_mass_error=relative(inverse_device, inverse_reference),
+    )
+    # CPU grid-to-particle with the same final nodal velocity.
+    G.q = np.column_stack((final * G.m[:, None], np.zeros(grid.nodes)))
+    L_reference = np.einsum("pri,prj->pij", nodal_velocity(G, P)[b.n], b.G)[:, :2, :2]
+    moved = deepcopy(b)
+    moved.move_material_points(P, G)
+    x_reference = moved.x[:, :2].copy()
+    if P.B.cyclic_lr:
+        x_reference[:, 0] = P.G.x_m + (x_reference[:, 0] - P.G.x_m) % (P.G.x_M - P.G.x_m)
+    cells = np.column_stack(
+        (
+            rt.read(particles.cell_x, np.uint32).view(np.int32),
+            rt.read(particles.cell_y, np.uint32).view(np.int32),
+        )
+    )
+    fractions = np.column_stack(
+        (rt.read(particles.fraction_x, np.float32), rt.read(particles.fraction_y, np.float32))
+    )
+    _require(np.all((fractions >= 0) & (fractions < 1)), "invalid split fraction after advection")
+    x_device = join_positions(cells, fractions, [P.G.x_m, P.G.y_m], [G.dx, G.dy])
+    if P.B.cyclic_lr:
+        x_device[:, 0] = P.G.x_m + (x_device[:, 0] - P.G.x_m) % (P.G.x_M - P.G.x_m)
+    errors.update(
+        particle_velocity_error=relative(rt.read(velocity, np.float32).reshape(-1, 2), moved.v[:, :2]),
+        velocity_gradient_error=relative(rt.read(gradient, np.float32).reshape(-1, 2, 2), L_reference),
+        position_error=float(np.abs(x_device - x_reference).max() / min(G.dx, G.dy)),
+    )
+    for name, value in errors.items():
+        limit = POSITION_TOLERANCE if name == "position_error" else TRANSFER_TOLERANCE
+        _require(value <= limit, f"{name} {value:.3g}")
+    return dict(particles=particles.count, transfer=transfer, pic_fraction=pic_fraction, **errors)
+
+
+def _deformation_inputs():
+    rng = np.random.default_rng(11)
+    cases = {
+        "tiny": rng.normal(scale=1e-6, size=(64, 2, 2)),
+        "moderate": rng.normal(scale=0.3, size=(256, 2, 2)),
+        "rotation": np.array([[0.0, -1.0], [1.0, 0.0]]) * rng.uniform(1, 20, (64, 1, 1)),
+        "shear": np.array([[0.0, 1.0], [0.0, 0.0]]) * rng.uniform(-10, 10, (64, 1, 1)),
+        "extension": np.array([[1.0, 0.0], [0.0, -1.0]]) * rng.uniform(-5, 5, (64, 1, 1)),
+        "large": rng.normal(scale=4.0, size=(64, 2, 2)),
+    }
+    return cases
+
+
+def deformation_check(rt):
+    from scipy.linalg import expm
+
+    results = {}
+    worst = 0.0
+    for name, A in _deformation_inputs().items():
+        count = len(A)
+        rng = np.random.default_rng(count)
+        F = np.tile(np.eye(3), (count, 1, 1))
+        F[:, :2, :2] += rng.normal(scale=0.05, size=(count, 2, 2))
+        F[:, 2, 2] = rng.uniform(0.9, 1.1, count)
+        A32, F32 = A.astype(np.float32), F.astype(np.float32)
+        mass = rng.uniform(0.5, 2.0, count).astype(np.float32)
+        V0 = rng.uniform(0.5, 2.0, count).astype(np.float32)
+        buffers = dict(
+            deformation=rt.buffer(F32, dtype=np.float32),
+            jacobian=rt.buffer(np.linalg.det(F32.astype(np.float64)), dtype=np.float32),
+            volume=rt.buffer(count=count, dtype=np.float32),
+            density=rt.buffer(count=count, dtype=np.float32),
+        )
+        status = rt.buffer(np.zeros(1, dtype=np.uint32))
+        encoder = rt.device.create_command_encoder()
+        mechanics.deform(
+            rt,
+            encoder,
+            count,
+            rt.buffer(A32, dtype=np.float32),
+            rt.buffer(V0, dtype=np.float32),
+            rt.buffer(mass, dtype=np.float32),
+            buffers["deformation"],
+            buffers["jacobian"],
+            buffers["volume"],
+            buffers["density"],
+            status,
+            dt=1.0,
+        )
+        rt.submit(encoder)
+        _require(int(rt.read(status, np.uint32)[0]) == 0, f"{name}: unexpected deformation status")
+        increment = np.tile(np.eye(3), (count, 1, 1))
+        increment[:, :2, :2] = [expm(a) for a in A32.astype(np.float64)]
+        expected = increment @ F32.astype(np.float64)
+        J = np.linalg.det(expected)
+        actual = rt.read(buffers["deformation"], np.float32).reshape(-1, 3, 3)
+        scale = np.linalg.norm(expected, axis=(1, 2))
+        F_error = float(np.max(np.linalg.norm(actual - expected, axis=(1, 2)) / scale))
+        J_error = float(np.max(np.abs(rt.read(buffers["jacobian"], np.float32) - J) / J))
+        V_error = float(np.max(np.abs(rt.read(buffers["volume"], np.float32) - V0 * J) / (V0 * J)))
+        rho_error = float(
+            np.max(np.abs(rt.read(buffers["density"], np.float32) - mass / (V0 * J)) / (mass / (V0 * J)))
+        )
+        _require(
+            np.all(actual[:, 2, :2] == 0) and np.all(actual[:, :2, 2] == 0), f"{name}: out-of-plane coupling"
+        )
+        _require(np.array_equal(actual[:, 2, 2], F32[:, 2, 2]), f"{name}: F_zz changed")
+        case = dict(F_error=F_error, J_error=J_error, V_error=V_error, rho_error=rho_error)
+        for label, value in case.items():
+            _require(value <= DEFORMATION_TOLERANCE, f"{name}: {label} {value:.3g}")
+        worst = max(worst, *case.values())
+        results[name] = case
+    # Nonfinite gradients and expansions beyond FP32 range must be reported.
+    bad = np.array([[[np.nan, 0], [0, 0]], [[200.0, 0], [0, 200.0]]], dtype=np.float32)
+    status = rt.buffer(np.zeros(1, dtype=np.uint32))
+    deformation = rt.buffer(np.tile(np.eye(3, dtype=np.float32), (2, 1, 1)), dtype=np.float32)
+    encoder = rt.device.create_command_encoder()
+    ones = rt.buffer(np.ones(2, dtype=np.float32), dtype=np.float32)
+    scratch = [rt.buffer(np.ones(2), dtype=np.float32) for _ in range(3)]
+    mechanics.deform(
+        rt, encoder, 2, rt.buffer(bad, dtype=np.float32), ones, ones, deformation, *scratch, status, dt=1.0
+    )
+    rt.submit(encoder)
+    _require(int(rt.read(status, np.uint32)[0]) & 64, "invalid deformation not reported")
+    _require(
+        np.array_equal(rt.read(deformation, np.float32).reshape(-1, 3, 3), np.tile(np.eye(3), (2, 1, 1))),
+        "invalid F was written",
+    )
+    return dict(cases=results, worst_relative_error=worst)
+
+
 def invalid_particle_check(rt):
     state = column(0.25, 2)
     grid, particles = _upload(rt, state)
@@ -271,5 +487,11 @@ def cases(rt):
         ("metric_h0.1_periodic", lambda: metric_check(rt, 0.1, 3, True)),
         ("metric_h1.0_periodic", lambda: metric_check(rt, 1.0, 6, True)),
         ("local_coulomb", lambda: local_coulomb_check(rt)),
+        ("transfer_flip_walls", lambda: transfer_check(rt, 0.1, 3, False, "flip")),
+        ("transfer_flip_blend_periodic", lambda: transfer_check(rt, 0.1, 3, True, "flip", 0.3)),
+        ("transfer_pic_walls", lambda: transfer_check(rt, 0.25, 2, False, "pic")),
+        ("transfer_apic_gradient_walls", lambda: transfer_check(rt, 0.1, 3, False, "apic_gradient")),
+        ("transfer_apic_gradient_periodic", lambda: transfer_check(rt, 0.5, 4, True, "apic_gradient")),
+        ("deformation", lambda: deformation_check(rt)),
     ]
     return checks

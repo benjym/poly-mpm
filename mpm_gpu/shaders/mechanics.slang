@@ -354,3 +354,239 @@ void local_coulomb_test(uint3 tid : SV_DispatchThreadID, uniform uint count,
     output[3 * i + 2] = r.z;
     status[i] = flags;
 }
+
+// ---- Particle-grid transfers (granular.step ordering) ----------------------
+
+static const uint FIXED_X = 1;
+static const uint FIXED_Y = 2;
+
+[shader("compute")]
+[numthreads(64, 1, 1)]
+void p2g_nodes(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
+               uniform uint nx, uniform uint ny, uniform uint periodic,
+               uniform float dx, uniform float dy, uniform float dt, uniform float m_tol,
+               uniform float body_x, uniform float body_y, uniform uint affine,
+               StructuredBuffer<uint> fixed, StructuredBuffer<uint> cell_offsets,
+               StructuredBuffer<uint> cell_counts, StructuredBuffer<uint> permutation,
+               StructuredBuffer<float> local_x, StructuredBuffer<float> local_y,
+               StructuredBuffer<float> particle_mass, StructuredBuffer<float> particle_velocity,
+               StructuredBuffer<float> particle_gradient,
+               RWStructuredBuffer<float> mass, RWStructuredBuffer<float> reference,
+               RWStructuredBuffer<float> momentum, RWStructuredBuffer<float> trial,
+               RWStructuredBuffer<float> inverse_mass)
+{
+    // Node-owned gather of mass and momentum over the four adjacent cells.
+    // An alias column gathers as its canonical node, so the periodic merge
+    // and copy-back of grid.make_cyclic need no separate pass.
+    uint j = tid.x;
+    if (j >= node_count) return;
+    uint column = j % nx, row = j / nx;
+    uint node = canonical(column, row, nx, periodic);
+    int x = int(node % nx), y = int(node / nx);
+    int columns = int(nx) - 1;
+    float m = 0.0;
+    float2 q = float2(0.0, 0.0);
+    int previous = -1;
+    for (int ox = -1; ox <= 0; ox++)
+    {
+        int cx = x + ox;
+        if (periodic != 0) cx = ((cx % columns) + columns) % columns;
+        else if (cx < 0 || cx >= columns) continue;
+        if (cx == previous) continue;
+        previous = cx;
+        for (int oy = -1; oy <= 0; oy++)
+        {
+            int cy = y + oy;
+            if (cy < 0 || cy >= int(ny) - 1) continue;
+            uint corners[4] = {
+                canonical(uint(cx), uint(cy), nx, periodic),
+                canonical(uint(cx + 1), uint(cy), nx, periodic),
+                canonical(uint(cx + 1), uint(cy + 1), nx, periodic),
+                canonical(uint(cx), uint(cy + 1), nx, periodic),
+            };
+            float2 corner_offset[4] = { float2(0, 0), float2(1, 0), float2(1, 1), float2(0, 1) };
+            uint cell = uint(cx + columns * cy);
+            uint begin = cell_offsets[cell];
+            uint end = begin + cell_counts[cell];
+            for (uint k = begin; k < end; k++)
+            {
+                uint p = permutation[k];
+                float fx = local_x[p], fy = local_y[p];
+                float w[4] = { (1 - fx) * (1 - fy), fx * (1 - fy), fx * fy, (1 - fx) * fy };
+                float2 v = float2(particle_velocity[2 * p], particle_velocity[2 * p + 1]);
+                float2x2 L = float2x2(particle_gradient[4 * p], particle_gradient[4 * p + 1],
+                                      particle_gradient[4 * p + 2], particle_gradient[4 * p + 3]);
+                for (uint c = 0; c < 4; c++)
+                {
+                    if (corners[c] != node) continue;
+                    float weight = w[c] * particle_mass[p];
+                    float2 velocity = v;
+                    // apic_gradient: v_p + L_p (x_i - x_p), with L retained between steps.
+                    if (affine != 0)
+                        velocity += mul(L, (corner_offset[c] - float2(fx, fy)) * float2(dx, dy));
+                    m += weight;
+                    q += weight * velocity;
+                }
+            }
+        }
+    }
+    uint mask = fixed[j];
+    bool valid = m > m_tol;
+    reference[2 * j] = q.x;
+    reference[2 * j + 1] = q.y;
+    // Wall masks on momentum, then q += dt * masked(m g); grid.update_momentum.
+    float2 force = m * float2(body_x, body_y);
+    if ((mask & FIXED_X) != 0) { q.x = 0.0; force.x = 0.0; }
+    if ((mask & FIXED_Y) != 0) { q.y = 0.0; force.y = 0.0; }
+    q += dt * force;
+    mass[j] = m;
+    momentum[2 * j] = q.x;
+    momentum[2 * j + 1] = q.y;
+    float2 velocity = valid ? q / m : float2(0.0, 0.0);
+    trial[2 * j] = velocity.x;
+    trial[2 * j + 1] = velocity.y;
+    // Free components: resolved, unique (not a periodic alias) and not fixed.
+    bool unique = node == j;
+    inverse_mass[2 * j] = valid && unique && (mask & FIXED_X) == 0 ? 1.0 / m : 0.0;
+    inverse_mass[2 * j + 1] = valid && unique && (mask & FIXED_Y) == 0 ? 1.0 / m : 0.0;
+}
+
+[shader("compute")]
+[numthreads(256, 1, 1)]
+void g2p_particles(uint3 tid : SV_DispatchThreadID, uniform uint count,
+                   uniform uint nx, uniform uint periodic, uniform float dx, uniform float dy,
+                   uniform float dt, uniform float m_tol, uniform uint transfer,
+                   uniform float pic_fraction, StructuredBuffer<uint> keys,
+                   StructuredBuffer<float> local_x, StructuredBuffer<float> local_y,
+                   StructuredBuffer<float> mass, StructuredBuffer<float> reference,
+                   StructuredBuffer<float> velocity,
+                   RWStructuredBuffer<uint> cell_x, RWStructuredBuffer<uint> cell_y,
+                   RWStructuredBuffer<float> fraction_x, RWStructuredBuffer<float> fraction_y,
+                   RWStructuredBuffer<float> particle_velocity,
+                   RWStructuredBuffer<float> particle_gradient)
+{
+    // transfer: 0 FLIP with PIC blend, 1 PIC, 2 apic_gradient. Uses the
+    // start-of-step stencil, as particles.move_material_points does.
+    uint p = tid.x;
+    if (p >= count) return;
+    uint columns = nx - 1;
+    uint cx = keys[p] % columns, cy = keys[p] / columns;
+    float fx = local_x[p], fy = local_y[p];
+    uint corners[4] = {
+        canonical(cx, cy, nx, periodic),
+        canonical(cx + 1, cy, nx, periodic),
+        canonical(cx + 1, cy + 1, nx, periodic),
+        canonical(cx, cy + 1, nx, periodic),
+    };
+    float w[4] = { (1 - fx) * (1 - fy), fx * (1 - fy), fx * fy, (1 - fx) * fy };
+    float2 g[4] = {
+        float2(-(1 - fy) / dx, -(1 - fx) / dy),
+        float2((1 - fy) / dx, -fx / dy),
+        float2(fy / dx, fx / dy),
+        float2(-fy / dx, (1 - fx) / dy),
+    };
+    float2 pic = float2(0.0, 0.0), change = float2(0.0, 0.0);
+    float2x2 L = float2x2(0, 0, 0, 0);
+    for (uint c = 0; c < 4; c++)
+    {
+        uint j = corners[c];
+        float m = mass[j];
+        if (!(m > m_tol)) continue;
+        float2 v = float2(velocity[2 * j], velocity[2 * j + 1]);
+        float2 start = float2(reference[2 * j], reference[2 * j + 1]) / m;
+        pic += w[c] * v;
+        change += w[c] * (v - start);
+        L += float2x2(v.x * g[c].x, v.x * g[c].y, v.y * g[c].x, v.y * g[c].y);
+    }
+    float2 old = float2(particle_velocity[2 * p], particle_velocity[2 * p + 1]);
+    float2 next = transfer == 0 ? (1 - pic_fraction) * (old + change) + pic_fraction * pic : pic;
+    particle_velocity[2 * p] = next.x;
+    particle_velocity[2 * p + 1] = next.y;
+    particle_gradient[4 * p] = L[0][0];
+    particle_gradient[4 * p + 1] = L[0][1];
+    particle_gradient[4 * p + 2] = L[1][0];
+    particle_gradient[4 * p + 3] = L[1][1];
+    // x += dt * pic in split coordinates; carry whole cells out of the fraction.
+    float2 local = float2(fx, fy) + dt * pic / float2(dx, dy);
+    float2 carry = floor(local);
+    local -= carry;
+    // Rounding can leave exactly one after subtraction of the carry.
+    if (local.x >= 1.0) { local.x = 0.0; carry.x += 1.0; }
+    if (local.y >= 1.0) { local.y = 0.0; carry.y += 1.0; }
+    int nextx = int(cx) + int(carry.x);
+    if (periodic != 0) nextx = ((nextx % int(columns)) + int(columns)) % int(columns);
+    cell_x[p] = asuint(nextx);
+    cell_y[p] = asuint(int(cy) + int(carry.y));
+    fraction_x[p] = local.x;
+    fraction_y[p] = local.y;
+}
+
+// exp(A) for a real 2x2 A: exp(s) [ch(d) I + sh(d)/d (A - s I)], s = tr/2,
+// d^2 = -det(A - s I), with series for small |d| and either real or
+// imaginary d. Applied after scaling by 2^-k; then squared k times.
+float2x2 exponential(float2x2 A)
+{
+    float size = max(abs(A[0][0]) + abs(A[1][0]), abs(A[0][1]) + abs(A[1][1]));
+    int k = size > 0.5 ? int(ceil(log2(size / 0.5))) : 0;
+    k = min(k, 60);
+    A *= exp2(-float(k));
+    float s = 0.5 * (A[0][0] + A[1][1]);
+    float2x2 B = A - float2x2(s, 0, 0, s);
+    float delta = -(B[0][0] * B[1][1] - B[0][1] * B[1][0]);
+    float even, odd;
+    if (abs(delta) < 1e-3)
+    {
+        even = 1.0 + delta * (0.5 + delta / 24.0);
+        odd = 1.0 + delta * (1.0 / 6.0 + delta / 120.0);
+    }
+    else if (delta > 0.0)
+    {
+        float d = sqrt(delta);
+        even = cosh(d);
+        odd = sinh(d) / d;
+    }
+    else
+    {
+        float d = sqrt(-delta);
+        even = cos(d);
+        odd = sin(d) / d;
+    }
+    float2x2 E = exp(s) * (float2x2(even, 0, 0, even) + odd * B);
+    for (int i = 0; i < k; i++) E = mul(E, E);
+    return E;
+}
+
+[shader("compute")]
+[numthreads(256, 1, 1)]
+void deform_particles(uint3 tid : SV_DispatchThreadID, uniform uint count, uniform float dt,
+                      StructuredBuffer<float> particle_gradient, StructuredBuffer<float> reference_volume,
+                      StructuredBuffer<float> particle_mass, RWStructuredBuffer<float> deformation,
+                      RWStructuredBuffer<float> jacobian, RWStructuredBuffer<float> volume,
+                      RWStructuredBuffer<float> density, RWStructuredBuffer<uint> status)
+{
+    // F <- blockdiag(exp(L dt), 1) F on the full 3x3 F (kinematics.advance).
+    // J <- J exp(tr(L dt)) equals det(F) exactly; an FP32 3x3 determinant of a
+    // strongly stretched F cancels catastrophically.
+    uint p = tid.x;
+    if (p >= count) return;
+    float2x2 L = float2x2(particle_gradient[4 * p], particle_gradient[4 * p + 1],
+                          particle_gradient[4 * p + 2], particle_gradient[4 * p + 3]);
+    float2x2 E = exponential(dt * L);
+    float3x3 F;
+    for (uint i = 0; i < 9; i++) F[i / 3][i % 3] = deformation[9 * p + i];
+    float3x3 increment = float3x3(E[0][0], E[0][1], 0, E[1][0], E[1][1], 0, 0, 0, 1);
+    F = mul(increment, F);
+    float J = jacobian[p] * exp(dt * (L[0][0] + L[1][1]));
+    bool finite = true;
+    for (uint i = 0; i < 9; i++) finite = finite && isfinite(F[i / 3][i % 3]);
+    if (!(J > 0.0) || !isfinite(J) || !finite)
+    {
+        uint ignored;
+        InterlockedOr(status[0], 64, ignored);
+        return;
+    }
+    for (uint i = 0; i < 9; i++) deformation[9 * p + i] = F[i / 3][i % 3];
+    jacobian[p] = J;
+    volume[p] = reference_volume[p] * J;
+    density[p] = particle_mass[p] / volume[p];
+}

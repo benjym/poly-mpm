@@ -48,14 +48,14 @@ submissions. Metal command buffers are single-use, so replay requires
 re-encoding; mechanics and solver code should preallocate workspaces so that
 re-encoding allocates nothing.
 
-Gate 2 is partly implemented: the compact operator (`mpm_gpu/mechanics.py`,
-`shaders/mechanics.slang`) matches the FP64 CPU assembly, checked by
-`mpm_gpu/mechanics_checks.py` against states from `mpm_gpu/fixtures.py`, as do
-the local metric, norm bound, tangential eigensystem and exact local Coulomb
-solve (`coulomb_local` in `shaders/mechanics.slang`, for reuse by the solver's
-colored sweeps). Particle-grid transfers and planar exponential deformation
-remain; `mechanics_checks.PENDING` lists them and
-keeps the stage `partial` until they pass.
+Gate 2 (mechanics kernels) passed (`benchmarks/metal_mechanics_m4.json`).
+`mpm_gpu/mechanics.py` and `shaders/mechanics.slang` provide the compact
+operator, preconditioner, exact local Coulomb solve (`coulomb_local`, for reuse
+in the solver's colored sweeps), transfers and deformation;
+`mpm_gpu/mechanics_checks.py` compares them with FP64 CPU states from
+`mpm_gpu/fixtures.py`. Each encoder currently allocates its outputs; the solver
+and runner should preallocate workspaces. Gate 3 (resident nonlinear solver) is
+next; `--stage all` exits 3 with solver and runner `not_implemented`.
 
 ## First action on the target Mac
 
