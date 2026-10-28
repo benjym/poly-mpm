@@ -1,292 +1,351 @@
-# import cupy as cp
+"""Structure-of-arrays particle state and multiple-material coordination."""
+from copy import copy
 import numpy as np
-import matplotlib.pyplot as plt
-from constit import *
-
-class Particles():
-    def __init__(self,P,G):
-        """
-        This constructor initialises material point arrays from the input file as necessary.
-        """
-
-        self.x = np.zeros([P.S.n,3])
-        self.x[:,0] = P.S.X
-        self.x[:,1] = P.S.Y
-        if hasattr(P.S, 'PHI'): self.phi = P.S.PHI
-        else: self.phi = np.ones([P.G.ns])/float(P.G.ns)
-
-        # Shape functions and gradients
-        self.N = np.zeros([P.S.n,4])
-        self.G = np.zeros([P.S.n,4,3]) # {x,y,z}
-
-        # Reference nodes
-        self.n_star = np.empty([P.S.n],dtype='int')
-        self.n = np.empty([P.S.n,4],dtype='int')
-        self.valid_nodes = np.empty([P.S.n,4],dtype='bool') # just the n's where the mass is over the tolerance
-
-        # Helper functions
-        self.eye = np.repeat(np.expand_dims(np.eye(3),0),P.S.n,axis=0) # eye function for each MP
-
-        self.rho = P.S.rho # density (kg/m^3)
-        try: self.v = P.S.initial_v
-        except: self.v = np.zeros([P.S.n,3]) # velocity (m/s)
-        self.V = P.S.A*P.G.thickness # volume (m^3)
-        self.m = self.rho*self.V # mass (kg)
-
-        # if P.pressure == 'lithostatic':
-        #     K_0 = 1.
-        #     if hasattr(P.G, 'top_gap'):
-        #         sigma_yy = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - P.G.top_gap - self.x[:,1]) # build in a pressure gradient
-        #         sigma_xy = sin(P.theta)*self.rho*P.max_g*(P.G.y_M - P.G.top_gap - self.x[:,1]) # build in a pressure gradient
-        #         sigma_xx = K_0*sigma_yy # build in a pressure gradient
-        #         sigma_zz = K_0*sigma_yy # build in a pressure gradient
-        #     else:
-        #         sigma_yy = cos(P.theta)*self.rho*P.max_g*(P.G.y_M - self.x[:,1]) # build in a pressure gradient
-        #         sigma_xy = sin(P.theta)*self.rho*P.max_g*(P.G.y_M - self.x[:,1]) # build in a pressure gradient
-        #         sigma_xx = K_0*sigma_yy # build in a pressure gradient
-        #         sigma_zz = K_0*sigma_yy # build in a pressure gradient
-        #     self.stress = np.array([[sigma_xx,sigma_xy,0],[sigma_xy,sigma_yy,0],[0,0,sigma_zz]])
-        #     # self.strain = zeros((3,3)) # strain-free
-        #     self.strain = MP.eye(3)*np.trace(self.stress)/(9.*P.S[p].K) + (self.stress - MP.eye(3)*np.trace(self.stress)/3.)/(2.*P.S[p].G)
-        # elif P.pressure == 'non-zero':
-        #     self.strain = -1e-15*np.ones((P.S.n,3,3)) # mixed state compression
-        #     self.stress = (P.S[p].K*np.trace(self.strain)*MP.eye(3) +
-        #                    2.*P.S[p].G*(self.strain - np.trace(self.strain)*MP.eye(3)/3.))
-        # elif P.pressure == 'temperature':
-        #     self.strain = -1e-5*MP.eye(3) # pure compression everywhere
-        #     self.stress = (P.S[p].K*np.trace(self.strain)*np.eye(3) +
-        #                    2.*P.S[p].G*(self.strain - np.trace(self.strain)*np.eye(3)/3.))
-        # elif P.pressure == 'compression':
-        #     self.stress = np.array([[-P.initial_pressure,0,0],
-        #                             [0,-P.initial_pressure,0],
-        #                             [0,0,-P.initial_pressure]])
-        #     # self.strain = zeros((3,3)) # strain-free
-        #     self.strain = MP.eye(3)*np.trace(self.stress)/(9.*P.S[p].K) + (self.stress - MP.eye(3)*np.trace(self.stress)/3.)/(2.*P.S[p].G)
-        # else:
-        self.strain = np.zeros((P.S.n,3,3)) # corresponding strains
-        self.stress = np.zeros((P.S.n,3,3))
-        # self.dstrain = np.zeros((P.S.n,3,3)) # change in strain
-        # self.dstress = np.zeros((P.S.n,3,3)) # change in strain
-        # self.de_ij = np.zeros((P.S.n,3,3))
-        # self.sigma_kk = np.trace(self.stress)
-        # self.dev_stress = self.stress - self.sigma_kk*MP.eye(3)/3.
-        # self.gammadot = 0.
-        # self.pressure = self.sigma_kk/3.
-        # self.sigmav = self.stress[1,1]
-        # self.sigmah = self.stress[0,0]
-        # self.yieldfunction = 0.
-
-        # self.pk = 0. # kinetic pressure
-        # if phi is not None:
-        #     self.phi = array(phi)
-        # else:
-        #     self.phi = array(P.S[p].phi)
-        # if P.initial_flow == 'steady':
-        #     if P.S[0].law == 'viscous' or P.S[0].law == 'viscous_size':
-        #         self.v = array([self.rho*P.max_g*sin(P.theta)*(P.G.y_M*y - y**2/2.)/P.S[p].mu_s,0.,0.]) # VISCOUS FLOW DOWN A SLOPE
-        #     elif P.S[0].law == 'pouliquen' or P.S[0].law == 'pouliquen2D':
-        #         s_bar = (P.G.s_m+P.G.s_M)/2.
-        #         self.v = array([sqrt(abs(P.max_g)*P.G.s_bar_0)*(2./3.)*P.S[p].I_0*
-        #                        (tan(abs(P.theta))-P.S[p].mu_0)/(P.S[p].mu_1-tan(abs(P.theta)))*
-        #                        sqrt(P.S[p].packing*cos(abs(P.theta)))*
-        #                        (P.G.y_M**1.5 - (P.G.y_M - y)**1.5)/P.G.s_bar_0**1.5,
-        #                        0.,0.])
-        # elif P.initial_flow == 'steady_poiseulle': # https://link.springer.com/content/pdf/10.1007%2Fs10035-013-0447-3.pdf
-        #     H = P.G.y_M - P.G.y_m
-        #     y_star = y/H
-        #     if y_star > 0.5: y_star = 0.5 - abs(y_star - 0.5) # y_star only defined on LHS
-        #     K = abs(P.S[0].rho*P.max_g)
-        #     Lambda = H/P.G.s_bar_0
-        #     beta = sqrt(abs(K*H/P.initial_pressure))
-        #     y_star_c = 0.5 - P.S[p].mu_0/(beta**2)
-        #     if y_star < y_star_c:
-        #         u_star = (Lambda*P.S[p].I_0)/(beta**3)*\
-        #                 ((beta**2)*y_star + (P.S[p].mu_0 - P.S[p].mu_1)*log(-(2.*(beta**2)*y_star + 2*P.S[p].mu_1 - beta**2)/(beta**2 - 2*P.S[p].mu_1)))
-        #     else:
-        #         u_star = (Lambda*P.S[p].I_0)/(beta**3)*\
-        #                  ((beta**2)/2. - P.S[p].mu_0 + (P.S[p].mu_0 - P.S[p].mu_1)*log((P.S[p].mu_1-P.S[p].mu_0)/(P.S[p].mu_1-(beta**2)/2.)))
-        #     self.v = array([-u_star*sqrt(K*H/P.S[p].rho_s),0.,0.])
-        #
-        #     stable = beta<sqrt(2*P.S[p].mu_1) # if True, this should work
-        #     if not stable:
-        #         print('WARNING: THIS SETUP WILL ACCELERATE FOREVER')
-        #         print(sqrt(2*P.S[p].mu_0),beta,sqrt(2*P.S[p].mu_1))
-
-    def cyclic_lr(self,P):
-        """Particles which leave the domain in the :math:`x` direction are placed back in the other side.
-
-        :param p_x: An array containing the locations of all of the particles.
-        :param G: A grid.Grid instance.
-
-        """
-        self.x[self.x[:,0]<P.G.x_m,0] += P.G.x_M - P.G.x_m
-        self.x[self.x[:,0]>P.G.x_M,0] -= P.G.x_M - P.G.x_m
-
-    def get_reference_nodes(self,P,G): # TESTED AND WORKING
-        """For every particle, get its reference node (n_star) and nearby nodes (n).
-
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance.
-
-        """
-        self.n_star = (np.trunc((self.x[:,0] - P.G.x_m)/G.dx)
-                     + np.trunc((self.x[:,1] - P.G.y_m)/G.dy)*P.G.nx).astype('int')
-
-        self.n[:,0] = self.n_star
-        self.n[:,1] = self.n_star + 1
-        self.n[:,2] = self.n_star + P.G.nx + 1
-        self.n[:,3] = self.n_star + P.G.nx
-
-        # self.n3 = np.repeat(self.n.flatten()[:,np.newaxis],3,axis=1)
+from constit import EYE, get_law
+from transfers import scatter, divide, gather, nodal_velocity
 
 
-    def get_basis_functions(self,P,G): # TESTED AND WORKING
-        """For every particle, get its basis function.
+def field(value, shape, name):
+    try:
+        result = np.broadcast_to(np.asarray(value, dtype=float), shape).copy()
+    except ValueError as exc:
+        raise ValueError(f'{name} must broadcast to {shape}') from exc
+    if not np.isfinite(result).all():
+        raise ValueError(f'{name} must be finite')
+    return result
 
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance
 
-        """
-        rel_pos = self.x - np.array([G.X[self.n_star],G.Y[self.n_star],[0]*P.S.n]).T
+class Particles:
+    """One material's writable float64 particle arrays."""
+    scalar_fields = ('rho', 'initial_rho', 'V', 'm', 'pressure', 'pk', 'sigma_kk',
+                     'gammadot', 'yieldfunction', 'I', 'mu', 'eta', 'eta_limited', 'dp', 'de_kk')
+    tensor_fields = ('strain', 'stress', 'dstrain', 'dstress', 'dev_stress', 'dev_dstress', 'de_ij')
+    persistent_fields = ('x', 'v', 'x0', 'phi') + scalar_fields + tensor_fields
 
-        # Lagrange 4-node system
-        self.N[:,0] = (G.dx-rel_pos[:,0])*(G.dy-rel_pos[:,1])/(G.dx*G.dy)
-        self.N[:,1] = (rel_pos[:,0])*(G.dy-rel_pos[:,1])/(G.dx*G.dy)
-        self.N[:,2] = (rel_pos[:,0])*(rel_pos[:,1])/(G.dx*G.dy)
-        self.N[:,3] = (G.dx-rel_pos[:,0])*(rel_pos[:,1])/(G.dx*G.dy)
-        self.G[:,0] = np.array([-(G.dy-rel_pos[:,1]),-(G.dx-rel_pos[:,0]),[0]*P.S.n]).T/(G.dx*G.dy)
-        self.G[:,1] = np.array([ (G.dy-rel_pos[:,1]),-rel_pos[:,0],       [0]*P.S.n]).T/(G.dx*G.dy)
-        self.G[:,2] = np.array([ rel_pos[:,1],        rel_pos[:,0],       [0]*P.S.n]).T/(G.dx*G.dy)
-        self.G[:,3] = np.array([-rel_pos[:,1],        (G.dx-rel_pos[:,0]),[0]*P.S.n]).T/(G.dx*G.dy)
+    def __init__(self, P, G, material=None, material_id=0):
+        self.material = material if material is not None else P.S
+        S = self.material
+        self.material_id = material_id
+        self.law = get_law(S.law)
+        count = int(S.n)
+        if count < 0 or count != S.n:
+            raise ValueError('particle count must be a non-negative integer')
+        for name in ('X', 'Y'):
+            if np.shape(getattr(S, name)) != (count,):
+                raise ValueError(f'{name} must have shape ({count},)')
+        initial_v = getattr(S, 'initial_v', [0, 0, 0])
+        if np.shape(initial_v) not in ((3,), (count, 3)):
+            raise ValueError(f'initial_v must have shape (3,) or ({count}, 3)')
+        composition = getattr(S, 'PHI', getattr(S, 'phi', np.ones(P.G.ns)/P.G.ns))
+        if np.shape(composition) not in ((P.G.ns,), (count, P.G.ns)):
+            raise ValueError(f'phi must have shape ({P.G.ns},) or ({count}, {P.G.ns})')
+        self.x = np.zeros((count, 3))
+        self.x[:, 0] = field(S.X, (count,), 'X')
+        self.x[:, 1] = field(S.Y, (count,), 'Y')
+        self.x0 = self.x.copy()
+        self.v = field(initial_v, (count, 3), 'initial_v')
+        self.phi = field(composition, (count, P.G.ns), 'phi')
+        if np.any(self.phi < 0) or not np.allclose(self.phi.sum(axis=1), 1):
+            raise ValueError('initial grain fractions must be nonnegative and sum to one')
+        for name in self.scalar_fields:
+            setattr(self, name, np.zeros(count))
+        self.rho = field(S.rho, (count,), 'rho')
+        self.initial_rho = self.rho.copy()
+        self.V = field(S.A, (count,), 'A') * P.G.thickness
+        self.m = self.rho * self.V
+        if np.any(self.rho <= 0) or np.any(self.V <= 0):
+            raise ValueError('initial density and volume must be positive')
+        for name in self.tensor_fields:
+            setattr(self, name, np.zeros((count, 3, 3)))
+        self._scratch()
+        self._initialise_stress(P)
+        self._initialise_flow(P)
+        self.check_finite(P)
 
-        # self.N3 = np.repeat(self.N.flatten()[:,np.newaxis],3,axis=1)
+    def __len__(self):
+        return len(self.x)
 
-    def get_nodal_mass_momentum(self,P,G):
-        """For every particle, map mass and momentum to the grid. Then, set momentum at boundaries to zero if applicable.
+    def _scratch(self):
+        count = len(self)
+        self.N = np.zeros((count, 4))
+        self.G = np.zeros((count, 4, 3))
+        self.n_star = np.zeros(count, dtype=np.intp)
+        self.n = np.zeros((count, 4), dtype=np.intp)
+        self.L = np.zeros((count, 3, 3))
+        self.material.n = count
 
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance.
+    @property
+    def L_T(self):
+        return self.L.swapaxes(1, 2)
 
-        """
-        # np.add.at(G.m,self.n,self.N*self.m)
-        G.m += np.bincount(self.n.flatten(), weights=self.N.flatten()*self.m,minlength=P.G.nx*P.G.ny) # NOTE: SHOULD BE FASTER BUT NEEDS FLATTENED ARRAY???
-        # v2 = np.repeat(self.v[:,:,np.newaxis],4,axis=2)
-        # NOTE: try cupyx.scatter_add
-        for i in range(2):
-            # np.add.at(G.q[:,i],self.n,self.N*self.m*v2[:,i,:])
-            G.q[:,i] += np.bincount(self.n.flatten(), weights=self.N.flatten()*self.m*np.repeat(self.v[:,i].flatten(),4,axis=0),minlength=P.G.nx*P.G.ny)
-        if P.segregate: # TOTALLY UNTESTED AND DEFINITELY BROKEN
-            np.add.at(G.phim,self.n,self.N*self.m*self.phi)
-            np.add.at(G.pkm,self.n,self.N*self.m*self.pk)
-            for j in range(P.G.ns):
-                G.phi[:,j] = G.phim[:,j]/G.m
-            G.phi = np.nan_to_num(G.phi)
-            G.s_bar = np.sum(G.S*G.phi,1)
-            G.pk = G.pkm/G.m
+    def _initialise_stress(self, P):
+        S = self.material
+        if P.pressure == 'lithostatic':
+            depth = P.G.y_M - getattr(P.G, 'top_gap', 0) - self.x[:, 1]
+            normal = np.cos(P.theta) * self.rho * P.max_g * depth
+            shear = np.sin(P.theta) * self.rho * P.max_g * depth
+            self.stress = normal[:, None, None] * EYE
+            self.stress[:, 0, 1] = self.stress[:, 1, 0] = shear
+        elif P.pressure == 'compression':
+            self.stress[:] = -P.initial_pressure * EYE
+        elif P.pressure in ('non-zero', 'temperature'):
+            self.strain[:] = -1e-15 if P.pressure == 'non-zero' else -1e-5 * EYE
+            tr = np.trace(self.strain, axis1=1, axis2=2)
+            self.stress = S.K * tr[:, None, None] * EYE + 2 * S.G * (self.strain - tr[:, None, None] * EYE / 3)
+        elif P.pressure is not None:
+            raise ValueError(f'Unknown pressure initialisation {P.pressure!r}')
+        if P.pressure in ('lithostatic', 'compression') and S.law != 'rigid':
+            tr = np.trace(self.stress, axis1=1, axis2=2)
+            self.strain = divide(tr, 9 * S.K)[:, None, None] * EYE
+            if getattr(S, 'G', 0):
+                self.strain += (self.stress - tr[:, None, None] * EYE / 3) / (2 * S.G)
+        self.sigma_kk = np.trace(self.stress, axis1=1, axis2=2)
+        self.pressure = self.sigma_kk / 3
+        self.dev_stress = self.stress - self.pressure[:, None, None] * EYE
 
-        # NOTE: WHY IS THIS HERE??????????? SHOULD ALREADY BE SET BY SETTING q_dot = 0???
-        G.q[:,0] = G.q[:,0]*(1.-G.boundary_v) # 0 at boundary
-        G.q[:,1] = G.q[:,1]*(1.-G.boundary_h) # 0 at boundary
-        if P.B.roughness:
-            G.q[:,0] = G.q[:,0]*(1.-G.boundary_h) # roughness on top/bottom
-            G.q[:,1] = G.q[:,1]*(1.-G.boundary_v) # roughness on sidewalls
+    def _initialise_flow(self, P):
+        S = self.material
+        y = self.x[:, 1]
+        if P.initial_flow == 'steady':
+            if S.law == 'viscous':
+                self.v[:, 0] = self.rho * P.max_g * np.sin(P.theta) * (P.G.y_M * y - y*y/2) / S.mu_s
+            elif S.law == 'pouliquen':
+                size = P.G.s_bar_0
+                a = (np.sqrt(abs(P.max_g) * size) * 2/3 * S.I_0
+                     * (np.tan(abs(P.theta)) - S.mu_0) / (S.mu_1 - np.tan(abs(P.theta)))
+                     * np.sqrt(S.packing * np.cos(abs(P.theta))))
+                self.v[:, 0] = a * (P.G.y_M**1.5 - (P.G.y_M-y)**1.5) / size**1.5
+                self.gammadot = 1.5 * a * np.sqrt(P.G.y_M-y) / size**1.5
+                self.pk = P.l * size * np.sqrt(np.abs(self.pressure*self.rho)) * np.abs(self.gammadot)
+            else:
+                raise ValueError(f'steady initial flow is unsupported for {S.law}')
+        elif P.initial_flow == 'steady_poiseulle':
+            height = P.G.y_M - P.G.y_m
+            ys = y / height
+            ys = np.minimum(ys, 1-ys)
+            k = abs(float(np.asarray(S.rho).flat[0]) * P.max_g)
+            beta = np.sqrt(abs(k * height / P.initial_pressure))
+            if beta >= np.sqrt(2*S.mu_1):
+                raise ValueError('Poiseuille initialisation is outside its steady regime')
+            yc = .5 - S.mu_0 / beta**2
+            yp = np.minimum(ys, yc)
+            u = (height/P.G.s_bar_0*S.I_0/beta**3
+                 * (beta**2*yp + (S.mu_0-S.mu_1)
+                    * np.log(-(2*beta**2*yp + 2*S.mu_1-beta**2)/(beta**2-2*S.mu_1))))
+            self.v[:, 0] = -u * np.sqrt(k*height/S.rho_s)
+        elif P.initial_flow not in (False, None):
+            raise ValueError(f'Unknown initial flow {P.initial_flow!r}')
+        if S.law == 'rigid':
+            self.v[:] = self.prescribed_velocity(P)
 
-    def update_stress_strain(self,P,G):
-        """For every particle, firstly calculate the incremental strain from nearby nodal velocities. Then use the relevant constitutive law to update the stress at the material point. Finally, if cyclic boundaries are active, update the stress at the boundaries.
+    def prescribed_velocity(self, P):
+        velocity = getattr(self.material, 'initial_v', getattr(P, 'intruder_v', [0, 0, 0]))
+        # Per-particle prescriptions travel with their rows through removals.
+        if np.ndim(velocity) == 2:
+            return self.v.copy()
+        return field(velocity, (len(self), 3), 'rigid velocity')
 
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance.
+    def check_finite(self, P):
+        for name in self.persistent_fields:
+            value = getattr(self, name)
+            bad = np.flatnonzero(~np.isfinite(value).reshape(len(self), -1).all(axis=1)) if len(self) else []
+            if len(bad):
+                raise FloatingPointError(f'{self.material.law}, material {self.material_id}, '
+                                         f'timestep {P.tstep}, {name}, particles {bad[:10].tolist()}')
 
-        """
-        # Update strain
-        self.dstrain = np.zeros([P.S.n,3,3])
-        self.L = self.L_T = np.zeros([P.S.n,3,3])
-        for r in range(4):
-            v = np.zeros([P.S.n,3])
-            for j in range(3):
-                v[:,j][G.valid_nodes[self.n[:,r]]] = G.q[self.n[:,r],j][G.valid_nodes[self.n[:,r]]]/G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
-            for i in range(P.S.n): # FIXME - NEED TO REMOVE THIS LOOP
-                L = np.outer(v[i],self.G[i,r])
-                L_T = np.outer(self.G[i,r],v[i])
-                self.L[i] += L
-                self.L_T[i] += L_T
-                self.dstrain[i] += 0.5*(L + L_T)*P.dt
+    def cyclic_lr(self, P, G=None):
+        self.x[:, 0] = P.G.x_m + (self.x[:, 0]-P.G.x_m) % (P.G.x_M-P.G.x_m)
+
+    def get_reference_nodes(self, P, G):
+        if P.B.cyclic_lr:
+            self.cyclic_lr(P)
+        if not np.isfinite(self.x).all():
+            self.check_finite(P)
+        lo = np.array([P.G.x_m, P.G.y_m])
+        hi = np.array([P.G.x_M, P.G.y_M])
+        if np.any((self.x[:, :2] < lo) | (self.x[:, :2] > hi)):
+            raise ValueError(f'material {self.material_id}: particle outside domain before cell lookup')
+        cell = np.floor((self.x[:, :2]-lo) / [G.dx, G.dy]).astype(np.intp)
+        cell = np.minimum(cell, [P.G.nx-2, P.G.ny-2])
+        self.n_star = cell[:, 0] + cell[:, 1]*P.G.nx
+        self.n = self.n_star[:, None] + [0, 1, P.G.nx+1, P.G.nx]
+
+    def get_basis_functions(self, P, G):
+        x = (self.x[:, 0]-G.X[self.n_star]) / G.dx
+        y = (self.x[:, 1]-G.Y[self.n_star]) / G.dy
+        self.N[:] = np.stack(((1-x)*(1-y), x*(1-y), x*y, (1-x)*y), axis=1)
+        self.G[:, :, 0] = np.stack((-(1-y), 1-y, y, -y), axis=1) / G.dx
+        self.G[:, :, 1] = np.stack((-(1-x), -x, x, 1-x), axis=1) / G.dy
+
+    def get_nodal_mass_momentum(self, P, G):
+        weight = self.N * self.m[:, None]
+        scatter(G.m, self.n, weight)
+        scatter(G.q, self.n, weight[:, :, None] * self.v[:, None, :])
+        scatter(G.phim, self.n, weight[:, :, None] * self.phi[:, None, :])
+        scatter(G.pkm, self.n, weight * self.pk[:, None])
+
+    def update_stress_strain(self, P, G):
+        if self.material.law == 'rigid':
+            return
+        velocity = nodal_velocity(G, P)[self.n]
+        self.L = np.einsum('nri,nrj->nij', velocity, self.G)
+        self.dstrain = .5 * (self.L+self.L_T) * P.dt
         self.strain += self.dstrain
+        self.law(self, self.material, P)
+        self.stress += self.dstress - (self.L @ self.stress + self.stress @ self.L_T)*P.dt
+        self.check_finite(P)
 
-        exec(P.S.law + '(self,P,G)')
+    def get_nodal_forces(self, P, G):
+        force = np.einsum('nij,nrj->nri', self.stress, self.G) * self.V[:, None, None]
+        scatter(G.fi, self.n, force)
+        body = np.array([P.g*np.sin(P.theta), P.g*np.cos(P.theta), 0])
+        scatter(G.fe, self.n, self.N[:, :, None] * self.m[:, None, None] * body)
 
-        # self.stress += self.dstress # Cauchy stress rate
-        for i in range(P.S.n): # FIXME - NEED TO REMOVE THIS LOOP
-            self.stress[i] += self.dstress[i] - (np.dot(self.L[i],self.stress[i]) + np.dot(self.stress[i],self.L_T[i]))*P.dt # Lie stress rate
+    def deposit_diagnostics(self, P, G):
+        weight = self.N * self.m[:, None]
+        diagnostics = dict(pressure=self.pressure, gammadot=self.gammadot,
+                           sigmav=self.stress[:, 1, 1], sigmah=self.stress[:, 0, 0],
+                           yieldfunction=self.yieldfunction, mu=self.mu, I=self.I,
+                           eta=self.eta_limited if self.material.law == 'pouliquen' else self.eta,
+                           dev_stress=np.linalg.norm(self.dev_stress, axis=(1, 2))/(np.sqrt(2) if self.material.law == 'pouliquen' else 1),
+                           dev_stress_dot=np.linalg.norm(self.dev_dstress, axis=(1, 2))/P.dt)
+        for name, value in diagnostics.items():
+            scatter(getattr(G, name), self.n, weight*value[:, None])
 
-        if P.B.cyclic_lr: G.make_cyclic(P,G,['pressure', 'gammadot', 'dev_stress', 'yieldfunction', 'mu_s', 'mu', 'I'])
+    def move_material_points(self, P, G):
+        if self.material.law == 'rigid':
+            self.v[:] = self.prescribed_velocity(P)
+            self.x += P.dt*self.v
+        else:
+            self.x += P.dt*gather(nodal_velocity(G, P), self.n, self.N, G.valid_nodes)
+            self.v += P.dt*gather(nodal_velocity(G, P, 'q_dot'), self.n, self.N, G.valid_nodes)
+            self.rho = gather(divide(G.m, G.V), self.n, self.N, G.valid_nodes)
+        self.check_finite(P)
 
-    def get_nodal_forces(self,P,G): # fe is working, NOT fi
-        """For every particle, get nodal forces. If cyclic boundaries are active, update the nodal cyclic forces.
+    def move_grainsize_on_grid(self, P, G):
+        self.phi += gather(G.dphi, self.n, self.N, G.valid_nodes)
+        self.pk += gather(G.dpk, self.n, self.N, G.valid_nodes)
+        if P.normalise_phi:
+            self.phi = np.clip(self.phi, 0, 1)
+            total = self.phi.sum(axis=1, keepdims=True)
+            if np.any(total == 0):
+                raise FloatingPointError('Cannot normalise zero grain-fraction sum')
+            self.phi /= total
+        self.check_finite(P)
 
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance.
+    def keep(self, mask):
+        for name in self.persistent_fields:
+            setattr(self, name, getattr(self, name)[mask])
+        # Preserve per-particle injection specifications separately in coordinator.
+        self._scratch()
 
-        """
-        b = np.array([P.g*np.sin(P.theta),P.g*np.cos(P.theta),0.]) # body force
-        print(self.stress.shape)
-        print(self.G.shape)
-        print(G.fi.shape)
-        print(self.n.shape)
-        print(np.einsum('ijk,ilk->il',self.stress,self.G).shape)
-        np.add.at(G.fi,self.n,self.V*np.einsum('ijk,ilk->il',self.stress,self.G))  # NOTE: einsum IS VERY SLOW (ALLEGEDLY)
-        for i in range(2):
-            G.fe[:,i] += np.bincount(self.n.flatten(),
-                                     weights=self.N.flatten()*self.m*b[i],
-                                     minlength=P.G.nx*P.G.ny)
+    def append(self, batch):
+        for name in self.persistent_fields:
+            setattr(self, name, np.concatenate((getattr(self, name), getattr(batch, name))))
+        self._scratch()
 
-        if P.B.cyclic_lr: G.make_cyclic(P,G,['fi','fe'])
 
-    def move_material_points(self,P,G):
-        """For every particle, update the particle location.
+class ParticleSystem:
+    """Coordinate material batches without individual particle objects."""
+    def __init__(self, P, G):
+        self.materials = [Particles(P, G, S, i) for i, S in enumerate(P.S)]
+        self.templates = [copy(S) for S in P.S]
 
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance.
+    def get_reference_nodes(self, P, G):
+        for batch in self.materials:
+            batch.get_reference_nodes(P, G)
 
-        """
+    get_reference_node = get_reference_nodes
 
-        for r in range(4):
-            for i in range(2):
-                self.x[:,i][G.valid_nodes[self.n[:,r]]] += P.dt*self.N[:,r][G.valid_nodes[self.n[:,r]]]*G.q[self.n[:,r],i][G.valid_nodes[self.n[:,r]]]    /G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
-                self.v[:,i][G.valid_nodes[self.n[:,r]]] += P.dt*self.N[:,r][G.valid_nodes[self.n[:,r]]]*G.q_dot[self.n[:,r],i][G.valid_nodes[self.n[:,r]]]/G.m[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
+    def get_basis_functions(self, P, G):
+        for batch in self.materials:
+            batch.get_basis_functions(P, G)
 
-        # HACK!!!!! THIS SHOULDN'T BE HERE!
-        # self.rho = 0.
-        # for r in range(4):
-            # self.rho += self.N[:,r]*G.m[self.n[:,r]]/G.V[self.n[:,r]][G.valid_nodes[self.n[:,r]]]
+    def get_nodal_mass_momentum(self, P, G):
+        for batch in self.materials:
+            batch.get_nodal_mass_momentum(P, G)
+        if P.B.cyclic_lr:
+            G.make_cyclic(P, G, ['m', 'q', 'phim', 'pkm'])
+        G.get_valid_nodes(P)
+        G.phi = divide(G.phim, G.m[:, None])
+        G.s_bar = G.phi @ P.G.s
+        G.pk = divide(G.pkm, G.m)
+        G.q[G.boundary_v, 0] = 0
+        G.q[G.boundary_h, 1] = 0
+        if P.B.roughness:
+            G.q[G.boundary_h, 0] = 0
+            G.q[G.boundary_v, 1] = 0
 
-    def get_nodal_gsd(self,P,G):
-        """Measure the volume weighted average size at the node.
+    def update_stress_strain(self, P, G):
+        for batch in self.materials:
+            batch.update_stress_strain(P, G)
+            batch.deposit_diagnostics(P, G)
+        if P.B.cyclic_lr:
+            G.make_cyclic(P, G, G.diagnostic_fields)
 
-        :param P: A param.Param instance.
-        :param G: A grid.Grid instance.
+    def get_nodal_forces(self, P, G):
+        for batch in self.materials:
+            batch.get_nodal_forces(P, G)
+        if P.B.cyclic_lr:
+            G.make_cyclic(P, G, ['fi', 'fe'])
 
-        """
+    def move_material_points(self, P, G):
+        for batch in self.materials:
+            batch.move_material_points(P, G)
 
-        for r in range(4):
-            G.s_bar[self.n[:,r]][self.valid_nodes[:,r]] += self.N[:,r][G.valid_nodes[self.n[:,r]]]*self.m*self.size # mass weighted size
-        if P.segregate:
-            G.s_bar /= G.m
+    def move_grainsize_on_grid(self, P, G):
+        for batch in self.materials:
+            if batch.material.law != 'rigid':
+                batch.move_grainsize_on_grid(P, G)
 
-    def move_grainsize_on_grid(self,P,G):
-        """Advect grainsize distribution across grid.
+    def cyclic_lr(self, P, G=None):
+        for batch in self.materials:
+            batch.cyclic_lr(P)
 
-        :param P: A param.Param instance.
+    def process_boundaries(self, P, G):
+        for batch, template in zip(self.materials, self.templates):
+            keep = np.ones(len(batch), dtype=bool)
+            if P.B.outlet_left:
+                keep &= batch.x[:, 0] >= P.G.x_m + G.dx
+            if P.B.outlet_bottom:
+                keep &= batch.x[:, 1] >= P.G.y_m
+            if not keep.all():
+                batch.keep(keep)
+            for inlet in ('right', 'top'):
+                if not getattr(P.B, 'inlet_'+inlet) or not hasattr(template, 'inlet_rate'):
+                    continue
+                rate = template.inlet_rate
+                if rate <= 0:
+                    raise ValueError('inlet_rate must be positive')
+                if not P.t or P.t % rate >= P.dt:
+                    continue
+                S = copy(template)
+                if inlet == 'right':
+                    S.Y = np.asarray(template.yp)
+                    S.X = np.full(len(S.Y), P.G.x_M-template.gap[0])
+                else:
+                    S.X = np.array([(P.G.x_M-P.G.x_m)/2])
+                    S.Y = np.array([P.G.y_M-template.gap[1]])
+                S.n = len(S.X)
+                for name in ('rho', 'A', 'initial_v', 'PHI', 'phi'):
+                    value = getattr(S, name, None)
+                    uniform_shape = {'initial_v': (3,), 'phi': (P.G.ns,), 'PHI': (P.G.ns,)}.get(name, ())
+                    if value is not None and np.asarray(value).shape != uniform_shape:
+                        raise ValueError(f'inlet {name} must be uniform per material')
+                batch.append(Particles(P, G, S, batch.material_id))
+            if P.B.cyclic_lr:
+                batch.cyclic_lr(P)
 
-        """
-        for r in range(4):
-            self.phi[self.valid_nodes[:,r]] += self.N[self.valid_nodes[:,r],r]*G.dphi[self.valid_nodes[:,r]]
-            self.pk[self.valid_nodes[:,r]]  += self.N[self.valid_nodes[:,r],r]*G.dpk[self.valid_nodes[:,r]]
+    def recover_position(self, P, G):
+        coordinates = np.column_stack((G.X, G.Y, np.zeros_like(G.X)))
+        for batch in self.materials:
+            np.testing.assert_allclose(np.sum(batch.N[:, :, None]*coordinates[batch.n], axis=1), batch.x, atol=1e-10)
 
-        # re-normalise phi to account for `rounding erors`
-        # if P.normalise_phi: # HACK: CHEATING!!!!!!!
-        #     for p in range(P.phases):
-        #         for i in range(P.S[p].n):
-        #             self.S[p][i].phi[self.S[p][i].phi<0] = 0
-        #             self.S[p][i].phi[self.S[p][i].phi>1] = 1
-        #             self.S[p][i].phi /= sum(self.S[p][i].phi)
+    def measure_elastic_energy(self, P, G=None):
+        kinetic = potential = strain = 0.
+        direction = np.array([np.sin(P.theta), np.cos(P.theta), 0])
+        for batch in self.materials:
+            kinetic += .5*np.sum(batch.m*np.sum(batch.v**2, axis=1))
+            potential -= P.g*np.sum(batch.m*(batch.x@direction))
+            strain += .5*np.sum(batch.V*np.sum(batch.stress*batch.strain, axis=(1, 2)))
+        return [P.t, kinetic, potential, strain]
