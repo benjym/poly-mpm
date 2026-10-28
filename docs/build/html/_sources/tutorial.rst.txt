@@ -44,8 +44,9 @@ with ``max_steps`` stops earlier and still calls its end-of-run output callback.
 
 ``time_stepping='dynamic'`` enables the existing timestep controller, with ``CFL``
 and optional material ``critical_time(P)`` functions. It is not a universal
-stability guarantee: the current controller does not automatically derive every
-elastic, viscous, and transport restriction. Start with conservative values and
+stability guarantee: the central controller now estimates elastic, viscous,
+advection, and segregation restrictions, but nonlinear and model-specific
+stability still requires verification. Start with conservative values and
 verify the behaviour of the chosen input.
 
 Grid and boundaries
@@ -92,9 +93,9 @@ numerical material points.
 
 For elastic material, supply bulk modulus ``K`` and shear modulus ``G`` in Pa;
 ``E`` and ``nu`` are convenient input variables, but the loader does not derive
-``K`` or ``G`` from them. The :doc:`constitutive-models` page describes the restored
-models and their parameter restrictions. For the original five laws, consult the
-chosen input and ``constit.py`` as well: they retain legacy conventions.
+``K`` or ``G`` from them. The :doc:`materials` page lists parameters. Updated ``elastic`` uses neo-Hookean
+elasticity, while ``von_mises`` uses a J2 return map. Historical conventions are
+only selected with ``mechanics='legacy'``; see :doc:`numerical-foundations`.
 
 To initialise confined stress, set ``pressure='compression'`` and a positive
 ``initial_pressure`` in Pa. This produces negative normal Cauchy stress. The

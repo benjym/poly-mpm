@@ -1,0 +1,6 @@
+# Report coverage without imposing an arbitrary gate before the first baseline.
+coverage:
+  status:
+    project: off
+    patch: off
+comment: false

@@ -1,0 +1,485 @@
+{
+  "description": "Reproducible modern-solver verification, separate from historical timings.\n\nRun python -m benchmarks.verification --output /tmp/poly-mpm-verification.json.\nSmall-amplitude periodic standing wave: v_x=a sin(2 pi x) cos(2 pi c t),\nc=sqrt((K+4G/3)/rho). Refinement decreases both dt and h; it is a coupled\nconvergence study, not a claim of a purely spatial asymptotic convergence rate.\n",
+  "environment": {
+    "python": "3.14.10 (main, Oct 26 2026, 13:59:03) [Clang 23.1.3 ]",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit-Mach-O"
+  },
+  "source_sha256": {
+    "MPM.py": "9f4b46a0de8fb845ed30feaa89893dd4816f5f207f9a5a7f41dfbfb54dbec901",
+    "particles.py": "4ccd9eea3810b332ed2e1ec731e1612f82ee8298f685349aa95c151f4a9f60ae",
+    "grid.py": "a4158e9e7d1d27e7a018ed568b03248ae66291166bdc634b788db65e2a9ee4e7",
+    "constit.py": "1e082c4f56236924a2d66803372b88689b875cd361fffbdce78295be13c931b8",
+    "interpolation.py": "cbce3a626beb35436fffd4ea361e4c98684b6e4539a3fa49457820903664b680",
+    "kinematics.py": "a2ada6c854a5133ead71df5ed528dbcdba3d2e6be8fcf38ce226814fe49d0f69",
+    "diagnostics.py": "186d01cf2f27f1d66106de17035a52e6ccac7de23cdc959040eaf1bda560f1a2",
+    "stability.py": "f51c10f71543304cc75ba94fcd43eb33f68623087b3465a49b77474565bbf434",
+    "integrators.py": "657e6d52617ad66c1968a25fbc7cee0769eacd5fd11503f9b6ecef40655b50e9"
+  },
+  "full_examples": [
+    {
+      "example": "modern_ball",
+      "steps": 473,
+      "time": 1.0,
+      "minimum_J": 0.7383143358979515,
+      "maximum_J": 1.043225853388204,
+      "final_diagnostics": {
+        "time": 1.0,
+        "timestep": 473,
+        "mass": 282.74333882308144,
+        "species_mass": [
+          282.74333882308144
+        ],
+        "momentum": [
+          -2.0256626237502573e-13,
+          88.49502114922366,
+          0.0
+        ],
+        "angular_momentum": [
+          0.0,
+          0.0,
+          1.0994785810958252e-13
+        ],
+        "kinetic": 14.629504468829861,
+        "affine_kinetic": 1.385243383854034,
+        "elastic_energy": 221.0952333458011,
+        "plastic_work": 0.0,
+        "viscous_work": 0.0,
+        "material_work": 218.8821768893897,
+        "minimum_J": 0.7383143358979515,
+        "maximum_J": 1.043225853388204,
+        "minimum_density": 958.5652011519707,
+        "maximum_density": 1354.4366557420042,
+        "boundary_mass": 0.0,
+        "boundary_species": [
+          0.0
+        ],
+        "boundary_momentum": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "boundary_angular_momentum": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "boundary_energy": 0.0,
+        "mass_error": 0.0,
+        "species_mass_error": [
+          0.0
+        ],
+        "external_work": 1234.4090652075483,
+        "constraint_work": -204.26697583091195,
+        "force_scaling_work": 0.0,
+        "constraint_impulse": [
+          -1.0764390494816683e-14,
+          2915.928409380042,
+          0.0
+        ],
+        "external_impulse": [
+          0.0,
+          -2827.433388230817,
+          0.0
+        ],
+        "constraint_angular_impulse": [
+          0.0,
+          0.0,
+          3.2955074987514118e-12
+        ],
+        "external_angular_impulse": [
+          0.0,
+          0.0,
+          -1.832967297096983e-13
+        ],
+        "force_scaling_angular_impulse": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "timestep_within_estimate": true,
+        "particles_with_incomplete_support": 0,
+        "particles_with_incomplete_gradient_support": 0,
+        "timestep_limits": {
+          "advection": 0.14335705928794215,
+          "material_0": 0.006572670690061994,
+          "elastic_wave": 0.001953447083722866
+        },
+        "momentum_residual": [
+          -1.9180187188020905e-13,
+          -1.3642420526593924e-12,
+          0.0
+        ],
+        "force_scaling_impulse": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_momentum_residual": [
+          0.0,
+          0.0,
+          -3.002262910932131e-12
+        ],
+        "angular_budget_has_unwrapped_coordinates": true,
+        "stored_energy_exact": true,
+        "energy_residual": -793.0321081781514,
+        "energy_budget_closed": true
+      }
+    },
+    {
+      "example": "dp_rate_unit_test",
+      "steps": 5000,
+      "time": 5.0,
+      "minimum_J": 1.0002350714255708,
+      "maximum_J": 1.0002350714255708,
+      "final_diagnostics": {
+        "time": 5.0,
+        "timestep": 5000,
+        "mass": 2649.9999999999995,
+        "species_mass": [
+          2649.9999999999995
+        ],
+        "momentum": [
+          -1.2784218128558678e-13,
+          -6.850076061937216e-14,
+          -2.50416005753358e-26
+        ],
+        "angular_momentum": [
+          7.516827239395092e-13,
+          -7.531895985607407e-13,
+          3.5138558729386205e-14
+        ],
+        "kinetic": 0.0016485447563069167,
+        "affine_kinetic": 0.0,
+        "elastic_energy": 0.0022255629742572347,
+        "plastic_work": 0.0002859302228228888,
+        "viscous_work": 0.0,
+        "material_work": 0.0025105855934047516,
+        "minimum_J": 1.0002350714255708,
+        "maximum_J": 1.0002350714255708,
+        "minimum_density": 2649.377207123047,
+        "maximum_density": 2649.377207123047,
+        "boundary_mass": 0.0,
+        "boundary_species": [
+          0.0
+        ],
+        "boundary_momentum": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "boundary_angular_momentum": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "boundary_energy": 0.0,
+        "mass_error": 0.0,
+        "species_mass_error": [
+          0.0
+        ],
+        "external_work": 0.004163085843596422,
+        "constraint_work": -2.9536234245473505e-19,
+        "force_scaling_work": 0.0,
+        "constraint_impulse": [
+          2.6294165848929428e-17,
+          7.56933152682354e-16,
+          7.880294281076909e-27
+        ],
+        "external_impulse": [
+          -1.2722814381888224e-13,
+          -7.008685992682192e-14,
+          0.0
+        ],
+        "constraint_angular_impulse": [
+          -1.305699314261792e-26,
+          1.3054564122675316e-26,
+          5.454472634311007e-16
+        ],
+        "external_angular_impulse": [
+          0.0,
+          0.0,
+          4.156068067820393e-14
+        ],
+        "force_scaling_angular_impulse": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "timestep_within_estimate": true,
+        "particles_with_incomplete_support": 0,
+        "particles_with_incomplete_gradient_support": 0,
+        "timestep_limits": {
+          "advection": 73.30468784352855,
+          "elastic_wave": 0.01544163672963041
+        },
+        "momentum_residual": [
+          -6.403316325534635e-16,
+          8.291661547674098e-16,
+          -3.292189485641271e-26
+        ],
+        "force_scaling_impulse": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "angular_momentum_residual": [
+          7.516827239395222e-13,
+          -7.531895985607537e-13,
+          -6.967569212248829e-15
+        ],
+        "angular_budget_has_unwrapped_coordinates": true,
+        "stored_energy_exact": false,
+        "energy_residual": -3.0478902093815545e-06,
+        "energy_budget_closed": true
+      }
+    }
+  ],
+  "spatial": [
+    {
+      "fixed_steps": 256,
+      "cells": 8,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 256,
+      "velocity_relative_l2": 1.1440549612543196,
+      "relative_energy_residual": -0.8497623097291402,
+      "maximum_momentum_error": 1.5415999640028266e-19,
+      "minimum_J": 0.9999989655669718,
+      "maximum_J": 1.0000010344343238
+    },
+    {
+      "fixed_steps": 256,
+      "cells": 16,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 256,
+      "velocity_relative_l2": 0.16121125756037058,
+      "relative_energy_residual": -0.16131897717489455,
+      "maximum_momentum_error": 2.0207029747935402e-19,
+      "minimum_J": 0.9999977253121691,
+      "maximum_J": 1.0000022746932025
+    },
+    {
+      "fixed_steps": 256,
+      "cells": 32,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 256,
+      "velocity_relative_l2": 0.003115967268071653,
+      "relative_energy_residual": -0.012642560282441869,
+      "maximum_momentum_error": 1.7115359490457206e-19,
+      "minimum_J": 0.9999975787983438,
+      "maximum_J": 1.000002421206492
+    },
+    {
+      "fixed_steps": 256,
+      "cells": 64,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 256,
+      "velocity_relative_l2": 0.0034876219309846026,
+      "relative_energy_residual": -0.0021381986484164035,
+      "maximum_momentum_error": 1.7569316210626308e-19,
+      "minimum_J": 0.9999975710182782,
+      "maximum_J": 1.0000024289865224
+    }
+  ],
+  "temporal": [
+    {
+      "fixed_steps": 64,
+      "cells": 64,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 64,
+      "velocity_relative_l2": 0.025423432115777314,
+      "relative_energy_residual": -0.00578644270876805,
+      "maximum_momentum_error": 1.8350174708876366e-20,
+      "minimum_J": 0.9999975703710678,
+      "maximum_J": 1.0000024296337058
+    },
+    {
+      "fixed_steps": 128,
+      "cells": 64,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 128,
+      "velocity_relative_l2": 0.010543692984836475,
+      "relative_energy_residual": -0.0031994651267576116,
+      "maximum_momentum_error": 2.461027758467768e-20,
+      "minimum_J": 0.9999975706449047,
+      "maximum_J": 1.0000024293598844
+    },
+    {
+      "fixed_steps": 256,
+      "cells": 64,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 256,
+      "velocity_relative_l2": 0.0034876219309846026,
+      "relative_energy_residual": -0.0021381986484164035,
+      "maximum_momentum_error": 1.7569316210626308e-19,
+      "minimum_J": 0.9999975710182782,
+      "maximum_J": 1.0000024289865224
+    },
+    {
+      "fixed_steps": 512,
+      "cells": 64,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 512,
+      "velocity_relative_l2": 0.0007054451337987124,
+      "relative_energy_residual": -0.002130986700773405,
+      "maximum_momentum_error": 2.614883352402631e-20,
+      "minimum_J": 0.999997571721258,
+      "maximum_J": 1.000002428283555
+    }
+  ],
+  "waves": [
+    {
+      "fixed_steps": null,
+      "cells": 8,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "steps": 20,
+      "velocity_relative_l2": 0.22063851767953988,
+      "relative_energy_residual": -0.019938472137448298,
+      "maximum_momentum_error": 1.3806637040245096e-19,
+      "minimum_J": 0.9999978403065704,
+      "maximum_J": 1.0000021596949313
+    },
+    {
+      "fixed_steps": null,
+      "cells": 16,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "steps": 40,
+      "velocity_relative_l2": 0.03268650832308871,
+      "relative_energy_residual": -0.009244264919181242,
+      "maximum_momentum_error": 8.067988822597211e-20,
+      "minimum_J": 0.9999976385040802,
+      "maximum_J": 1.0000023614961377
+    },
+    {
+      "fixed_steps": null,
+      "cells": 32,
+      "interpolation": "linear",
+      "transfer": "flip",
+      "steps": 80,
+      "velocity_relative_l2": 0.00391863889848763,
+      "relative_energy_residual": -0.004574034772791895,
+      "maximum_momentum_error": 1.555099551599692e-20,
+      "minimum_J": 0.9999975880247819,
+      "maximum_J": 1.0000024119750237
+    },
+    {
+      "fixed_steps": null,
+      "cells": 8,
+      "interpolation": "quadratic",
+      "transfer": "flip",
+      "steps": 20,
+      "velocity_relative_l2": 0.47948978308977286,
+      "relative_energy_residual": -0.02144044055629509,
+      "maximum_momentum_error": 1.0249098661777034e-19,
+      "minimum_J": 0.9999978062886353,
+      "maximum_J": 1.0000021937145605
+    },
+    {
+      "fixed_steps": null,
+      "cells": 16,
+      "interpolation": "quadratic",
+      "transfer": "flip",
+      "steps": 40,
+      "velocity_relative_l2": 0.10536563755549964,
+      "relative_energy_residual": -0.009628495045743705,
+      "maximum_momentum_error": 1.1879637085241562e-19,
+      "minimum_J": 0.9999976246752533,
+      "maximum_J": 1.0000023753285898
+    },
+    {
+      "fixed_steps": null,
+      "cells": 32,
+      "interpolation": "quadratic",
+      "transfer": "flip",
+      "steps": 80,
+      "velocity_relative_l2": 0.014697920889911653,
+      "relative_energy_residual": -0.004623049048879428,
+      "maximum_momentum_error": 1.1204657705398292e-19,
+      "minimum_J": 0.9999975841681793,
+      "maximum_J": 1.0000024158363312
+    },
+    {
+      "fixed_steps": null,
+      "cells": 8,
+      "interpolation": "quadratic",
+      "transfer": "pic",
+      "steps": 20,
+      "velocity_relative_l2": 1.1820047999680878,
+      "relative_energy_residual": -0.909237939691657,
+      "maximum_momentum_error": 1.7787691892340307e-20,
+      "minimum_J": 0.9999992598930705,
+      "maximum_J": 1.0000007401075344
+    },
+    {
+      "fixed_steps": null,
+      "cells": 16,
+      "interpolation": "quadratic",
+      "transfer": "pic",
+      "steps": 40,
+      "velocity_relative_l2": 1.1365021933009936,
+      "relative_energy_residual": -0.7599553249347035,
+      "maximum_momentum_error": 3.212107754665917e-20,
+      "minimum_J": 0.9999987595587224,
+      "maximum_J": 1.000001240443091
+    },
+    {
+      "fixed_steps": null,
+      "cells": 32,
+      "interpolation": "quadratic",
+      "transfer": "pic",
+      "steps": 80,
+      "velocity_relative_l2": 0.8538576736747231,
+      "relative_energy_residual": -0.5565491831402899,
+      "maximum_momentum_error": 6.289929502572596e-18,
+      "minimum_J": 0.9999983053558875,
+      "maximum_J": 1.0000016946474224
+    },
+    {
+      "fixed_steps": null,
+      "cells": 8,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 20,
+      "velocity_relative_l2": 0.06158013716484795,
+      "relative_energy_residual": -0.20363923672720427,
+      "maximum_momentum_error": 4.446922973085077e-20,
+      "minimum_J": 0.9999977330722778,
+      "maximum_J": 1.000002266932435
+    },
+    {
+      "fixed_steps": null,
+      "cells": 16,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 40,
+      "velocity_relative_l2": 0.005834748974236585,
+      "relative_energy_residual": -0.03624241593372963,
+      "maximum_momentum_error": 1.266843651737213e-19,
+      "minimum_J": 0.9999975853411464,
+      "maximum_J": 1.0000024146635131
+    },
+    {
+      "fixed_steps": null,
+      "cells": 32,
+      "interpolation": "quadratic",
+      "transfer": "apic",
+      "steps": 80,
+      "velocity_relative_l2": 0.008804889008022981,
+      "relative_energy_residual": -0.00805035826494968,
+      "maximum_momentum_error": 1.095848875510251e-19,
+      "minimum_J": 0.9999975711132832,
+      "maximum_J": 1.0000024288914469
+    }
+  ]
+}

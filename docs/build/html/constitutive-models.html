@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="NumPy array conversion" href="array-conversion.html" />
-    <link rel="prev" title="Troubleshooting and limitations" href="troubleshooting.html" />
+    <link rel="prev" title="Solver implementation checklist" href="implementation-todo.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -35,6 +35,9 @@
             
   <section id="constitutive-model-audit">
 <h1>Constitutive model audit<a class="headerlink" href="#constitutive-model-audit" title="Link to this heading">¶</a></h1>
+<p>This records the constitutive restoration before the numerical-foundations update.
+The <a class="reference internal" href="numerical-foundations.html"><span class="std std-doc">updated methods</span></a> now supersede the original-five
+equations in default updated mechanics; explicit legacy mode preserves them.</p>
 <p>The active registry now includes <code class="docutils literal notranslate"><span class="pre">bingham</span></code>, <code class="docutils literal notranslate"><span class="pre">dp</span></code>, <code class="docutils literal notranslate"><span class="pre">dp_rate</span></code>, and <code class="docutils literal notranslate"><span class="pre">linear_mu</span></code>, as
 well as the five previously converted laws. These four kernels are array based
 and checked against analytical responses and physical invariants. The old scalar
@@ -210,17 +213,18 @@ plastic flow direction, yield consistency, cone apex, zero confinement, Perzyna
 relaxation and timestep convergence, tensor rotation covariance, rigid-spin
 integration, empty batches, parameter rejection, and output histories. Existing
 particle/grid/segregation regressions remain in the full suite.</p>
-<p>The example audit now admits 33 of 37 examples for bounded smoke runs, including
+<p>At this audit, the example check admitted 33 of 37 examples for bounded smoke runs, including
 all seven formerly blocked Bingham/DP examples. The full <code class="docutils literal notranslate"><span class="pre">dp_unit_test</span></code> (50,000
 steps, <code class="docutils literal notranslate"><span class="pre">dt=2e-5</span></code>, 1 s) and <code class="docutils literal notranslate"><span class="pre">dp_rate_unit_test</span></code> (5,000 steps, <code class="docutils literal notranslate"><span class="pre">dt=1e-3</span></code>, 5 s) also
 completed at their original timesteps with finite stress. The rate-independent
 case ended on <code class="docutils literal notranslate"><span class="pre">q=0.5</span> <span class="pre">p</span></code>; the rate-dependent case retained the permitted positive
 overstress. These checks establish equation and implementation consistency; they do not replace experimental calibration,
 spatial convergence studies, or long runs at the old example timesteps.</p>
-<p>The five previously supported laws retain their existing equations and stress
-integration. Their scalar-parity tests remain compatibility checks. In particular,
+<p>In explicit <code class="docutils literal notranslate"><span class="pre">mechanics='legacy'</span></code> mode, the five previously supported laws retain
+their existing equations and stress integration. Their scalar-parity tests remain compatibility checks. In particular,
 legacy <code class="docutils literal notranslate"><span class="pre">viscous</span></code> bulk normalisation/sign and <code class="docutils literal notranslate"><span class="pre">pouliquen</span></code> invariant/cutoff conventions
-have not been brought into alignment with the newly restored laws in this audit.</p>
+were not brought into alignment in this historical audit; updated mechanics now
+corrects those conventions separately.</p>
 </section>
 </section>
 
@@ -253,6 +257,8 @@ have not been brought into alignment with the newly restored laws in this audit.
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Constitutive model audit</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#restored-laws">Restored laws</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#retired-implementations">Retired implementations</a></li>

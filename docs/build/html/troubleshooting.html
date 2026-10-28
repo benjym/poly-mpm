@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Constitutive model audit" href="constitutive-models.html" />
+    <link rel="next" title="Updated mechanics, interpolation, transfers, and diagnostics" href="numerical-foundations.html" />
     <link rel="prev" title="Output and Python API" href="outputs.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -110,16 +110,15 @@ rather than enabling <code class="docutils literal notranslate"><span class="pre
 </section>
 <section id="what-the-solver-currently-does">
 <h2>What the solver currently does<a class="headerlink" href="#what-the-solver-currently-does" title="Link to this heading">¶</a></h2>
-<p>This is a research solver with a regular 2D grid, bilinear particle-grid
-interpolation, explicit mechanics, and a shared nodal momentum field. It has no
-GIMP/B-spline interpolation, APIC, deformation-gradient volume evolution,
-independent multi-body contact, general curved boundaries, implicit/quasistatic
-solve, or checkpoint/restart. Particle mass and represented volume remain fixed;
-reconstructed density is a diagnostic, also used by the retained Pouliquen cutoff.
-The original five material laws retain legacy conventions; the four restored laws
-have separate physical corrections and analytical tests.</p>
-<p>See <a class="reference internal" href="array-conversion.html"><span class="doc">NumPy array conversion</span></a>, <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a>, and
-<a class="reference internal" href="segregation-conservation.html"><span class="doc">Source and correction of segregation drift</span></a> for exact scope. Smoke-tested examples, equation
+<p>This is a research solver with a regular 2D grid and explicit mechanics sharing
+one nodal momentum field. Updated mode evolves deformation/volume/density and
+supports linear/quadratic interpolation plus FLIP/PIC/APIC transfers. APIC requires
+a quadratic basis and planar motion. There is no GIMP, independent multi-body
+contact, general curved boundary, implicit/quasistatic solve, or checkpoint/restart.
+Rate-form plasticity is not a multiplicative finite-strain plasticity model.
+Legacy mode preserves the earlier numerical conventions explicitly.</p>
+<p>See <a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a>, <a class="reference internal" href="array-conversion.html"><span class="doc">NumPy array conversion</span></a>, <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a>,
+and <a class="reference internal" href="segregation-conservation.html"><span class="doc">Source and correction of segregation drift</span></a> for exact scope. Smoke-tested examples, equation
 checks, conservation tests, experimental validation, and convergence studies are
 different levels of evidence. Choose the evidence required for your application.</p>
 </section>
@@ -160,6 +159,8 @@ different levels of evidence. Choose the evidence required for your application.
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>

@@ -52,3 +52,24 @@ Output adapters
 
 .. automodule:: plotting
    :members:
+
+Interpolation and affine transfer geometry
+------------------------------------------
+
+.. automodule:: interpolation
+   :members:
+
+Deformation and volume evolution
+--------------------------------
+
+.. automodule:: kinematics
+   :members:
+
+Diagnostics and timestep estimates
+----------------------------------
+
+.. automodule:: diagnostics
+   :members:
+
+.. automodule:: stability
+   :members:

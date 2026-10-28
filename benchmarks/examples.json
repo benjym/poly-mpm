@@ -236,6 +236,16 @@
     ]
   },
   {
+    "example": "modern_ball",
+    "args": [
+      "modern_ball"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      500
+    ]
+  },
+  {
     "example": "pierre",
     "args": [
       "pierre"

@@ -6,3 +6,8 @@ im/
 *.egg-info/
 build/
 dist/
+
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/

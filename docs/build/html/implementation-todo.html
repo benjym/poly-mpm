@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Solver implementation checklist &#8212; poly-mpm user guide</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Packaging and future PyPI releases" href="releasing.html" />
+    <link rel="prev" title="Updated mechanics, interpolation, transfers, and diagnostics" href="numerical-foundations.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="solver-implementation-checklist">
+<h1>Solver implementation checklist<a class="headerlink" href="#solver-implementation-checklist" title="Link to this heading">¶</a></h1>
+<p>This file tracks implementation and evidence, rather than feature suggestions.
+The current authorised tranche is stages 1–4, in order. Later stages remain
+backlog; marking a capability complete requires its acceptance checks to pass.</p>
+<section id="current-tranche">
+<h2>Current tranche<a class="headerlink" href="#current-tranche" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>[x] 1. Verification and diagnostics</p>
+<ul>
+<li><p>[x] Track mass, species inventory, momentum, angular momentum, kinetic energy,
+material work/dissipation, external work, and constraint impulses.</p></li>
+<li><p>[x] Report support loss, invalid deformation, density/volume ranges, and
+timestep restrictions; do not silently hide invalid state.</p></li>
+<li><p>[x] Analytical/convergence checks and reproducible benchmark report.</p></li>
+</ul>
+</li>
+<li><p>[x] 2. Consistent deformation, volume, density, and stress</p>
+<ul>
+<li><p>[x] Store reference volume, deformation gradient, determinant, and histories;
+update volume/density from deformation with constant particle mass.</p></li>
+<li><p>[x] Objective stress integration and physical fluid bulk/shear conventions;
+explicit compatibility mode for historical scalar comparisons.</p></li>
+<li><p>[x] Rotation, affine compression, stress/work, inlet/outlet, and species tests.</p></li>
+</ul>
+</li>
+<li><p>[x] 3. Interchangeable interpolation and quadratic B-splines</p>
+<ul>
+<li><p>[x] One stencil interface for weights, gradients, nodes, and physical offsets.</p></li>
+<li><p>[x] Linear and quadratic implementations, including physical boundaries and
+periodic seams; no clipping/renormalisation that breaks completeness.</p></li>
+<li><p>[x] Generalise every transfer, including segregation, to stencil size.</p></li>
+<li><p>[x] Partition, affine reproduction, gradients, cell crossing, and convergence.</p></li>
+</ul>
+</li>
+<li><p>[x] 4. APIC</p>
+<ul>
+<li><p>[x] Matched particle/grid affine transfers with explicit affine momentum.</p></li>
+<li><p>[x] PIC and FLIP controls; conservative rank-deficient-support handling.</p></li>
+<li><p>[x] Translation, affine reproduction, transfer angular momentum/energy,
+force-driven evolution, boundary and segregation integration checks.</p></li>
+</ul>
+</li>
+<li><p>[x] Refresh user docs, example audit, and rendered manual; record migration and
+remaining numerical limitations; run the complete regression suite.</p></li>
+<li><p>[x] Black formatting, CI formatting/tests/docs/package checks, and Codecov reporting.</p></li>
+</ul>
+</section>
+<section id="acceptance-evidence">
+<h2>Acceptance evidence<a class="headerlink" href="#acceptance-evidence" title="Link to this heading">¶</a></h2>
+<p>The completed tranche is checked by the full regression suite, the independent
+<code class="docutils literal notranslate"><span class="pre">tests/test_modern_solver.py</span></code> checks, and the source-fingerprinted
+<code class="docutils literal notranslate"><span class="pre">benchmarks/verification.json</span></code> report. The report includes complete <code class="docutils literal notranslate"><span class="pre">modern_ball</span></code>
+and <code class="docutils literal notranslate"><span class="pre">dp_rate_unit_test</span></code> runs, standing-wave refinement, remapping/dissipation
+comparisons, and caveats about non-monotone errors. The wheel and strict HTML
+manual are also checked. These are implementation checks, not experimental
+validation. Rate-form plasticity and local granular rheology retain the limits
+described in the updated-methods guide.</p>
+</section>
+<section id="deferred-implementation-backlog">
+<h2>Deferred implementation backlog<a class="headerlink" href="#deferred-implementation-backlog" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>[ ] Confirm PyPI project ownership, choose a release version, test the distributions
+on TestPyPI, and configure Trusted Publishing before the first upload.</p></li>
+<li><p>[ ] Establish coverage thresholds after reviewing the first Codecov baseline.</p></li>
+<li><p>[ ] Broader hydrostatic/translated-stress/large-deformation and application
+benchmarks, separating remapping, spatial, and temporal errors.</p></li>
+<li><p>[ ] Benchmark-driven assessment of GIMP/CPDI or higher-order interpolation,
+if quadratic boundary/interior accuracy is insufficient.</p></li>
+<li><p>[ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.</p></li>
+<li><p>[ ] Curved rigid boundaries, contact reactions, friction and separate body fields.</p></li>
+<li><p>[ ] Implicit/quasistatic solver and constitutive consistent tangents.</p></li>
+<li><p>[ ] Finite-strain multiplicative plasticity and calibrated granular constitutive extensions.</p></li>
+<li><p>[ ] Nonlocal granular rheology / size effects, with independent validation data.</p></li>
+<li><p>[ ] Checkpoint/restart including controller and constitutive state.</p></li>
+<li><p>[ ] Conservative particle adaptivity and/or grid refinement.</p></li>
+<li><p>[ ] Three-dimensional mechanics, transport, boundaries, and verification.</p></li>
+<li><p>[ ] Pore-pressure / solid–fluid coupling if required by the intended applications.</p></li>
+<li><p>[ ] Profile and accelerate verified kernels; retain a numerical reference backend.</p></li>
+<li><p>[ ] Experimental validation and application-specific parameter calibration.</p></li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">poly-mpm</a></h1>
+
+
+
+<p class="blurb">2D material point method with grain-size segregation</p>
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Using the solver</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Create a simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="materials.html">Choosing a material</a></li>
+<li class="toctree-l1"><a class="reference internal" href="outputs.html">Output and Python API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting and limitations</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Solver implementation checklist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#current-tranche">Current tranche</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#acceptance-evidence">Acceptance evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#deferred-implementation-backlog">Deferred implementation backlog</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
+<li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code.html">Python API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
+</ul>
+
+
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Benjy Marks.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.2.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/implementation-todo.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

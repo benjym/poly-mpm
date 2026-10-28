@@ -36,7 +36,7 @@
 <h1>poly-mpm user guide<a class="headerlink" href="#poly-mpm-user-guide" title="Link to this heading">¶</a></h1>
 <p>poly-mpm is a small two-dimensional material point method solver for solid and
 viscous/granular flow, including polydisperse grain-size segregation. It uses
-NumPy particle arrays and a regular Cartesian grid with bilinear interpolation.</p>
+NumPy particle arrays and a regular Cartesian grid with selectable linear or quadratic interpolation.</p>
 <p>Start with <a class="reference internal" href="getting_started.html"><span class="doc">Getting started</span></a>, then use <a class="reference internal" href="tutorial.html"><span class="doc">Create a simulation</span></a> to create an input.
 The numerical reports explain what has been checked and what remains limited;
 the examples are research fixtures, not a catalogue of calibrated materials.</p>
@@ -80,6 +80,23 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#selecting-a-configuration">Selecting a configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#deformation-and-physical-density">Deformation and physical density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#stress-and-work-conventions">Stress and work conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#interpolation-and-physical-boundaries">Interpolation and physical boundaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#matched-apic-transfers">Matched APIC transfers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#timestep-estimates-and-diagnostics">Timestep estimates and diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical-foundations.html#evidence-and-limits">Evidence and limits</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#current-tranche">Current tranche</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#acceptance-evidence">Acceptance evidence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation-todo.html#deferred-implementation-backlog">Deferred implementation backlog</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#restored-laws">Restored laws</a></li>
 <li class="toctree-l2"><a class="reference internal" href="constitutive-models.html#retired-implementations">Retired implementations</a></li>
@@ -111,6 +128,9 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-constit">Constitutive kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-integrators">Segregation operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="code.html#module-plotting">Output adapters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.html#module-interpolation">Interpolation and affine transfer geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.html#module-kinematics">Deformation and volume evolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.html#module-diagnostics">Diagnostics and timestep estimates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>
@@ -151,6 +171,9 @@ the examples are research fixtures, not a catalogue of calibrated materials.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>

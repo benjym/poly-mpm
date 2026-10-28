@@ -88,9 +88,12 @@ energy estimate in <code class="docutils literal notranslate"><span class="pre">
 </tr>
 </tbody>
 </table>
+<p>With updated mechanics, <code class="docutils literal notranslate"><span class="pre">O.save_diagnostics</span></code> defaults to true and saves the
+separate verification ledger to <code class="docutils literal notranslate"><span class="pre">data/diagnostics.json</span></code>. See
+<a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a> for work budgets, sampling, and limitations.</p>
 <p>The legacy strain-energy estimate is not a validated stored-energy or dissipation
 budget for every nonlinear material. Likewise, the saved grid density is a
-reconstruction from nodal mass, not a new density evolution equation.</p>
+reconstruction from nodal mass, not the physical particle density evolved through <code class="docutils literal notranslate"><span class="pre">F</span></code> in updated mode.</p>
 <p>Read a saved particle array with NumPy:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
@@ -187,6 +190,8 @@ reconstructing all state and callback/controller history is not implemented.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>

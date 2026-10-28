@@ -28,16 +28,19 @@ build-backend = "setuptools.build_meta"
 [tool.black]
 line-length = 110
 target-version = ['py314']
+required-version = '26.10.1'
+extend-exclude = '^/legacy/'
 
 [project.optional-dependencies]
-dev = ["pytest>=9.2"]
+dev = ["pytest>=9.2", "pytest-cov>=7.1", "black==26.10.1"]
+release = ["build>=1.3", "twine>=6.2"]
 docs = ["sphinx>=8.2", "myst-parser>=4"]
 
 [project.scripts]
 poly-mpm = "MPM:main"
 
 [tool.setuptools]
-py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting"]
+py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability"]
 
 [tool.setuptools.packages.find]
 include = ["inputs"]
@@ -45,3 +48,19 @@ include = ["inputs"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[project.urls]
+Repository = "https://github.com/benjym/poly-mpm"
+Issues = "https://github.com/benjym/poly-mpm/issues"
+
+[tool.coverage.run]
+branch = true
+relative_files = true
+source = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "inputs"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.coverage.xml]
+output = "coverage.xml"

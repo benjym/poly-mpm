@@ -51,6 +51,7 @@ The input is intentionally short: 0.01 s of a falling elastic block. It writes
 plots and particle arrays under <code class="docutils literal notranslate"><span class="pre">im/my_sim/</span></code>. Its duration is too short for the
 block to reach the floor; this checks setup and output rather than impact physics.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">"""Copy to inputs/my_sim.py, then run python MPM.py my_sim from the checkout."""</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span> <span class="k">as</span> <span class="n">NS</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -58,21 +59,29 @@ block to reach the floor; this checks setup and output rather than impact physic
 <span class="k">class</span><span class="w"> </span><span class="nc">Params</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="mf">1e-4</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">t_f</span> <span class="o">=</span> <span class="mf">.01</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">savetime</span> <span class="o">=</span> <span class="mf">.005</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_f</span> <span class="o">=</span> <span class="mf">0.01</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">savetime</span> <span class="o">=</span> <span class="mf">0.005</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">max_g</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9.81</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="s1">'im/my_sim/'</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">=</span> <span class="n">NS</span><span class="p">(</span><span class="n">nx</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">x_m</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">x_M</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">y_m</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">y_M</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_dir</span> <span class="o">=</span> <span class="s2">"im/my_sim/"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">=</span> <span class="n">NS</span><span class="p">(</span><span class="n">nx</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">x_m</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x_M</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">y_m</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y_M</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">NS</span><span class="p">(</span><span class="n">has_bottom</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">O</span> <span class="o">=</span> <span class="n">NS</span><span class="p">(</span><span class="n">plot_material_points</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_continuum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_phi_MP</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Two-by-two particles in each occupied grid cell: a 0.2 m square block.</span>
-        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">.325</span><span class="p">,</span> <span class="mf">.5</span><span class="p">,</span> <span class="mf">.05</span><span class="p">)</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.325</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">)</span>
-        <span class="n">E</span><span class="p">,</span> <span class="n">nu</span> <span class="o">=</span> <span class="mf">1e5</span><span class="p">,</span> <span class="mf">.3</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">NS</span><span class="p">(</span><span class="n">law</span><span class="o">=</span><span class="s1">'elastic'</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">Y</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-                    <span class="n">rho</span><span class="o">=</span><span class="mf">1000.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">.05</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">initial_v</span><span class="o">=</span><span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span>
-                    <span class="n">K</span><span class="o">=</span><span class="n">E</span><span class="o">/</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">nu</span><span class="p">)),</span> <span class="n">G</span><span class="o">=</span><span class="n">E</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">nu</span><span class="p">)))</span>
+        <span class="n">E</span><span class="p">,</span> <span class="n">nu</span> <span class="o">=</span> <span class="mf">1e5</span><span class="p">,</span> <span class="mf">0.3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">NS</span><span class="p">(</span>
+            <span class="n">law</span><span class="o">=</span><span class="s2">"elastic"</span><span class="p">,</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+            <span class="n">X</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+            <span class="n">Y</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+            <span class="n">rho</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">,</span>
+            <span class="n">A</span><span class="o">=</span><span class="mf">0.05</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
+            <span class="n">initial_v</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+            <span class="n">K</span><span class="o">=</span><span class="n">E</span> <span class="o">/</span> <span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nu</span><span class="p">)),</span>
+            <span class="n">G</span><span class="o">=</span><span class="n">E</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">nu</span><span class="p">)),</span>
+        <span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -95,8 +104,9 @@ be supplied: the run loop uses physical time and stops at <code class="docutils 
 with <code class="docutils literal notranslate"><span class="pre">max_steps</span></code> stops earlier and still calls its end-of-run output callback.</p>
 <p><code class="docutils literal notranslate"><span class="pre">time_stepping='dynamic'</span></code> enables the existing timestep controller, with <code class="docutils literal notranslate"><span class="pre">CFL</span></code>
 and optional material <code class="docutils literal notranslate"><span class="pre">critical_time(P)</span></code> functions. It is not a universal
-stability guarantee: the current controller does not automatically derive every
-elastic, viscous, and transport restriction. Start with conservative values and
+stability guarantee: the central controller now estimates elastic, viscous,
+advection, and segregation restrictions, but nonlinear and model-specific
+stability still requires verification. Start with conservative values and
 verify the behaviour of the chosen input.</p>
 </section>
 <section id="grid-and-boundaries">
@@ -138,9 +148,9 @@ checks. The physical grains represented by size classes are distinct from the
 numerical material points.</p>
 <p>For elastic material, supply bulk modulus <code class="docutils literal notranslate"><span class="pre">K</span></code> and shear modulus <code class="docutils literal notranslate"><span class="pre">G</span></code> in Pa;
 <code class="docutils literal notranslate"><span class="pre">E</span></code> and <code class="docutils literal notranslate"><span class="pre">nu</span></code> are convenient input variables, but the loader does not derive
-<code class="docutils literal notranslate"><span class="pre">K</span></code> or <code class="docutils literal notranslate"><span class="pre">G</span></code> from them. The <a class="reference internal" href="constitutive-models.html"><span class="doc">Constitutive model audit</span></a> page describes the restored
-models and their parameter restrictions. For the original five laws, consult the
-chosen input and <code class="docutils literal notranslate"><span class="pre">constit.py</span></code> as well: they retain legacy conventions.</p>
+<code class="docutils literal notranslate"><span class="pre">K</span></code> or <code class="docutils literal notranslate"><span class="pre">G</span></code> from them. The <a class="reference internal" href="materials.html"><span class="doc">Choosing a material</span></a> page lists parameters. Updated <code class="docutils literal notranslate"><span class="pre">elastic</span></code> uses neo-Hookean
+elasticity, while <code class="docutils literal notranslate"><span class="pre">von_mises</span></code> uses a J2 return map. Historical conventions are
+only selected with <code class="docutils literal notranslate"><span class="pre">mechanics='legacy'</span></code>; see <a class="reference internal" href="numerical-foundations.html"><span class="doc">Updated mechanics, interpolation, transfers, and diagnostics</span></a>.</p>
 <p>To initialise confined stress, set <code class="docutils literal notranslate"><span class="pre">pressure='compression'</span></code> and a positive
 <code class="docutils literal notranslate"><span class="pre">initial_pressure</span></code> in Pa. This produces negative normal Cauchy stress. The
 <code class="docutils literal notranslate"><span class="pre">lithostatic</span></code> mode uses gravity, depth, and slope. Do not confuse these input
@@ -208,6 +218,9 @@ reconstructed-density diagnostic.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>

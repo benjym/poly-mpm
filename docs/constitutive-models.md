@@ -1,5 +1,9 @@
 # Constitutive model audit
 
+This records the constitutive restoration before the numerical-foundations update.
+The [updated methods](numerical-foundations.md) now supersede the original-five
+equations in default updated mechanics; explicit legacy mode preserves them.
+
 The active registry now includes `bingham`, `dp`, `dp_rate`, and `linear_mu`, as
 well as the five previously converted laws. These four kernels are array based
 and checked against analytical responses and physical invariants. The old scalar
@@ -156,7 +160,7 @@ relaxation and timestep convergence, tensor rotation covariance, rigid-spin
 integration, empty batches, parameter rejection, and output histories. Existing
 particle/grid/segregation regressions remain in the full suite.
 
-The example audit now admits 33 of 37 examples for bounded smoke runs, including
+At this audit, the example check admitted 33 of 37 examples for bounded smoke runs, including
 all seven formerly blocked Bingham/DP examples. The full `dp_unit_test` (50,000
 steps, `dt=2e-5`, 1 s) and `dp_rate_unit_test` (5,000 steps, `dt=1e-3`, 5 s) also
 completed at their original timesteps with finite stress. The rate-independent
@@ -164,7 +168,8 @@ case ended on `q=0.5 p`; the rate-dependent case retained the permitted positive
 overstress. These checks establish equation and implementation consistency; they do not replace experimental calibration,
 spatial convergence studies, or long runs at the old example timesteps.
 
-The five previously supported laws retain their existing equations and stress
-integration. Their scalar-parity tests remain compatibility checks. In particular,
+In explicit `mechanics='legacy'` mode, the five previously supported laws retain
+their existing equations and stress integration. Their scalar-parity tests remain compatibility checks. In particular,
 legacy `viscous` bulk normalisation/sign and `pouliquen` invariant/cutoff conventions
-have not been brought into alignment with the newly restored laws in this audit.
+were not brought into alignment in this historical audit; updated mechanics now
+corrects those conventions separately.

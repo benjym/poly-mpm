@@ -14,3 +14,5 @@ provenance. See the [constitutive audit](../docs/constitutive-models.md) for rea
 replacement options, equations, and parameter conventions.
 The independent, corrected scalar comparison kernels for the original five laws
 live in `tests/reference.py`.
+
+Black excludes this directory so the archived source remains unchanged.

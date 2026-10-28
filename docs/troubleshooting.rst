@@ -83,16 +83,15 @@ Grain fractions do not sum to one
 What the solver currently does
 ------------------------------
 
-This is a research solver with a regular 2D grid, bilinear particle-grid
-interpolation, explicit mechanics, and a shared nodal momentum field. It has no
-GIMP/B-spline interpolation, APIC, deformation-gradient volume evolution,
-independent multi-body contact, general curved boundaries, implicit/quasistatic
-solve, or checkpoint/restart. Particle mass and represented volume remain fixed;
-reconstructed density is a diagnostic, also used by the retained Pouliquen cutoff.
-The original five material laws retain legacy conventions; the four restored laws
-have separate physical corrections and analytical tests.
+This is a research solver with a regular 2D grid and explicit mechanics sharing
+one nodal momentum field. Updated mode evolves deformation/volume/density and
+supports linear/quadratic interpolation plus FLIP/PIC/APIC transfers. APIC requires
+a quadratic basis and planar motion. There is no GIMP, independent multi-body
+contact, general curved boundary, implicit/quasistatic solve, or checkpoint/restart.
+Rate-form plasticity is not a multiplicative finite-strain plasticity model.
+Legacy mode preserves the earlier numerical conventions explicitly.
 
-See :doc:`array-conversion`, :doc:`constitutive-models`, and
-:doc:`segregation-conservation` for exact scope. Smoke-tested examples, equation
+See :doc:`numerical-foundations`, :doc:`array-conversion`, :doc:`constitutive-models`,
+and :doc:`segregation-conservation` for exact scope. Smoke-tested examples, equation
 checks, conservation tests, experimental validation, and convergence studies are
 different levels of evidence. Choose the evidence required for your application.

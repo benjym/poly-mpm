@@ -44,9 +44,13 @@ examples intentionally produce different output.
    * - ``measure_stiffness``
      - Default end callback saves ``data/stiffness_material_*.npz``.
 
+With updated mechanics, ``O.save_diagnostics`` defaults to true and saves the
+separate verification ledger to ``data/diagnostics.json``. See
+:doc:`numerical-foundations` for work budgets, sampling, and limitations.
+
 The legacy strain-energy estimate is not a validated stored-energy or dissipation
 budget for every nonlinear material. Likewise, the saved grid density is a
-reconstruction from nodal mass, not a new density evolution equation.
+reconstruction from nodal mass, not the physical particle density evolved through ``F`` in updated mode.
 
 Read a saved particle array with NumPy::
 

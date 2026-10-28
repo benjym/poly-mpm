@@ -130,24 +130,55 @@ Kernels update history and dstress; update_stress selects the integration scheme
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="constit.elastic">
+<span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">elastic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.elastic" title="Link to this definition">¶</a></dt>
+<dd><p>Compressible neo-Hookean Cauchy stress, with reference prestress.</p>
+<p>Reference energy density:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">W0</span> <span class="o">=</span> <span class="n">G</span><span class="o">/</span><span class="mi">2</span> <span class="p">(</span><span class="n">J</span><span class="o">^</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span> <span class="n">tr</span><span class="p">(</span><span class="n">F</span> <span class="n">F</span><span class="o">^</span><span class="n">T</span><span class="p">)</span><span class="o">-</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">K</span><span class="o">/</span><span class="mi">2</span> <span class="p">(</span><span class="n">ln</span> <span class="n">J</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span>
+<span class="n">W0</span> <span class="o">+=</span> <span class="n">S0</span><span class="p">:(</span><span class="n">F</span><span class="o">^</span><span class="n">T</span> <span class="n">F</span><span class="o">-</span><span class="n">I</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>The reference prestress S0 is the input stress at F=I. The law recovers
+isotropic linear elasticity for small increments around an unstressed state.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="constit.linear_mu">
 <span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">linear_mu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.linear_mu" title="Link to this definition">¶</a></dt>
 <dd><p>Dense flowing linear mu(I) law, with finite effective-viscosity cap.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="constit.pouliquen">
+<span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">pouliquen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.pouliquen" title="Link to this definition">¶</a></dt>
+<dd><p>Bounded mu(I) flowing law using engineering shear rate and true density.</p>
+<p>No grid-occupancy density cutoff. The finite cap regularises the zero-rate
+limit. At zero confinement, I is undefined (stored as zero), mu uses its
+infinite-I limit for nonzero flow, and frictional stress vanishes.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="constit.update_stress">
 <span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">update_stress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.update_stress" title="Link to this definition">¶</a></dt>
-<dd><p>Integrate restored laws consistently with their stress/rate definition.</p>
-<p>Keep the original five models’ legacy integration for compatibility. New
-fluids prescribe current stress directly. New solids use a symmetric spin
-split for a corotational hypoelastic/plastic update (exact for pure spin).</p>
+<dd><p>Objective updated mechanics; historical integration is opt-in legacy mode.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="constit.validate_material">
-<span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">validate_material</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">material</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.validate_material" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">validate_material</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mechanics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'updated'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.validate_material" title="Link to this definition">¶</a></dt>
 <dd><p>Physical parameter domain for the newly restored laws (scalar SI inputs).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="constit.viscous">
+<span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">viscous</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.viscous" title="Link to this definition">¶</a></dt>
+<dd><p>Newtonian fluid with positive bulk dissipation and standard bulk modulus.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="constit.von_mises">
+<span class="sig-prename descclassname"><span class="pre">constit.</span></span><span class="sig-name descname"><span class="pre">von_mises</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">material</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#constit.von_mises" title="Link to this definition">¶</a></dt>
+<dd><p>Perfect J2 plasticity; yield_stress (Pa), or sqrt(3)*legacy k.</p>
 </dd></dl>
 
 </section>
@@ -181,6 +212,46 @@ The timestep uses reconstructed face states via _face_transfers below.</p>
 </dd></dl>
 
 </section>
+<section id="module-interpolation">
+<span id="interpolation-and-affine-transfer-geometry"></span><h2>Interpolation and affine transfer geometry<a class="headerlink" href="#module-interpolation" title="Link to this heading">¶</a></h2>
+<p>Complete tensor-product particle/grid stencils on a rectangular grid.</p>
+<p>Quadratic cardinal B-splines use linear ghost-value extrapolation at physical
+edges. In the outer half-cell this reduces to linear weights, remains C1 at the
+join, and preserves nonnegative weights, partition, and linear completeness.
+Periodic x support retains unwrapped offsets but deposits to unique seam nodes.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="interpolation.affine_matrix">
+<span class="sig-prename descclassname"><span class="pre">interpolation.</span></span><span class="sig-name descname"><span class="pre">affine_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">affine_momentum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#interpolation.affine_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>B D^+ in the resolved 2D support; no inverse-mass or arbitrary ridge.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="interpolation.stencil">
+<span class="sig-prename descclassname"><span class="pre">interpolation.</span></span><span class="sig-name descname"><span class="pre">stencil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#interpolation.stencil" title="Link to this definition">¶</a></dt>
+<dd><p>Return nodes, weights, spatial gradients, and node-minus-particle offsets.</p>
+</dd></dl>
+
+</section>
+<section id="module-kinematics">
+<span id="deformation-and-volume-evolution"></span><h2>Deformation and volume evolution<a class="headerlink" href="#module-kinematics" title="Link to this heading">¶</a></h2>
+<p>Updated-Lagrangian kinematics with a rotation-preserving exponential map.</p>
+</section>
+<section id="module-diagnostics">
+<span id="diagnostics-and-timestep-estimates"></span><h2>Diagnostics and timestep estimates<a class="headerlink" href="#module-diagnostics" title="Link to this heading">¶</a></h2>
+<p>Run-time inventories and discrete work accounting; no hidden energy correction.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="diagnostics.Diagnostics">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">diagnostics.</span></span><span class="sig-name descname"><span class="pre">Diagnostics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">P</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#diagnostics.Diagnostics" title="Link to this definition">¶</a></dt>
+<dd><p>Compact history; boundary/inlet budgets and residuals remain explicit.</p>
+<p>External and constraint work use midpoint grid velocities. Residual includes
+transfer/time integration error and, for rate-form plastic/fluid laws, the
+difference between their quadratic elastic-energy estimate and exact energy.
+Periodic angular momentum requires an unwrapped domain, and is diagnostic
+only here. Prescribed rigid motion is externally controlled.</p>
+</dd></dl>
+
+<p id="module-stability">Conservative explicit timestep estimates, reported separately by mechanism.</p>
+</section>
 </section>
 
 
@@ -212,6 +283,9 @@ The timestep uses reconstructed face states via _face_transfers below.</p>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
+<li class="toctree-l1"><a class="reference internal" href="releasing.html">Packaging and future PyPI releases</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
 <li class="toctree-l1"><a class="reference internal" href="array-conversion.html">NumPy array conversion</a></li>
 <li class="toctree-l1"><a class="reference internal" href="segregation-conservation.html">Source and correction of segregation drift</a></li>
@@ -224,6 +298,9 @@ The timestep uses reconstructed face states via _face_transfers below.</p>
 <li class="toctree-l2"><a class="reference internal" href="#module-constit">Constitutive kernels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-integrators">Segregation operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-plotting">Output adapters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-interpolation">Interpolation and affine transfer geometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-kinematics">Deformation and volume evolution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diagnostics">Diagnostics and timestep estimates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="README.html">Maintaining the documentation</a></li>

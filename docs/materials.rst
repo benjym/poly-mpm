@@ -18,20 +18,21 @@ components use SI units and tension-positive Cauchy stress.
      - Prescribed velocity; no deformable stress update or new contact model.
    * - ``elastic``
      - ``K``, ``G``
-     - Legacy incremental isotropic elasticity, with bulk/shear moduli in Pa.
+     - Updated neo-Hookean elasticity, with bulk/shear moduli in Pa. Legacy mode
+       retains incremental isotropic elasticity.
    * - ``viscous``
      - ``K``, ``mu_s``, ``mu_v``
-     - Legacy viscous law; viscosities in Pa s. Retains inherited volumetric
-       normalisation/sign and stress-rate conventions; not identical to the
-       Newtonian limit of the corrected Bingham law.
+     - Newtonian fluid; viscosities in Pa s. Updated mode agrees with the zero-
+       yield Bingham limit. Historical bulk/stress-rate conventions require
+       explicit legacy mode.
    * - ``von_mises``
-     - ``K``, ``G``, ``k``, ``s``
-     - Legacy von Mises H² incremental law. ``k`` is a stress scale in Pa and
-       ``s`` its dimensionless exponent; this is not a standard radial return map.
+     - ``K``, ``G``, ``yield_stress`` (or ``k``)
+     - Updated perfect J2 return map, yield stress in Pa. ``sqrt(3)*k`` is an
+       alternative yield stress. ``s`` only controls the legacy H² law.
    * - ``pouliquen``
      - ``K``, ``rho_s``, ``mu_0``, ``delta_mu``, ``I_0``, ``eta_max``
-     - Retained local granular friction law, with legacy invariant conventions,
-       viscosity cap, and density cutoff. Also supply ``mu_1`` and ``packing``
+     - Local granular friction law with a viscosity cap. Updated mode uses
+       engineering shear rate and removes the occupancy density cutoff. Also supply ``mu_1`` and ``packing``
        for the example's steady-flow initialisation; ``mu_1=mu_0+delta_mu``.
    * - ``bingham``
      - ``K``, ``mu_s``, ``mu_0``, ``tau_0``; optional ``mu_v``
@@ -57,9 +58,9 @@ Friction coefficients, ``I_0``, ``b``, and ``beta`` are dimensionless. For flow 
 
 The restored-law :doc:`constitutive audit <constitutive-models>` gives equations,
 allowed parameter ranges, sign conventions, integration, and analytical checks.
-The original five laws retain earlier equations and scalar-comparison tests;
-those comparisons are not experimental validation or an audit of every physical
-assumption. Select and calibrate a law for the intended regime rather than
+Historical equations and scalar-comparison tests select explicit legacy mode.
+See :doc:`numerical-foundations` for updated equations and their verification.
+These checks are not experimental validation. Select and calibrate a law for the intended regime rather than
 switching names and retaining unrelated parameters.
 
 Initialisation can require additional parameters: confined stress and the legacy

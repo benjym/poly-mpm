@@ -97,3 +97,13 @@ Choose another writable path on Windows. Omitting `--sizes`/`--repeats` runs the
 full timing suite, including slow 100,000-particle scalar cases. Omitting `--output`
 overwrites the corresponding report in `benchmarks/`. Runtime, tests, and benchmark
 modules must be available from an activated source-checkout environment.
+
+## Updated-method verification
+
+The modern mechanics/interpolation/APIC checks are separate from the historical
+scalar timing comparison. Run `python -m benchmarks.verification --output
+/tmp/poly-mpm-verification.json` for the wave studies; the committed report is
+[verification.json](verification.json). See the [updated methods](../docs/numerical-foundations.md)
+for configurations, interpretation, and non-monotone error levels. The old
+`benchmarks.compare` explicitly uses legacy mechanics; its parity assertion does
+not establish the modern algorithms' accuracy.

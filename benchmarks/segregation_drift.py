@@ -1,4 +1,5 @@
 """Measure species conservation and fraction bounds without clipping or normalising."""
+
 import argparse
 import json
 from pathlib import Path
@@ -8,24 +9,33 @@ from MPM import run
 
 
 def measure(ns, steps=100):
-    P, G, L = get_parameters(['bi_seg_test', '22', str(ns), '11'])
+    P, G, L = get_parameters(["bi_seg_test", "22", str(ns), "11"])
     b = L.materials[0]
-    before = np.sum(b.m[:, None]*b.phi, axis=0)
+    before = np.sum(b.m[:, None] * b.phi, axis=0)
     run(P, G, L, max_steps=steps, output=False)
-    after = np.sum(b.m[:, None]*b.phi, axis=0)
-    return dict(grain_classes=ns, steps=P.tstep, time=P.t, normalise_phi=P.normalise_phi,
-                minimum_fraction=float(b.phi.min()), maximum_fraction=float(b.phi.max()),
-                maximum_fraction_sum_error=float(np.max(np.abs(b.phi.sum(axis=1)-1))),
-                initial_species_mass=before.tolist(), final_species_mass=after.tolist(),
-                species_mass_change=(after-before).tolist(),
-                maximum_relative_species_mass_error=float(np.max(np.abs(after-before)/np.maximum(before, np.finfo(float).tiny))),
-                maximum_fraction_bound_violation=float(max(0., -b.phi.min(), b.phi.max()-1)))
+    after = np.sum(b.m[:, None] * b.phi, axis=0)
+    return dict(
+        grain_classes=ns,
+        steps=P.tstep,
+        time=P.t,
+        normalise_phi=P.normalise_phi,
+        minimum_fraction=float(b.phi.min()),
+        maximum_fraction=float(b.phi.max()),
+        maximum_fraction_sum_error=float(np.max(np.abs(b.phi.sum(axis=1) - 1))),
+        initial_species_mass=before.tolist(),
+        final_species_mass=after.tolist(),
+        species_mass_change=(after - before).tolist(),
+        maximum_relative_species_mass_error=float(
+            np.max(np.abs(after - before) / np.maximum(before, np.finfo(float).tiny))
+        ),
+        maximum_fraction_bound_violation=float(max(0.0, -b.phi.min(), b.phi.max() - 1)),
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument('--output', default='benchmarks/segregation_drift.json')
-    parser.add_argument('--steps', type=int, nargs='+', default=[100, 1000])
+    parser.add_argument("--output", default="benchmarks/segregation_drift.json")
+    parser.add_argument("--steps", type=int, nargs="+", default=[100, 1000])
     args = parser.parse_args()
     rows = [measure(ns, steps) for steps in args.steps for ns in [2, 3, 8]]
-    Path(args.output).write_text(json.dumps(rows, indent=2)+'\n')
+    Path(args.output).write_text(json.dumps(rows, indent=2) + "\n")

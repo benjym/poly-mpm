@@ -11,26 +11,28 @@ normalising mass-weighted fields.
 |---|---|
 | `x`, `v`, `x0` | `(n, 3)` |
 | `m`, `rho`, `initial_rho`, `V`, `pressure`, scalar history | `(n,)` |
-| `stress`, `strain`, `dstrain`, `dstress`, tensor history | `(n, 3, 3)` |
+| `stress`, `strain`, `dstrain`, `dstress`, `F`, affine/material history | `(n, 3, 3)` |
 | `phi` | `(n, ns)` |
 | `n_star` | `(n,)`, integer |
-| `n` | `(n, 4)`, integer |
-| `N` | `(n, 4)` |
-| `G` (shape-function gradients) | `(n, 4, 3)` |
+| `n` | `(n, k)`, integer; k=4 linear, k=9 quadratic |
+| `N` | `(n, k)` |
+| `G` (shape-function gradients), `offsets` | `(n, k, 3)` |
 | `L` (velocity gradient), `L_T` (transpose view) | `(n, 3, 3)` |
 
-The four neighbours are bottom-left, bottom-right, top-right, top-left. Particle
+Linear neighbours are bottom-left, bottom-right, top-right, top-left. Quadratic
+neighbours are a tensor-product nine-entry stencil, with boundary/periodic mapping
+described in [the updated methods](numerical-foundations.md). Particle
 and grid vectors retain three components; geometry and transport remain two
 dimensional. Constitutive tensor traces and norms reduce tensor axes only.
 
 `Particles(P, G, material, material_id)` constructs one batch.
 `ParticleSystem(P, G)` coordinates the material list. Supported laws implement
 `law(particles, material_parameters, simulation_parameters)` and update history and
-`dstress`. The original five laws retain their existing Lie stress-rate integration;
-restored `dp`/`dp_rate` solids use a symmetric corotational spin split, and restored
-`bingham`/`linear_mu` fluids prescribe current stress directly. Rigid materials
-bypass the stress update and move at their prescribed velocities. See the
-[constitutive audit](constitutive-models.md) for equations and integration tests.
+`dstress`. Updated mechanics uses neo-Hookean elastic stress, objective rate-form
+plasticity, and algebraic fluid stress; it evolves `F`, `J`, `V`, and `rho`.
+Explicit legacy mode retains the older equations/integration. Rigid materials
+bypass deformation/stress evolution and follow prescribed velocity. See the
+[updated methods](numerical-foundations.md) and [constitutive audit](constitutive-models.md).
 The registry in `constit.py` is the only material dispatch mechanism.
 
 Uniform mass/volume properties, velocities, and grain fractions are copied into
@@ -61,15 +63,16 @@ The supported timestep keeps the existing strain-before-force order:
 1. Reset grid, update loading, determine cells and basis functions.
 2. Deposit mass, momentum, composition, and kinetic pressure across all materials.
 3. Merge periodic sums, calculate valid nodes, and impose momentum constraints.
-4. Gather velocity, update strain/history/stress, and deposit diagnostics.
+4. Gather velocity, update deformation/volume/density and strain/history/stress,
+   and deposit diagnostics. Legacy mode omits deformation/volume evolution.
 5. Deposit forces, impose force boundaries, and update grid momentum.
 6. Calculate bulk shear rate and, if enabled, conservative segregation exchanges.
 7. Return species-aware composition exchanges, then update particle position and
    velocity and handle particle boundaries.
 
-Mass and volume remain fixed during deformable motion. Reconstructed density is
-a diagnostic retained from the scalar solver, including its use in the existing
-Pouliquen low-density cutoff. This conversion introduces no density evolution law.
+Particle mass remains fixed during deformable motion; updated volume is `J*V0`
+and physical density is `m/V`. Legacy mode alone fixes volume and reconstructs
+particle density from nodal occupancy, retaining the old Pouliquen density cutoff.
 
 The following input conventions remain supported:
 
@@ -129,8 +132,9 @@ or zero-segregation-rate limits. Invalid resulting timesteps fail explicitly.
 - Gravity potential energy uses its Cartesian projection, avoiding division by a
   particle's zero x-coordinate in the old angle-based expression.
 
-The original five laws retain their constitutive equations, coefficients, tension
-convention, viscosity cap, and stress-rate formulation. The subsequently restored
+The original-five compatibility equations remain available in explicit legacy
+mode. Updated mechanics intentionally changes their stress integration, volume,
+density, and fluid conventions; see [the updated methods](numerical-foundations.md). The subsequently restored
 laws have explicit physical corrections and separate analytical tests; see the
 [constitutive audit](constitutive-models.md). The segregation flux,
 reconstruction, and return transfer were subsequently corrected to enforce mixture
@@ -216,6 +220,7 @@ in source. Unsupported laws are deliberately not substituted with different laws
 | `python MPM.py gsd` | supported smoke-tested |
 | `python MPM.py incline` | supported smoke-tested |
 | `python MPM.py macro` | supported smoke-tested |
+| `python MPM.py modern_ball` | supported smoke-tested |
 | `python MPM.py pierre` | supported smoke-tested |
 | `python MPM.py poly_avalanche` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py poly_seg_test 22` | supported smoke-tested |
@@ -226,7 +231,7 @@ in source. Unsupported laws are deliberately not substituted with different laws
 | `python MPM.py stokes` | supported smoke-tested |
 | `python MPM.py tri_seg_test` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py triaxial` | supported smoke-tested |
-| `python MPM.py tunnel` | unsupported material law: Retired material law 'elastic_time'; see constitutive audit |
+| `python MPM.py tunnel` | unsupported material law: Retired elastic_time; see constitutive audit |
 | `python MPM.py vicky` | supported smoke-tested |
 | `python MPM.py vicky_latest` | supported smoke-tested |
 | `python MPM.py viscous_unit_test` | supported smoke-tested |

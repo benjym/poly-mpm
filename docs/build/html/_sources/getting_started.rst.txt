@@ -78,6 +78,8 @@ Choosing an example
 -------------------
 
 * ``ball``: a small first run with elastic material and saved plots.
+* ``modern_ball``: updated elasticity with quadratic B-splines, APIC, and dynamic
+  timestepping. See :doc:`numerical-foundations` for configuration and diagnostics.
 * ``dp_unit_test`` / ``dp_rate_unit_test``: Drucker-Prager loading histories;
   full runs have 50,000 / 5,000 steps respectively.
 * ``bi_seg_test 22 2 11``: segregation at 22 degrees, two grain-size classes,

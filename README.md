@@ -1,5 +1,11 @@
 # Polydisperse material point method
 
+[![CI](https://github.com/benjym/poly-mpm/actions/workflows/ci.yml/badge.svg)](https://github.com/benjym/poly-mpm/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/benjym/poly-mpm/graph/badge.svg)](https://codecov.io/gh/benjym/poly-mpm)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/downloads/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
 A small 2D material point method solver for solid and viscous/granular flow,
 including grain-size segregation. Particle state uses NumPy arrays, with one
 batch per material and a shared regular Cartesian grid.
@@ -19,6 +25,8 @@ uv run --locked python MPM.py ball
 For an existing checkout, start at `uv sync` from the repository root. Use the
 branch containing this README; older branches may contain the scalar solver.
 The installed command `uv run --locked poly-mpm ball` runs the same example.
+For quadratic B-splines, APIC, and dynamic timestepping, use
+`uv run --locked python MPM.py modern_ball`.
 
 `ball` simulates one second with 500 elastic particles and 1,000 steps. It prints
 progress and saves figures under **`im/ball/elastic/Continuum/`** and
@@ -58,6 +66,9 @@ of stability or physical calibration at every original setting.
 - [Getting started](docs/getting_started.rst): setup, first run, previews, and examples.
 - [Create a simulation](docs/tutorial.rst): a complete runnable input, units, geometry,
   boundaries, material parameters, and segregation settings.
+- [Updated numerical methods](docs/numerical-foundations.md): deformation/volume evolution,
+  interpolation, APIC, timestep estimates, diagnostics, and compatibility mode.
+- [Implementation checklist](IMPLEMENTATION_TODO.md): completed acceptance checks and deferred work.
 - [Material selection](docs/materials.rst): supported laws and required parameters.
 - [Output and API](docs/outputs.rst): output flags, file formats, callbacks, and arrays.
 - [Troubleshooting](docs/troubleshooting.rst): installation, missing output, numerical
@@ -69,20 +80,35 @@ of stability or physical calibration at every original setting.
 
 The solver supports `rigid`, `elastic`, `viscous`, `von_mises`, `pouliquen`,
 `bingham`, `dp`, `dp_rate`, and `linear_mu`. Retired or absent laws fail explicitly.
-Geometry is 2D despite three-component vectors and 3-by-3 stress tensors. Current
-mechanics use bilinear interpolation, explicit stepping, and shared nodal momentum;
-there is no independent body contact, deformation-gradient volume update, implicit
-solve, or general checkpoint/restart. The original five laws retain legacy
-conventions; the four restored laws have separate analytical tests and corrections.
+Geometry is 2D despite three-component vectors and 3-by-3 stress tensors. Updated
+mechanics evolves deformation, volume, and physical density. Linear/quadratic
+interpolation and FLIP/PIC/APIC transfers are selectable; `modern_ball` demonstrates
+the combined configuration. Mechanics still uses explicit stepping and shared
+nodal momentum, with no independent body contact, implicit solve, or general
+checkpoint/restart. Historical equations are available through explicit
+`mechanics='legacy'`; see the migration notes before comparing old results.
 
 ## Tests and benchmarks
 
 From the checkout root:
 
 ```sh
-uv run --locked --extra dev python -m pytest -q -W error::RuntimeWarning
+uv run --locked --extra dev black --check .
+uv run --locked --extra dev python -m pytest -q -W error::RuntimeWarning --cov --cov-report=term-missing --cov-report=xml
 uv run --locked python -m benchmarks.audit_examples --output /tmp/poly-mpm-examples.json
 ```
+
+Run `uv run --locked --extra dev black .` to format active Python code.
+The `legacy/` source archive is excluded to preserve its provenance. Coverage
+includes installed solver modules and inputs, including plotting and diagnostics;
+HTML coverage is available with `--cov-report=html`.
+
+GitHub Actions checks formatting, runs the coverage suite, builds the strict HTML
+manual, and validates wheel/sdist metadata plus an installed-wheel smoke test.
+The test job uploads `coverage.xml` with `CODECOV_TOKEN`; fork pull requests skip
+the upload because repository secrets are unavailable. Coverage is informational
+until a useful baseline and thresholds have been agreed.
+See the [release checklist](docs/releasing.md) for the remaining PyPI setup.
 
 Choose another writable report path on Windows. The audit runs five bounded
 steps per supported example. See [benchmark instructions](benchmarks/README.md)

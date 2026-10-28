@@ -1,4 +1,5 @@
 """Repeated-index-safe particle/grid transfers."""
+
 import numpy as np
 
 
@@ -10,17 +11,24 @@ def scatter(target, nodes, contributions):
     else:
         for component in range(target.shape[1]):
             target[:, component] += np.bincount(
-                index, weights=contributions[..., component].ravel(), minlength=len(target))
+                index, weights=contributions[..., component].ravel(), minlength=len(target)
+            )
 
 
 def divide(numerator, denominator):
     shape = np.broadcast_shapes(np.shape(numerator), np.shape(denominator))
-    return np.divide(numerator, denominator, out=np.zeros(shape, dtype=float), where=np.asarray(denominator) != 0)
+    return np.divide(
+        numerator, denominator, out=np.zeros(shape, dtype=float), where=np.asarray(denominator) != 0
+    )
 
 
-def nodal_velocity(grid, params, field='q'):
-    return np.divide(getattr(grid, field), grid.m[:, None], out=np.zeros_like(grid.q),
-                     where=(grid.m > params.M_tol)[:, None])
+def nodal_velocity(grid, params, field="q"):
+    return np.divide(
+        getattr(grid, field),
+        grid.m[:, None],
+        out=np.zeros_like(grid.q),
+        where=(grid.m > params.M_tol)[:, None],
+    )
 
 
 def gather(values, nodes, weights, valid):

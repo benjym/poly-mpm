@@ -54,7 +54,7 @@ normalising mass-weighted fields.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">rho</span></code>, <code class="docutils literal notranslate"><span class="pre">initial_rho</span></code>, <code class="docutils literal notranslate"><span class="pre">V</span></code>, <code class="docutils literal notranslate"><span class="pre">pressure</span></code>, scalar history</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">(n,)</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stress</span></code>, <code class="docutils literal notranslate"><span class="pre">strain</span></code>, <code class="docutils literal notranslate"><span class="pre">dstrain</span></code>, <code class="docutils literal notranslate"><span class="pre">dstress</span></code>, tensor history</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stress</span></code>, <code class="docutils literal notranslate"><span class="pre">strain</span></code>, <code class="docutils literal notranslate"><span class="pre">dstrain</span></code>, <code class="docutils literal notranslate"><span class="pre">dstress</span></code>, <code class="docutils literal notranslate"><span class="pre">F</span></code>, affine/material history</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">3,</span> <span class="pre">3)</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">phi</span></code></p></td>
@@ -64,30 +64,32 @@ normalising mass-weighted fields.</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">(n,)</span></code>, integer</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">n</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">4)</span></code>, integer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">k)</span></code>, integer; k=4 linear, k=9 quadratic</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">N</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">4)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">k)</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">G</span></code> (shape-function gradients)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">4,</span> <span class="pre">3)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">G</span></code> (shape-function gradients), <code class="docutils literal notranslate"><span class="pre">offsets</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">k,</span> <span class="pre">3)</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">L</span></code> (velocity gradient), <code class="docutils literal notranslate"><span class="pre">L_T</span></code> (transpose view)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">3,</span> <span class="pre">3)</span></code></p></td>
 </tr>
 </tbody>
 </table>
-<p>The four neighbours are bottom-left, bottom-right, top-right, top-left. Particle
+<p>Linear neighbours are bottom-left, bottom-right, top-right, top-left. Quadratic
+neighbours are a tensor-product nine-entry stencil, with boundary/periodic mapping
+described in <a class="reference internal" href="numerical-foundations.html"><span class="std std-doc">the updated methods</span></a>. Particle
 and grid vectors retain three components; geometry and transport remain two
 dimensional. Constitutive tensor traces and norms reduce tensor axes only.</p>
 <p><code class="docutils literal notranslate"><span class="pre">Particles(P,</span> <span class="pre">G,</span> <span class="pre">material,</span> <span class="pre">material_id)</span></code> constructs one batch.
 <code class="docutils literal notranslate"><span class="pre">ParticleSystem(P,</span> <span class="pre">G)</span></code> coordinates the material list. Supported laws implement
 <code class="docutils literal notranslate"><span class="pre">law(particles,</span> <span class="pre">material_parameters,</span> <span class="pre">simulation_parameters)</span></code> and update history and
-<code class="docutils literal notranslate"><span class="pre">dstress</span></code>. The original five laws retain their existing Lie stress-rate integration;
-restored <code class="docutils literal notranslate"><span class="pre">dp</span></code>/<code class="docutils literal notranslate"><span class="pre">dp_rate</span></code> solids use a symmetric corotational spin split, and restored
-<code class="docutils literal notranslate"><span class="pre">bingham</span></code>/<code class="docutils literal notranslate"><span class="pre">linear_mu</span></code> fluids prescribe current stress directly. Rigid materials
-bypass the stress update and move at their prescribed velocities. See the
-<a class="reference internal" href="constitutive-models.html"><span class="std std-doc">constitutive audit</span></a> for equations and integration tests.
+<code class="docutils literal notranslate"><span class="pre">dstress</span></code>. Updated mechanics uses neo-Hookean elastic stress, objective rate-form
+plasticity, and algebraic fluid stress; it evolves <code class="docutils literal notranslate"><span class="pre">F</span></code>, <code class="docutils literal notranslate"><span class="pre">J</span></code>, <code class="docutils literal notranslate"><span class="pre">V</span></code>, and <code class="docutils literal notranslate"><span class="pre">rho</span></code>.
+Explicit legacy mode retains the older equations/integration. Rigid materials
+bypass deformation/stress evolution and follow prescribed velocity. See the
+<a class="reference internal" href="numerical-foundations.html"><span class="std std-doc">updated methods</span></a> and <a class="reference internal" href="constitutive-models.html"><span class="std std-doc">constitutive audit</span></a>.
 The registry in <code class="docutils literal notranslate"><span class="pre">constit.py</span></code> is the only material dispatch mechanism.</p>
 <p>Uniform mass/volume properties, velocities, and grain fractions are copied into
 independent writable arrays. Initial velocity must be <code class="docutils literal notranslate"><span class="pre">(3,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">3)</span></code>;
@@ -115,15 +117,16 @@ Particle positions wrap with modulo arithmetic before cell lookup.</p>
 <li><p>Reset grid, update loading, determine cells and basis functions.</p></li>
 <li><p>Deposit mass, momentum, composition, and kinetic pressure across all materials.</p></li>
 <li><p>Merge periodic sums, calculate valid nodes, and impose momentum constraints.</p></li>
-<li><p>Gather velocity, update strain/history/stress, and deposit diagnostics.</p></li>
+<li><p>Gather velocity, update deformation/volume/density and strain/history/stress,
+and deposit diagnostics. Legacy mode omits deformation/volume evolution.</p></li>
 <li><p>Deposit forces, impose force boundaries, and update grid momentum.</p></li>
 <li><p>Calculate bulk shear rate and, if enabled, conservative segregation exchanges.</p></li>
 <li><p>Return species-aware composition exchanges, then update particle position and
 velocity and handle particle boundaries.</p></li>
 </ol>
-<p>Mass and volume remain fixed during deformable motion. Reconstructed density is
-a diagnostic retained from the scalar solver, including its use in the existing
-Pouliquen low-density cutoff. This conversion introduces no density evolution law.</p>
+<p>Particle mass remains fixed during deformable motion; updated volume is <code class="docutils literal notranslate"><span class="pre">J*V0</span></code>
+and physical density is <code class="docutils literal notranslate"><span class="pre">m/V</span></code>. Legacy mode alone fixes volume and reconstructs
+particle density from nodal occupancy, retaining the old Pouliquen density cutoff.</p>
 <p>The following input conventions remain supported:</p>
 <ul class="simple">
 <li><p>A single material object or list in <code class="docutils literal notranslate"><span class="pre">P.S</span></code>.</p></li>
@@ -181,8 +184,9 @@ formula sensitive; it has not been regularised with a new physical parameter.</p
 <li><p>Gravity potential energy uses its Cartesian projection, avoiding division by a
 particle’s zero x-coordinate in the old angle-based expression.</p></li>
 </ul>
-<p>The original five laws retain their constitutive equations, coefficients, tension
-convention, viscosity cap, and stress-rate formulation. The subsequently restored
+<p>The original-five compatibility equations remain available in explicit legacy
+mode. Updated mechanics intentionally changes their stress integration, volume,
+density, and fluid conventions; see <a class="reference internal" href="numerical-foundations.html"><span class="std std-doc">the updated methods</span></a>. The subsequently restored
 laws have explicit physical corrections and separate analytical tests; see the
 <a class="reference internal" href="constitutive-models.html"><span class="std std-doc">constitutive audit</span></a>. The segregation flux,
 reconstruction, and return transfer were subsequently corrected to enforce mixture
@@ -311,49 +315,52 @@ in source. Unsupported laws are deliberately not substituted with different laws
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">macro</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">pierre</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">modern_ball</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">poly_avalanche</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">pierre</span></code></p></td>
+<td><p>supported smoke-tested</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">poly_avalanche</span></code></p></td>
 <td><p>unsupported material law: Unsupported material law ‘viscous_size’</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">poly_seg_test</span> <span class="pre">22</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">poly_seg_test</span> <span class="pre">22</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">pouliquen_unit_test</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">pouliquen_unit_test</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">seg_unit_test</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">seg_unit_test</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">silo</span> <span class="pre">11</span> <span class="pre">2</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">silo</span> <span class="pre">11</span> <span class="pre">2</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">slope_stab</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">slope_stab</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">stokes</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">stokes</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">tri_seg_test</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">tri_seg_test</span></code></p></td>
 <td><p>unsupported material law: Unsupported material law ‘viscous_size’</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">triaxial</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">triaxial</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">tunnel</span></code></p></td>
-<td><p>unsupported material law: Retired material law ‘elastic_time’; see constitutive audit</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">tunnel</span></code></p></td>
+<td><p>unsupported material law: Retired elastic_time; see constitutive audit</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">vicky</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">vicky</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">vicky_latest</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">vicky_latest</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">viscous_unit_test</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">viscous_unit_test</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">vm_unit_test</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">MPM.py</span> <span class="pre">vm_unit_test</span></code></p></td>
 <td><p>supported smoke-tested</p></td>
 </tr>
 </tbody>
@@ -390,6 +397,8 @@ in source. Unsupported laws are deliberately not substituted with different laws
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Methods and reference</span></p>
 <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="numerical-foundations.html">Updated mechanics, interpolation, transfers, and diagnostics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="implementation-todo.html">Solver implementation checklist</a></li>
 <li class="toctree-l1"><a class="reference internal" href="constitutive-models.html">Constitutive model audit</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">NumPy array conversion</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#design-and-public-interfaces">Design and public interfaces</a></li>
