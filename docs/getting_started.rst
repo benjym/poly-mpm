@@ -6,11 +6,15 @@ Getting started
 Installation
 ============
 
-Python 3.12 is the tested baseline. Install in a virtual environment from a checkout::
+Python 3.14 is the supported baseline. The project pins Python 3.14.10 and locks
+runtime/test dependencies. With a current version of uv, from a checkout::
 
-    python3.12 -m venv .venv
+    uv sync --extra dev --locked
     source .venv/bin/activate
-    python -m pip install -e '.[dev]'
+
+Alternatively, create a virtual environment with ``python3.14 -m venv .venv``,
+activate it, and install with ``python -m pip install -e '.[dev]'``. This uses the
+supported dependency floors rather than reproducing the exact locked environment.
 
 Running examples
 ================

@@ -127,6 +127,15 @@ stress-rate formulation, and KT flux/reconstruction equations are otherwise
 retained. Changes are checked against analytical cases and independent corrected
 scalar kernels, not blind parity with known defects in `master`.
 
+## Runtime and dependency baseline
+
+The supported baseline is Python 3.14, pinned to 3.14.10 in `.python-version`.
+Dependency floors are NumPy 2.5.4, SciPy 1.18.1, Astropy 8.0.2, Matplotlib 3.11.2,
+and pytest 9.2. The complete resolved environment is recorded in `uv.lock`.
+Use `uv sync --extra dev --locked` with a current uv release to reproduce it.
+The Python 3.12.8 performance report is retained as a historical measurement;
+the full test suite is separately validated on Python 3.14.
+
 ## Validation and remaining limitations
 
 Tests cover shape functions, affine flow, pure rotation, repeated-node transfers,

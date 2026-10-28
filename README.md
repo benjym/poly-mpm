@@ -6,16 +6,21 @@ material. The supported timestep has no Python loops over individual particles.
 
 ## Install and run
 
-Python 3.12 is the tested baseline. From a checkout:
+Python 3.14 is the supported baseline; `.python-version` pins Python 3.14.10.
+`uv.lock` records the complete tested runtime and test dependencies. With a current
+version of uv, from a checkout:
 
 ```sh
-python3.12 -m venv .venv
+uv sync --extra dev --locked
 source .venv/bin/activate
-python -m pip install -e '.[dev]'
 python MPM.py ball
 # Or use the installed command:
 poly-mpm ball
 ```
+
+For a pip-based setup, use `python3.14 -m venv .venv`, activate it, and run
+`python -m pip install -e '.[dev]'`. This follows the supported minimum versions;
+use the lockfile workflow for the exact tested dependency set.
 
 The default output is `im/<example>/<first-material-law>/`, unless an input defines
 `supername` or `save_dir`. Examples can run for a long time at their original
@@ -49,6 +54,11 @@ or claiming numerical equivalence to every bug in `master`. It reports five-run
 medians, stage timings, environment versions, particle-state storage, and traced
 peak allocations during an array timestep. The complete default run includes
 100,000-particle scalar cases and takes several minutes.
+
+The original performance report was measured on Python 3.12.8 before the runtime
+upgrade. It remains a historical comparison; those timings have not been relabelled
+as Python 3.14 measurements. The full test suite and example smoke tests also pass
+on Python 3.14 with the locked dependencies.
 
 Results: [benchmark report](benchmarks/README.md),
 [raw timings](benchmarks/results.json),
