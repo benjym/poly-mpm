@@ -46,7 +46,14 @@ use guarded dispatch: a host upper bound with each thread reading the active
 extent from a device record. Timings use host wall time around waited
 submissions. Metal command buffers are single-use, so replay requires
 re-encoding; mechanics and solver code should preallocate workspaces so that
-re-encoding allocates nothing. Gate 2 (mechanics kernels) is next.
+re-encoding allocates nothing.
+
+Gate 2 is partly implemented: the compact operator (`mpm_gpu/mechanics.py`,
+`shaders/mechanics.slang`) matches the FP64 CPU assembly, checked by
+`mpm_gpu/mechanics_checks.py` against states from `mpm_gpu/fixtures.py`. The
+local metric and tangential eigensystem, local Coulomb solves and planar
+exponential deformation remain; `mechanics_checks.PENDING` lists them and
+keeps the stage `partial` until they pass.
 
 ## First action on the target Mac
 

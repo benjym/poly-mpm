@@ -118,7 +118,18 @@ independent and avoid a CPU solver fallback.
    binning, reductions, barriers and guarded dispatch are validated. Indirect
    dispatch and GPU timestamps are unavailable in the current SlangPy Metal
    backend and must not be used.
-2. **Mechanics kernels.** Node-owned gathers using device bins; compact paired
+2. **Mechanics kernels (operator passed on Apple M4; remainder pending).**
+   `mpm_gpu/mechanics.py` bins particles by cell on the device and assembles
+   nine integrated gradient 2-vectors per stress row by row-owned gathers,
+   with periodic aliases matched by canonical index. `B u` gathers by stress
+   row and `B.T z` by velocity node through the static transpose incidence.
+   Against the FP64 CPU `assemble(..., compact=True)` on wall and periodic
+   columns (including one- and two-cell periodic strips and particles on the
+   closed upper edge), relative block, `B u` and `B.T z` errors are at most
+   4.5e-7 and the adjoint pairing error is at most 5e-8
+   (`python -m mpm_gpu.validate --stage mechanics`). The local metric, local
+   Coulomb solves and planar exponential are not yet implemented, and the stage
+   reports `partial`. Full scope: node-owned gathers using device bins; compact paired
    `B`/`B.T`; periodic aliases merged; local metric and analytic tangential
    eigensystem; exact opening/sticking/sliding local solves; planar exponential
    with scaling/squaring and the full compatible 3×3 deformation gradient.

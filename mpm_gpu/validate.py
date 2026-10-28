@@ -31,8 +31,12 @@ def fingerprint():
         "runtime.py",
         "primitives.py",
         "topology.py",
+        "mechanics.py",
+        "mechanics_checks.py",
+        "fixtures.py",
         "validate.py",
         "shaders/primitives.slang",
+        "shaders/mechanics.slang",
     ]
     return {name: hashlib.sha256(root.joinpath(name).read_bytes()).hexdigest() for name in names}
 
@@ -41,6 +45,10 @@ def cpu_checks():
     """Packaging and static-reference checks, explicitly not Metal validation."""
     shader = resources.files("mpm_gpu.shaders").joinpath("primitives.slang").read_text()
     require("void scan_tiles" in shader and "void guarded_marker" in shader, "shader resources missing")
+    mechanics = resources.files("mpm_gpu.shaders").joinpath("mechanics.slang").read_text()
+    require(
+        "void assemble_gradients" in mechanics and "void apply_bt" in mechanics, "mechanics shader missing"
+    )
     from types import SimpleNamespace
     from .config import defaults
 
@@ -338,6 +346,19 @@ def validate_runtime(rt, *, benchmark=False):
     )
 
 
+def validate_mechanics(rt):
+    from .mechanics_checks import PENDING, cases
+
+    results = []
+    for name, check in cases(rt):
+        _case(results, name, check)
+    if any(r["status"] != "passed" for r in results):
+        status = "failed"
+    else:
+        status = "partial" if PENDING else "passed"
+    return dict(status=status, cases=results, pending=list(PENDING))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--stage", choices=(*STAGES, "all"), default="all")
@@ -371,18 +392,30 @@ def main(argv=None):
                 report["environment"] = rt.environment
                 report["startup_seconds"] = rt.startup_seconds
                 report["stages"]["runtime"] = validate_runtime(rt, benchmark=args.benchmark)
+                requested = (
+                    () if args.stage == "runtime" else STAGES[1:] if args.stage == "all" else (args.stage,)
+                )
+                if "mechanics" in requested and report["stages"]["runtime"]["status"] == "passed":
+                    report["stages"]["mechanics"] = validate_mechanics(rt)
                 report["accounting"] = rt.metrics()
-            if report["stages"]["runtime"]["status"] != "passed":
+            statuses = [stage["status"] for stage in report["stages"].values()]
+            if "failed" in statuses:
                 report["status"] = "failed"
-            elif args.stage != "runtime":
-                requested = STAGES[1:] if args.stage == "all" else (args.stage,)
+            elif requested:
                 for stage in requested:
-                    report["stages"][stage] = dict(
-                        status="not_implemented",
-                        reason="Dependent on the preceding Apple silicon hardware validation gate; see docs/gpu.md",
+                    report["stages"].setdefault(
+                        stage,
+                        dict(
+                            status="not_implemented",
+                            reason="Dependent on the preceding Apple silicon hardware validation gate; see docs/gpu.md",
+                        ),
                     )
-                report["status"] = "runtime_passed_later_stages_pending"
-                code = 3
+                if all(report["stages"][stage]["status"] == "passed" for stage in requested):
+                    report["status"] = "passed"
+                    code = 0
+                else:
+                    report["status"] = "runtime_passed_later_stages_pending"
+                    code = 3
             else:
                 report["status"] = "passed"
                 code = 0
