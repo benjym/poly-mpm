@@ -1,44 +1,84 @@
 # Polydisperse material point method
 
-This code implements a basic two dimensional material point method, with additional functionality to additionally calculate segregation during granular flow.
+A basic two-dimensional material point method with grain-size segregation during
+granular flow. Particle state is stored in NumPy arrays, with one collection per
+material. The supported timestep has no Python loops over individual particles.
 
-## Getting Started
+## Install and run
 
-Just download a copy and follow the [documentation](http://benjym.github.io/poly-mpm/build/html/index.html)!
+Python 3.12 is the tested baseline. From a checkout:
 
-### Prerequisites
+```sh
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+python MPM.py ball
+# Or use the installed command:
+poly-mpm ball
+```
 
-You will need a full python3 environment installed. I recommend [anaconda](https://www.anaconda.com/download/) for this.
+The default output is `im/<example>/<first-material-law>/`, unless an input defines
+`supername` or `save_dir`. Examples can run for a long time at their original
+settings; the compatibility checks use bounded runs.
 
+Supported material laws are `rigid`, `elastic`, `viscous`, `von_mises`, and
+`pouliquen`. Rigid particles follow prescribed velocities; no new contact model is
+provided. Experimental and absent laws fail explicitly at initialisation.
 
-## Built With
+```sh
+python MPM.py bi_seg_test 22 2 11
+python MPM.py bi_seg_test 22 8 11
+```
 
-* [Scipy](https://www.scipy.org/)
-* [Numpy](http://www.numpy.org/)
-* [Matplotlib](https://matplotlib.org/)
+See [the example matrix](docs/array-conversion.md#example-compatibility) for required
+arguments and the status of every example. A smoke test establishes compatibility,
+not long-run physical validation or a guarantee of stability for its original dt.
 
-## Contributing
+## Tests and benchmarks
 
-<!-- Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us. -->
-If you would like to contribute to the code, please contact Benjy at <benjy.marks@sydney.edu.au>
+```sh
+python -m pytest -q -W error::RuntimeWarning
+python -m benchmarks.audit_examples
+python -m benchmarks.segregation_drift
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m benchmarks.compare
+```
 
+The benchmark compares identical states against an independent corrected scalar
+reference derived from the old solver, rather than timing the broken conversion
+or claiming numerical equivalence to every bug in `master`. It reports five-run
+medians, stage timings, environment versions, particle-state storage, and traced
+peak allocations during an array timestep. The complete default run includes
+100,000-particle scalar cases and takes several minutes.
 
-<!-- ## Versioning
+Results: [benchmark report](benchmarks/README.md),
+[raw timings](benchmarks/results.json),
+[example audit](benchmarks/examples.json), and
+[segregation drift](benchmarks/segregation_drift.json).
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). -->
+## Array interfaces and migration
 
-## Authors
+`initialise.get_parameters(args)` returns `(P, G, L)` as before. `L.materials`
+contains array-backed `Particles` collections; `P.S` is normalised to a material
+list. The old `L.S[p][i]` object interface has been removed. Input geometry may
+still be generated with lists; it is converted once when particle state is built.
 
-* [Benjy Marks](www.benjymarks.com)
+Use `MPM.step(P, G, L)` for one timestep without advancing the clock or producing
+output. Use `MPM.run(P, G, L, max_steps=100, output=False)` for a bounded run.
 
-<!-- See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project. -->
+All output callbacks receive `(L, P, G)`. Legacy plotting flags remain supported,
+as do `segregate_grid` and the misspelled `after_ever_timestep` aliases. Custom
+callbacks replace default output for their stage. See
+[conversion details](docs/array-conversion.md) for shapes, conventions, intentional
+numerical corrections, and remaining limitations.
 
-## License
+The segregation equations and KT scheme are retained. The coupled scheme has
+composition and species-mass drift; clipping is disabled by default and this
+conversion does not claim exact conservation of the coupled method. The reported
+100-step drift measurements make this limitation reproducible.
 
-This project is licensed under the GNU GPL License - see the [LICENSE](LICENSE) file for details
+## Project
 
-<!-- ## Acknowledgments
+Originally authored by Benjy Marks, University of Sydney. NumPy, SciPy, Astropy,
+and Matplotlib provide the numerical and plotting environment.
 
-* Hat tip to anyone who's code was used
-* Inspiration
-* etc -->
+Licensed under the [GNU GPL v3](LICENSE).

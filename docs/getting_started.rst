@@ -1,48 +1,45 @@
 .. _getting_started:
 
-
-***************
 Getting started
 ***************
 
-.. _installation:
-
 Installation
-=============================
+============
 
-For this to run, you will need the following installed
+Python 3.12 is the tested baseline. Install in a virtual environment from a checkout::
 
-    * Python 2.7+/3+
-    * NumPy
-    * Matplotlib
+    python3.12 -m venv .venv
+    source .venv/bin/activate
+    python -m pip install -e '.[dev]'
 
-If running on Mac OS X, I recommend installing the Anaconda_ package. On Ubuntu, just type::
-    
-    sudo apt-get install python python-numpy python-matplotlib
+Running examples
+================
 
-.. _Anaconda: https://www.continuum.io/downloads
+Each input module supplies one simulation's parameters::
 
-.. _example:
+    python MPM.py ball
+    python MPM.py bi_seg_test 22 2 11
 
-Running an example
-=============================
+Default output is ``im/<example>/<first-material-law>/``. An input may override
+this with ``supername`` or ``save_dir``. Original examples may request long runs.
 
-Parameters for each simulation are contained in separate files in the inputs directory. For example, to run the simulation described by :file:`inputs/ball.py`, run the following in the terminal::
+Supported laws are rigid, elastic, viscous, von Mises, and Pouliquen. Unsupported
+experimental laws fail at initialisation. See ``docs/array-conversion.md`` for
+the complete example matrix, numerical corrections, and remaining limitations.
 
-  python MPM.py ball
+Array state and tests
+=====================
 
-By default, the output files should be contained in :file:`~/Documents/poly-mpm`.
+``initialise.get_parameters(args)`` returns ``(P, G, L)``. ``L.materials`` contains
+one array collection per material; ``P.S`` is a material list. All output callbacks
+receive ``(L, P, G)``. Run bounded simulations with::
 
+    from initialise import get_parameters
+    from MPM import run
+    run(*get_parameters(['ball']), max_steps=100, output=False)
 
-Loading example data
-=============================
+Run the test suite and the benchmark from the repository root::
 
-This is a fairly convoluted process, but is kind of summarised here:
-
-.. graphviz::
-
-   digraph foo {
-      "input file" -> "inititalise" -> "params.Params instance";
-   }
-   
-Any data which is not provided in the input file will be created with a default value in :file:`initialise.py`. This complete data is then passed into the params.Params instance, which is used for the rest of the simulation.
+    python -m pytest -q -W error::RuntimeWarning
+    python -m benchmarks.audit_examples
+    python -m benchmarks.compare

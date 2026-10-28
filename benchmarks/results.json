@@ -1,0 +1,583 @@
+{
+  "environment": {
+    "python": "3.12.8 (v3.12.8:2dc476bcb91, Dec  3 2024, 14:43:20) [Clang 13.0.0 (clang-1300.0.29.30)]",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "versions": {
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "matplotlib": "3.11.2",
+      "astropy": "8.0.2"
+    }
+  },
+  "repeats": 5,
+  "warmups": 1,
+  "cases": [
+    {
+      "particles": 1000,
+      "law": "elastic",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.03268616000423208,
+        "constitutive_and_diagnostics": 0.10850210899661761,
+        "forces": 0.019502523995470256,
+        "grid": 0.0015507520001847297,
+        "segregation": 4.440080374479294e-07,
+        "movement": 0.024850685003912076,
+        "total": 0.1873367530060932
+      },
+      "array": {
+        "transfers": 0.0003691700112540275,
+        "constitutive_and_diagnostics": 0.0011080980038968846,
+        "forces": 0.00041988999873865396,
+        "grid": 0.001406298004440032,
+        "segregation": 3.0499359127134085e-07,
+        "movement": 0.0007982469978742301,
+        "total": 0.0041291859961347654
+      },
+      "array_timestep_peak_allocated_bytes": 1185815,
+      "particle_state_bytes": 704000,
+      "speedup": 45.368930627357244
+    },
+    {
+      "particles": 1000,
+      "law": "viscous",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.033282036005402915,
+        "constitutive_and_diagnostics": 0.12351653999940027,
+        "forces": 0.020788072011782788,
+        "grid": 0.0015512239915551618,
+        "segregation": 3.7399877328425646e-07,
+        "movement": 0.025540932998410426,
+        "total": 0.20504298897867557
+      },
+      "array": {
+        "transfers": 0.0003897509886883199,
+        "constitutive_and_diagnostics": 0.0011514080106280744,
+        "forces": 0.0004227880126563832,
+        "grid": 0.001422083005309105,
+        "segregation": 3.1400122679769993e-07,
+        "movement": 0.0008589060016674921,
+        "total": 0.004254912011674605
+      },
+      "array_timestep_peak_allocated_bytes": 1338080,
+      "particle_state_bytes": 704000,
+      "speedup": 48.18971306952522
+    },
+    {
+      "particles": 1000,
+      "law": "von_mises",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.03234064001298975,
+        "constitutive_and_diagnostics": 0.12406032701255754,
+        "forces": 0.01998364200699143,
+        "grid": 0.0015243310044752434,
+        "segregation": 4.2001192923635244e-07,
+        "movement": 0.024557954995543696,
+        "total": 0.20239306300936732
+      },
+      "array": {
+        "transfers": 0.0003881779994117096,
+        "constitutive_and_diagnostics": 0.0012549770035548136,
+        "forces": 0.00041594498907215893,
+        "grid": 0.0013827119983034208,
+        "segregation": 3.2500247471034527e-07,
+        "movement": 0.0008148210035869852,
+        "total": 0.0044299979927018285
+      },
+      "array_timestep_peak_allocated_bytes": 1266031,
+      "particle_state_bytes": 704000,
+      "speedup": 45.686942373969124
+    },
+    {
+      "particles": 1000,
+      "law": "pouliquen",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.03262712601281237,
+        "constitutive_and_diagnostics": 0.11830788099905476,
+        "forces": 0.0197007460083114,
+        "grid": 0.0015197859902400523,
+        "segregation": 4.0099257603287697e-07,
+        "movement": 0.02447381999809295,
+        "total": 0.19776034900860395
+      },
+      "array": {
+        "transfers": 0.0003769759932765737,
+        "constitutive_and_diagnostics": 0.0012092109973309562,
+        "forces": 0.0004134579940000549,
+        "grid": 0.0014009750011609867,
+        "segregation": 3.2299431040883064e-07,
+        "movement": 0.0008005290001165122,
+        "total": 0.004204587006825022
+      },
+      "array_timestep_peak_allocated_bytes": 1370464,
+      "particle_state_bytes": 704000,
+      "speedup": 47.03442899090753
+    },
+    {
+      "particles": 1000,
+      "law": "pouliquen",
+      "grain_classes": 2,
+      "segregation": true,
+      "scalar": {
+        "transfers": 0.03021254899795167,
+        "constitutive_and_diagnostics": 0.11943937400064897,
+        "forces": 0.019845595001243055,
+        "grid": 0.0015275320038199425,
+        "segregation": 0.002786258002743125,
+        "movement": 0.024723360998905264,
+        "total": 0.1983873259887332
+      },
+      "array": {
+        "transfers": 0.0004295859980629757,
+        "constitutive_and_diagnostics": 0.0012179699988337234,
+        "forces": 0.00041552098991815,
+        "grid": 0.0014833619934506714,
+        "segregation": 0.0027129609952680767,
+        "movement": 0.0008276129956357181,
+        "total": 0.0071068699908209965
+      },
+      "array_timestep_peak_allocated_bytes": 1499903,
+      "particle_state_bytes": 712000,
+      "speedup": 27.91486635395946
+    },
+    {
+      "particles": 1000,
+      "law": "pouliquen",
+      "grain_classes": 8,
+      "segregation": true,
+      "scalar": {
+        "transfers": 0.029864364987588488,
+        "constitutive_and_diagnostics": 0.11816870501206722,
+        "forces": 0.019821358000626788,
+        "grid": 0.001575824004248716,
+        "segregation": 0.0037660550005966797,
+        "movement": 0.02457492500252556,
+        "total": 0.1984822759841336
+      },
+      "array": {
+        "transfers": 0.0005707349919248372,
+        "constitutive_and_diagnostics": 0.0012317670043557882,
+        "forces": 0.0004145909915678203,
+        "grid": 0.0015022099978523329,
+        "segregation": 0.003501572005916387,
+        "movement": 0.0008382840023841709,
+        "total": 0.008056279009906575
+      },
+      "array_timestep_peak_allocated_bytes": 3062405,
+      "particle_state_bytes": 760000,
+      "speedup": 24.63696648788673
+    },
+    {
+      "particles": 1000,
+      "law": "rigid",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.03224253200460225,
+        "constitutive_and_diagnostics": 0.029583116003777832,
+        "forces": 0.019861906999722123,
+        "grid": 0.001509206005721353,
+        "segregation": 4.210014594718814e-07,
+        "movement": 5.553998926188797e-05,
+        "total": 0.08383430399408098
+      },
+      "array": {
+        "transfers": 0.0005543029983527958,
+        "constitutive_and_diagnostics": 0.00022365299810189754,
+        "forces": 0.00044660399726126343,
+        "grid": 0.0016232909983955324,
+        "segregation": 3.8699363358318806e-07,
+        "movement": 0.0004217349924147129,
+        "total": 0.0031829989893594757
+      },
+      "array_timestep_peak_allocated_bytes": 953265,
+      "particle_state_bytes": 704000,
+      "speedup": 26.338149736877927
+    },
+    {
+      "particles": 10000,
+      "law": "elastic",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.327023856996675,
+        "constitutive_and_diagnostics": 1.0941130400024122,
+        "forces": 0.19737784199242014,
+        "grid": 0.0014995239907875657,
+        "segregation": 3.6899291444569826e-07,
+        "movement": 0.24703346600290388,
+        "total": 1.8653741400048602
+      },
+      "array": {
+        "transfers": 0.0021628940012305975,
+        "constitutive_and_diagnostics": 0.00869652999972459,
+        "forces": 0.0037723109999205917,
+        "grid": 0.0015617589961038902,
+        "segregation": 4.5499473344534636e-07,
+        "movement": 0.00588000200514216,
+        "total": 0.021997934993123636
+      },
+      "array_timestep_peak_allocated_bytes": 5678336,
+      "particle_state_bytes": 7040000,
+      "speedup": 84.7976930829171
+    },
+    {
+      "particles": 10000,
+      "law": "viscous",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.32288083899766207,
+        "constitutive_and_diagnostics": 1.1112578120082617,
+        "forces": 0.19865208899136633,
+        "grid": 0.0015474500105483457,
+        "segregation": 4.469911800697446e-07,
+        "movement": 0.2450019599928055,
+        "total": 1.8794383779895725
+      },
+      "array": {
+        "transfers": 0.0019306539907120168,
+        "constitutive_and_diagnostics": 0.00882553099654615,
+        "forces": 0.003831965004792437,
+        "grid": 0.0014286200021160766,
+        "segregation": 3.66999302059412e-07,
+        "movement": 0.005576527997618541,
+        "total": 0.021779129005153663
+      },
+      "array_timestep_peak_allocated_bytes": 7278720,
+      "particle_state_bytes": 7040000,
+      "speedup": 86.29538754946697
+    },
+    {
+      "particles": 10000,
+      "law": "von_mises",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.3216856229992118,
+        "constitutive_and_diagnostics": 1.2413163890014403,
+        "forces": 0.19630243600113317,
+        "grid": 0.0015054230025270954,
+        "segregation": 4.080065991729498e-07,
+        "movement": 0.24828989000525326,
+        "total": 2.008023943999433
+      },
+      "array": {
+        "transfers": 0.0019381900056032464,
+        "constitutive_and_diagnostics": 0.009753828999237157,
+        "forces": 0.003916720001143403,
+        "grid": 0.0014794500020798296,
+        "segregation": 3.7299469113349915e-07,
+        "movement": 0.005930076004005969,
+        "total": 0.024456176033709198
+      },
+      "array_timestep_peak_allocated_bytes": 6728952,
+      "particle_state_bytes": 7040000,
+      "speedup": 82.10702855719025
+    },
+    {
+      "particles": 10000,
+      "law": "pouliquen",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.3224230229970999,
+        "constitutive_and_diagnostics": 1.1782068140018964,
+        "forces": 0.19490805099485442,
+        "grid": 0.001504567000665702,
+        "segregation": 4.67000063508749e-07,
+        "movement": 0.24409644398838282,
+        "total": 1.947264445014298
+      },
+      "array": {
+        "transfers": 0.0020244780025677755,
+        "constitutive_and_diagnostics": 0.00928414799273014,
+        "forces": 0.0038046580011723563,
+        "grid": 0.0014502440026262775,
+        "segregation": 3.710010787472129e-07,
+        "movement": 0.00575066200690344,
+        "total": 0.022345754987327382
+      },
+      "array_timestep_peak_allocated_bytes": 7518672,
+      "particle_state_bytes": 7040000,
+      "speedup": 87.14247722301714
+    },
+    {
+      "particles": 10000,
+      "law": "pouliquen",
+      "grain_classes": 2,
+      "segregation": true,
+      "scalar": {
+        "transfers": 0.2968710220011417,
+        "constitutive_and_diagnostics": 1.1594491160067264,
+        "forces": 0.19405552399985027,
+        "grid": 0.0014811349974479526,
+        "segregation": 0.006324900998151861,
+        "movement": 0.24636375799309462,
+        "total": 1.9020206690038322
+      },
+      "array": {
+        "transfers": 0.0029765829967800528,
+        "constitutive_and_diagnostics": 0.009242634012480266,
+        "forces": 0.003926339995814487,
+        "grid": 0.0014385009999386966,
+        "segregation": 0.006252566003240645,
+        "movement": 0.006597245010198094,
+        "total": 0.03130048299499322
+      },
+      "array_timestep_peak_allocated_bytes": 7559016,
+      "particle_state_bytes": 7120000,
+      "speedup": 60.76649581759096
+    },
+    {
+      "particles": 10000,
+      "law": "pouliquen",
+      "grain_classes": 8,
+      "segregation": true,
+      "scalar": {
+        "transfers": 0.29680975299561396,
+        "constitutive_and_diagnostics": 1.1707747500040568,
+        "forces": 0.19182550699042622,
+        "grid": 0.001475053999456577,
+        "segregation": 0.009335865994216874,
+        "movement": 0.24197409799671732,
+        "total": 1.91008430000511
+      },
+      "array": {
+        "transfers": 0.0038976390060270205,
+        "constitutive_and_diagnostics": 0.010579837005934678,
+        "forces": 0.0038614039949607104,
+        "grid": 0.0014826870028628036,
+        "segregation": 0.008479369003907777,
+        "movement": 0.006695951000438072,
+        "total": 0.03615756098588463
+      },
+      "array_timestep_peak_allocated_bytes": 10910933,
+      "particle_state_bytes": 7600000,
+      "speedup": 52.826690958241855
+    },
+    {
+      "particles": 10000,
+      "law": "rigid",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 0.31960645598883275,
+        "constitutive_and_diagnostics": 0.2895384820003528,
+        "forces": 0.19269392298883758,
+        "grid": 0.0014776049938518554,
+        "segregation": 3.629975253716111e-07,
+        "movement": 0.00013991199375595897,
+        "total": 0.805143138000858
+      },
+      "array": {
+        "transfers": 0.002105090010445565,
+        "constitutive_and_diagnostics": 0.0014704170025652274,
+        "forces": 0.003823159000603482,
+        "grid": 0.0014475640055024996,
+        "segregation": 3.5100674722343683e-07,
+        "movement": 0.0021253419981803745,
+        "total": 0.011136553002870642
+      },
+      "array_timestep_peak_allocated_bytes": 3329265,
+      "particle_state_bytes": 7040000,
+      "speedup": 72.29733812547907
+    },
+    {
+      "particles": 100000,
+      "law": "elastic",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 3.1775371370022185,
+        "constitutive_and_diagnostics": 10.747980129002826,
+        "forces": 1.9217954229970928,
+        "grid": 0.0015292690077330917,
+        "segregation": 3.989989636465907e-07,
+        "movement": 2.4358685460028937,
+        "total": 18.273487320984714
+      },
+      "array": {
+        "transfers": 0.024177227009204216,
+        "constitutive_and_diagnostics": 0.10630320799828041,
+        "forces": 0.04150178800045978,
+        "grid": 0.001486228997237049,
+        "segregation": 3.66999302059412e-07,
+        "movement": 0.05935738098924048,
+        "total": 0.2325347579899244
+      },
+      "array_timestep_peak_allocated_bytes": 51758320,
+      "particle_state_bytes": 70400000,
+      "speedup": 78.58389635572887
+    },
+    {
+      "particles": 100000,
+      "law": "viscous",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 3.240747782998369,
+        "constitutive_and_diagnostics": 11.073797288001515,
+        "forces": 1.940866853998159,
+        "grid": 0.0014766740059712902,
+        "segregation": 3.6400160752236843e-07,
+        "movement": 2.443883794010617,
+        "total": 18.684741241988377
+      },
+      "array": {
+        "transfers": 0.020737223007017747,
+        "constitutive_and_diagnostics": 0.0959595499880379,
+        "forces": 0.04476684199471492,
+        "grid": 0.002286075003212318,
+        "segregation": 3.7199060898274183e-07,
+        "movement": 0.06274727499112487,
+        "total": 0.22680905698507559
+      },
+      "array_timestep_peak_allocated_bytes": 67758704,
+      "particle_state_bytes": 70400000,
+      "speedup": 82.3809308603486
+    },
+    {
+      "particles": 100000,
+      "law": "von_mises",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 3.2502419719967293,
+        "constitutive_and_diagnostics": 12.388242796005215,
+        "forces": 1.9736789390008198,
+        "grid": 0.0034817330015357584,
+        "segregation": 3.759923856705427e-07,
+        "movement": 2.465346249999129,
+        "total": 20.113914778994513
+      },
+      "array": {
+        "transfers": 0.02073012400069274,
+        "constitutive_and_diagnostics": 0.10426386899780482,
+        "forces": 0.04056425500311889,
+        "grid": 0.0014685249916510656,
+        "segregation": 3.8299185689538717e-07,
+        "movement": 0.060388729005353525,
+        "total": 0.2267163119831821
+      },
+      "array_timestep_peak_allocated_bytes": 62258952,
+      "particle_state_bytes": 70400000,
+      "speedup": 88.71842790247298
+    },
+    {
+      "particles": 100000,
+      "law": "pouliquen",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 3.1936911509983474,
+        "constitutive_and_diagnostics": 11.66703404999862,
+        "forces": 1.9338727540016407,
+        "grid": 0.005431579003925435,
+        "segregation": 3.7500285543501377e-07,
+        "movement": 2.4619206479983404,
+        "total": 19.216024681998533
+      },
+      "array": {
+        "transfers": 0.022765301007893868,
+        "constitutive_and_diagnostics": 0.12429127799987327,
+        "forces": 0.041581797995604575,
+        "grid": 0.0017882690008264035,
+        "segregation": 4.3401087168604136e-07,
+        "movement": 0.057201725998311304,
+        "total": 0.2527668020047713
+      },
+      "array_timestep_peak_allocated_bytes": 70158688,
+      "particle_state_bytes": 70400000,
+      "speedup": 76.0227392584403
+    },
+    {
+      "particles": 100000,
+      "law": "pouliquen",
+      "grain_classes": 2,
+      "segregation": true,
+      "scalar": {
+        "transfers": 2.977957325987518,
+        "constitutive_and_diagnostics": 11.68308264199004,
+        "forces": 1.9253752939985134,
+        "grid": 0.0015270820003934205,
+        "segregation": 0.05404922099842224,
+        "movement": 2.45092871801171,
+        "total": 19.129484943012358
+      },
+      "array": {
+        "transfers": 0.02660005699726753,
+        "constitutive_and_diagnostics": 0.10155202200985514,
+        "forces": 0.04258672200376168,
+        "grid": 0.0015158339956542477,
+        "segregation": 0.047044231003383175,
+        "movement": 0.05724608300079126,
+        "total": 0.2729471160128014
+      },
+      "array_timestep_peak_allocated_bytes": 70199032,
+      "particle_state_bytes": 71200000,
+      "speedup": 70.08494987034474
+    },
+    {
+      "particles": 100000,
+      "law": "pouliquen",
+      "grain_classes": 8,
+      "segregation": true,
+      "scalar": {
+        "transfers": 2.972347714996431,
+        "constitutive_and_diagnostics": 11.858797360997414,
+        "forces": 1.9621678719995543,
+        "grid": 0.0029544660064857453,
+        "segregation": 0.0708769589982694,
+        "movement": 2.4907884230051422,
+        "total": 19.45107577199815
+      },
+      "array": {
+        "transfers": 0.055083300001570024,
+        "constitutive_and_diagnostics": 0.11141610299819149,
+        "forces": 0.044801732001360506,
+        "grid": 0.0043511389958439395,
+        "segregation": 0.06678633300180081,
+        "movement": 0.06931184099812526,
+        "total": 0.3481634419877082
+      },
+      "array_timestep_peak_allocated_bytes": 100910053,
+      "particle_state_bytes": 76000000,
+      "speedup": 55.86765704334019
+    },
+    {
+      "particles": 100000,
+      "law": "rigid",
+      "grain_classes": 1,
+      "segregation": false,
+      "scalar": {
+        "transfers": 3.2400519080110826,
+        "constitutive_and_diagnostics": 2.984845792991109,
+        "forces": 1.937272794006276,
+        "grid": 0.0014588640042347834,
+        "segregation": 3.500026650726795e-07,
+        "movement": 0.003756805002922192,
+        "total": 8.16182691801805
+      },
+      "array": {
+        "transfers": 0.01983533299062401,
+        "constitutive_and_diagnostics": 0.019309369003167376,
+        "forces": 0.041648857994005084,
+        "grid": 0.0017905800050357357,
+        "segregation": 3.659952199086547e-07,
+        "movement": 0.021153084991965443,
+        "total": 0.11075931301456876
+      },
+      "array_timestep_peak_allocated_bytes": 27089265,
+      "particle_state_bytes": 70400000,
+      "speedup": 73.68975751000264
+    }
+  ]
+}

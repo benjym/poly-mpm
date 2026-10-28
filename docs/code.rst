@@ -5,7 +5,7 @@ The code is made up of the following modules:
 
     * `Main Module`_
     * `Material Points`_
-    * `Material Point Lists`_
+    * `Material Coordination`_
     * `Grid Operators`_
     * `Constitutive Models`_
     * `Integrators`_
@@ -24,15 +24,15 @@ Main Module
 Material Points
 ==========================
 
-.. autoclass:: particle.Particle
+.. autoclass:: particles.Particles
    :members:
 
 .. _material_point_lists:
 
-Material Point Lists
+Material Coordination
 ==========================
 
-.. automodule:: mplist
+.. autoclass:: particles.ParticleSystem
    :members:
 
 .. _grid_operators:
