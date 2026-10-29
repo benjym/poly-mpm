@@ -7,7 +7,8 @@ the discrete problem stalls every solver tried
 [regularisation study](granular-mixed.md#regularised-laws-under-refinement)).
 This note sets out the model, the time step and the solver that would replace
 it, what the code already provides and what must be built or decided first. It
-is a plan; nothing here is implemented.
+is a plan for the MPM code, where none of it is implemented yet; a one-dimensional
+prototype of the step is verified in [Shear-cell results](#shear-cell-results).
 
 ## Model
 
@@ -99,6 +100,18 @@ A convex solver whose iteration count does not grow with the grid:
 Both start from the previous step's solution and can use coarse-to-fine nested
 iteration.
 
+Jammed regions constrain the choice of smoother. Where a cell or quadrature
+point jams, `psi` has a cone at `D = 0`, and `D` is a difference of nodal
+velocities, so the kink is not separable in the nodal unknowns. Gauss–Seidel over
+nodes then cannot move a jammed group of nodes as one body and can stop short of
+the minimum. In the one-dimensional shear cell this is avoided by taking the
+cell strain rates as unknowns, with the walls as a linear constraint
+([Shear-cell results](#shear-cell-results)). That change of variables has no
+direct analogue on a two-dimensional grid, where strain rates must be compatible;
+the options there (strain-rate unknowns with compatibility as a constraint,
+smoothing over aggregates of nodes, or a primal–dual method on the product domain
+of the fixed cap) are not yet tested.
+
 ## Verification
 
 1. One-dimensional gravity-free shear cell against the steady solution and the
@@ -120,10 +133,10 @@ iteration.
 | Volumetric averaging (`fbar`) | Available in the explicit solver |
 | Segregation coupled to the granular step | Available (CPU and Metal) |
 | Dissipation potential for the chosen CIDR model | Derived; checked symbolically and numerically (`benchmarks/cidr_potential.py`) |
-| Newton solver on the potential with line search | Missing |
+| Newton solver on the potential with line search | Prototype in 1D (`benchmarks/cidr_shear_cell.py`): Newton for the inertial model, truncated nonsmooth Newton in cell strain rates for the critical-state model |
 | Multigrid hierarchy on the MPM grid | Missing |
 | GPU convex solver | Missing; the Metal port solves the stress-space problem this replaces, though its operators, binning, transfers and segregation carry over |
-| Shear-cell verification against published results | Inertial model done; critical-state model blocked on jammed cells ([Shear-cell results](#shear-cell-results)) |
+| Shear-cell verification against published results | Done for both models: grid convergence and lagged packing ([Shear-cell results](#shear-cell-results)); not yet compared point by point with the published transient curves |
 | Inclined-flow verification | Missing |
 
 ## Derivations
@@ -183,28 +196,37 @@ corner at `s = 0`: the static yield condition `|tau| <= 2 mu_1 p - p^2 / C`. On
 
 ### The cap
 
-`Y = alpha(I) p - p^2 / C` vanishes at the cap `p = p_cap(s)`, the root of
-`p = alpha(k s / sqrt(p)) C`; beyond it no stress state is admissible. With the
-glass-bead `mu(I)` and `C = 4e4` Pa, `p_cap` increases with `s` and is concave,
-starting from `p_cap(0) = 2 mu_1 C`.
+`Y = alpha(I) p - p^2 / C` vanishes at `p = alpha(I) C`, which increases with
+shear rate from `alpha(0) C = 2 mu_1 C` at rest. Without a bound on `p`, `psi`
+is not convex in `D` (it decreases with shear rate where `Y < 0`), and pure
+compaction has unbounded dissipation: Barker et al.'s flow rule
+`div u = 2 f |D|` allows no compaction without shear, so an unsheared column
+could not consolidate under its own weight. The flow rule therefore has to be
+completed by a bound on `p`, and the bound has to keep `psi` convex.
 
-The dissipation potential was evaluated by maximising `g - p delta` over `p`,
-with and without the bound `p <= p_cap(s)`, and tested for midpoint convexity
-in `(s, delta)` and monotonicity in `s` on 400 random pairs:
+The bound used is the fixed cap `p <= alpha(0) C = 2 mu_1 C`. Then
+`psi(s, delta) = sup_{0 <= p <= 2 mu_1 C} [g(s, p) - p delta]` is a supremum
+over a fixed set of functions convex in `(s, delta)` (`g_ss = 2 Y_I I / s >= 0`),
+so it is convex; and `psi_s = g_s = 2 Y >= 0` because `p <= alpha(0) C <=
+alpha(I) C`, so it is nondecreasing in `s` and convex as a function of `D`.
 
-| Bound on `p` | Convex in `(s, delta)` | Nondecreasing in `s` | `psi` under pure compaction (`s = 0`, `delta = -1`) |
-| --- | --- | --- | --- |
-| `0 <= p <= p_cap(s)` | no violation found | no violation found | `2 mu_1 C` (finite) |
-| `p >= 0` | no violation found | falls by up to 61% | bounded only by the search interval |
+The shear-dependent bound `p <= alpha(I) C`, where `Y = 0`, does not give a
+convex potential, although the region it bounds in `(s, p)` is convex. On its
+cap branch `psi = g(s, p_cap(s)) - p_cap(s) delta`, whose Hessian in
+`(s, delta)` has determinant `-p_cap'(s)^2 < 0`. With the glass-bead `mu(I)`
+and `C = 4e4` Pa, `I` stays below about 0.02 and the defect is below the
+tolerance of a sampled midpoint test; at grain scale (`C = 1`, `I` of order one)
+the midpoint test fails by 0.8% of `psi`, against 8e-6 (the optimiser's
+tolerance) for the fixed cap. The shear cell exposed it
+([Shear-cell results](#shear-cell-results)).
 
-Without the cap, `psi` is not convex in `D` (it decreases with shear rate where
-`Y < 0`), and pure compaction has unbounded dissipation: Barker et al.'s flow
-rule `div u = 2 f |D|` allows no compaction without shear, so an unsheared
-column could not consolidate under its own weight. With the cap, compaction at
-zero shear proceeds at the cap pressure, as normality gives at the cap in
-critical-state soil mechanics. Completing the flow rule this way is an addition
-to the published model and has to be stated as such. Sampled midpoint tests are
-evidence, not a proof of convexity.
+With the fixed cap, compaction at zero shear proceeds at the cap pressure, as
+normality gives at the cap in critical-state soil mechanics, and compaction while
+shearing does too, with shear stress `Y(2 mu_1 C, I) = 2 mu_1 C (alpha(I) -
+alpha(0))`. Completing the flow rule this way is an addition to the published
+model and has to be stated as such; it differs from the shear-dependent bound
+only for states with `p > 2 mu_1 C`, which are reached only while shearing and
+compacting at once.
 
 ### States at fixed packing
 
@@ -272,14 +294,14 @@ elastic compliance). Segregation needs no such choice: its potential uses
 ### Evaluating `psi`
 
 At a quadrature point with `s > 0`, `psi(s, delta) = g(s, p*) - p* delta`,
-where `p*` maximises `g - p delta` on `[0, p_cap(s)]`. Because `g` is concave in
+where `p*` maximises `g - p delta` on `[0, p_cap]`. Because `g` is concave in
 `p`, `p*` is unique and found by a bracketed scalar root of `g_p(s, p) = delta`,
 with three branches:
 
 | Branch | Condition | `p*` | `psi_s` (= `2 |tau|`) | `psi_delta` (= `-p`) |
 | --- | --- | --- | --- | --- |
 | Interior | `g_p(s, 0) > delta > g_p(s, p_cap)` | root of `g_p = delta` | `2 Y(p*, I*)` | `-p*` |
-| Cap | `g_p(s, p_cap) >= delta` | `p_cap(s)` | `(g_p - delta) p_cap'(s)` | `-p_cap(s)` |
+| Cap | `g_p(s, p_cap) >= delta` | `p_cap = 2 mu_1 C` | `2 Y(p_cap, I)` | `-p_cap` |
 | Zero pressure | `g_p(s, 0) <= delta` | `0` | `0` | `0` |
 
 On the interior branch the Hessian in `(s, delta)` is
@@ -290,10 +312,8 @@ psi_ss = g_ss - g_sp^2 / g_pp,   psi_sdelta = g_sp / g_pp,   psi_deltadelta = -1
 
 with determinant `-g_ss / g_pp`. Since `g_ss >= 0` and `g_pp < 0` by conditions
 (b) and (c), it is positive definite: `psi` is convex on the interior branch
-analytically, not only by sampling. On the cap branch the shear stress
-`(g_p - delta) p_cap' / 2` is nonzero although `Y = 0` there; this follows from
-the cap bound depending on `s` through `I`, and is a consequence of the
-completion at the cap rather than of the published model. Gradients on all three
+analytically, not only by sampling. On the cap branch `psi_ss = g_ss >= 0` and
+the other second derivatives vanish. Gradients on all three
 branches agree with finite differences to 1e-8 or better, and the Hessian to
 2e-4 (the remaining difference shrinks with the step, so it is
 finite-difference error).
@@ -306,15 +326,17 @@ The stress tensor follows from `s = |D|`: `tau_ij = psi_s D_ij / (2 s)`, so that
 - The step is the convex minimisation of the [Time step](#time-step) section with
   `psi` from the capped potential; `phi`, and hence `C`, is held at its value from
   the start of the step.
-- The saddle form `min_u max_p` does not have a product domain, because the
-  bound on `p` depends on `|D(u)|`. The primal form in `u` alone is the natural
-  one, with `psi` evaluated at each quadrature point by a one-dimensional concave
-  maximisation in `p`; no closed form was found.
-- `psi` is nonsmooth at zero shear (yield) and at the cap. The solver must handle
-  both: a nonsmooth Newton method on the primal problem, or a smoothing with a
-  continuation parameter. `alpha(I)` has no conic representation, so the
-  interior-point route used in the regularisation study does not carry over
-  directly.
+- With the fixed cap the saddle form `min_u max_{0 <= p <= 2 mu_1 C}` has a
+  product domain, so primal–dual methods apply. The primal form in `u` alone,
+  with `psi` evaluated at each quadrature point by a one-dimensional concave
+  maximisation in `p` (no closed form was found), is the one used in the shear
+  cell.
+- `psi` is nonsmooth at zero shear (a cone: the static yield), and its Hessian
+  jumps where the cap becomes active. The solver must handle the cone directly;
+  plain Newton stalls once a region jams
+  ([Shear-cell results](#shear-cell-results)). `alpha(I)` has no conic
+  representation, so the interior-point route used in the regularisation study
+  does not carry over directly.
 
 ### Open points
 
@@ -322,61 +344,98 @@ The stress tensor follows from `s = |D|`: `tau_ij = psi_s D_ij / (2 s)`, so that
   choice, as above. The form of `C` near `phi_max` is speculative in the
   published model.
 - Whether holding `phi` fixed within a step preserves well-posedness. This is
-  not settled analytically. In the shear cell with the inertial model, lagged and
-  implicit `phi` differ by less than the time discretisation error
-  ([Shear-cell results](#shear-cell-results)); the critical-state comparison
-  awaits a solver that handles jammed cells.
-- Convexity on the cap branch and across branch boundaries rests on sampling
-  (section [The cap](#the-cap)); the interior branch is convex analytically.
+  not settled analytically. In the shear cell lagged and implicit `phi` differ by
+  two to three times the time discretisation error, with no change in behaviour
+  ([Shear-cell results](#shear-cell-results)).
 
 ## Shear-cell results
 
 `benchmarks/cidr_shear_cell.py` solves the gravity-free shear cell of Schaeffer
-et al. (2019) with the time step of this note: a Lagrangian one-dimensional
-grid, `phi` lagged and Newton's method with a backtracking line search on the
-potential. Case A is their (3.16) (height 30, `phi = 0.78`, a localised
+et al. (2019) with the time step of this note on a Lagrangian one-dimensional
+grid. Case A is their (3.16) (height 30, `phi = 0.78`, a localised
 vertical-velocity perturbation of amplitude 0.05, to `t = 20`); case B is their
 (5.7) (height 100, sinusoidal perturbations of amplitude 0.16 in `u` and 0.1 in
-`w`, to `t = 1000`). The critical-state model uses a packing deficit of 0.005.
-Results are in `benchmarks/cidr_shear_cell.json`.
+`w`, to `t = 1000`). The critical-state model uses the fixed cap and a packing
+deficit of 0.005. Results are in `benchmarks/cidr_shear_cell.json`.
+
+### Solvers
+
+The inertial model has no static yield, and Newton's method on the nodal
+velocities with a backtracking line search takes 1.2 to 1.3 iterations per step.
+
+For the critical-state model plain Newton stalls in case B. By `t = 8` a layer
+has compacted to `phi = 0.8161` (46 to 400 cells agree on the packing range to
+1e-4), by `t = 10` to 0.8164, within 1e-3 of `phi_max`, and cells in it stop
+deforming. There
+`psi` sits at the cone of [Stress at zero shear](#stress-at-zero-shear), the
+gradient Newton evaluates is one arbitrary subgradient, and on 200 cells the
+iteration makes no progress. Taking the cell strain rates `d_c = (u', w')` as
+unknowns makes the kink separable, with the walls as the linear constraint
+`sum_c dz_c d_c = (1, 0)`. Each iteration then has two parts:
+
+- An exact block Gauss–Seidel pass over slow and jammed cells. Each cell is moved
+  together with the fastest cell, which keeps the constraint. A cell is jammed
+  if and only if the stress across it lies in the static set: the union over
+  `0 <= p <= 2 mu_1 C` of the discs of radius `Y_0(p) = 2 mu_1 p - p^2 / C`
+  centred at `(0, -p)`, tested through the support function
+  `h(e) = sup_p [Y_0(p) - p e_delta]`, which agrees with `psi(t e) / t` to order
+  `t`. Cells that are not jammed are minimised locally, starting from just
+  outside the cone if that is lower: near `D = 0` the Hessian of `psi` grows like
+  `1 / |D|`, and a Newton step does not move a cell away from there.
+- A Newton step on the free cells with the jammed cells held at zero (a
+  truncated Newton step), solved as a saddle-point system with the constraint,
+  and a backtracking line search on the whole objective.
+
+Where nothing jams this reproduces Newton on the nodal velocities to 1e-16 (case
+A). The shear cell also exposed the nonconvexity of the shear-dependent cap
+([The cap](#the-cap)): with it, `psi` had negative curvature along compaction
+near `phi_max`.
+
+### Time step and packing limit
+
+With `phi` lagged and `C` growing without bound towards `phi_max`, a step can
+compact a cell past `phi_max`. Each step is first limited so that no cell closes
+more than half its remaining gap `(phi_max - phi) / phi` at its current
+compaction rate, then checked after the solve and halved if any cell closed more
+than half its gap, or if an implicit pass produced `phi >= phi_max`. Without the
+check, the implicit iteration left the admissible range in case B.
+
+### Grid convergence and lagged packing
 
 Grid convergence compares `max |w|` from 46 and 200 cells at 40 times spaced
 logarithmically:
 
-| Model | Case | Largest difference | Signal | Newton iterations per step | Final `max |w|` |
+| Model | Case | Largest difference | Signal | Iterations per step (46 / 200 cells) | Final `max |w|` |
 | --- | --- | --- | --- | --- | --- |
 | Inertial | A | 3.1e-4 | 0.021 | 1.2 / 1.3 | 1.8e-5 |
 | Inertial | B | 1.3e-3 | 0.10 | 1.2 / 1.3 | 1.3e-4 |
-| Critical-state | A | 7.2e-4 | 0.021 | 1.0 / 1.0 | 7.7e-4 |
-| Critical-state | B | Newton fails on 200 cells at `t = 10` | 0.10 | | |
+| Critical-state | A | 5.6e-4 | 0.021 | 1.0 / 1.1 | 7.7e-4 |
+| Critical-state | B | 4.3e-3 | 0.10 | 1.5 / 3.1 (at most 6 / 43) | 6.4e-5 |
 
 Inertial case A relaxes to the uniform shear by `t = 20`, consistent with
 Schaeffer et al.'s report that the flow is steady by about `t = 10`. Critical-state
-case A retains a small residual vertical velocity at `t = 20`. For inertial case B,
-`phi` lagged against `phi` implicit (fixed-point iteration within the step)
-differs by 4.6e-4 in `max |w|`, and lagged at the full step against lagged at
-half the step by 1.8e-4, against a signal of 0.10. Lagging `phi` costs no more
-than the time discretisation error here.
+case A retains a small residual vertical velocity at `t = 20`. In critical-state
+case B the iteration count grows with the grid because more cells jam and
+release on the finer grid; the 200-cell run took 154 s.
 
-Critical-state case B compacts a layer to `phi = 0.8163`, within 1e-3 of
-`phi_max`, by `t = 8`. Up to that time 46, 100, 200 and 400 cells give the same
-packing range to 1e-4. Within that layer cells stop deforming (`|D|` about
-1e-14), and `psi` there sits at the cone tip of [Stress at zero shear](#stress-at-zero-shear):
-the gradient Newton evaluates is one arbitrary subgradient, and on 200 cells
-Newton stalls with an error of 0.08 in that gradient. On 46 cells the run
-reaches `t = 1000`. The packing-lag comparison for this model fails the same way.
-The inertial model has no static yield, so its `psi` is smooth at `D = 0`.
+On case B with 46 cells, against a signal of 0.10 in `max |w|`:
 
-Two findings carry over to the two-dimensional step:
+| Model | Lagged against implicit `phi` | Lagged at the full step against half the step |
+| --- | --- | --- |
+| Inertial | 4.6e-4 | 1.8e-4 |
+| Critical-state | 1.2e-3 | 4.5e-4 |
 
-- With `phi` lagged and `C` growing without bound towards `phi_max`, a step can
-  compact a cell past `phi_max`. The harness limits the step so that no cell
-  closes more than half its remaining gap `(phi_max - phi) / phi` at its current
-  compaction rate. Before this limit was added (together with a fix to the Newton
-  stopping test), case B left the admissible range of `phi`.
+Lagging `phi` adds an error of about two to three times the time discretisation
+error, about 1% of the signal for the critical-state model, and changes neither
+model's behaviour.
+
+### Consequences for the two-dimensional step
+
+- The step needs the compaction limit and the check after the solve.
 - The critical-state model needs a solver that treats the cone at `D = 0`
-  directly. Plain Newton on the primal problem is not sufficient once a region
-  jams.
+  directly; see [Solver](#solver) for why the one-dimensional change of
+  variables does not carry over.
+- The fixed cap is required for convexity.
 
 ## References
 

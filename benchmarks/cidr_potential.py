@@ -13,9 +13,9 @@ B. The construction reproduces the inertial CIDR potential of Schaeffer et al.
    (2019, eq. B8).
 C. For critical-state CIDR, g = 2 p s [(5 alpha(I) - 4 mu(I)) / 3 - p / C].
 D. Its static limit: g_s -> 2 p (2 mu(0) - p / C) as s -> 0.
-E. The cap p <= alpha(I) C, where Y >= 0: numerically, whether it bounds a
-   convex region of (s, p).
-F. Convexity of the dissipation potential psi with and without the cap.
+E. The bound p <= alpha(I) C, where Y >= 0: its shape in (s, p).
+F. Convexity of the dissipation potential psi with the fixed cap
+   p <= alpha(0) C (used), the shear-dependent cap p <= alpha(I) C, and none.
 G. Steady flow, critical state and the cap at rest.
 H. The packing scale of C and the effective compressibility it implies.
 I. psi's gradient and Hessian on each branch against finite differences.
@@ -145,7 +145,7 @@ def numeric(seed=0):
 
 
 def cap(C=4e4, k=2 * 0.003 * np.sqrt(2500.0)):
-    """Cap p_cap(s) solving p = alpha(k s / sqrt(p)) C; the region p <= p_cap(s) is convex iff p_cap is concave."""
+    """The bound p_cap(s) solving p = alpha(k s / sqrt(p)) C, where Y = 0."""
     m = Jop()
     ss = np.linspace(0.0, 20.0, 81)
     caps = []
@@ -162,16 +162,18 @@ def cap(C=4e4, k=2 * 0.003 * np.sqrt(2500.0)):
     )
 
 
-def dissipation(capped, C=4e4, k=2 * 0.003 * np.sqrt(2500.0), seed=1, trials=400):
-    """psi(s, delta) = sup_p [g(s, p) - p delta] over 0 <= p (<= p_cap(s) if capped).
+def dissipation(cap, C=4e4, k=2 * 0.003 * np.sqrt(2500.0), seed=1, trials=400):
+    """psi(s, delta) = sup_p [g(s, p) - p delta] over 0 <= p <= bound.
 
-    Tests midpoint convexity in (s, delta) and monotonicity in s on random pairs;
-    psi is a function of the tensor D through s = |D| and is convex in D if it is
-    convex and nondecreasing in s. Returns the worst violations, relative to |psi|.
+    cap is "fixed" (bound alpha(0) C), "shear" (bound p_cap(s), where Y = 0) or None.
+    Tests midpoint convexity in (s, delta) and monotonicity in s on random pairs, half
+    of them far apart and half close together (the shear-dependent cap fails only
+    locally); psi is a function of the tensor D through s = |D| and is convex in D if
+    it is convex and nondecreasing in s. Returns the worst violations, relative to |psi|.
     """
     m = Jop()
     rng = np.random.default_rng(seed)
-    grid = np.logspace(-8, 1.2, 200)
+    grid = np.logspace(-8, 4, 300)
     table = np.array([m.alpha(x) for x in grid])
     alpha = lambda I: np.interp(np.log(np.maximum(I, grid[0])), np.log(grid), table)  # noqa: E731
     mu = m.mu
@@ -186,7 +188,12 @@ def dissipation(capped, C=4e4, k=2 * 0.003 * np.sqrt(2500.0), seed=1, trials=400
         return optimize.brentq(lambda p: p - alpha(k * s / np.sqrt(p)) * C, 1e-9, 10 * m.mu2 * C)
 
     def psi(s, delta):
-        upper = p_cap(s) if capped else 50 * m.mu2 * C
+        if cap == "fixed" or (cap == "shear" and s == 0):
+            upper = alpha(0.0) * C
+        elif cap == "shear":
+            upper = p_cap(s)
+        else:
+            upper = 50 * m.mu2 * C
         result = optimize.minimize_scalar(
             lambda p: -(g(s, p) - p * delta),
             bounds=(0.0, upper),
@@ -200,6 +207,9 @@ def dissipation(capped, C=4e4, k=2 * 0.003 * np.sqrt(2500.0), seed=1, trials=400
     for _ in range(trials):
         a = np.array([rng.uniform(0, 10), rng.uniform(-5, 5)])
         b = np.array([rng.uniform(0, 10), rng.uniform(-5, 5)])
+        if _ % 2:
+            b = a + 10 ** rng.uniform(-3, -1) * rng.standard_normal(2) * max(a[0], 0.1)
+            b[0] = abs(b[0])
         values = [psi(*a)[0], psi(*b)[0], psi(*(0.5 * (a + b)))[0]]
         scale = max(abs(values[0]), abs(values[1]), 1.0)
         convexity = max(convexity, (values[2] - 0.5 * (values[0] + values[1])) / scale)
@@ -236,12 +246,11 @@ class Point:
         return 2 * (self.m.beta(self.I(s, p)) - 2 * p / self.C) * s
 
     def p_cap(self, s):
-        return optimize.brentq(
-            lambda p: p - self.m.alpha(self.I(s, p)) * self.C, 1e-9, 10 * self.m.mu2 * self.C
-        )
+        """The fixed cap alpha(0) C."""
+        return self.m.alpha(0.0) * self.C
 
     def optimum(self, s, delta):
-        """p* maximising g - p delta on [0, p_cap(s)], and its branch."""
+        """p* maximising g - p delta on [0, p_cap], and its branch."""
         cap = self.p_cap(s)
         if self.gp(s, cap) - delta >= 0:
             return cap, "cap"
@@ -344,8 +353,7 @@ def derivatives(seed=2, trials=30):
             worst["interior_det"] = max(worst["interior_det"], abs(det - (-g_ss / g_pp)) / abs(det))
             key = "interior_grad"
         elif branch == "cap":
-            dcap = fd(q.p_cap, s, hs)
-            grad = ((q.gp(s, p) - delta) * dcap, -p)
+            grad = (2 * q.Y(s, p), -p)
             key = "cap_grad"
         else:
             grad = (0.0, 0.0)
@@ -362,8 +370,12 @@ def main():
         ("C critical-state CIDR", critical_state),
         ("C-D numeric (Jop mu)", numeric),
         ("E cap", cap),
-        ("F dissipation, capped", lambda: dissipation(True)),
-        ("F dissipation, uncapped", lambda: dissipation(False)),
+        ("F dissipation, fixed cap", lambda: dissipation("fixed")),
+        ("F dissipation, shear-dependent cap", lambda: dissipation("shear")),
+        ("F dissipation, no cap", lambda: dissipation(None)),
+        # Grain-scale units (d = rho_s = 1, C = 1), where I reaches order one.
+        ("F dissipation, fixed cap, I ~ 1", lambda: dissipation("fixed", C=1.0, k=2.0)),
+        ("F dissipation, shear-dependent cap, I ~ 1", lambda: dissipation("shear", C=1.0, k=2.0)),
         ("G states", states),
         ("H packing scale", packing_scale),
         ("I derivatives of psi", derivatives),

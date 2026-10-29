@@ -9,13 +9,16 @@ solves the convex problem of docs/granular-cidr-design.md,
 
     min_v  sum_i M_i / (2 dt) |v_i - v_i^n|^2 + sum_c dz_c psi(s_c, delta_c; phi_c),
 
-with v = (u, w) at the nodes, s = |D| = sqrt(u'^2 + w'^2) / 2 and delta = w', by
-Newton's method with a backtracking line search on a block-tridiagonal system.
+with v = (u, w) at the nodes, s = |D| = sqrt(u'^2 + w'^2) / 2 and delta = w'.
 phi is held at its start-of-step value ("lagged") or iterated to its end-of-step
 value ("implicit").
 
-Models: inertial CIDR (Schaeffer et al. 2019) and critical-state CIDR (Barker et
-al. 2017) completed at the cap, with C(phi) from a tunable packing deficit.
+Models: inertial CIDR (Schaeffer et al. 2019), solved by Newton's method on the
+nodal velocities, and critical-state CIDR (Barker et al. 2017) completed by the
+fixed cap p <= alpha(0) C, with C(phi) from a tunable packing deficit. The latter
+has a static yield, so psi has a cone at zero strain rate, and its step is
+solved in cell strain rates by a truncated nonsmooth Newton method
+(Cell.step_nonsmooth).
 
     python -m benchmarks.cidr_shear_cell --output benchmarks/cidr_shear_cell.json
 """
@@ -99,13 +102,10 @@ class CriticalState:
         return I, a, da, b, db
 
     def p_cap(self, s, C):
-        p = 2 * mu(0.0) * C * np.ones_like(s)
-        for _ in range(60):
-            I, a, da, _, _ = self.functions(s, p, C)
-            h = p - a * C
-            dh = 1 + da * C * I / (2 * p)
-            p = np.maximum(p - h / dh, 0.5 * p)
-        return p
+        """The fixed cap alpha(0) C: the bound p <= alpha(I) C, where Y = 0, depends on s
+        and makes psi nonconvex on the cap branch; the fixed bound keeps psi a supremum of
+        functions convex in (s, delta), and Y >= 0 below it."""
+        return float(self.alpha(0.0)) * C * np.ones_like(s)
 
     def evaluate(self, s, delta, phi):
         C = self.C(phi)
@@ -134,15 +134,50 @@ class CriticalState:
         g_pp = 2 * s * (-2 / C - I * db / (2 * p))
         psi = g - p * delta
         interior = _interior(psi, g_s, -p, g_ss, g_sp, g_pp)
-        # Cap branch: psi_s = (g_p - delta) p_cap', psi_delta = -p_cap, psi_deltadelta = 0.
-        dcap = da * C * I / np.maximum(s, 1e-300) / (1 + da * C * I / (2 * p))
-        cap_s = (g_p - delta) * dcap
-        cap_ss = (g_sp + g_pp * dcap) * dcap
-        out = tuple(
-            np.where(at_cap, c, i)
-            for i, c in zip(interior, (psi, cap_s, -p, np.maximum(cap_ss, 0), -dcap, np.zeros_like(p)))
-        )
+        # Cap branch (p fixed at the cap): psi_s = g_s, psi_ss = g_ss, psi_delta = -p, rest zero.
+        zero = np.zeros_like(p)
+        out = tuple(np.where(at_cap, c, i) for i, c in zip(interior, (psi, g_s, -p, g_ss, zero, zero)))
         return out, p
+
+    def support(self, ea, eb, phi):
+        """Support function h(e) of the static set (the subdifferential of psi at D = 0), |e| = 1.
+
+        Near D = 0, psi(t e) / t -> h(e) = sup_{0 <= p <= alpha_0 C} [Y_0(p) - p e_b] with
+        Y_0 = alpha_0 p - p^2 / C, so the static set is the union over p of discs of radius
+        Y_0(p) centred at (0, -p) in (psi_a, psi_b).
+        """
+        C = self.C(phi)
+        a0 = float(self.alpha(0.0))
+        p = np.clip(C * (a0 - eb) / 2, 0.0, a0 * C)
+        return (a0 - eb) * p - p**2 / C
+
+    def static_pressure(self, ta, tb, phi):
+        """Pressure for a stress (ta, tb) in the static set: the disc it lies deepest inside."""
+        C = self.C(phi)
+        a0 = float(self.alpha(0.0))
+        lo, hi = np.zeros_like(ta), a0 * C
+        excess = lambda p: np.hypot(ta, tb + p) - (a0 * p - p**2 / C)  # convex in p
+        for _ in range(60):
+            m1, m2 = lo + (hi - lo) / 3, hi - (hi - lo) / 3
+            smaller = excess(m1) < excess(m2)
+            hi, lo = np.where(smaller, m2, hi), np.where(smaller, lo, m1)
+        return 0.5 * (lo + hi)
+
+
+def static_margin(model, fa, fb, phi, samples=512):
+    """max over unit e of f.e - h(e) and its maximiser: f is in the static set iff the margin <= 0."""
+    theta = np.linspace(0.0, 2 * np.pi, samples, endpoint=False)
+    value = lambda th: fa * np.cos(th) + fb * np.sin(th) - model.support(np.cos(th), np.sin(th), phi)
+    k = int(np.argmax(value(theta)))
+    lo, hi = theta[k] - 2 * np.pi / samples, theta[k] + 2 * np.pi / samples
+    for _ in range(40):
+        m1, m2 = lo + (hi - lo) / 3, hi - (hi - lo) / 3
+        if value(m1) < value(m2):
+            lo = m1
+        else:
+            hi = m2
+    th = 0.5 * (lo + hi)
+    return float(value(th)), np.array([np.cos(th), np.sin(th)])
 
 
 def _interior(psi, g_s, psi_d, g_ss, g_sp, g_pp):
@@ -161,6 +196,10 @@ def cell_terms(model, a, b, phi):
     Hab = pss * sa * sb + psd * sa + ps * sab
     Hbb = pss * sb**2 + 2 * psd * sb + pdd + ps * sbb
     return psi, grad, np.stack((np.stack((Haa, Hab), -1), np.stack((Hab, Hbb), -1)), -2), p
+
+
+class StepRejected(Exception):
+    """An implicit packing pass left the admissible range of phi."""
 
 
 class Cell:
@@ -247,15 +286,179 @@ class Cell:
         self.u, self.w = v[0::2].copy(), v[1::2].copy()
         return iteration, p
 
-    def advance(self, dt, implicit=False):
+    def step_nonsmooth(self, dt, phi):
+        """The convex step for a model with a static yield, in cell strain rates.
+
+        psi has a cone at zero strain rate (a jammed cell). With the strain rates
+        d_c = (u', w') of the cells as unknowns that kink is separable, and the walls
+        become the linear constraint sum_c dz_c d_c = (1, 0). Each iteration is one
+        exact block Gauss-Seidel pass over slow and jammed cells, which jams or
+        releases them, then a Newton step on the free cells with the jammed ones held
+        at zero (a truncated nonsmooth Newton method), with a line search.
+        """
+        model = self.model
+        dz = np.diff(self.z)
+        N = len(dz)
+        nodal_mass = np.zeros(N + 1)
+        nodal_mass[:-1] += 0.5 * self.mass
+        nodal_mass[1:] += 0.5 * self.mass
+        md = nodal_mass[1:N] / dt  # interior nodes 1 .. N-1
+        V0 = np.column_stack((self.u, self.w))
+        d = np.diff(V0, axis=0) / dz[:, None]
+        jam = np.hypot(d[:, 0], d[:, 1]) < 1e-13
+        d[jam] = 0.0
+        scale = np.sum(md * np.sum(V0[1:N] ** 2, axis=1))
+        # Kinetic term K(d) = sum_i md_i |V_i(d) - V0_i|^2 / 2 with V_i = sum_{c<i} dz_c d_c:
+        # its Hessian is Q_cd = dz_c dz_d sum_{i > max(c, d)} md_i, the same for u and w.
+        tail = np.concatenate((np.cumsum(md[::-1])[::-1], [0.0]))  # tail[k] = sum_{i >= k+1} md_i
+        Q = np.outer(dz, dz) * tail[np.maximum.outer(np.arange(N), np.arange(N))]
+
+        def kinetic(d):
+            V = np.cumsum(dz[:, None] * d, axis=0)[:-1]  # nodes 1 .. N-1
+            R = md[:, None] * (V - V0[1:N])
+            T = np.concatenate((np.cumsum(R[::-1], axis=0)[::-1], np.zeros((1, 2))))
+            return 0.5 * np.sum(R * (V - V0[1:N])), dz[:, None] * T, T
+
+        def terms(cells, x):
+            psi, grad, hess, p = cell_terms(model, x[:, 0], x[:, 1], phi[cells])
+            return psi * dz[cells], grad * dz[cells, None], hess * dz[cells, None, None], p
+
+        def objective(d, jam):
+            free = np.flatnonzero(~jam)
+            return kinetic(d)[0] + np.sum(terms(free, d[free])[0])
+
+        def sweep(d, jam):
+            """Exact block Gauss-Seidel on slow and jammed cells, each paired with the fastest cell."""
+            r = np.hypot(d[:, 0], d[:, 1])
+            star = int(np.argmax(r))
+            changed = False
+            for c in np.flatnonzero(jam | (r < 1e-2 * np.mean(r))):
+                if c == star:
+                    continue
+                kappa = dz[c] / dz[star]
+                q = Q[c, c] - 2 * kappa * Q[c, star] + kappa**2 * Q[star, star]
+                gK = kinetic(d)[1]
+                linear = gK[c] - kappa * gK[star]
+
+                # Smooth part of the local problem in Delta (d_c += Delta, d_star -= kappa Delta).
+                def local(delta):
+                    x = np.array([d[c] + delta, d[star] - kappa * delta])
+                    psi, grad, hess, _ = terms(np.array([c, star]), x)
+                    value = linear @ delta + 0.5 * q * delta @ delta + psi.sum()
+                    gradient = linear + q * delta + grad[0] - kappa * grad[1]
+                    return value, gradient, q * np.eye(2) + hess[0] + kappa**2 * hess[1]
+
+                delta0 = -d[c]
+                g_star = terms(np.array([star]), (d[star] + kappa * d[c])[None])[1][0]
+                G = linear + q * delta0 - kappa * g_star
+                margin, e = static_margin(model, -G[0] / dz[c], -G[1] / dz[c], phi[c])
+                if margin <= 1e-12 * max(1.0, np.hypot(*G) / dz[c]):
+                    if not jam[c]:
+                        d[star] += kappa * d[c]
+                        d[c] = 0.0
+                        jam[c] = changed = True
+                    continue
+                # Not jammed: minimise the local problem, starting from the current point or
+                # from just outside the cone along the steepest descent direction, whichever
+                # is lower (Newton alone cannot leave the neighbourhood of D = 0, where the
+                # Hessian grows like 1 / |D|).
+                eps = dz[c] * margin / q
+                base = (
+                    linear @ delta0
+                    + 0.5 * q * delta0 @ delta0
+                    + terms(np.array([star]), (d[star] + kappa * d[c])[None])[0][0]
+                )
+                while True:
+                    delta = delta0 + eps * e
+                    f, g, h = local(delta)
+                    if f < base or eps < 1e-300:
+                        break
+                    eps *= 0.5
+                if not jam[c]:
+                    current = local(np.zeros(2))
+                    if current[0] < f:
+                        delta, (f, g, h) = np.zeros(2), current
+                for _ in range(20):
+                    step = -np.linalg.solve(h, g)
+                    slope = g @ step
+                    if -slope <= 1e-15 * max(abs(f), 1e-300):
+                        break
+                    t = 1.0
+                    while t > 1e-12:
+                        ft, gt, ht = local(delta + t * step)
+                        if ft <= f + 1e-4 * t * slope:
+                            break
+                        t *= 0.5
+                    delta, f, g, h = delta + t * step, ft, gt, ht
+                d[c] += delta
+                d[star] -= kappa * delta
+                changed |= bool(jam[c])
+                jam[c] = False
+            return changed
+
+        lam = np.zeros(2)
+        for iteration in range(100):
+            changed = sweep(d, jam)
+            free = np.flatnonzero(~jam)
+            F = len(free)
+            _, gK, _ = kinetic(d)
+            _, grad, hess, _ = terms(free, d[free])
+            g = (gK[free] + grad).T.ravel()  # [a-components, b-components]
+            H = np.zeros((2 * F + 2, 2 * F + 2))
+            QF = Q[np.ix_(free, free)]
+            H[:F, :F] = QF + np.diag(hess[:, 0, 0])
+            H[F : 2 * F, F : 2 * F] = QF + np.diag(hess[:, 1, 1])
+            H[:F, F : 2 * F] = H[F : 2 * F, :F] = np.diag(hess[:, 0, 1])
+            H[2 * F, :F] = H[:F, 2 * F] = -dz[free]
+            H[2 * F + 1, F : 2 * F] = H[F : 2 * F, 2 * F + 1] = -dz[free]
+            solution = np.linalg.solve(H, np.concatenate((-g, [0.0, 0.0])))
+            direction = np.zeros_like(d)
+            direction[free, 0], direction[free, 1] = solution[:F], solution[F : 2 * F]
+            lam = solution[2 * F :]
+            slope = g @ solution[: 2 * F]
+            if not changed and -slope <= 1e-24 + 1e-15 * scale:
+                break
+            f = objective(d, jam)
+            t = 1.0
+            while t > 1e-12:
+                trial = d + t * direction
+                if objective(trial, jam) <= f + 1e-4 * t * slope:
+                    break
+                t *= 0.5
+            d = trial
+        else:
+            raise RuntimeError(
+                f"nonsmooth Newton did not converge: decrement {-slope:.3g}, scale {scale:.3g}"
+            )
+        V = np.vstack((np.zeros((1, 2)), np.cumsum(dz[:, None] * d, axis=0)))
+        V[-1] = V0[-1]
+        self.u, self.w = V[:, 0].copy(), V[:, 1].copy()
+        # Stress per cell: psi' = lam - T_{c+1}; set-valued in jammed cells, where the
+        # pressure reported is that of the static disc the stress lies deepest inside.
+        p = np.zeros(N)
+        free = np.flatnonzero(~jam)
+        p[free] = terms(free, d[free])[3]
+        stress = lam - kinetic(d)[2][:N]
+        cells = np.flatnonzero(jam)
+        if len(cells):
+            p[cells] = model.static_pressure(stress[cells, 0], stress[cells, 1], phi[cells])
+        self.jammed = int(jam.sum())
+        return iteration, p
+
+    def advance(self, dt, implicit=False, limit=None):
         z0, u0, w0 = self.z.copy(), self.u.copy(), self.w.copy()
         phi = self.phi
         for _ in range(30 if implicit else 1):
             # Each pass restarts from the start-of-step state; only phi changes.
             self.z, self.u, self.w = z0, u0.copy(), w0.copy()
-            iterations, p = self.step(dt, phi)
+            if hasattr(self.model, "support"):
+                iterations, p = self.step_nonsmooth(dt, phi)
+            else:
+                iterations, p = self.step(dt, phi)
             z_new = z0 + dt * self.w
             phi_new = self.mass / np.diff(z_new)
+            if implicit and limit is not None and np.any(phi_new >= limit):
+                raise StepRejected
             change = np.abs(phi_new - phi).max()
             phi = phi_new
             if not implicit or change < 1e-12:
@@ -304,7 +507,24 @@ def run(model, n, case, t_end, dt0=1e-3, dt_max=0.25, growth=1.02, implicit=Fals
                 step = min(step, 0.5 * float(np.min(gap[closing] / rate[closing])))
         if pending and t + step > pending[0]:
             step = pending[0] - t
-        iterations, p = cell.advance(step, implicit)
+        if limit is None:
+            iterations, p = cell.advance(step, implicit)
+        else:
+            # The estimate above uses the start-of-step rate; check the solved step and
+            # halve it if any cell closed more than half its gap, or an implicit pass
+            # left the admissible range of phi.
+            saved = (cell.z.copy(), cell.u.copy(), cell.w.copy())
+            while True:
+                phi = cell.phi
+                try:
+                    iterations, p = cell.advance(step, implicit, limit)
+                    if np.all(cell.phi - phi <= 0.5 * (limit - phi)):
+                        break
+                except StepRejected:
+                    pass
+                cell.z, cell.u, cell.w = (x.copy() for x in saved)
+                step *= 0.5
+                dt = step
         newton.append(iterations)
         t += step
         history.append((t, float(np.abs(cell.w).max())))
