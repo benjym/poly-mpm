@@ -270,6 +270,59 @@ For production runs in the meantime, the fixed coarser stress spacing is the
 only option already shown to converge in this code. It should be reported as a
 numerical regularisation with a stated length.
 
+## Published models
+
+The review and the regularisation study point to a compressible, critical-state
+rheology. Three complete published models of that kind were read.
+
+**Inertial CIDR (Schaeffer et al. 2019).** The yield and dilatancy functions are
+`Y = mu(Psi(phi)) (I / Psi(phi)) p` and
+`f = (mu(Psi(phi)) / 4) (Psi(phi) / I - I / Psi(phi))`, where `Psi` inverts the
+steady relation `phi = Phi(I)`. The model reduces to `mu(I)` and `Phi(I)` in
+isochoric flow, adds no parameters beyond those two curves, and is proved
+linearly well-posed for all deformations and packing fractions. Pressure follows
+from a local equation of state rather than a constraint. One-dimensional shear
+cell computations converge under refinement and agree with transient DEM, while
+the same computations with `mu(I), Phi(I)` blow up at a time that shrinks as the
+grid refines. Appendix B shows that the stresses are derivatives of a convex
+dissipation potential, so an implicit time step is a convex minimisation, the
+structure on which the associated problem converged in the regularisation
+study. The model covers only the inertial regime below the critical packing
+`phi_c`: pressure is zero without shear unless the material is compacting,
+there is no static yield stress, and pressure diverges as `phi -> phi_c`. The
+authors leave the transition to the quasi-static regime, where stresses scale
+with grain stiffness, to future work.
+
+**Critical-state CIDR (Barker et al. 2017; Fannon, Moyles and Fowler 2019).** The
+yield and dilatancy functions are `Y = alpha(I) p - p^2 / C(phi)` and
+`f = beta(I) - 2 p / C(phi)`, with `alpha` and `beta` derived from `mu(I)` by
+integrals that make the model isochoric at `|tau| = mu(I) p`, and
+`C(phi) = (P / b) psi / (1 - psi)`, `psi = (phi - phi_min) / (phi_max - phi_min)`.
+It is proved linearly well-posed in 2D and has a static yield stress, which
+Schaeffer et al. (2019) name as the route outside the inertial regime. Fannon et
+al. use it with the `mu(I)` parameters of Jop et al. for glass beads
+(`mu_1 = tan 20.9 deg`, `mu_2 = tan 32.76 deg`, `I_0 = 0.279`, the values in
+`bi_square_drum`) and find that its linear stability agrees with chute
+experiments better than the incompressible model. Its packing function `C` is
+described by those authors as speculative: `b` and the pressure scale `P` are
+free, and the scale `rho_s g d` used by Barker et al. is not frame-indifferent
+(Schaeffer et al. 2019 suggest a stiffness scale `k / d` instead). No
+two-dimensional transient computation with it has been published, and whether
+its stresses derive from a convex dissipation potential was not established in
+the papers read.
+
+**Critical-state `mu(I)` elastoplasticity (Blatny, Gray and Gaume 2024).**
+Modified Cam-clay with Hencky elasticity, whose critical-state line depends on
+`I` so that flow recovers `mu(I)`, implemented in 2D and 3D MPM and compared
+with granular-collapse experiments. The collapse front converges under grid
+refinement, but shear bands sharpen as the grid refines; the authors attribute
+this to strain localisation and name gradient or nonlocal terms as remedies. It
+needs a Young's modulus, so it replaces the rigid-grain formulation with
+explicit or implicit elastoplasticity.
+
+No published model combines rigid grains, a static yield stress, a proof of
+well-posedness and validated two-dimensional transient computations.
+
 ## Sources read
 
 - Barker, T., Schaeffer, D. G., Bohorquez, P. and Gray, J. M. N. T. (2015).
@@ -321,6 +374,16 @@ numerical regularisation with a stated length.
 - Gaume, J., Gast, T., Teran, J., van Herwijnen, A. and Jiang, C. (2018). Dynamic
   anticrack propagation in snow. *Nat. Commun.* 9, 3047.
   https://doi.org/10.1038/s41467-018-05181-w
+- Schaeffer, D. G., Barker, T., Tsuji, D., Gremaud, P., Shearer, M. and Gray,
+  J. M. N. T. (2019). Constitutive relations for compressible granular flow in
+  the inertial regime. *J. Fluid Mech.* 874, 926–951.
+  https://doi.org/10.1017/jfm.2019.476
+- Fannon, J. S., Moyles, I. R. and Fowler, A. C. (2019). Application of the
+  compressible I-dependent rheology to chute and shear flow instabilities.
+  *J. Fluid Mech.* (read as the accepted manuscript, sections 1–3).
+- Blatny, L., Gray, J. M. N. T. and Gaume, J. (2024). A critical state
+  μ(I)-rheology model for cohesive granular flows. *J. Fluid Mech.* 997, A67.
+  https://doi.org/10.1017/jfm.2024.643 (abstract, sections 1–2 and appendix C)
 - Zhao, Y. and Choo, J. (2020). Stabilized material point methods for coupled
   large deformation and fluid flow in porous materials. *Comput. Methods Appl.
   Mech. Eng.* 362, 112742. (read as arXiv:1905.00671)
