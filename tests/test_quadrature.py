@@ -314,3 +314,33 @@ def test_moving_stress_benchmark_uses_the_selected_domain_integrator():
     assert row["quadrature"] == "domain"
     assert row["stress_relative_l2"] < 0.02
     assert row["relative_mass_error"] == 0
+
+
+@pytest.mark.parametrize("basis", ["linear", "quadratic"])
+@pytest.mark.parametrize("periodic", [False, True])
+def test_batched_polygon_integration_matches_the_reference_path(basis, periodic):
+    rng = np.random.default_rng(7)
+    count = 40
+    xy = rng.uniform(0.3, 0.7, size=(count, 2))
+    if periodic:
+        xy[:5, 0] = rng.uniform(-0.02, 0.02, 5) % 1.0
+    angle, shear, stretch = (
+        rng.uniform(-0.5, 0.5, count),
+        rng.uniform(-0.3, 0.3, count),
+        rng.uniform(0.7, 1.4, count),
+    )
+    F = np.tile(np.eye(3), (count, 1, 1))
+    F[:, 0, 0], F[:, 0, 1] = stretch * np.cos(angle), -np.sin(angle) + shear
+    F[:, 1, 0], F[:, 1, 1] = stretch * np.sin(angle), np.cos(angle)
+    P, G, L, b = setup(basis, periodic, xy=xy)
+    P.domain_polygon = "reference"
+    reference = domain_stencil(b.x, F, b.domain_halfsize, P, G)
+    P.domain_polygon = "batched"
+    batched = domain_stencil(b.x, F, b.domain_halfsize, P, G)
+    for i in range(count):
+        a = {int(n): (w, g) for n, w, g in zip(*(r[i] for r in reference[:3])) if w or np.any(g)}
+        c = {int(n): (w, g) for n, w, g in zip(*(r[i] for r in batched[:3])) if w or np.any(g)}
+        assert a.keys() == c.keys()
+        for node in a:
+            assert_allclose(c[node][0], a[node][0], rtol=0, atol=1e-13)
+            assert_allclose(c[node][1], a[node][1], rtol=0, atol=1e-13 / G.dx)

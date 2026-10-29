@@ -59,8 +59,11 @@ rigid-grain solver on the GPU. "Rejected" means `prepare` raises an error.
 | `pic_fraction` | `0.0` | 0 to 1 | with `flip` | with `flip` | with `flip` |
 | `quadrature` | `"point"` | `"point"`, `"domain"` | both (`domain` needs updated mechanics and `domain_size` per material) | `point` | `point` |
 | `domain_max_support` | `256` | integer ≥ 4 | `domain` only | — | — |
+| `domain_polygon` | `"batched"` | `"batched"`, `"reference"` | `domain` only | — | — |
 
-`apic_gradient` is restricted to the granular solver. See
+`apic_gradient` is restricted to the granular solver. `domain_polygon` selects
+how rotated or sheared particle domains are integrated: `batched` integrates all
+of them together, `reference` one at a time; they agree to roundoff. See
 [numerical-foundations](numerical-foundations.md) and [quadrature](quadrature.md).
 
 ## Materials

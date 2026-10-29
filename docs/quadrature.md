@@ -131,9 +131,16 @@ represented by one constant value per particle.
 - Smaller timesteps still increase remapping frequency. The fixed-grid time
   study remains non-monotone; domain averaging does not replace a consistent,
   higher-order position/deformation integrator.
-- Axis-aligned integration is vectorised. Rotated/sheared integration clips and
-  triangulates each particle domain and can be much slower. Per-case timings
-  include diagnostics and are not universal throughput measurements.
+- Axis-aligned integration is vectorised. Rotated/sheared domains are also
+  integrated in one batch (`domain_polygon = "batched"`, the default): every
+  domain is clipped against its knot cells together, so the cost no longer
+  scales with a Python loop over particles. On 256 randomly rotated, sheared
+  and stretched domains it took 5 ms (linear) and 7 ms (quadratic) against
+  39–57 ms for the per-domain path, which `domain_polygon = "reference"` keeps.
+  The two agree to 4e-15 in weights and scaled gradients
+  (`tests/test_quadrature.py`). Rotated domains remain slower than aligned ones.
+  Per-case timings include diagnostics and are not universal throughput
+  measurements.
 - Wall treatment must keep the integrated stencil admissible. Curved boundaries,
   exact general hydrostatic balance, gap-free domain tracking and multi-body
   contact remain on the [implementation checklist](implementation-todo.md).

@@ -73,12 +73,13 @@ experimental validation and application calibration remain separate tasks.
       `O.save_checkpoint` and `checkpoint.save`/`load`. A restarted CPU run is
       bitwise identical to an uninterrupted one for elastic, quadratic APIC,
       segregation, finite-domain and rigid-grain runs (`tests/test_checkpoint.py`).
+- [x] Profile and accelerate rotated/sheared polygon integration while retaining
+      the exact reference path and its conservation checks: batched clipping is
+      about 8 times faster and agrees with the per-domain reference to 4e-15.
 
 ### Actionable without further input
 
 - [ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.
-- [ ] Profile and accelerate rotated/sheared polygon integration while retaining
-      the exact reference path and its conservation checks.
 - [ ] Profile and accelerate verified kernels; retain a numerical reference backend.
 - [ ] Metal: support settings that the CPU granular solver already supports and
       Metal still rejects (silo walls, increment stopping), and measure the

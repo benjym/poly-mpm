@@ -70,10 +70,12 @@ def prepare(P, mode="simulation"):
         interpolation="linear",
         quadrature="point",
         domain_max_support=256,
+        domain_polygon="batched",
         transfer="flip",
         pic_fraction=0.0,
         diagnostics=True,
         normalise_phi=False,
+        fbar=False,
         time_stepping="static",
         CFL=0.1,
         c=0.0,
@@ -98,6 +100,8 @@ def prepare(P, mode="simulation"):
         raise ValueError("quadrature must be point or domain")
     if P.quadrature == "domain" and P.mechanics != "updated":
         raise ValueError("domain quadrature requires updated mechanics")
+    if P.domain_polygon not in ("batched", "reference"):
+        raise ValueError("domain_polygon must be batched or reference")
     if int(P.domain_max_support) != P.domain_max_support or P.domain_max_support < 4:
         raise ValueError("domain_max_support must be an integer >= 4")
     if P.transfer not in ("flip", "pic", "apic", "apic_gradient"):
@@ -108,6 +112,8 @@ def prepare(P, mode="simulation"):
         raise ValueError("pic_fraction must be between zero and one")
     if P.transfer != "flip" and P.pic_fraction:
         raise ValueError("pic_fraction is only used with flip")
+    if P.fbar and (P.solver != "explicit" or P.mechanics != "updated"):
+        raise ValueError("fbar requires the explicit solver and updated mechanics")
     if P.transfer == "apic" and P.interpolation != "quadratic":
         raise ValueError(
             "APIC requires quadratic interpolation; linear APIC has degenerate-support instabilities"

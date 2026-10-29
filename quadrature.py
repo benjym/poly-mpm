@@ -237,6 +237,149 @@ def _polygon_stencil(center, F, half, P, G):
     return nodes, w, gradient, coordinates - center
 
 
+def _clip_batch(vertices, count, axis, bound, keep_lower):
+    """Sutherland-Hodgman clip of many convex polygons against one half-plane each.
+
+    vertices is (m, 8, 2) with count valid vertices per row; a convex polygon
+    clipped by a rectangle keeps at most eight. Rows emptied by the clip keep
+    count 0.
+    """
+    slots = vertices.shape[1]
+    index = np.arange(slots)
+    valid = index < count[:, None]
+    previous = (index - 1) % np.maximum(count, 1)[:, None]
+    before = np.take_along_axis(vertices, previous[:, :, None], axis=1)
+    side = (
+        (lambda p: p[..., axis] <= bound[:, None])
+        if keep_lower
+        else (lambda p: p[..., axis] >= bound[:, None])
+    )
+    inside, before_inside = side(vertices), side(before)
+    crossing = (inside != before_inside) & valid
+    span = vertices[..., axis] - before[..., axis]
+    fraction = np.divide(bound[:, None] - before[..., axis], span, out=np.zeros_like(span), where=crossing)
+    candidates = np.stack((before + fraction[..., None] * (vertices - before), vertices), axis=2)
+    keep = np.stack((crossing, inside & valid), axis=2).reshape(len(vertices), -1)
+    order = np.argsort(~keep, axis=1, kind="stable")[:, :slots]
+    clipped = np.take_along_axis(candidates.reshape(len(vertices), -1, 2), order[:, :, None], axis=1)
+    return clipped, keep.sum(axis=1)
+
+
+def _intervals(low, high, origin, h, count, periodic, degree):
+    """Knot intervals covering [low, high] for many domains at once (as _knots).
+
+    Returns the interval ends, flattened over domains, with each domain's first
+    interval index and interval count.
+    """
+    shift = 0.5 if degree == 2 else 0.0
+    first = np.floor((low - origin) / h - shift).astype(int) + 1
+    last = np.ceil((high - origin) / h - shift).astype(int)
+    if not periodic:
+        first = np.maximum(first, 0 if degree == 2 else 1)
+        last = np.minimum(last, count - 1)
+    if np.any(last - first > 128):
+        raise ValueError("particle domain spans more than 128 grid knots")
+    knots = np.maximum(last - first, 0)
+    domain = np.repeat(np.arange(len(low)), knots)
+    step = np.arange(knots.sum()) - np.repeat(np.cumsum(knots) - knots, knots)
+    cuts = origin + (first[domain] + step + shift) * h
+    inside = (cuts > low[domain]) & (cuts < high[domain])
+    domain, cuts = domain[inside], cuts[inside]
+    # Boundaries per domain: low, interior cuts, high; sorted within each domain.
+    owner = np.r_[np.arange(len(low)), domain, np.arange(len(low))]
+    value = np.r_[low, cuts, high]
+    rank = np.r_[np.zeros(len(low)), np.ones(len(cuts)), np.full(len(low), 2.0)]
+    order = np.lexsort((value, rank, owner))
+    owner, value = owner[order], value[order]
+    pair = owner[:-1] == owner[1:]
+    lows, highs = value[:-1][pair], value[1:][pair]
+    counts = np.bincount(owner[:-1][pair], minlength=len(low))
+    return lows, highs, np.cumsum(counts) - counts, counts
+
+
+def _polygon_stencils(center, F, half, P, G):
+    """All rotated/sheared domains at once; same integrals as _polygon_stencil.
+
+    Each domain is cut into its intersections with the basis knot cells, which
+    are clipped together, fan-triangulated and integrated by the same
+    degree-four triangle rule. Returns one (nodes, weights, gradients, offsets)
+    row per domain, as _polygon_stencil does.
+    """
+    unit = np.array([[-1.0, -1.0], [1.0, -1.0], [1.0, 1.0], [-1.0, 1.0]])
+    corners = np.einsum("kd,nd,njd->nkj", unit, half, F[:, :2, :2]) + center[:, None, :2]
+    spacing = np.array([G.dx, G.dy])
+    extent = np.ptp(corners, axis=1) / spacing
+    if not np.isfinite(extent).all() or np.any(extent > 124):
+        raise ValueError("particle domain spans more than 128 grid nodes on an axis")
+    area = 4 * np.prod(half, axis=1) * np.linalg.det(F[:, :2, :2])
+    degree = 1 if P.interpolation == "linear" else 2
+    intervals = [
+        _intervals(corners[:, :, axis].min(axis=1), corners[:, :, axis].max(axis=1), *grid, degree)
+        for axis, grid in enumerate(((P.G.x_m, G.dx, P.G.nx, P.B.cyclic_lr), (P.G.y_m, G.dy, P.G.ny, False)))
+    ]
+    (x_lo, x_hi, x_start, x_count), (y_lo, y_hi, y_start, y_count) = intervals
+    total = x_count * y_count
+    if np.any(total > getattr(P, "domain_max_support", 256)):
+        raise ValueError("particle domain exceeds domain_max_support during knot integration")
+    owner = np.repeat(np.arange(len(center)), total)
+    local = np.arange(total.sum()) - np.repeat(np.cumsum(total) - total, total)
+    xi = x_start[owner] + local // y_count[owner]
+    yi = y_start[owner] + local % y_count[owner]
+    cells = np.column_stack((x_lo[xi], x_hi[xi], y_lo[yi], y_hi[yi]))
+    vertices = np.zeros((len(owner), 8, 2))
+    vertices[:, :4] = corners[owner]
+    count = np.full(len(owner), 4)
+    for axis, column, keep_lower in ((0, 0, False), (0, 1, True), (1, 2, False), (1, 3, True)):
+        vertices, count = _clip_batch(vertices, count, axis, cells[:, column], keep_lower)
+    # Fan triangles (0, j, j + 1) of each clipped piece.
+    j = np.arange(1, 7)
+    present = j[None, :] + 1 < count[:, None]
+    piece, fan = np.nonzero(present)
+    a = vertices[piece, 0]
+    b = vertices[piece, fan + 1]
+    c = vertices[piece, fan + 2]
+    u, v = b - a, c - a
+    triangle_area = 0.5 * np.abs(u[:, 0] * v[:, 1] - u[:, 1] * v[:, 0])
+    nonzero = triangle_area > 0
+    piece, a, b, c, triangle_area = piece[nonzero], a[nonzero], b[nonzero], c[nonzero], triangle_area[nonzero]
+    particle = owner[piece]
+    points = (
+        _BARY[None, :, 0, None] * a[:, None]
+        + _BARY[None, :, 1, None] * b[:, None]
+        + _BARY[None, :, 2, None] * c[:, None]
+    ).reshape(-1, 2)
+    weights = (_TRIANGLE_WEIGHTS[None, :] * (triangle_area / area[particle])[:, None]).ravel()
+    particle = np.repeat(particle, len(_TRIANGLE_WEIGHTS))
+    if np.any(np.bincount(particle, minlength=len(center)) == 0):
+        raise ValueError("particle domain geometry is unresolved at floating-point precision")
+    keys, w, g = _points(points, P, G)
+    support = w.shape[1]
+    # One integer per (particle, knot x, knot y): a 1-D sort, not a row sort.
+    low = keys.min(axis=0)
+    width = keys.max(axis=0) - low + 1
+    labels = (np.repeat(particle, support) * width[1] + keys[:, 1] - low[1]) * width[0] + keys[:, 0] - low[0]
+    codes, inverse = np.unique(labels, return_inverse=True)
+    rest, kx = np.divmod(codes, width[0])
+    owner, ky = np.divmod(rest, width[1])
+    unique = np.column_stack((owner, kx + low[0], ky + low[1]))
+    w = np.bincount(inverse, weights=(weights[:, None] * w).ravel(), minlength=len(unique))
+    gradient = np.zeros((len(unique), 3))
+    for axis in (0, 1):
+        gradient[:, axis] = np.bincount(
+            inverse, weights=(weights[:, None] * g[:, :, axis]).ravel(), minlength=len(unique)
+        )
+    active = (w != 0) | np.any(gradient != 0, axis=1)
+    unique, w, gradient = unique[active], w[active], gradient[active]
+    nodes = unique[:, 1] % (P.G.nx - 1) if P.B.cyclic_lr else unique[:, 1]
+    nodes = nodes + P.G.nx * unique[:, 2]
+    coordinates = np.column_stack(
+        (P.G.x_m + unique[:, 1] * G.dx, P.G.y_m + unique[:, 2] * G.dy, np.zeros(len(unique)))
+    )
+    offsets = coordinates - center[unique[:, 0]]
+    starts = np.searchsorted(unique[:, 0], np.arange(len(center) + 1))
+    return [(nodes[s:e], w[s:e], gradient[s:e], offsets[s:e]) for s, e in zip(starts[:-1], starts[1:])]
+
+
 def domain_stencil(position, F, halfsize, P, G):
     """Integrate over F-convected rectangles; polynomial pieces are integrated exactly.
 
@@ -269,8 +412,13 @@ def domain_stencil(position, F, halfsize, P, G):
         for j, i in enumerate(np.flatnonzero(aligned)):
             active = (result[1][j] != 0) | np.any(result[2][j] != 0, axis=1)
             rows[i] = tuple(a[j, active] for a in result)
-    for i in np.flatnonzero(~aligned):
-        rows[i] = _polygon_stencil(position[i], F[i], halfsize[i], P, G)
+    general = np.flatnonzero(~aligned)
+    # "reference" keeps the per-domain clipping path that the batched one is tested against.
+    if getattr(P, "domain_polygon", "batched") == "reference":
+        for i in general:
+            rows[i] = _polygon_stencil(position[i], F[i], halfsize[i], P, G)
+    else:
+        rows.update(zip(general, _polygon_stencils(position[general], F[general], halfsize[general], P, G)))
     k = max(len(r[0]) for r in rows.values())
     if k > getattr(P, "domain_max_support", 256):
         raise ValueError("particle domain exceeds domain_max_support; refine or split the particle domain")
