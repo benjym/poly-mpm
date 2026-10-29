@@ -180,7 +180,9 @@ def test_frictional_walls_release_a_column_under_upward_gravity():
 def test_layer_on_frictional_floor_slides_at_the_coulomb_rate(wall_mu):
     # Periodic layer on a slope tan(theta) = 0.4 with internal mu = 0.5: it
     # slides as a block at g (sin - wall_mu cos) t when wall_mu < 0.4, else rests.
-    P, G, L = column(dt=0.005, t_f=0.05, theta=np.arctan(0.4), granular_solver="velocity", granular_tolerance=1e-9)
+    P, G, L = column(
+        dt=0.005, t_f=0.05, theta=np.arctan(0.4), granular_solver="velocity", granular_tolerance=1e-9
+    )
     P.B.wall_mu = wall_mu
     P.B.cyclic_lr = True
     P.B.has_left = P.B.has_right = False

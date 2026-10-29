@@ -461,7 +461,12 @@ def cell_packing_fraction(P, G, batch):
 
 
 # Domain edges as wall contact rows (wall_mu): outward normal, tangent.
-WALL_SIDES = (((-1.0, 0.0), (0.0, 1.0)), ((1.0, 0.0), (0.0, 1.0)), ((0.0, -1.0), (1.0, 0.0)), ((0.0, 1.0), (1.0, 0.0)))
+WALL_SIDES = (
+    ((-1.0, 0.0), (0.0, 1.0)),
+    ((1.0, 0.0), (0.0, 1.0)),
+    ((0.0, -1.0), (1.0, 0.0)),
+    ((0.0, 1.0), (1.0, 0.0)),
+)
 
 
 def wall_candidates(P, G, components):
@@ -675,7 +680,9 @@ def step(P, G, L):
             mu = np.concatenate((np.full(len(active), mu), np.full(walls, float(P.B.wall_mu))))
             if attempt == 0:
                 initial = np.vstack((initial, old_walls[B.wall_nodes, B.wall_sides]))
-        options = dict(tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial)
+        options = dict(
+            tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial
+        )
         if P.granular_solver == "velocity":
             from granular_mixed import solve_velocity
 

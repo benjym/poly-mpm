@@ -204,7 +204,9 @@ class MetalRunner:
         rows = self.grid.topology.nodes
         previous = np.zeros((len(rows), 3)) if previous is None else previous[rows]
         walls = getattr(G, "granular_wall_contact", None)
-        walls = np.zeros((len(self.wall_nodes), 3)) if walls is None else walls[self.wall_nodes, self.wall_sides]
+        walls = (
+            np.zeros((len(self.wall_nodes), 3)) if walls is None else walls[self.wall_nodes, self.wall_sides]
+        )
         rt.write(self.previous, np.vstack((previous, walls)), f32)
         # FP64 bases and constants; the device holds increments.
         self.base = dict(

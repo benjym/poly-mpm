@@ -175,9 +175,11 @@ def solve_velocity(
     # A row whose strain rate is at the roundoff of B u (for example under a
     # rigid motion) carries no scale; normalising by it would make the
     # residual unreachable. metal solver_rows_setup applies the same rule.
-    roundoff = 64 * np.finfo(float).eps * np.einsum(
-        "nskc,nsc->nk", np.abs(blocks), np.abs(trial)[operator.nodes]
-    ).max(axis=1)
+    roundoff = (
+        64
+        * np.finfo(float).eps
+        * np.einsum("nskc,nsc->nk", np.abs(blocks), np.abs(trial)[operator.nodes]).max(axis=1)
+    )
     rows = np.maximum(np.maximum(-q[:, 0], 0), np.abs(q[:, 1:]).max(axis=1, initial=0))
     magnitude = float(np.max(np.where(rows > roundoff, rows, 0), initial=0))
     local = dt * np.einsum("nskc,nsc,nslc->nkl", blocks, inverse_mass[operator.nodes], blocks)

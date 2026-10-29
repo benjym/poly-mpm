@@ -188,7 +188,9 @@ class Grid:
         self.q_dot = physical_force.copy()
         if P.damping:
             self.q_dot *= 0.7
-        self.contact_h, self.contact_v = self.wall_contact(P, divide(self.q + self.q_dot * P.dt, self.m[:, None]))
+        self.contact_h, self.contact_v = self.wall_contact(
+            P, divide(self.q + self.q_dot * P.dt, self.m[:, None])
+        )
         if P.B.roughness:
             if P.B.wall_mu and P.solver != "granular":
                 # Friction acts only where the normal force points into a wall.

@@ -9,7 +9,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-
 # Transpose slot of a wall contact row's single node (granular.wall_rows).
 WALL_SLOT = 9
 
@@ -90,7 +89,13 @@ def q1_topology(nx, ny, *, periodic=False, wall_nodes=()):
         for i, (row, slot) in enumerate(values):
             transpose_rows[j, i], transpose_slots[j, i] = row, slot
     return Topology(
-        nodes, neighbors, transpose_rows, transpose_slots, colors, canonical.ravel(), wall_nodes.astype(np.uint32)
+        nodes,
+        neighbors,
+        transpose_rows,
+        transpose_slots,
+        colors,
+        canonical.ravel(),
+        wall_nodes.astype(np.uint32),
     )
 
 
