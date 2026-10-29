@@ -7,8 +7,10 @@ the discrete problem stalls every solver tried
 [regularisation study](granular-mixed.md#regularised-laws-under-refinement)).
 This note sets out the model, the time step and the solver that would replace
 it, what the code already provides and what must be built or decided first. It
-is a plan for the MPM code, where none of it is implemented yet; a one-dimensional
-prototype of the step is verified in [Shear-cell results](#shear-cell-results).
+is a plan for the MPM code, where none of it is implemented yet. Prototypes of the
+step are verified in one dimension ([Shear-cell results](#shear-cell-results))
+and on the frozen first step of the column collapse
+([Frozen-step results](#frozen-step-results)).
 
 ## Model
 
@@ -107,10 +109,14 @@ nodes then cannot move a jammed group of nodes as one body and can stop short of
 the minimum. In the one-dimensional shear cell this is avoided by taking the
 cell strain rates as unknowns, with the walls as a linear constraint
 ([Shear-cell results](#shear-cell-results)). That change of variables has no
-direct analogue on a two-dimensional grid, where strain rates must be compatible;
-the options there (strain-rate unknowns with compatibility as a constraint,
-smoothing over aggregates of nodes, or a primal–dual method on the product domain
-of the fixed cap) are not yet tested.
+direct analogue on a two-dimensional grid, where strain rates must be compatible.
+The two-dimensional prototype keeps strain-rate unknowns at the stress nodes with
+compatibility as a constraint, and solves either by augmented-Lagrangian
+splitting or by the method of multipliers with semismooth Newton subproblems on
+the Moreau envelope of `psi`. Both converge; neither has an iteration count
+independent of the grid ([Frozen-step results](#frozen-step-results)).
+Smoothing over aggregates of nodes and primal–dual methods on the product domain
+of the fixed cap are not yet tested.
 
 ## Verification
 
@@ -129,6 +135,7 @@ of the fixed cap) are not yet tested.
 | Per-particle packing fraction evolving through `J` | Available; currently used only as a hard cap |
 | Walls as convex constraints (one-sided, frictional), periodic edges | Available in the stress-space solver; velocity form not yet |
 | Velocity-space convex step with a cone yield | Prototype (study script, frozen first step) |
+| Velocity-space convex step with critical-state CIDR in 2D | Prototype (`benchmarks/cidr_frozen_step.py`, frozen first step): converges under refinement; solvers converge but not in a number of iterations independent of the grid ([Frozen-step results](#frozen-step-results)) |
 | Nested coarse-to-fine warm start | Prototype (study) |
 | Volumetric averaging (`fbar`) | Available in the explicit solver |
 | Segregation coupled to the granular step | Available (CPU and Metal) |
@@ -436,6 +443,85 @@ model's behaviour.
   directly; see [Solver](#solver) for why the one-dimensional change of
   variables does not carry over.
 - The fixed cap is required for convexity.
+
+## Frozen-step results
+
+`benchmarks/cidr_frozen_step.py` solves the first step of the column collapse from
+rest (width 0.5 m, height 1 m, `dt = 0.002` s) with critical-state CIDR in two
+dimensions, on the operators of the rigid-grain solver: velocities at the grid
+nodes, and `psi` at the nodal stress nodes with the strain rate averaged over the
+grains in each node's support. The packing is uniform (`phi = 0.6`) and frozen,
+and the glass-bead `mu(I)` of Jop et al. is used with a grain diameter of 3 mm.
+Results are in `benchmarks/cidr_frozen_step_alg2.json` and
+`benchmarks/cidr_frozen_step_newton.json`.
+
+`C` sets how far the column is from the cap. With the base on the cap at rest
+(`2 mu_1 C = rho g H`), the base compacts at the cap pressure, which only balances
+the column's weight, and the column falls through the step as if unsupported (probe
+speeds of `g dt`). The results below use a cap pressure of twice the base
+pressure, which puts the base at the critical pressure and the whole column
+denser than the cap for its load. The column then collapses at the free face,
+with probe speeds up to `0.83 g dt`.
+
+### Refinement
+
+Nodal velocities are compared at 1,176 probe points on successive grids, as in the
+[regularisation study](granular-mixed.md#regularised-laws-under-refinement):
+
+| Spacing (m) | Stress nodes | Change from coarser grid | Associated cone (earlier study) |
+| --- | --- | --- | --- |
+| 0.05 | 231 | | |
+| 0.025 | 861 | 4.5% | 5.9% |
+| 0.0125 | 3,321 | 2.1% | 2.6% |
+| 0.00625 | 13,041 | 0.90% | 1.1% |
+
+The change halves with the spacing: critical-state CIDR with the fixed cap
+converges at first order in this test, like the associated cone. The fraction of
+jammed stress nodes rises from 5% to 23% with refinement (at the ALG2 tolerance).
+
+### Solvers
+
+The cone of `psi` at `D = 0` is not separable in the nodal velocities, and a
+Newton polish on a jammed set taken from ALG2 failed: the conditions `D = 0` at
+neighbouring jammed nodes are linearly dependent, and Newton stalls at free nodes
+that creep close to the cone, where the Hessian of `psi` grows like `1 / |D|`.
+Two solvers keep an auxiliary strain rate at each stress node instead, and share
+an exact proximal step of `psi` per node (checked against the stationarity
+condition to 3e-8 and the static set on 400 random inputs).
+
+- **ALG2**, over-relaxed (1.8) with residual balancing of the penalty, to a
+  relative residual of 1e-5 (which changes the probe velocities by 4e-4 against
+  1e-6).
+- **Method of multipliers with semismooth Newton.** Each outer step minimises
+  `f(u) + sum W psi_gamma(D(u) + gamma lambda)` over `u`, where `psi_gamma` is the
+  Moreau envelope of `psi`, whose gradient is `(x - prox(x)) / gamma` and whose
+  generalised Hessian is `I / gamma` at jammed nodes; then
+  `lambda = grad psi_gamma(D(u) + gamma lambda)`. The limit is the step with
+  `psi` itself. `gamma` falls by `sqrt(10)` per outer step from `dt / rho` to
+  `dt / (1000 rho)`. With `gamma` reduced alone and no multiplier, the error
+  falls only in proportion to `gamma`, and Newton fails on round-off before it
+  is small.
+
+| Spacing (m) | ALG2 iterations | ALG2 time | Newton iterations (outer steps) | Newton time |
+| --- | --- | --- | --- | --- |
+| 0.05 | 1,070 | 16 s | 93 (18) | 4 s |
+| 0.025 | 2,628 | 60 s | 177 (10) | 18 s |
+| 0.0125 | 5,929 | 279 s | 325 (9) | 143 s |
+| 0.00625 | 11,725 | 1,591 s | not run | |
+
+The two solvers agree to 2e-5 (0.05 m) and 6e-5 (0.025 m) in the probe velocities
+against ALG2 at 1e-6, and give the same changes under refinement. Newton is two to
+four times faster, but its iteration count also grows, by about 1.9 per halving
+of the spacing against 2.2 for ALG2. In the hardest outer step on the 0.025 m grid
+the line search cuts Newton's step to about 3% for some thirty iterations while
+the jammed set overshoots (from 245 to 330 nodes) and then settles at 85; after
+that Newton converges quadratically. The generalised Hessian jumps from the
+curvature of `psi` to `1 / gamma` where a node jams, so each step jams too many
+nodes, and the number that change grows with the grid. This is a matter of
+globalisation (line search, path in `gamma`), not of the linear solver. Starting
+each grid from the coarser grid's velocity shortens only the first outer step,
+and on the 0.0125 m grid Newton then stalled at the round-off allowance at the
+smallest `gamma`.
 
 ## References
 
