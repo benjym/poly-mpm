@@ -202,10 +202,13 @@ def prepare(P, mode="simulation"):
     ):
         defaults(P.B, **{name: False})
     defaults(P.G, thickness=1.0, ns=1, s=[0.001])
-    if P.solver == "granular" and (P.B.wall_mu or P.B.conveyor):
-        raise ValueError(
-            "granular prototype supports frictionless or no-slip fixed walls, not wall_mu/conveyor"
-        )
+    if P.solver == "granular" and P.B.conveyor:
+        raise ValueError("granular prototype does not support conveyors")
+    if P.solver == "granular" and P.B.wall_mu:
+        if not np.isfinite(P.B.wall_mu) or P.B.wall_mu <= 0:
+            raise ValueError("wall_mu must be finite and positive")
+        if P.granular_solver != "velocity":
+            raise ValueError("granular wall_mu requires granular_solver='velocity'")
     if P.solver == "granular" and (P.B.vertical_force or P.B.horizontal_force):
         raise ValueError("granular prototype does not support traction boundary flags")
     from mpm_gpu.config import validate as validate_backend

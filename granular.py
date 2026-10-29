@@ -460,6 +460,41 @@ def cell_packing_fraction(P, G, batch):
     )
 
 
+# Domain edges as wall contact rows (wall_mu): outward normal, tangent.
+WALL_SIDES = (((-1.0, 0.0), (0.0, 1.0)), ((1.0, 0.0), (0.0, 1.0)), ((0.0, -1.0), (1.0, 0.0)), ((0.0, 1.0), (1.0, 0.0)))
+
+
+def wall_rows(P, G, components):
+    """Contact rows for the left, right, bottom and top walls when wall_mu is set.
+
+    A row's strain-rate equivalent is s (-n.u, t.u, 0, ...), with outward
+    normal n, tangent t and s the wall length times thickness carried by the
+    node. Its reaction is the wall traction: r_n >= 0 pushes the node into the
+    domain, r_n w_n = 0 lets it leave, and |r_t| <= wall_mu r_n opposes slip.
+    Returns the velocity node, side (index into WALL_SIDES) and block per row.
+    """
+    canonical = canonical_nodes(P, len(G.m))
+    resolved = G.valid_nodes & (canonical == np.arange(len(G.m)))
+    row, column = np.divmod(np.arange(len(G.m)), P.G.nx)
+    volumes = basis_volumes(P, G)
+    masks = (
+        G.boundary_v & (column == 0),
+        G.boundary_v & (column == P.G.nx - 1),
+        G.boundary_h & (row == 0),
+        G.boundary_h & (row == P.G.ny - 1),
+    )
+    halves = (G.dx / 2, G.dx / 2, G.dy / 2, G.dy / 2)
+    nodes, sides, blocks = [], [], []
+    for side, (mask, half, (normal, tangent)) in enumerate(zip(masks, halves, WALL_SIDES)):
+        selected = np.flatnonzero(mask & resolved)
+        block = np.zeros((components, 2))
+        block[0], block[1] = -np.asarray(normal), tangent
+        nodes.append(selected)
+        sides.append(np.full(len(selected), side))
+        blocks.append((volumes[selected] / half)[:, None, None] * block)
+    return np.concatenate(nodes), np.concatenate(sides), np.concatenate(blocks).reshape(-1, components, 2)
+
+
 def assemble(P, G, batch, *, compact=False):
     """Build b(tau,u)=sum_p V_grain*N_stress*tau:D(u) and packing gap."""
     basis, dimension = stress_space(P)
@@ -512,6 +547,10 @@ def assemble(P, G, batch, *, compact=False):
         contribution = (
             solid_volume[:, None, None, None] * stress_weights[:, :, None, None] * batch.G[:, None, :, :2]
         )
+        walls = None
+        if P.B.wall_mu:
+            wall_nodes, wall_sides, wall_blocks = wall_rows(P, G, components)
+            walls = wall_nodes, wall_blocks
         B = GradientOperator(
             np.broadcast_to(index[stress_nodes][:, :, None], shape).ravel(),
             np.broadcast_to(nodes[:, None, :], shape).ravel(),
@@ -519,7 +558,10 @@ def assemble(P, G, batch, *, compact=False):
             len(active),
             len(G.m),
             basis,
+            walls=walls,
         )
+        if walls is not None:
+            B.wall_nodes, B.wall_sides = wall_nodes, wall_sides
     else:
         B = sparse.coo_matrix(
             (np.concatenate(data), (np.concatenate(rows), np.concatenate(cols))),
@@ -602,8 +644,17 @@ def step(P, G, L):
         old = getattr(G, "granular_contact", np.zeros((len(occupied), components)))
         # A re-solve starts from the attempt it replaces (same active rows).
         initial = old[active] if attempt == 0 else contact
-        options = dict(tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial)
         mu = b.material.mu * np.sqrt(2 / dimension)
+        walls = len(getattr(B, "wall_nodes", ()))
+        if walls:
+            # Wall rows follow the stress rows: no gap, wall friction, and a
+            # warm start from the previous step's traction on the same wall.
+            old_walls = getattr(G, "granular_wall_contact", np.zeros((len(G.m), len(WALL_SIDES), components)))
+            gap = np.vstack((gap, np.zeros((walls, components))))
+            mu = np.concatenate((np.full(len(active), mu), np.full(walls, float(P.B.wall_mu))))
+            if attempt == 0:
+                initial = np.vstack((initial, old_walls[B.wall_nodes, B.wall_sides]))
+        options = dict(tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial)
         if P.granular_solver == "velocity":
             from granular_mixed import solve_velocity
 
@@ -628,6 +679,11 @@ def step(P, G, L):
         force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
         final = trial.copy()
         final[free] += P.dt * inverse_mass * force.ravel()[free]
+        if walls:
+            # The wall traction is a constraint impulse, not an internal force.
+            wall_contact = contact.copy()
+            wall_contact[: len(active)] = 0
+            force -= np.asarray(B.T @ wall_contact.ravel()).reshape(-1, 2)
         contact_h, contact_v = G.wall_contact(P, final.reshape(-1, 2))
         if not np.any((contact_h & ~G.contact_h) | (contact_v & ~G.contact_v)):
             break
@@ -643,7 +699,10 @@ def step(P, G, L):
             value[P.G.nx - 1 :: P.G.nx] = value[:: P.G.nx]
     velocity = nodal_velocity(G, P)
     G.granular_contact = np.zeros((len(occupied), components))
-    G.granular_contact[active] = contact
+    G.granular_contact[active] = contact[: len(active)]
+    if walls:
+        G.granular_wall_contact = np.zeros((len(G.m), len(WALL_SIDES), components))
+        G.granular_wall_contact[B.wall_nodes, B.wall_sides] = contact[len(active) :]
     if P.B.cyclic_lr and P.granular_stress_basis == "nodal":
         G.granular_contact[P.G.nx - 1 :: P.G.nx] = G.granular_contact[:: P.G.nx]
     # Recompute physical work/impulse budgets with the final contact response.

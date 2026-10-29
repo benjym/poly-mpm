@@ -166,6 +166,42 @@ def test_one_sided_walls_still_support_a_static_column():
     assert b.pressure.min() < -100
 
 
+def test_frictional_walls_release_a_column_under_upward_gravity():
+    P, G, L = column(dt=0.005, t_f=0.05, max_g=2.0, granular_solver="velocity")
+    P.B.wall_mu = 0.3
+    b = L.materials[0]
+    before = b.v[:, 1].copy()
+    run(P, G, L, output=False)
+    assert_allclose(b.pressure, 0, atol=1e-8)
+    assert_allclose(b.v[:, 1] - before, 2.0 * P.t, rtol=1e-12)
+
+
+@pytest.mark.parametrize("wall_mu", [0.2, 0.6])
+def test_layer_on_frictional_floor_slides_at_the_coulomb_rate(wall_mu):
+    # Periodic layer on a slope tan(theta) = 0.4 with internal mu = 0.5: it
+    # slides as a block at g (sin - wall_mu cos) t when wall_mu < 0.4, else rests.
+    P, G, L = column(dt=0.005, t_f=0.05, theta=np.arctan(0.4), granular_solver="velocity", granular_tolerance=1e-9)
+    P.B.wall_mu = wall_mu
+    P.B.cyclic_lr = True
+    P.B.has_left = P.B.has_right = False
+    G.boundary_v[:] = False
+    b = L.materials[0]
+    run(P, G, L, output=False)
+    expected = max(-P.g * (np.sin(P.theta) - wall_mu * np.cos(P.theta)) * P.t, 0)
+    assert_allclose(-b.v[:, 0], expected, atol=1e-8)
+    assert b.pressure.min() < -100
+
+
+def test_wall_friction_requires_the_velocity_solver():
+    from inputs.granular_column import Params
+
+    P = Params([])
+    P.B.wall_mu = 0.3
+    P.granular_solver = "hybrid"
+    with pytest.raises(ValueError, match="velocity"):
+        prepare(P)
+
+
 def test_rigid_grain_response_independent_of_elastic_and_viscosity_parameters(monkeypatch):
     import granular
 

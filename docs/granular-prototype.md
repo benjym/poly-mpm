@@ -87,8 +87,9 @@ quadrature and one granular material. FLIP is the example default. PIC is
 available but showed substantial timestep-dependent damping in the collapse
 experiment. Quadratic interpolation/APIC and finite-domain quadrature are
 excluded pending a suitable mixed discretization and convergence checks.
-Fixed frictionless or no-slip walls and horizontal periodicity are supported;
-conveyors, traction boundary flags, finite wall friction and damping are rejected.
+Fixed frictionless or no-slip walls, frictional walls (`B.wall_mu`, velocity
+solver only) and horizontal periodicity are supported; conveyors, traction
+boundary flags and damping are rejected.
 
 By default a wall node has its normal velocity (and, for no-slip walls, its
 tangential velocity) set to zero in both directions. The mass mapped to wall
@@ -102,6 +103,22 @@ the step re-solved, starting from the stresses of the attempt it replaces.
 Interior walls stay two-sided. A no-slip wall still fixes the tangential
 velocity of a node that is not moving away from it, even without a normal
 load.
+
+With `B.wall_mu` set, each node on the left, right, bottom or top wall is a
+contact row in the same complementarity problem as the grain stresses,
+instead of a fixed velocity. The row's strain-rate equivalent is
+`s (-n.u, t.u, 0)`, with outward normal `n`, tangent `t` and `s` the wall
+length times thickness carried by the node, so its reaction is the wall
+traction. The grain contact law applies unchanged with `wall_mu` in place of
+`mu`: the node may leave the wall (`r_n w_n = 0`), sticks while
+`|r_t| < wall_mu r_n` and otherwise slides against the wall. No re-solve is
+needed, and `roughness` and `separable` do not affect these walls. The wall
+traction enters the step as a constraint impulse, not an internal force.
+Checks: a column under upward gravity leaves the floor ballistically, and a
+periodic layer on a slope `tan(theta) = 0.4` with internal `mu = 0.5` slides
+as a block at `g (sin(theta) - wall_mu cos(theta)) t` for `wall_mu = 0.2`
+and rests for `wall_mu = 0.6`, to `1e-8`. The Metal backend rejects
+`wall_mu`.
 Any existing segregation operator remains separately explicit and uncalibrated
 for this constitutive model.
 

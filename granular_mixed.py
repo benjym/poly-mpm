@@ -15,9 +15,13 @@ class GradientOperator:
     Store one 2-vector per stress/velocity-node pair, including periodic sums.
     Padding makes independent stress updates amenable to batched NumPy calls.
     No tensor-expanded B or stress Delassus matrix is retained.
+
+    `walls`, a pair (nodes, blocks) with one velocity node and one 3x2 block
+    per row, appends wall contact rows after the `count` stress rows. Their
+    gradients are zero; `blocks` holds every row's 3x2 block per entry.
     """
 
-    def __init__(self, rows, nodes, gradients, count, node_count, basis):
+    def __init__(self, rows, nodes, gradients, count, node_count, basis, walls=None):
         keys, inverse = np.unique(rows * node_count + nodes, return_inverse=True)
         values = np.column_stack(
             [np.bincount(inverse, weights=gradients[:, c], minlength=len(keys)) for c in range(2)]
@@ -34,19 +38,32 @@ class GradientOperator:
         self.nodes[row, slots] = node
         self.gradients[row, slots] = values
         self.basis = np.asarray(basis)[:, :2, :2]
+        self.blocks = np.einsum("kcd,nsd->nskc", self.basis, self.gradients)
+        self.stress_count = count
+        if walls is not None:
+            wall_nodes, wall_blocks = walls
+            extra = len(wall_nodes)
+            width = max(width, 1 if extra else 0)
+            pad = width - self.nodes.shape[1]
+            self.nodes = np.pad(self.nodes, ((0, extra), (0, pad)))
+            self.gradients = np.pad(self.gradients, ((0, extra), (0, pad), (0, 0)))
+            self.blocks = np.pad(self.blocks, ((0, extra), (0, pad), (0, 0), (0, 0)))
+            self.nodes[count:, 0] = wall_nodes
+            self.blocks[count:, 0] = wall_blocks
+            count += extra
         self.shape = (count * len(basis), node_count * 2)
         self.count, self.node_count = count, node_count
-        self.nnz = len(keys)
-        self.storage_bytes = self.nodes.nbytes + self.gradients.nbytes + self.basis.nbytes
+        self.nnz = len(keys) + (len(walls[0]) if walls is not None else 0)
+        self.storage_bytes = self.nodes.nbytes + self.blocks.nbytes
         self.T = LinearOperator(self.shape[::-1], matvec=self.transpose, dtype=float)
 
     def __matmul__(self, velocity):
         u = np.asarray(velocity).reshape(self.node_count, 2)
-        return np.einsum("kcd,nsd,nsc->nk", self.basis, self.gradients, u[self.nodes]).ravel()
+        return np.einsum("nskc,nsc->nk", self.blocks, u[self.nodes]).ravel()
 
     def transpose(self, stress):
         stress = np.asarray(stress).reshape(self.count, len(self.basis))
-        force = np.einsum("kcd,nsd,nk->nsc", self.basis, self.gradients, stress)
+        force = np.einsum("nskc,nk->nsc", self.blocks, stress)
         return np.column_stack(
             [
                 np.bincount(self.nodes.ravel(), weights=force[:, :, c].ravel(), minlength=self.node_count)
@@ -58,8 +75,8 @@ class GradientOperator:
         """Greedy conflict coloring, including seams and component-wise walls."""
         users = [set() for _ in range(self.node_count)]
         colors = np.zeros(self.count, dtype=int)
-        for i, (nodes, gradients) in enumerate(zip(self.nodes, self.gradients)):
-            supported = nodes[np.any(gradients != 0, axis=1) & np.any(inverse_mass[nodes] > 0, axis=1)]
+        for i, (nodes, blocks) in enumerate(zip(self.nodes, self.blocks)):
+            supported = nodes[np.any(blocks != 0, axis=(1, 2)) & np.any(inverse_mass[nodes] > 0, axis=1)]
             forbidden = set().union(*(users[j] for j in supported))
             color = 0
             while color in forbidden:
@@ -154,7 +171,7 @@ def solve_velocity(
     inverse_mass = np.asarray(inverse_mass).reshape(-1, 2)
     mu = np.broadcast_to(mu, count)
     q = (operator @ trial.ravel()).reshape(gap.shape) + gap
-    blocks = np.einsum("kcd,nsd->nskc", operator.basis, operator.gradients)
+    blocks = operator.blocks
     # A row whose strain rate is at the roundoff of B u (for example under a
     # rigid motion) carries no scale; normalising by it would make the
     # residual unreachable. metal solver_rows_setup applies the same rule.
@@ -240,14 +257,14 @@ def solve_velocity(
     while error > tolerance and sweeps < max_iterations * 10:
         start = z.copy()
         for group in colors:
-            nodes, gradients = operator.nodes[group], operator.gradients[group]
-            w = (np.einsum("kcd,nsd,nsc->nk", operator.basis, gradients, u[nodes]) + gap[group]) / magnitude
+            nodes, group_blocks = operator.nodes[group], operator.blocks[group]
+            w = (np.einsum("nskc,nsc->nk", group_blocks, u[nodes]) + gap[group]) / magnitude
             old = np.einsum("nki,nk->ni", Q[group], z[group])
             other = np.einsum("nki,nk->ni", Q[group], w) - diagonal[group] * old
             new = diagonal_coulomb(diagonal[group], other, mu[group])
             delta = np.einsum("nki,ni->nk", Q[group], new - old)
             z[group] = np.einsum("nki,ni->nk", Q[group], new)
-            force = np.einsum("kcd,nsd,nk->nsc", operator.basis, gradients, delta)
+            force = np.einsum("nskc,nk->nsc", group_blocks, delta)
             np.add.at(u, nodes, dt * scale * inverse_mass[nodes] * force)
         sweeps += 1
         u = velocity()  # Periodic refresh avoids accumulating incremental roundoff.
