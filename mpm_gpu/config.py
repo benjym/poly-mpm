@@ -37,6 +37,8 @@ def validate(P):
         raise ValueError("Metal requires one granular material")
     if P.transfer not in ("flip", "pic", "apic_gradient"):
         raise ValueError("Metal supports flip, pic and apic_gradient transfers")
+    if getattr(P, "granular_stopping", "residual") != "residual":
+        raise ValueError("Metal supports only granular_stopping='residual'")
     if P.granular_viscosity != 0:
         raise ValueError("Metal does not support granular_viscosity")
     if P.segregate:

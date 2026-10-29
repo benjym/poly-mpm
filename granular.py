@@ -597,7 +597,17 @@ def step(P, G, L):
 
         full_inverse_mass = np.zeros_like(trial)
         full_inverse_mass[free] = inverse_mass
-        contact, stats = solve_velocity(B, trial, full_inverse_mass, gap, mu, P.dt, **options)
+        contact, stats = solve_velocity(
+            B,
+            trial,
+            full_inverse_mass,
+            gap,
+            mu,
+            P.dt,
+            stopping=P.granular_stopping,
+            increment=P.granular_increment,
+            **options,
+        )
     else:
         operator = B[:, free]
         W = (operator.multiply(inverse_mass) @ operator.T) * P.dt

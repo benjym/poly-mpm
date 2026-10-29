@@ -119,7 +119,18 @@ def diagonal_coulomb(diagonal, q, mu):
 
 
 def solve_velocity(
-    operator, trial, inverse_mass, gap, mu, dt, *, tolerance=1e-9, max_iterations=200, initial=None
+    operator,
+    trial,
+    inverse_mass,
+    gap,
+    mu,
+    dt,
+    *,
+    tolerance=1e-9,
+    max_iterations=200,
+    initial=None,
+    stopping="residual",
+    increment=1e-3,
 ):
     """Colored Gauss-Seidel with cached tangential metrics and exact coupling.
 
@@ -128,7 +139,16 @@ def solve_velocity(
     A conservative norm bound and per-node Euclidean natural residual make the
     acceptance check at least as strict as the reference infinity-norm check.
     Nonconvergence raises; no dense fallback is hidden.
+
+    stopping="increment" instead ends the iteration, as Daviet (2026) does, once
+    the per-sweep change in the scaled strain rate w = (B u + gap)/magnitude is
+    at most `increment` in both the maximum and root-mean-square block norms,
+    or when the sweep budget is spent. It never raises for an unmet residual;
+    the true natural residual is still reported and `converged` records
+    whether it met `tolerance`.
     """
+    if stopping not in ("residual", "increment"):
+        raise ValueError("stopping must be residual or increment")
     count, components = gap.shape
     trial = np.asarray(trial).reshape(-1, 2)
     inverse_mass = np.asarray(inverse_mass).reshape(-1, 2)
@@ -180,8 +200,11 @@ def solve_velocity(
     def velocity():
         return trial + dt * scale * inverse_mass * (operator.T @ z.ravel()).reshape(-1, 2)
 
+    def strain_rate(u):
+        return ((operator @ u.ravel()).reshape(q.shape) + gap) / magnitude
+
     def residual(u):
-        w = ((operator @ u.ravel()).reshape(q.shape) + gap) / magnitude
+        w = strain_rate(u)
         argument = z - w
         projected = argument.copy()
         projected[:, 0] = np.maximum(argument[:, 0], 0)
@@ -203,6 +226,8 @@ def solve_velocity(
     error = residual(u)
     sweeps = 0
     history = []
+    change = (np.inf, np.inf)
+    previous_rate = strain_rate(u) if stopping == "increment" else None
     accelerated = 0
     newton_steps = 0
     while error > tolerance and sweeps < max_iterations * 10:
@@ -287,7 +312,28 @@ def solve_velocity(
                     break
             else:
                 z = saved
-    if not np.isfinite(error) or error > tolerance:
+        if stopping == "increment":
+            rate = strain_rate(u)
+            norms = np.linalg.norm(rate - previous_rate, axis=1)
+            previous_rate = rate
+            change = (
+                float(np.max(norms, initial=0)),
+                float(np.sqrt(np.mean(norms**2))) if len(norms) else 0.0,
+            )
+            if change[0] <= increment and change[1] <= increment:
+                break
+    if stopping == "residual" and (not np.isfinite(error) or error > tolerance):
         raise RuntimeError(f"granular velocity solve did not converge: residual={error:.3g}, sweeps={sweeps}")
-    stats.update(residual=error, sweeps=sweeps, acceleration_steps=accelerated, newton_steps=newton_steps)
+    if not np.isfinite(error):
+        raise RuntimeError(f"granular velocity solve produced a nonfinite residual after {sweeps} sweeps")
+    stats.update(
+        residual=error,
+        sweeps=sweeps,
+        acceleration_steps=accelerated,
+        newton_steps=newton_steps,
+        converged=bool(error <= tolerance),
+        stopping=stopping,
+    )
+    if stopping == "increment":
+        stats.update(increment_max=change[0], increment_rms=change[1], increment_limit=increment)
     return z * scale, stats

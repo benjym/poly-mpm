@@ -331,3 +331,48 @@ sweeps that grows rapidly with resolution. Dilatancy alone therefore does not
 remove the obstacle: the colored-sweep iteration itself does not scale, and a
 multilevel solver is needed whichever flow rule is used. No dilatancy law is
 implemented in the model; this prototype lives only in the study script.
+
+## Increment stopping (Daviet 2026 style)
+
+Daviet (2026, Section 6) ends its stress iteration when the ℓ2 and ℓ∞ norms
+of the plastic-strain increment fall below a threshold, typically `1e-3`, or
+after a maximum number of iterations, typically 250, and reports average ℓ2
+residuals of order `1e-4` to `3e-3` (Table 4). The paper also notes slow
+asymptotic convergence of its colored Gauss–Seidel and Jacobi iterations
+(Section 7.1). It does not certify a residual each step. This explains why
+it does not meet the difficulty described above: the certified mode here
+requires the maximum block natural residual to reach `granular_tolerance` at
+every step and raises otherwise.
+
+`P.granular_stopping = "increment"` (velocity solver only, CPU only) applies
+an analogous rule: the iteration ends when the per-sweep change in the scaled
+strain rate `w = (B u + gap)/magnitude` is at most `P.granular_increment`
+(default `1e-3`) in both the maximum and root-mean-square block norms, or when
+the sweep budget `10 * granular_max_iterations` is spent. It does not raise
+for an unmet residual. Diagnostics still record the true natural residual,
+`converged` (whether it met `granular_tolerance`), `stopping` and the final
+increments. The paper's ℓ2 normalisation is not stated; the root mean square
+over stress rows is used here. The default remains `"residual"`.
+
+The [stopping study](../benchmarks/granular_stopping_study.json)
+(`uv run --locked python -m benchmarks.granular_stopping_study`) runs the
+column collapse for 0.3 s (150 steps at `dt = 0.002`) with each rule:
+
+| Grid spacing | Particles | Rule | Total sweeps | Time (s) | Largest / median step residual | Largest particle position difference | Runout difference |
+| ---: | ---: | --- | ---: | ---: | --- | ---: | ---: |
+| 0.05 | 3,200 | certified `1e-4` (reference) | 19,142 | 130 | 1.0e-4 / 9.9e-5 | — | — |
+| 0.05 | 3,200 | increment `1e-3`, 250 sweeps | 1,253 | 4.0 | 7.8e-3 / 2.6e-3 | 1.6% of a spacing | 0.05% |
+| 0.05 | 3,200 | increment `1e-4`, 2,500 sweeps | 3,542 | 11.2 | 4.6e-3 / 7.1e-4 | 0.7% | 0.2% |
+| 0.025 | 12,800 | increment `1e-4`, 2,500 sweeps (reference) | 10,098 | 69 | 1.1e-2 / 1.2e-3 | — | — |
+| 0.025 | 12,800 | increment `1e-3`, 250 sweeps | 2,338 | 19 | 2.6e-2 / 4.6e-3 | 26% | 0.7% |
+
+No certified reference is reachable at 0.025 (nor at 0.05 for `1e-6`, where
+the first step ended at 1.2e-5 after 50,000 sweeps). The runout is
+insensitive to the stopping rule at both resolutions, but individual particle
+positions are not: the paper-style rule moves some particles by a quarter of a
+grid spacing at 0.025 relative to the tighter rule, with residuals 26 to 80
+times the certified tolerance. The runout also differs by about 10% between
+the two resolutions (0.255 m and 0.282 m), so these runs are not converged in
+space either. Increment stopping is therefore a speed–accuracy choice, not an
+equivalent of the certified solve; the size of its error depends on the
+quantity examined.

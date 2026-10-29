@@ -64,6 +64,8 @@ def prepare(P, mode="simulation"):
         granular_stress_basis="nodal",
         granular_viscosity=0.0,
         granular_max_iterations=200,
+        granular_stopping="residual",
+        granular_increment=1e-3,
         granular_max_nodes=256,
         interpolation="linear",
         quadrature="point",
@@ -145,6 +147,12 @@ def prepare(P, mode="simulation"):
             raise ValueError("granular prototype solves pressure directly and requires damping=False")
         if not np.isfinite(P.granular_tolerance) or P.granular_tolerance <= 0:
             raise ValueError("granular_tolerance must be positive and finite")
+        if P.granular_stopping not in ("residual", "increment"):
+            raise ValueError("granular_stopping must be residual or increment")
+        if P.granular_stopping == "increment" and P.granular_solver != "velocity":
+            raise ValueError("granular_stopping='increment' requires granular_solver='velocity'")
+        if not np.isfinite(P.granular_increment) or P.granular_increment <= 0:
+            raise ValueError("granular_increment must be positive and finite")
         for name in ("granular_max_iterations", "granular_max_nodes"):
             if (
                 not np.isfinite(getattr(P, name))
