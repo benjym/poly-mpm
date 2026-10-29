@@ -562,6 +562,17 @@ the 0.5 by 1 m column on the coarse test grid (30 steps of 0.01 s, 4.6 s in all)
 takes 31 iterations on its cold first step, 8 to 17 on the next five while the
 flow starts, then 3 to 7 (`tests/test_cidr.py`).
 
+### GPU solver
+
+`granular_solver = "cidr"` also runs on Metal in FP32 (`mpm_gpu/cidr.py`): the
+same method, with Jacobi-preconditioned conjugate gradients for each Newton
+system and line searches on the sign of the directional derivative, which FP32
+resolves where it cannot resolve the objective's decrease. On the benchmark
+collapses it is 3.4 to 9.6 times faster than the CPU solver and agrees with it
+to 4e-6 grid spacings; the connected collapse of 10,000 particles, on which the
+Coulomb solver does not converge, runs at 2.2 s per step. Details and timings
+are in [gpu](gpu.md#critical-state-cidr).
+
 ## References
 
 The papers are listed in the [literature review](connected-flows-literature.md).

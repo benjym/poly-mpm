@@ -13,16 +13,23 @@ def defaults(P):
             P.granular_tolerance = 1e-4
         if not hasattr(P, "granular_solver"):
             P.granular_solver = "velocity"
+        if not hasattr(P, "granular_cidr_tolerance"):
+            P.granular_cidr_tolerance = 1e-4
 
 
 def validate(P):
     """Reject unsupported configurations explicitly, before native initialization."""
     if P.backend == "cpu":
         return
+    if P.granular_solver not in ("velocity", "cidr"):
+        raise ValueError("Metal requires granular_solver='velocity' or 'cidr'")
+    if P.granular_solver == "cidr" and P.B.separable:
+        raise ValueError("Metal granular_solver='cidr' does not support one-sided walls (B.separable)")
+    if P.granular_solver == "cidr" and P.granular_cidr_tolerance < 1e-5:
+        raise ValueError("Metal FP32 requires granular_cidr_tolerance >= 1e-5")
     required = dict(
         solver="granular",
         mechanics="updated",
-        granular_solver="velocity",
         granular_stress="intrinsic",
         granular_stress_basis="nodal",
         interpolation="linear",
@@ -31,7 +38,9 @@ def validate(P):
     for name, expected in required.items():
         if getattr(P, name) != expected:
             raise ValueError(f"Metal requires {name}={expected!r}")
-    if not math.isfinite(P.granular_tolerance) or P.granular_tolerance < 1e-5:
+    if P.granular_solver == "velocity" and (
+        not math.isfinite(P.granular_tolerance) or P.granular_tolerance < 1e-5
+    ):
         raise ValueError("Metal FP32 requires granular_tolerance >= 1e-5")
     if len(P.S) != 1 or P.S[0].law != "granular":
         raise ValueError("Metal requires one granular material")

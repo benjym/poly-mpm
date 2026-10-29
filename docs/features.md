@@ -158,13 +158,14 @@ and applies only together with `roughness`. Interior walls (`wall`, `two_walls`,
 
 ## Rigid-grain solver
 
-These settings apply when `solver = "granular"`. The Metal backend changes two
-defaults: `granular_tolerance = 1e-4` and `granular_solver = "velocity"`.
+These settings apply when `solver = "granular"`. The Metal backend changes three
+defaults: `granular_tolerance = 1e-4`, `granular_solver = "velocity"` and
+`granular_cidr_tolerance = 1e-4`.
 
 | Setting | Default | Values | Metal | Notes |
 | --- | --- | --- | --- | --- |
-| `granular_solver` | `"hybrid"` | `"hybrid"`, `"block"`, `"velocity"`, `"cidr"` | `velocity` | `velocity` is the compact iteration of [granular-mixed](granular-mixed.md); `wall_mu` and `increment` stopping need it. `cidr` replaces Coulomb friction and the hard packing limit by critical-state CIDR (below). |
-| `granular_tolerance` | `1e-9` | > 0 | ≥ `1e-5` | Natural-residual tolerance. |
+| `granular_solver` | `"hybrid"` | `"hybrid"`, `"block"`, `"velocity"`, `"cidr"` | `velocity`, `cidr` | `velocity` is the compact iteration of [granular-mixed](granular-mixed.md); `wall_mu` and `increment` stopping need it. `cidr` replaces Coulomb friction and the hard packing limit by critical-state CIDR (below). |
+| `granular_tolerance` | `1e-9` | > 0 | ≥ `1e-5` (`velocity`) | Natural-residual tolerance. |
 | `granular_max_iterations` | `200` | integer ≥ 1 | yes | The velocity solver allows ten times this many sweeps. |
 | `granular_stopping` | `"residual"` | `"residual"`, `"increment"` | `residual` | `increment` stops on the strain-rate change per sweep, without certifying the residual. |
 | `granular_increment` | `1e-3` | > 0 | — | Threshold for `increment` stopping. |
@@ -173,16 +174,19 @@ defaults: `granular_tolerance = 1e-4` and `granular_solver = "velocity"`.
 | `granular_stress_coarsening` | `2` | integer ≥ 2 | — | Coarse spacing in velocity cells; cell counts must divide by it. |
 | `granular_viscosity` | `0.0` | ≥ 0 Pa s | `0` | Optional viscous regularisation. |
 | `granular_max_nodes` | `256` | integer ≥ 1 | ignored | CPU guard on active stress nodes. |
-| `granular_cidr_tolerance` | `1e-5` | > 0 | — | `cidr`: velocity change between outer steps, relative to the larger of the velocity and the trial velocity. |
-| `granular_cidr_gamma` | `0.0075` | > 0 | — | `cidr`: smoothing of the Moreau envelope in units of `dt / rho`; the converged step does not depend on it. |
+| `granular_cidr_tolerance` | `1e-5` | > 0 | ≥ `1e-5` | `cidr`: velocity change between outer steps, relative to the larger of the velocity and the trial velocity. |
+| `granular_cidr_gamma` | `0.075` | > 0 | yes | `cidr`: smoothing of the Moreau envelope in units of `dt / rho`; the converged step does not depend on it. |
 
 The `cidr` solver needs `granular_stress = "intrinsic"` on the `"nodal"` basis and
-does not support `wall_mu` or Metal. It minimises the kinetic energy of the step
-plus the CIDR dissipation potential over the nodal velocities, by the method of
-multipliers with semismooth Newton subproblems (`cidr.py`). Jammed nodes are
-decided exactly, so jammed material does not creep. The first step starts cold;
-later steps start from the previous step's stress and typically take a few
-Newton iterations. The packing per stress node comes from the particles, and
+does not support `wall_mu`; on Metal it does not support one-sided walls
+(`B.separable`) either. It minimises the kinetic energy of the step plus the CIDR
+dissipation potential over the nodal velocities, by the method of multipliers
+with semismooth Newton subproblems (`cidr.py`; on Metal `mpm_gpu/cidr.py`, with
+conjugate gradients for each Newton system). Jammed nodes are decided exactly,
+so jammed material does not creep. The first step starts cold; later steps
+start from the previous step's stress and take from none to a few Newton
+iterations for material at rest or in fast flow, and several tens in slow,
+nearly jammed flow on fine grids (see [gpu](gpu.md)). The packing per stress node comes from the particles, and
 the hard packing limit is replaced by the divergence of `C(phi)`. The model,
 its derivation and the verification are in
 [granular-cidr-design](granular-cidr-design.md).
@@ -229,7 +233,7 @@ times.
 
 `P.backend = "metal"` requires the `gpu` extra, Apple silicon and macOS 26 or
 newer. It runs the complete granular step on the device in FP32. It requires
-`solver = "granular"`, `mechanics = "updated"`, `granular_solver = "velocity"`,
+`solver = "granular"`, `mechanics = "updated"`, `granular_solver = "velocity"` or `"cidr"`,
 `granular_stress = "intrinsic"`, `granular_stress_basis = "nodal"`, linear
 interpolation, point quadrature and one `granular` material. Supported:
 `flip`, `pic` and `apic_gradient` transfers; static or dynamic time stepping;

@@ -618,7 +618,7 @@ def assemble(P, G, batch, *, compact=False):
 _CIDR_MODELS = {}
 
 
-def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial):
+def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
     """Critical-state CIDR step (cidr.py) on the assembled operator; returns contact and statistics.
 
     The strain rate at a stress node is B u over its solid volume, psi is weighted by its bulk
@@ -656,9 +656,12 @@ def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial):
     rho = float(np.sum(batch.m) / np.sum(batch.V))
     gamma = P.granular_cidr_gamma * P.dt / rho
     cold = None if np.any(lam) else P.dt / rho
-    u, lam, jam, stats = solve(
-        problem, problem.trial.copy(), lam, gamma, cold=cold, tol=P.granular_cidr_tolerance
-    )
+    # A warm start begins from the transferred velocity before this step's body force: where
+    # material was jammed it is already compatible, while the trial velocity is not at walls.
+    start = problem.trial.copy()
+    if cold is None:
+        start -= P.dt * np.tile(body[:2], len(G.m))[free]
+    u, lam, jam, stats = solve(problem, start, lam, gamma, cold=cold, tol=P.granular_cidr_tolerance)
     stats.update(
         warm=cold is None,
         jammed_fraction=float(jam.mean()) if len(jam) else 0.0,
@@ -739,7 +742,9 @@ def step(P, G, L):
             tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial
         )
         if P.granular_solver == "cidr":
-            contact, stats, cidr_velocity = cidr_contact(P, G, b, B, free, active, occupied, trial, initial)
+            contact, stats, cidr_velocity = cidr_contact(
+                P, G, b, B, free, active, occupied, trial, initial, body
+            )
         elif P.granular_solver == "velocity":
             from granular_mixed import solve_velocity
 

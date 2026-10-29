@@ -24,6 +24,18 @@ import numpy as np
 TOLERANCE = 1e-4
 
 
+# Glass beads (Jop et al.), 3 mm grains; tests/test_cidr.py.
+CIDR = dict(
+    packing_max=0.605,
+    mu=float(np.tan(np.radians(20.9))),
+    mu_d=float(np.tan(np.radians(32.76))),
+    I0=0.279,
+    grain_diameter=0.003,
+    phi_min=0.05,
+    cidr_deficit=0.005,
+)
+
+
 def columns(
     count,
     *,
@@ -34,10 +46,13 @@ def columns(
     pitch=1.0,
     static=False,
     figures=None,
+    solver="velocity",
 ):
     """count columns of width x height, one per `pitch` of domain, on a grid of `spacing`.
 
     figures, a directory, turns on the material-point and continuum figures there.
+    solver="cidr" uses critical-state CIDR with the glass-bead parameters of
+    tests/test_cidr.py, the packing at rest on the cap at twice the base pressure.
     """
     from initialise import prepare
     from inputs.granular_collapse import Params
@@ -60,6 +75,11 @@ def columns(
     if static:
         # Walls on both sides of a single full-width column hold it at rest.
         P.B.has_left = P.B.has_right = True
+    if solver == "cidr":
+        P.granular_solver = "cidr"
+        for key, value in CIDR.items():
+            setattr(P.S, key, value)
+        P.S.cidr_p_ref = 2 * P.S.rho * abs(P.max_g) * height
     return prepare(P)
 
 
@@ -110,9 +130,11 @@ def case(name, state, *, steps, pairs, rt):
                 seconds, history = _run(run_state, backend, steps)
                 sample[backend] = dict(
                     seconds=seconds,
-                    sweeps=[r["sweeps"] for r in history],
+                    sweeps=[r.get("sweeps") for r in history],
                     newton_attempts=[r.get("newton_attempts", None) for r in history],
                     gmres_iterations=[r.get("gmres_iterations", None) for r in history],
+                    newton=[r.get("newton") for r in history],
+                    cg_iterations=[r.get("cg_iterations") for r in history],
                     converged=True,
                 )
                 if backend == "metal":
@@ -186,7 +208,11 @@ def main(argv=None):
     parser.add_argument("--cases", nargs="*", help="Run only these case names")
     parser.add_argument("--append", action="store_true", help="Add the cases to an existing report")
     parser.add_argument("--plotting", action="store_true", help="Only measure the cost of one save")
+    parser.add_argument("--solver", choices=("velocity", "cidr"), default="velocity")
+    parser.add_argument("--steps", type=int, help="Steps per run in every case (default: per case)")
+    parser.add_argument("--pairs", type=int, help="Paired samples per case (default: per case)")
     args = parser.parse_args(argv)
+    solver = args.solver
     rt = runtime()
     if args.plotting:
         report = json.loads(args.output.read_text()) if args.output.exists() else {}
@@ -196,6 +222,7 @@ def main(argv=None):
         return 0
     report = dict(
         schema_version=1,
+        solver=solver,
         environment=rt.environment,
         host=environment(),
         protocol=(
@@ -207,20 +234,21 @@ def main(argv=None):
         cases=[],
     )
     plan = [
-        ("static_column_3200", lambda: columns(1, width=1.0, static=True), 10, 3),
-        ("collapse_3200", lambda: columns(1), 3, 3),
-        ("collapse_disconnected_9600", lambda: columns(3), 3, 2),
+        ("static_column_3200", lambda: columns(1, width=1.0, static=True, solver=solver), 10, 3),
+        ("collapse_3200", lambda: columns(1, solver=solver), 3, 3),
+        ("collapse_disconnected_9600", lambda: columns(3, solver=solver), 3, 2),
     ]
     if not args.quick:
         plan += [
             (
                 "collapse_connected_10000",
-                lambda: columns(1, spacing=0.02, particle_spacing=0.01, width=1.0, pitch=2.0),
+                lambda: columns(1, spacing=0.02, particle_spacing=0.01, width=1.0, pitch=2.0, solver=solver),
                 2,
                 1,
             ),
-            ("collapse_disconnected_99200", lambda: columns(31), 2, 1),
+            ("collapse_disconnected_99200", lambda: columns(31, solver=solver), 2, 1),
         ]
+    plan = [(name, build, args.steps or steps, args.pairs or pairs) for name, build, steps, pairs in plan]
     if args.cases:
         plan = [entry for entry in plan if entry[0] in args.cases]
     if args.append and args.output.exists():

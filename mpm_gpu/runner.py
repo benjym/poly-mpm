@@ -150,15 +150,30 @@ class MetalRunner:
         self.record_size = sum(r.columns for r in self.reductions)
         self.record = vector(self.record_size)
         S = b.material
-        self.solver = Solver(
-            rt,
-            grid,
-            mu=S.mu,  # sqrt(2 / dimension) = 1 for the intrinsic 2D stress space
-            dt=P.dt,
-            tolerance=P.granular_tolerance,
-            max_iterations=P.granular_max_iterations,
-            wall_mu=P.B.wall_mu or 0.0,
-        )
+        self.cidr = P.granular_solver == "cidr"
+        if self.cidr:
+            from .cidr import CidrSolver
+
+            # Reference bulk density for the envelope smoothing gamma = granular_cidr_gamma dt / rho.
+            self.rho = float(np.sum(b.m) / np.sum(b.V))
+            self.solver = CidrSolver(
+                rt,
+                grid,
+                S,
+                dt=P.dt,
+                gamma=P.granular_cidr_gamma * P.dt / self.rho,
+                tolerance=P.granular_cidr_tolerance,
+            )
+        else:
+            self.solver = Solver(
+                rt,
+                grid,
+                mu=S.mu,  # sqrt(2 / dimension) = 1 for the intrinsic 2D stress space
+                dt=P.dt,
+                tolerance=P.granular_tolerance,
+                max_iterations=P.granular_max_iterations,
+                wall_mu=P.B.wall_mu or 0.0,
+            )
         self.last = None
 
     # ---- host <-> device ---------------------------------------------------------
@@ -460,6 +475,19 @@ class MetalRunner:
         )
         solver = self.solver
         solver.dt = dt
+        if self.cidr:
+            solver.gamma = P.granular_cidr_gamma * dt / self.rho
+            result = solver.solve(
+                operator, nodal, self.initial, self.volume, encoder, cold_gamma=dt / self.rho, body=body
+            )
+            status = int(rt.read(operator.status, np.uint32)[0])
+            if status & 1:
+                raise ValueError(f"material {b.material_id}: particle outside domain before cell lookup")
+            if status:
+                raise GPUError(f"Metal operator assembly status {status}")
+            if not result.converged:
+                raise RuntimeError(f"Metal CIDR step did not converge: {result}")
+            return self._finish_step(P, G, L, operator, body, dt, result)
         solver.tolerance = float(P.granular_tolerance)
         # One-sided walls: re-solve after clamping released wall nodes that the
         # solve drives into their wall (granular.step).
@@ -510,6 +538,10 @@ class MetalRunner:
                 f"granular velocity solve did not converge: residual={result.residual:.3g}, "
                 f"sweeps={result.sweeps}, status={result.reasons}"
             )
+        return self._finish_step(P, G, L, operator, body, dt, result)
+
+    def _finish_step(self, P, G, L, operator, body, dt, result):
+        rt, b = self.rt, L.materials[0]
         encoder = rt.device.create_command_encoder()
         rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.status)
         self._encode_finish(encoder, P, G, operator, body, dt)
@@ -785,7 +817,53 @@ class MetalRunner:
             maximum_density=particle[10],
         )
         solver = self.solver
-        stats = dict(
+        if self.cidr:
+            stats = dict(
+                converged=result.converged,
+                method="cidr",
+                backend="metal",
+                outer=result.outer,
+                newton=result.newton,
+                cg_iterations=result.cg,
+                warm=result.warm,
+                jammed_fraction=result.jammed / result.active if result.active else 0.0,
+                local_status=result.status,
+                submissions=result.submissions,
+                active_nodes=int(round(row[2])),
+                stress_dimension=2,
+                stress_basis="nodal",
+                viscosity_trial_dissipation=0.0,
+                contact_power=row[0],
+                maximum_packing=row[1],
+            )
+        else:
+            stats = self._coulomb_stats(result, row)
+        solid = c["solid_volume"]
+        return dict(
+            dt=dt,
+            body=body,
+            inventory=inventory,
+            angular_before=[0.0, 0.0, particle[3]],
+            speed=particle[11],
+            nodal_speed=node[8],
+            particle_packing=particle[12],
+            incomplete_support=int(round(particle[13])),
+            device_mass=particle[14],
+            leaving=int(round(particle[15])),
+            packing_after=packing[0],
+            overpacking=packing[1] / solid if solid else 0.0,
+            constraint_impulse=[node[0], node[1], 0.0],
+            constraint_angular_impulse=[0.0, 0.0, node[2]],
+            constraint_work=node[3],
+            external_work=node[4],
+            external_impulse=[node[5], node[6], 0.0],
+            external_angular_impulse=[0.0, 0.0, node[7]],
+            stats=stats,
+        )
+
+    def _coulomb_stats(self, result, row):
+        solver = self.solver
+        return dict(
             residual=result.residual,
             evaluations=0,
             sweeps=result.sweeps,
@@ -812,28 +890,6 @@ class MetalRunner:
             viscosity_trial_dissipation=0.0,
             contact_power=row[0],
             maximum_packing=row[1],
-        )
-        solid = c["solid_volume"]
-        return dict(
-            dt=dt,
-            body=body,
-            inventory=inventory,
-            angular_before=[0.0, 0.0, particle[3]],
-            speed=particle[11],
-            nodal_speed=node[8],
-            particle_packing=particle[12],
-            incomplete_support=int(round(particle[13])),
-            device_mass=particle[14],
-            leaving=int(round(particle[15])),
-            packing_after=packing[0],
-            overpacking=packing[1] / solid if solid else 0.0,
-            constraint_impulse=[node[0], node[1], 0.0],
-            constraint_angular_impulse=[0.0, 0.0, node[2]],
-            constraint_work=node[3],
-            external_work=node[4],
-            external_impulse=[node[5], node[6], 0.0],
-            external_angular_impulse=[0.0, 0.0, node[7]],
-            stats=stats,
         )
 
     @staticmethod
