@@ -123,7 +123,8 @@ iteration.
 | Newton solver on the potential with line search | Missing |
 | Multigrid hierarchy on the MPM grid | Missing |
 | GPU convex solver | Missing; the Metal port solves the stress-space problem this replaces, though its operators, binning, transfers and segregation carry over |
-| Shear-cell and inclined-flow verification against published results | Missing |
+| Shear-cell verification against published results | Inertial model done; critical-state model blocked on jammed cells ([Shear-cell results](#shear-cell-results)) |
+| Inclined-flow verification | Missing |
 
 ## Derivations
 
@@ -321,11 +322,61 @@ The stress tensor follows from `s = |D|`: `tau_ij = psi_s D_ij / (2 s)`, so that
   choice, as above. The form of `C` near `phi_max` is speculative in the
   published model.
 - Whether holding `phi` fixed within a step preserves well-posedness. This is
-  not settled analytically here; the one-dimensional shear cell of Schaeffer et
-  al. (2019), solved once with `phi` lagged and once with `phi` implicit, would
-  show it.
+  not settled analytically. In the shear cell with the inertial model, lagged and
+  implicit `phi` differ by less than the time discretisation error
+  ([Shear-cell results](#shear-cell-results)); the critical-state comparison
+  awaits a solver that handles jammed cells.
 - Convexity on the cap branch and across branch boundaries rests on sampling
   (section [The cap](#the-cap)); the interior branch is convex analytically.
+
+## Shear-cell results
+
+`benchmarks/cidr_shear_cell.py` solves the gravity-free shear cell of Schaeffer
+et al. (2019) with the time step of this note: a Lagrangian one-dimensional
+grid, `phi` lagged and Newton's method with a backtracking line search on the
+potential. Case A is their (3.16) (height 30, `phi = 0.78`, a localised
+vertical-velocity perturbation of amplitude 0.05, to `t = 20`); case B is their
+(5.7) (height 100, sinusoidal perturbations of amplitude 0.16 in `u` and 0.1 in
+`w`, to `t = 1000`). The critical-state model uses a packing deficit of 0.005.
+Results are in `benchmarks/cidr_shear_cell.json`.
+
+Grid convergence compares `max |w|` from 46 and 200 cells at 40 times spaced
+logarithmically:
+
+| Model | Case | Largest difference | Signal | Newton iterations per step | Final `max |w|` |
+| --- | --- | --- | --- | --- | --- |
+| Inertial | A | 3.1e-4 | 0.021 | 1.2 / 1.3 | 1.8e-5 |
+| Inertial | B | 1.3e-3 | 0.10 | 1.2 / 1.3 | 1.3e-4 |
+| Critical-state | A | 7.2e-4 | 0.021 | 1.0 / 1.0 | 7.7e-4 |
+| Critical-state | B | Newton fails on 200 cells at `t = 10` | 0.10 | | |
+
+Inertial case A relaxes to the uniform shear by `t = 20`, consistent with
+Schaeffer et al.'s report that the flow is steady by about `t = 10`. Critical-state
+case A retains a small residual vertical velocity at `t = 20`. For inertial case B,
+`phi` lagged against `phi` implicit (fixed-point iteration within the step)
+differs by 4.6e-4 in `max |w|`, and lagged at the full step against lagged at
+half the step by 1.8e-4, against a signal of 0.10. Lagging `phi` costs no more
+than the time discretisation error here.
+
+Critical-state case B compacts a layer to `phi = 0.8163`, within 1e-3 of
+`phi_max`, by `t = 8`. Up to that time 46, 100, 200 and 400 cells give the same
+packing range to 1e-4. Within that layer cells stop deforming (`|D|` about
+1e-14), and `psi` there sits at the cone tip of [Stress at zero shear](#stress-at-zero-shear):
+the gradient Newton evaluates is one arbitrary subgradient, and on 200 cells
+Newton stalls with an error of 0.08 in that gradient. On 46 cells the run
+reaches `t = 1000`. The packing-lag comparison for this model fails the same way.
+The inertial model has no static yield, so its `psi` is smooth at `D = 0`.
+
+Two findings carry over to the two-dimensional step:
+
+- With `phi` lagged and `C` growing without bound towards `phi_max`, a step can
+  compact a cell past `phi_max`. The harness limits the step so that no cell
+  closes more than half its remaining gap `(phi_max - phi) / phi` at its current
+  compaction rate. Before this limit was added (together with a fix to the Newton
+  stopping test), case B left the admissible range of `phi`.
+- The critical-state model needs a solver that treats the cone at `D = 0`
+  directly. Plain Newton on the primal problem is not sufficient once a region
+  jams.
 
 ## References
 
