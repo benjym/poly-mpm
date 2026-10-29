@@ -1,0 +1,232 @@
+# Design note: a well-posed granular step
+
+The rigid-grain solver cannot refine connected flows: with constant friction, a
+hard packing limit and no rate dependence the continuum model is ill-posed, and
+the discrete problem stalls every solver tried
+([literature review](connected-flows-literature.md),
+[regularisation study](granular-mixed.md#regularised-laws-under-refinement)).
+This note sets out the model, the time step and the solver that would replace
+it, what the code already provides and what must be built or decided first. It
+is a plan; nothing here is implemented.
+
+## Model
+
+The candidate is the compressible I-dependent rheology (CIDR) of Barker,
+Schaeffer, Shearer and Gray (2017), in one of two published forms:
+
+- **Critical-state CIDR** (Barker et al. 2017; parameters as in Fannon, Moyles
+  and Fowler 2019): yield function `Y = alpha(I) p - p^2 / C(phi)` and
+  dilatancy function `f = beta(I) - 2 p / C(phi)`. It has a static yield stress,
+  which the drum and the column collapse need, and keeps rigid grains.
+- **Inertial CIDR** (Schaeffer et al. 2019): `Y = mu(Psi) (I / Psi) p` and
+  `f = (mu(Psi) / 4)(I / Psi - Psi / I)`, with `Psi` the inverse of the steady
+  `phi = Phi(I)`. It is the better supported model but has no static yield
+  stress and covers only packings below the critical fraction.
+
+In both, deviatoric stress and deviatoric strain rate are aligned,
+`|tau| = Y(p, phi, I)` while the material deforms, and the flow rule is
+`div u = 2 f(p, phi, I) |D|`, with `|T| = sqrt(T_ij T_ij / 2)`, `D` the 2D
+deviatoric strain rate and `I = 2 d |D| / sqrt(p / rho_s)`. Barker et al. prove
+the equations linearly well-posed in 2D when
+
+```text
+(a)  Y_p - (I / 2p) Y_I = f + I f_I
+(b)  Y_I > 0
+(c)  f_p - (I / 2p) f_I < 0
+```
+
+### Questions to settle before implementing
+
+1. **Regime.** Static material needs a yield stress. Critical-state CIDR has
+   one; inertial CIDR would need a quasi-static extension that has not been
+   published.
+2. **Packing.** In critical-state CIDR the packing limit is soft: `C(phi)`
+   diverges as `phi` approaches `phi_max`. Its scale `P / b` is free, and the
+   scale `rho_s g d` used by Barker et al. is not frame-indifferent; Schaeffer et
+   al. (2019) suggest a stiffness scale `k / d`. The current hard packing
+   constraint would become a stiff constitutive term.
+3. **Variational structure.** The time step below needs the stress to derive
+   from a convex dissipation potential. Schaeffer et al. show this for inertial
+   CIDR; for critical-state CIDR it is derived below, and holds only once the
+   flow rule is completed at the cap of the yield surface (see
+   [Derivations](#derivations)).
+4. **Discrete well-posedness.** The proofs are for the linearised continuum
+   equations. Whether a time step that lags `phi` keeps the property, and
+   whether the discrete solutions converge under refinement, are to be tested.
+
+## Time step
+
+Work in velocity. Each step solves
+
+```text
+min_u  1/2 |u - u*|^2_(M / dt) + sum_q V_q psi(D_q(u); phi_q^n) + wall terms
+```
+
+where `u*` includes gravity, `psi` is the convex dissipation potential
+evaluated at quadrature points `q` with `phi` from the start of the step, and
+the wall terms are the convex contact constraints already used for one-sided
+and frictional walls. The mass term makes the problem strictly convex, so the
+velocity is unique even where the stress is not: the static indeterminacy that
+defeats the present stress-space iteration does not enter. Stress follows as a
+subgradient (or as the dual variables of the solver), unique wherever the
+material deforms. The packing fraction is then updated from mass conservation
+(`phi = rho / rho_s`, already evolved through `J`).
+
+Rate dependence enters through `D` inside `psi`, so it is implicit; only the
+`phi` dependence is lagged.
+
+## Discretisation
+
+Velocity on the background grid as now; `psi` integrated at particles, or per
+cell if locking appears near the packing limit. Because stress is not a primal
+unknown, velocity–stress compatibility matters less than in the present mixed
+form. Volumetric locking near jamming may need volumetric averaging, which the
+explicit solver already has (`fbar`).
+
+## Solver
+
+A convex solver whose iteration count does not grow with the grid:
+
+- **Interior point on the CPU.** In the regularisation study, Clarabel solved the
+  associated (convex) first step in 25 to 41 iterations from 231 to 13,041 stress
+  nodes. Cost per iteration is a sparse factorisation; not a GPU method.
+- **Multilevel nonsmooth Newton for scale and the GPU.** Truncated nonsmooth
+  Newton multigrid has mesh-independent iteration counts for convex plasticity
+  problems (Gräser and Sander 2019; Sander 2017): block Gauss–Seidel smoothing,
+  a Newton correction on the smooth part solved by one multigrid V-cycle, and a
+  line search.
+
+Both start from the previous step's solution and can use coarse-to-fine nested
+iteration.
+
+## Verification
+
+1. One-dimensional gravity-free shear cell against the steady solution and the
+   transient DEM results of Schaeffer et al. (2019).
+2. The frozen first-step refinement study, extended to the new model.
+3. Steady flow on an inclined plane against the Bagnold profile.
+4. Refined column collapse against experiments.
+5. The rotating drum, with segregation.
+
+## Inventory
+
+| Piece | Status |
+| --- | --- |
+| MPM core (updated `F`, `J` and density; linear and quadratic splines; APIC; finite-domain quadrature; budgets; checkpoints) | Available |
+| Per-particle packing fraction evolving through `J` | Available; currently used only as a hard cap |
+| Walls as convex constraints (one-sided, frictional), periodic edges | Available in the stress-space solver; velocity form not yet |
+| Velocity-space convex step with a cone yield | Prototype (study script, frozen first step) |
+| Nested coarse-to-fine warm start | Prototype (study) |
+| Volumetric averaging (`fbar`) | Available in the explicit solver |
+| Segregation coupled to the granular step | Available (CPU and Metal) |
+| Dissipation potential for the chosen CIDR model | Derived; checked symbolically and numerically (`benchmarks/cidr_potential.py`) |
+| Newton solver on the potential with line search | Missing |
+| Multigrid hierarchy on the MPM grid | Missing |
+| GPU convex solver | Missing; the Metal port solves the stress-space problem this replaces, though its operators, binning, transfers and segregation carry over |
+| Shear-cell and inclined-flow verification against published results | Missing |
+
+## Derivations
+
+`benchmarks/cidr_potential.py` checks each result below (sympy and scipy
+required). Write `s = |D|`, `delta = div u` and `k = 2 d sqrt(rho_s)`, so that
+`I = k s / sqrt(p)`, and consider a function `g(s, p)` of shear rate and
+pressure. Because `|T| = sqrt(T_ij T_ij / 2)`, a stress `tau = dg/dD` has
+`|tau| = g_s / 2`.
+
+### Well-posedness conditions as a potential
+
+Ask for `g` with `g_s = 2 Y` (the yield condition with alignment) and
+`g_p = 2 f s` (the flow rule). Such a `g` exists exactly when the mixed
+derivatives agree, which with `I = k s / sqrt(p)` reads
+
+```text
+Y_p - (I / 2p) Y_I = f + I f_I,
+```
+
+condition (a) of Barker et al. (2017). Its second derivatives are
+
+```text
+g_ss = 2 Y_I I / s,      g_pp = 2 s (f_p - (I / 2p) f_I),
+```
+
+so conditions (b) and (c) are exactly convexity of `g` in shear rate and
+concavity in pressure. With `Y >= 0`, `g` is also nondecreasing in `s`, hence
+convex in the tensor `D`. The linear well-posedness conditions of the CIDR
+framework therefore coincide with the existence of a saddle potential, convex in
+`D` and concave in `p`, from which `tau = dg/dD` and `delta = dg/dp`. The
+dissipation potential is its partial conjugate,
+`psi(D, delta) = sup_p [g(|D|, p) - p delta]`. All three statements are checked
+symbolically for general `Y(p, I)` and `f(p, I)`.
+
+Applied to inertial CIDR, the construction gives
+`g = 2 d sqrt(rho_s) M s^2 sqrt(p) / Psi - M Psi p^(3/2) / (6 d sqrt(rho_s))`
+with `M = mu(Psi)`, which is eq. (B8) of Schaeffer et al. (2019) (checked
+symbolically).
+
+### Critical-state CIDR
+
+With Barker et al.'s functions, `alpha - beta / 2 = mu` and their differential
+equation `alpha + (5/2) I alpha' = 2 mu + 2 I mu'`, the potential is
+
+```text
+g(s, p) = 2 p s [ (5 alpha(I) - 4 mu(I)) / 3 - p / C(phi) ],
+```
+
+checked symbolically against `g_s = 2 Y` and `g_p = 2 f s` for general
+`mu(I)`, and by finite differences with the `mu(I)` of Jop et al. for glass beads
+(relative errors 5e-8 and 8e-8). At zero shear its slope is
+`2 p (2 mu_1 - p / C)` (`alpha(0) = 2 mu(0)`, checked numerically), so `g` has a
+corner at `s = 0`: the static yield condition `|tau| <= 2 mu_1 p - p^2 / C`. On
+`1e-6 <= I <= 10`, `alpha' > 0` and `beta' > 0`, so `Y_I = alpha' p > 0` and
+`f_p - (I / 2p) f_I = -2 / C - (I / 2p) beta' < 0`, as Barker et al. prove.
+
+### The cap
+
+`Y = alpha(I) p - p^2 / C` vanishes at the cap `p = p_cap(s)`, the root of
+`p = alpha(k s / sqrt(p)) C`; beyond it no stress state is admissible. With the
+glass-bead `mu(I)` and `C = 4e4` Pa, `p_cap` increases with `s` and is concave,
+starting from `p_cap(0) = 2 mu_1 C`.
+
+The dissipation potential was evaluated by maximising `g - p delta` over `p`,
+with and without the bound `p <= p_cap(s)`, and tested for midpoint convexity
+in `(s, delta)` and monotonicity in `s` on 400 random pairs:
+
+| Bound on `p` | Convex in `(s, delta)` | Nondecreasing in `s` | `psi` under pure compaction (`s = 0`, `delta = -1`) |
+| --- | --- | --- | --- |
+| `0 <= p <= p_cap(s)` | no violation found | no violation found | `2 mu_1 C` (finite) |
+| `p >= 0` | no violation found | falls by up to 61% | bounded only by the search interval |
+
+Without the cap, `psi` is not convex in `D` (it decreases with shear rate where
+`Y < 0`), and pure compaction has unbounded dissipation: Barker et al.'s flow
+rule `div u = 2 f |D|` allows no compaction without shear, so an unsheared
+column could not consolidate under its own weight. With the cap, compaction at
+zero shear proceeds at the cap pressure, as normality gives at the cap in
+critical-state soil mechanics. Completing the flow rule this way is an addition
+to the published model and has to be stated as such. Sampled midpoint tests are
+evidence, not a proof of convexity.
+
+### Consequences for the time step
+
+- The step is the convex minimisation of the [Time step](#time-step) section with
+  `psi` from the capped potential; `phi`, and hence `C`, is held at its value from
+  the start of the step.
+- The saddle form `min_u max_p` does not have a product domain, because the
+  bound on `p` depends on `|D(u)|`. The primal form in `u` alone is the natural
+  one, with `psi` evaluated at each quadrature point by a one-dimensional concave
+  maximisation in `p`; no closed form was found.
+- `psi` is nonsmooth at zero shear (yield) and at the cap. The solver must handle
+  both: a nonsmooth Newton method on the primal problem, or a smoothing with a
+  continuation parameter. `alpha(I)` has no conic representation, so the
+  interior-point route used in the regularisation study does not carry over
+  directly.
+
+### Open points
+
+- The scale of `C(phi)` (`P / b` in Fannon et al.) and its form near `phi_max`.
+- Whether holding `phi` fixed within a step preserves well-posedness.
+- How to recover the stress where `D = 0`, where only its admissible set is
+  determined.
+
+## References
+
+The papers are listed in the [literature review](connected-flows-literature.md).
