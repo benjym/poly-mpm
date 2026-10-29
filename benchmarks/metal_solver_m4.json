@@ -17,7 +17,7 @@
   "source_sha256": {
     "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
     "config.py": "03fdbcfb6bb5e66a339ca67660ba6e7c7bae16da13a193d1bacfd5b28250ffdc",
-    "runtime.py": "c6c91ebc3cc74e9ee0ddc115b1a6bd9c7e1569fdaa8bbff4603bb83c263671bd",
+    "runtime.py": "c91c930b2cc6493ded6201a2fd8fbe4f4057b80accf175d7e4b36c155984d3f5",
     "primitives.py": "f21d884e24df629ccc6c38f084b53e31faa862082dcfe2cadddca01b2ba05a28",
     "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
     "mechanics.py": "0a809d73dfda2e028b5718cb842b5c5aedae72ec6467118e753edc8022ffb5a0",
@@ -31,9 +31,9 @@
     "validate.py": "4c4a5762c9ad78b71e5ced581cac13646508e1525faebc6d40ca52094f7923e7",
     "shaders/primitives.slang": "14a2b495d2f93897b6b4fa5bc80327e8b1f3043f4e05083fe1e3d7446faa54a8",
     "shaders/mechanics.slang": "81932534ac321f15f491019df8628cd70a9f4116e95b666922457cc6a3d0375b",
-    "shaders/solver.slang": "3afdee57a8b34e76c0d55dba31820b3ae6301fd57c4a8d11b417739c2ea01c89",
+    "shaders/solver.slang": "3102a4c4f88f1227289a27a400925c23b051bb9fd5163e3bbc9804cfceb9e4de",
     "shaders/runner.slang": "5185ee784a47d5d0376f18536c87b032ecb31c7172677cb7b89b9f538e9db455",
-    "shaders/segregation.slang": "11e1ea709b1bc395a31a46d16a147ee5f8195fabd11211548c1f91dd644259c9"
+    "shaders/segregation.slang": "c5a275db9380b8e67435ee591c63c3f97c3005e93274309c6588fa50a17f1396"
   },
   "requested_stage": "solver",
   "cpu_only": false,
@@ -45,55 +45,55 @@
         {
           "name": "scalar_abi",
           "status": "passed",
-          "seconds": 0.049017665965948254,
+          "seconds": 0.051764334028121084,
           "elements": 5
         },
         {
           "name": "scan_1",
           "status": "passed",
-          "seconds": 0.04516433400567621,
+          "seconds": 0.048063958005513996,
           "elements": 1,
           "scratch_buffers": 2
         },
         {
           "name": "scan_255",
           "status": "passed",
-          "seconds": 0.0004677500110119581,
+          "seconds": 0.0005211250390857458,
           "elements": 255,
           "scratch_buffers": 2
         },
         {
           "name": "scan_256",
           "status": "passed",
-          "seconds": 0.0003202499938197434,
+          "seconds": 0.00045900000259280205,
           "elements": 256,
           "scratch_buffers": 2
         },
         {
           "name": "scan_257",
           "status": "passed",
-          "seconds": 0.03238616604357958,
+          "seconds": 0.03445695905247703,
           "elements": 257,
           "scratch_buffers": 4
         },
         {
           "name": "scan_65537",
           "status": "passed",
-          "seconds": 0.0009177920292131603,
+          "seconds": 0.0008443340193480253,
           "elements": 65537,
           "scratch_buffers": 6
         },
         {
           "name": "scan_100003",
           "status": "passed",
-          "seconds": 0.0010085420217365026,
+          "seconds": 0.000882791995536536,
           "elements": 100003,
           "scratch_buffers": 6
         },
         {
           "name": "bins_random",
           "status": "passed",
-          "seconds": 0.13511358300456777,
+          "seconds": 0.14768291602376848,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "random"
@@ -101,7 +101,7 @@
         {
           "name": "bins_one_bin",
           "status": "passed",
-          "seconds": 0.42820987495360896,
+          "seconds": 0.46557320799911395,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "one_bin"
@@ -109,7 +109,7 @@
         {
           "name": "bins_sparse",
           "status": "passed",
-          "seconds": 0.13163108297158033,
+          "seconds": 0.12344620801741257,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "sparse"
@@ -117,7 +117,7 @@
         {
           "name": "bins_invalid",
           "status": "passed",
-          "seconds": 0.001984542002901435,
+          "seconds": 0.001977625011932105,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "invalid"
@@ -125,7 +125,7 @@
         {
           "name": "reduction_sum",
           "status": "passed",
-          "seconds": 0.04367054102476686,
+          "seconds": 0.043850457994267344,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": false
@@ -133,7 +133,7 @@
         {
           "name": "reduction_min",
           "status": "passed",
-          "seconds": 0.0007919169729575515,
+          "seconds": 0.0008516660309396684,
           "elements": 100003,
           "operation": "min",
           "expected_nonfinite": false
@@ -141,7 +141,7 @@
         {
           "name": "reduction_max",
           "status": "passed",
-          "seconds": 0.000779333000537008,
+          "seconds": 0.000750000006519258,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": false
@@ -149,7 +149,7 @@
         {
           "name": "nonfinite_nan",
           "status": "passed",
-          "seconds": 0.0005397920031100512,
+          "seconds": 0.000559207983314991,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": true
@@ -157,7 +157,7 @@
         {
           "name": "nonfinite_inf",
           "status": "passed",
-          "seconds": 0.0005411669844761491,
+          "seconds": 0.0005627500358968973,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": true
@@ -165,31 +165,31 @@
         {
           "name": "guarded_all",
           "status": "passed",
-          "seconds": 0.0357194590033032,
+          "seconds": 0.0359333329834044,
           "active": 1003,
           "elements": 1003
         },
         {
           "name": "guarded_none",
           "status": "passed",
-          "seconds": 0.000620459031779319,
+          "seconds": 0.000546916970051825,
           "active": 0,
           "elements": 1003
         },
         {
           "name": "guarded_partial",
           "status": "passed",
-          "seconds": 0.00034070800757035613,
+          "seconds": 0.0002947920002043247,
           "active": 517,
           "elements": 1003
         },
         {
           "name": "barriers",
           "status": "passed",
-          "seconds": 0.0005676249857060611,
+          "seconds": 0.0008075829828158021,
           "dispatches": 8,
           "elements": 100003,
-          "wall_seconds": 0.0002634159754961729
+          "wall_seconds": 0.0004960420192219317
         }
       ],
       "capabilities": {
@@ -210,7 +210,7 @@
         {
           "name": "operator_h0.25_ppc2_walls",
           "status": "passed",
-          "seconds": 1.1516202500206418,
+          "seconds": 1.2611092500155792,
           "particles": 64,
           "rows": 35,
           "active_rows": 25,
@@ -224,7 +224,7 @@
         {
           "name": "operator_h0.25_ppc2_periodic",
           "status": "passed",
-          "seconds": 0.003919666982255876,
+          "seconds": 0.003923500014934689,
           "particles": 64,
           "rows": 28,
           "active_rows": 20,
@@ -238,7 +238,7 @@
         {
           "name": "operator_h0.1_ppc3_walls",
           "status": "passed",
-          "seconds": 0.006515124987345189,
+          "seconds": 0.006550708960276097,
           "particles": 900,
           "rows": 176,
           "active_rows": 121,
@@ -252,7 +252,7 @@
         {
           "name": "operator_h0.1_ppc3_periodic",
           "status": "passed",
-          "seconds": 0.006242833973374218,
+          "seconds": 0.0057576660183258355,
           "particles": 900,
           "rows": 160,
           "active_rows": 110,
@@ -266,7 +266,7 @@
         {
           "name": "operator_h0.5_ppc4_periodic",
           "status": "passed",
-          "seconds": 0.003417291969526559,
+          "seconds": 0.003539790981449187,
           "particles": 64,
           "rows": 8,
           "active_rows": 6,
@@ -280,7 +280,7 @@
         {
           "name": "operator_h1.0_ppc6_periodic",
           "status": "passed",
-          "seconds": 0.0033186249784193933,
+          "seconds": 0.003134624974336475,
           "particles": 36,
           "rows": 3,
           "active_rows": 3,
@@ -294,7 +294,7 @@
         {
           "name": "operator_edges_walls",
           "status": "passed",
-          "seconds": 0.0029839170165359974,
+          "seconds": 0.0034983750083483756,
           "particles": 96,
           "rows": 35,
           "active_rows": 35,
@@ -308,7 +308,7 @@
         {
           "name": "operator_edges_periodic",
           "status": "passed",
-          "seconds": 0.0032976249931380153,
+          "seconds": 0.003375584026798606,
           "particles": 96,
           "rows": 28,
           "active_rows": 28,
@@ -322,13 +322,13 @@
         {
           "name": "invalid_particles",
           "status": "passed",
-          "seconds": 0.0025746250175870955,
+          "seconds": 0.002385333995334804,
           "particles": 4
         },
         {
           "name": "metric_h0.25_walls",
           "status": "passed",
-          "seconds": 0.1478944580303505,
+          "seconds": 0.1563630840391852,
           "rows": 25,
           "norm_error": 2.939124985742869e-08,
           "metric_error": 1.5461219171182247e-07,
@@ -340,7 +340,7 @@
         {
           "name": "metric_h0.1_periodic",
           "status": "passed",
-          "seconds": 0.0062987919664010406,
+          "seconds": 0.006231832958292216,
           "rows": 110,
           "norm_error": 1.9447758223356112e-07,
           "metric_error": 3.131898177094934e-07,
@@ -352,7 +352,7 @@
         {
           "name": "metric_h1.0_periodic",
           "status": "passed",
-          "seconds": 0.003613457956817001,
+          "seconds": 0.0035440829815343022,
           "rows": 3,
           "norm_error": 1.983295896359831e-07,
           "metric_error": 1.0599236734138974e-07,
@@ -364,7 +364,7 @@
         {
           "name": "local_coulomb",
           "status": "passed",
-          "seconds": 0.04454295802861452,
+          "seconds": 0.04631333303404972,
           "rows": 4007,
           "reaction_error": 2.1485019075495384e-07,
           "complementarity_error": 8.339771386697735e-08,
@@ -379,7 +379,7 @@
         {
           "name": "transfer_flip_walls",
           "status": "passed",
-          "seconds": 0.11898433399619535,
+          "seconds": 0.1238649160368368,
           "particles": 900,
           "transfer": "flip",
           "pic_fraction": 0.0,
@@ -395,7 +395,7 @@
         {
           "name": "transfer_flip_blend_periodic",
           "status": "passed",
-          "seconds": 0.00805083301384002,
+          "seconds": 0.009496791986748576,
           "particles": 900,
           "transfer": "flip",
           "pic_fraction": 0.3,
@@ -411,7 +411,7 @@
         {
           "name": "transfer_pic_walls",
           "status": "passed",
-          "seconds": 0.006185417005326599,
+          "seconds": 0.00543525000102818,
           "particles": 64,
           "transfer": "pic",
           "pic_fraction": 0.0,
@@ -427,7 +427,7 @@
         {
           "name": "transfer_apic_gradient_walls",
           "status": "passed",
-          "seconds": 0.00831495801685378,
+          "seconds": 0.009109333041124046,
           "particles": 900,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
@@ -443,7 +443,7 @@
         {
           "name": "transfer_apic_gradient_periodic",
           "status": "passed",
-          "seconds": 0.0059708330081775784,
+          "seconds": 0.005445915972813964,
           "particles": 64,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
@@ -459,7 +459,7 @@
         {
           "name": "deformation",
           "status": "passed",
-          "seconds": 0.08770195802208036,
+          "seconds": 0.09103100001811981,
           "cases": {
             "tiny": {
               "F_error": 1.1000760995847518e-07,
@@ -509,7 +509,7 @@
         {
           "name": "solve_h0.25_ppc2_walls",
           "status": "passed",
-          "seconds": 0.6018642090493813,
+          "seconds": 0.6375549579970539,
           "rows": 35,
           "active_rows": 25,
           "single_iteration": true,
@@ -539,7 +539,7 @@
         {
           "name": "solve_h0.25_ppc2_periodic",
           "status": "passed",
-          "seconds": 0.051784290990326554,
+          "seconds": 0.05544600001303479,
           "rows": 28,
           "active_rows": 20,
           "single_iteration": true,
@@ -569,7 +569,7 @@
         {
           "name": "solve_h0.1_ppc3_walls",
           "status": "passed",
-          "seconds": 0.09194033296080306,
+          "seconds": 0.10269204102223739,
           "rows": 176,
           "active_rows": 121,
           "single_iteration": true,
@@ -599,7 +599,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic",
           "status": "passed",
-          "seconds": 0.09390762500697747,
+          "seconds": 0.08897687500575557,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": true,
@@ -629,7 +629,7 @@
         {
           "name": "solve_h0.5_ppc4_periodic",
           "status": "passed",
-          "seconds": 0.871803457965143,
+          "seconds": 0.9918200829997659,
           "rows": 8,
           "active_rows": 6,
           "single_iteration": true,
@@ -659,7 +659,7 @@
         {
           "name": "solve_h1.0_ppc6_periodic",
           "status": "passed",
-          "seconds": 0.006852917023934424,
+          "seconds": 0.006271917023696005,
           "rows": 3,
           "active_rows": 3,
           "single_iteration": true,
@@ -689,7 +689,7 @@
         {
           "name": "solve_h0.1_ppc3_walls_moving",
           "status": "passed",
-          "seconds": 0.267351292015519,
+          "seconds": 0.2961314999847673,
           "rows": 176,
           "active_rows": 121,
           "single_iteration": true,
@@ -719,7 +719,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic_moving",
           "status": "passed",
-          "seconds": 0.09353399998508394,
+          "seconds": 0.09269270801451057,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": true,
@@ -749,7 +749,7 @@
         {
           "name": "solve_h0.05_ppc2_walls",
           "status": "passed",
-          "seconds": 0.24068983300821856,
+          "seconds": 0.2655125829624012,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": true,
@@ -779,7 +779,7 @@
         {
           "name": "solve_h0.05_ppc3_walls_moving",
           "status": "passed",
-          "seconds": 0.2216169169987552,
+          "seconds": 0.23049787495983765,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": true,
@@ -809,7 +809,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic_moving_multi_dispatch",
           "status": "passed",
-          "seconds": 0.37524762499378994,
+          "seconds": 0.4081427500350401,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": false,
@@ -839,7 +839,7 @@
         {
           "name": "solve_h0.05_ppc3_walls_moving_multi_dispatch",
           "status": "passed",
-          "seconds": 0.22929520899197087,
+          "seconds": 0.23890716599998996,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": false,
@@ -869,7 +869,7 @@
         {
           "name": "solve_h0.5_ppc4_periodic_multi_dispatch",
           "status": "passed",
-          "seconds": 0.2846743340487592,
+          "seconds": 0.4024024999816902,
           "rows": 8,
           "active_rows": 6,
           "single_iteration": false,
@@ -899,7 +899,7 @@
         {
           "name": "jacobian_walls_moving",
           "status": "passed",
-          "seconds": 0.1514791669906117,
+          "seconds": 0.21806208399357274,
           "rows": 121,
           "sliding_rows": 111,
           "open_rows": 44,
@@ -910,7 +910,7 @@
         {
           "name": "jacobian_periodic_moving",
           "status": "passed",
-          "seconds": 0.020411041972693056,
+          "seconds": 0.03201295802136883,
           "rows": 110,
           "sliding_rows": 105,
           "open_rows": 44,
@@ -921,7 +921,7 @@
         {
           "name": "anderson_full_rank",
           "status": "passed",
-          "seconds": 0.004116082971449941,
+          "seconds": 0.005632959015201777,
           "size": 1200,
           "tsqr_levels": 2,
           "history": 13,
@@ -933,7 +933,7 @@
         {
           "name": "anderson_rank_deficient",
           "status": "passed",
-          "seconds": 0.0035242089652456343,
+          "seconds": 0.004337749967817217,
           "size": 1200,
           "tsqr_levels": 2,
           "history": 13,
@@ -945,7 +945,7 @@
         {
           "name": "anderson_short_history",
           "status": "passed",
-          "seconds": 0.001990624994505197,
+          "seconds": 0.0018921669689007103,
           "size": 105,
           "tsqr_levels": 1,
           "history": 4,
@@ -957,7 +957,7 @@
         {
           "name": "anderson_three_levels",
           "status": "passed",
-          "seconds": 0.17888091696659103,
+          "seconds": 0.1922821659827605,
           "size": 108300,
           "tsqr_levels": 4,
           "history": 13,
@@ -969,7 +969,7 @@
         {
           "name": "newton_accepted",
           "status": "passed",
-          "seconds": 0.16843595897080377,
+          "seconds": 0.16079883300699294,
           "sweeps": 25,
           "fp64_residual_before": 7.614637366018843e-05,
           "fp64_candidate_residuals": [
@@ -989,7 +989,7 @@
         {
           "name": "newton_rejected",
           "status": "passed",
-          "seconds": 0.17203399998834357,
+          "seconds": 0.23464816599152982,
           "sweeps": 125,
           "fp64_residual_before": 0.0009690052005772159,
           "fp64_candidate_residuals": [
@@ -1009,7 +1009,7 @@
         {
           "name": "gmres_identity",
           "status": "passed",
-          "seconds": 0.05948583298595622,
+          "seconds": 0.0606510000070557,
           "mode": "identity",
           "gmres_iterations": 1,
           "breakdowns": 0,
@@ -1018,7 +1018,7 @@
         {
           "name": "gmres_singular_breakdown",
           "status": "passed",
-          "seconds": 0.05904570798156783,
+          "seconds": 0.06035820802208036,
           "mode": "singular",
           "gmres_iterations": 0,
           "breakdowns": 1
@@ -1026,7 +1026,7 @@
         {
           "name": "gmres_general",
           "status": "passed",
-          "seconds": 0.060496582998894155,
+          "seconds": 0.06161770800827071,
           "mode": "general",
           "gmres_iterations": 37,
           "breakdowns": 0,
@@ -1036,7 +1036,7 @@
         {
           "name": "failure_budget",
           "status": "passed",
-          "seconds": 0.01923249999526888,
+          "seconds": 0.019827792013529688,
           "mode": "budget",
           "sweeps": 20,
           "status_bits": 256,
@@ -1047,7 +1047,7 @@
         {
           "name": "failure_nonfinite",
           "status": "passed",
-          "seconds": 0.002788166981190443,
+          "seconds": 0.0034624580293893814,
           "mode": "nonfinite",
           "sweeps": 0,
           "status_bits": 2,
@@ -1058,7 +1058,7 @@
         {
           "name": "failure_unsupported",
           "status": "passed",
-          "seconds": 0.002753041044343263,
+          "seconds": 0.002780750044621527,
           "mode": "unsupported",
           "sweeps": 0,
           "status_bits": 128,
@@ -1106,15 +1106,15 @@
       }
     ]
   },
-  "startup_seconds": 0.0788283750298433,
+  "startup_seconds": 0.08282879099715501,
   "accounting": {
     "uploaded_bytes": 14336620,
     "readback_bytes": 1698932,
-    "readback_seconds": 1.819531261047814,
-    "wait_seconds": 0.0004058749764226377,
+    "readback_seconds": 2.1994649848202243,
+    "wait_seconds": 0.0006492909742519259,
     "allocated_bytes": 69148376,
     "submissions": 354,
     "dispatches": 21877,
-    "compile_seconds": 0.07516670925542712
+    "compile_seconds": 0.07747591292718425
   }
 }

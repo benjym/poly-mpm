@@ -17,7 +17,7 @@
   "source_sha256": {
     "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
     "config.py": "03fdbcfb6bb5e66a339ca67660ba6e7c7bae16da13a193d1bacfd5b28250ffdc",
-    "runtime.py": "c6c91ebc3cc74e9ee0ddc115b1a6bd9c7e1569fdaa8bbff4603bb83c263671bd",
+    "runtime.py": "c91c930b2cc6493ded6201a2fd8fbe4f4057b80accf175d7e4b36c155984d3f5",
     "primitives.py": "f21d884e24df629ccc6c38f084b53e31faa862082dcfe2cadddca01b2ba05a28",
     "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
     "mechanics.py": "0a809d73dfda2e028b5718cb842b5c5aedae72ec6467118e753edc8022ffb5a0",
@@ -31,9 +31,9 @@
     "validate.py": "4c4a5762c9ad78b71e5ced581cac13646508e1525faebc6d40ca52094f7923e7",
     "shaders/primitives.slang": "14a2b495d2f93897b6b4fa5bc80327e8b1f3043f4e05083fe1e3d7446faa54a8",
     "shaders/mechanics.slang": "81932534ac321f15f491019df8628cd70a9f4116e95b666922457cc6a3d0375b",
-    "shaders/solver.slang": "3afdee57a8b34e76c0d55dba31820b3ae6301fd57c4a8d11b417739c2ea01c89",
+    "shaders/solver.slang": "3102a4c4f88f1227289a27a400925c23b051bb9fd5163e3bbc9804cfceb9e4de",
     "shaders/runner.slang": "5185ee784a47d5d0376f18536c87b032ecb31c7172677cb7b89b9f538e9db455",
-    "shaders/segregation.slang": "11e1ea709b1bc395a31a46d16a147ee5f8195fabd11211548c1f91dd644259c9"
+    "shaders/segregation.slang": "c5a275db9380b8e67435ee591c63c3f97c3005e93274309c6588fa50a17f1396"
   },
   "requested_stage": "all",
   "cpu_only": false,
@@ -45,55 +45,55 @@
         {
           "name": "scalar_abi",
           "status": "passed",
-          "seconds": 0.6130525830085389,
+          "seconds": 0.05096566601423547,
           "elements": 5
         },
         {
           "name": "scan_1",
           "status": "passed",
-          "seconds": 0.08100029203342274,
+          "seconds": 0.0475435410044156,
           "elements": 1,
           "scratch_buffers": 2
         },
         {
           "name": "scan_255",
           "status": "passed",
-          "seconds": 0.0004462080541998148,
+          "seconds": 0.0005387499695643783,
           "elements": 255,
           "scratch_buffers": 2
         },
         {
           "name": "scan_256",
           "status": "passed",
-          "seconds": 0.0003411250072531402,
+          "seconds": 0.0004539589863270521,
           "elements": 256,
           "scratch_buffers": 2
         },
         {
           "name": "scan_257",
           "status": "passed",
-          "seconds": 0.03313762496691197,
+          "seconds": 0.031750041991472244,
           "elements": 257,
           "scratch_buffers": 4
         },
         {
           "name": "scan_65537",
           "status": "passed",
-          "seconds": 0.0008979170233942568,
+          "seconds": 0.0008782080258242786,
           "elements": 65537,
           "scratch_buffers": 6
         },
         {
           "name": "scan_100003",
           "status": "passed",
-          "seconds": 0.0011171660153195262,
+          "seconds": 0.0008757910109125078,
           "elements": 100003,
           "scratch_buffers": 6
         },
         {
           "name": "bins_random",
           "status": "passed",
-          "seconds": 0.14581983303651214,
+          "seconds": 0.14389720797771588,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "random"
@@ -101,7 +101,7 @@
         {
           "name": "bins_one_bin",
           "status": "passed",
-          "seconds": 0.4560025839600712,
+          "seconds": 0.46293387503828853,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "one_bin"
@@ -109,7 +109,7 @@
         {
           "name": "bins_sparse",
           "status": "passed",
-          "seconds": 0.12276041699806228,
+          "seconds": 0.13132849999237806,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "sparse"
@@ -117,7 +117,7 @@
         {
           "name": "bins_invalid",
           "status": "passed",
-          "seconds": 0.0018352500046603382,
+          "seconds": 0.002008583047427237,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "invalid"
@@ -125,7 +125,7 @@
         {
           "name": "reduction_sum",
           "status": "passed",
-          "seconds": 0.0636711249826476,
+          "seconds": 0.043922165990807116,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": false
@@ -133,7 +133,7 @@
         {
           "name": "reduction_min",
           "status": "passed",
-          "seconds": 0.0008432919858023524,
+          "seconds": 0.0008176250266842544,
           "elements": 100003,
           "operation": "min",
           "expected_nonfinite": false
@@ -141,7 +141,7 @@
         {
           "name": "reduction_max",
           "status": "passed",
-          "seconds": 0.0007592909969389439,
+          "seconds": 0.0007707499898970127,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": false
@@ -149,7 +149,7 @@
         {
           "name": "nonfinite_nan",
           "status": "passed",
-          "seconds": 0.0005300000193528831,
+          "seconds": 0.0006749999593012035,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": true
@@ -157,7 +157,7 @@
         {
           "name": "nonfinite_inf",
           "status": "passed",
-          "seconds": 0.0005459170206449926,
+          "seconds": 0.0007780839805491269,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": true
@@ -165,31 +165,31 @@
         {
           "name": "guarded_all",
           "status": "passed",
-          "seconds": 0.03548908402444795,
+          "seconds": 0.036481166956946254,
           "active": 1003,
           "elements": 1003
         },
         {
           "name": "guarded_none",
           "status": "passed",
-          "seconds": 0.0007447500247508287,
+          "seconds": 0.0005503340507857502,
           "active": 0,
           "elements": 1003
         },
         {
           "name": "guarded_partial",
           "status": "passed",
-          "seconds": 0.00032354099676012993,
+          "seconds": 0.0005480840336531401,
           "active": 517,
           "elements": 1003
         },
         {
           "name": "barriers",
           "status": "passed",
-          "seconds": 0.0005606249906122684,
+          "seconds": 0.0007902910001575947,
           "dispatches": 8,
           "elements": 100003,
-          "wall_seconds": 0.00025875004939734936
+          "wall_seconds": 0.0004972910392098129
         }
       ],
       "capabilities": {
@@ -210,7 +210,7 @@
         {
           "name": "operator_h0.25_ppc2_walls",
           "status": "passed",
-          "seconds": 1.2354201250127517,
+          "seconds": 1.227602333005052,
           "particles": 64,
           "rows": 35,
           "active_rows": 25,
@@ -224,7 +224,7 @@
         {
           "name": "operator_h0.25_ppc2_periodic",
           "status": "passed",
-          "seconds": 0.004176374990493059,
+          "seconds": 0.003963041992392391,
           "particles": 64,
           "rows": 28,
           "active_rows": 20,
@@ -238,7 +238,7 @@
         {
           "name": "operator_h0.1_ppc3_walls",
           "status": "passed",
-          "seconds": 0.006261957983952016,
+          "seconds": 0.007247083995025605,
           "particles": 900,
           "rows": 176,
           "active_rows": 121,
@@ -252,7 +252,7 @@
         {
           "name": "operator_h0.1_ppc3_periodic",
           "status": "passed",
-          "seconds": 0.00639900000533089,
+          "seconds": 0.00616650003939867,
           "particles": 900,
           "rows": 160,
           "active_rows": 110,
@@ -266,7 +266,7 @@
         {
           "name": "operator_h0.5_ppc4_periodic",
           "status": "passed",
-          "seconds": 0.003419834014493972,
+          "seconds": 0.0032869999995455146,
           "particles": 64,
           "rows": 8,
           "active_rows": 6,
@@ -280,7 +280,7 @@
         {
           "name": "operator_h1.0_ppc6_periodic",
           "status": "passed",
-          "seconds": 0.0033260000054724514,
+          "seconds": 0.0026370830019004643,
           "particles": 36,
           "rows": 3,
           "active_rows": 3,
@@ -294,7 +294,7 @@
         {
           "name": "operator_edges_walls",
           "status": "passed",
-          "seconds": 0.002963665989227593,
+          "seconds": 0.0037100830231793225,
           "particles": 96,
           "rows": 35,
           "active_rows": 35,
@@ -308,7 +308,7 @@
         {
           "name": "operator_edges_periodic",
           "status": "passed",
-          "seconds": 0.0037528329994529486,
+          "seconds": 0.0034315420198254287,
           "particles": 96,
           "rows": 28,
           "active_rows": 28,
@@ -322,13 +322,13 @@
         {
           "name": "invalid_particles",
           "status": "passed",
-          "seconds": 0.002642874955199659,
+          "seconds": 0.002533834020141512,
           "particles": 4
         },
         {
           "name": "metric_h0.25_walls",
           "status": "passed",
-          "seconds": 0.18478470802074298,
+          "seconds": 0.15531987498980016,
           "rows": 25,
           "norm_error": 2.939124985742869e-08,
           "metric_error": 1.5461219171182247e-07,
@@ -340,7 +340,7 @@
         {
           "name": "metric_h0.1_periodic",
           "status": "passed",
-          "seconds": 0.0059636670048348606,
+          "seconds": 0.006359957973472774,
           "rows": 110,
           "norm_error": 1.9447758223356112e-07,
           "metric_error": 3.131898177094934e-07,
@@ -352,7 +352,7 @@
         {
           "name": "metric_h1.0_periodic",
           "status": "passed",
-          "seconds": 0.0026989170000888407,
+          "seconds": 0.0033524580067023635,
           "rows": 3,
           "norm_error": 1.983295896359831e-07,
           "metric_error": 1.0599236734138974e-07,
@@ -364,7 +364,7 @@
         {
           "name": "local_coulomb",
           "status": "passed",
-          "seconds": 0.044532291998621076,
+          "seconds": 0.04857083299430087,
           "rows": 4007,
           "reaction_error": 2.1485019075495384e-07,
           "complementarity_error": 8.339771386697735e-08,
@@ -379,7 +379,7 @@
         {
           "name": "transfer_flip_walls",
           "status": "passed",
-          "seconds": 0.120164499967359,
+          "seconds": 0.1286214579595253,
           "particles": 900,
           "transfer": "flip",
           "pic_fraction": 0.0,
@@ -395,7 +395,7 @@
         {
           "name": "transfer_flip_blend_periodic",
           "status": "passed",
-          "seconds": 0.009074000001419336,
+          "seconds": 0.009087541024200618,
           "particles": 900,
           "transfer": "flip",
           "pic_fraction": 0.3,
@@ -411,7 +411,7 @@
         {
           "name": "transfer_pic_walls",
           "status": "passed",
-          "seconds": 0.006769999978132546,
+          "seconds": 0.005263834027573466,
           "particles": 64,
           "transfer": "pic",
           "pic_fraction": 0.0,
@@ -427,7 +427,7 @@
         {
           "name": "transfer_apic_gradient_walls",
           "status": "passed",
-          "seconds": 0.009945457975845784,
+          "seconds": 0.009171667043119669,
           "particles": 900,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
@@ -443,7 +443,7 @@
         {
           "name": "transfer_apic_gradient_periodic",
           "status": "passed",
-          "seconds": 0.006575500010512769,
+          "seconds": 0.005733250000048429,
           "particles": 64,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
@@ -459,7 +459,7 @@
         {
           "name": "deformation",
           "status": "passed",
-          "seconds": 0.08888583298539743,
+          "seconds": 0.0903067080071196,
           "cases": {
             "tiny": {
               "F_error": 1.1000760995847518e-07,
@@ -509,7 +509,7 @@
         {
           "name": "solve_h0.25_ppc2_walls",
           "status": "passed",
-          "seconds": 0.6124547080253251,
+          "seconds": 0.6438929999712855,
           "rows": 35,
           "active_rows": 25,
           "single_iteration": true,
@@ -539,7 +539,7 @@
         {
           "name": "solve_h0.25_ppc2_periodic",
           "status": "passed",
-          "seconds": 0.047901791986078024,
+          "seconds": 0.0549214169732295,
           "rows": 28,
           "active_rows": 20,
           "single_iteration": true,
@@ -569,7 +569,7 @@
         {
           "name": "solve_h0.1_ppc3_walls",
           "status": "passed",
-          "seconds": 0.0988909580046311,
+          "seconds": 0.1002225000411272,
           "rows": 176,
           "active_rows": 121,
           "single_iteration": true,
@@ -599,7 +599,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic",
           "status": "passed",
-          "seconds": 0.10087766603101045,
+          "seconds": 0.08914720901520923,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": true,
@@ -629,7 +629,7 @@
         {
           "name": "solve_h0.5_ppc4_periodic",
           "status": "passed",
-          "seconds": 0.8712844999972731,
+          "seconds": 1.0102423339849338,
           "rows": 8,
           "active_rows": 6,
           "single_iteration": true,
@@ -659,7 +659,7 @@
         {
           "name": "solve_h1.0_ppc6_periodic",
           "status": "passed",
-          "seconds": 0.007068790961056948,
+          "seconds": 0.004422583035193384,
           "rows": 3,
           "active_rows": 3,
           "single_iteration": true,
@@ -689,7 +689,7 @@
         {
           "name": "solve_h0.1_ppc3_walls_moving",
           "status": "passed",
-          "seconds": 0.2702844170271419,
+          "seconds": 0.3865585000021383,
           "rows": 176,
           "active_rows": 121,
           "single_iteration": true,
@@ -719,7 +719,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic_moving",
           "status": "passed",
-          "seconds": 0.08922533300938085,
+          "seconds": 0.10120804200414568,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": true,
@@ -749,7 +749,7 @@
         {
           "name": "solve_h0.05_ppc2_walls",
           "status": "passed",
-          "seconds": 0.25195229100063443,
+          "seconds": 0.26180404203478247,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": true,
@@ -779,7 +779,7 @@
         {
           "name": "solve_h0.05_ppc3_walls_moving",
           "status": "passed",
-          "seconds": 0.22296541702235118,
+          "seconds": 0.22859024995705113,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": true,
@@ -809,7 +809,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic_moving_multi_dispatch",
           "status": "passed",
-          "seconds": 0.38208779197884724,
+          "seconds": 0.4030712909880094,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": false,
@@ -839,7 +839,7 @@
         {
           "name": "solve_h0.05_ppc3_walls_moving_multi_dispatch",
           "status": "passed",
-          "seconds": 0.2278496670187451,
+          "seconds": 0.23772249999456108,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": false,
@@ -869,7 +869,7 @@
         {
           "name": "solve_h0.5_ppc4_periodic_multi_dispatch",
           "status": "passed",
-          "seconds": 0.2865379169816151,
+          "seconds": 0.402198750001844,
           "rows": 8,
           "active_rows": 6,
           "single_iteration": false,
@@ -899,7 +899,7 @@
         {
           "name": "jacobian_walls_moving",
           "status": "passed",
-          "seconds": 0.15144379204139113,
+          "seconds": 0.21729187498567626,
           "rows": 121,
           "sliding_rows": 111,
           "open_rows": 44,
@@ -910,7 +910,7 @@
         {
           "name": "jacobian_periodic_moving",
           "status": "passed",
-          "seconds": 0.022394792002160102,
+          "seconds": 0.030276416975539178,
           "rows": 110,
           "sliding_rows": 105,
           "open_rows": 44,
@@ -921,7 +921,7 @@
         {
           "name": "anderson_full_rank",
           "status": "passed",
-          "seconds": 0.004327750008087605,
+          "seconds": 0.005631666979752481,
           "size": 1200,
           "tsqr_levels": 2,
           "history": 13,
@@ -933,7 +933,7 @@
         {
           "name": "anderson_rank_deficient",
           "status": "passed",
-          "seconds": 0.003484958957415074,
+          "seconds": 0.004208333033602685,
           "size": 1200,
           "tsqr_levels": 2,
           "history": 13,
@@ -945,7 +945,7 @@
         {
           "name": "anderson_short_history",
           "status": "passed",
-          "seconds": 0.001922708994243294,
+          "seconds": 0.0020340830087661743,
           "size": 105,
           "tsqr_levels": 1,
           "history": 4,
@@ -957,7 +957,7 @@
         {
           "name": "anderson_three_levels",
           "status": "passed",
-          "seconds": 0.1798526250058785,
+          "seconds": 0.18633945798501372,
           "size": 108300,
           "tsqr_levels": 4,
           "history": 13,
@@ -969,7 +969,7 @@
         {
           "name": "newton_accepted",
           "status": "passed",
-          "seconds": 0.15788120799697936,
+          "seconds": 0.16263762500602752,
           "sweeps": 25,
           "fp64_residual_before": 7.614637366018843e-05,
           "fp64_candidate_residuals": [
@@ -989,7 +989,7 @@
         {
           "name": "newton_rejected",
           "status": "passed",
-          "seconds": 0.17542983399471268,
+          "seconds": 0.23413979198085144,
           "sweeps": 125,
           "fp64_residual_before": 0.0009690052005772159,
           "fp64_candidate_residuals": [
@@ -1009,7 +1009,7 @@
         {
           "name": "gmres_identity",
           "status": "passed",
-          "seconds": 0.059117708005942404,
+          "seconds": 0.05952875001821667,
           "mode": "identity",
           "gmres_iterations": 1,
           "breakdowns": 0,
@@ -1018,7 +1018,7 @@
         {
           "name": "gmres_singular_breakdown",
           "status": "passed",
-          "seconds": 0.059236166009213775,
+          "seconds": 0.059553375001996756,
           "mode": "singular",
           "gmres_iterations": 0,
           "breakdowns": 1
@@ -1026,7 +1026,7 @@
         {
           "name": "gmres_general",
           "status": "passed",
-          "seconds": 0.0601438750163652,
+          "seconds": 0.06076437496813014,
           "mode": "general",
           "gmres_iterations": 37,
           "breakdowns": 0,
@@ -1036,7 +1036,7 @@
         {
           "name": "failure_budget",
           "status": "passed",
-          "seconds": 0.018868707993533462,
+          "seconds": 0.01903291599592194,
           "mode": "budget",
           "sweeps": 20,
           "status_bits": 256,
@@ -1047,7 +1047,7 @@
         {
           "name": "failure_nonfinite",
           "status": "passed",
-          "seconds": 0.002794249972794205,
+          "seconds": 0.003097000007983297,
           "mode": "nonfinite",
           "sweeps": 0,
           "status_bits": 2,
@@ -1058,7 +1058,7 @@
         {
           "name": "failure_unsupported",
           "status": "passed",
-          "seconds": 0.002772832987830043,
+          "seconds": 0.002795125008560717,
           "mode": "unsupported",
           "sweeps": 0,
           "status_bits": 128,
@@ -1075,7 +1075,7 @@
         {
           "name": "frozen_residual_static",
           "status": "passed",
-          "seconds": 0.4492642910336144,
+          "seconds": 0.47712679096730426,
           "kind": "static",
           "active_rows": 25,
           "frozen_residual": 9.801298499508609e-05,
@@ -1085,7 +1085,7 @@
         {
           "name": "frozen_residual_collapse",
           "status": "passed",
-          "seconds": 0.07985083298990503,
+          "seconds": 0.08103170798858628,
           "kind": "collapse",
           "active_rows": 15,
           "frozen_residual": 0.00010764752045639972,
@@ -1095,7 +1095,7 @@
         {
           "name": "frozen_residual_incline",
           "status": "passed",
-          "seconds": 0.0876712910248898,
+          "seconds": 0.08877620799466968,
           "kind": "incline",
           "active_rows": 20,
           "frozen_residual": 8.807762079003008e-05,
@@ -1105,7 +1105,7 @@
         {
           "name": "static_column",
           "status": "passed",
-          "seconds": 1.2812642080243677,
+          "seconds": 1.3231778329936787,
           "steps": 10,
           "displacement": 9.08970832824707e-06,
           "max_speed": 4.3363135773688555e-05,
@@ -1120,14 +1120,14 @@
         {
           "name": "freefall",
           "status": "passed",
-          "seconds": 0.010694416996557266,
+          "seconds": 0.01100079098250717,
           "velocity_change_error": 2.2351741811588166e-10,
           "maximum_packing": 0.11999999731779099
         },
         {
           "name": "incline_static",
           "status": "passed",
-          "seconds": 0.14384412503568456,
+          "seconds": 0.16479916701791808,
           "slope": 0.25,
           "steps": 10,
           "max_speed": 3.956554792239331e-05,
@@ -1139,7 +1139,7 @@
         {
           "name": "incline_yielding",
           "status": "passed",
-          "seconds": 0.17002845800016075,
+          "seconds": 0.19452787504997104,
           "slope": 0.75,
           "steps": 10,
           "speed": 0.0983472466468811,
@@ -1154,7 +1154,7 @@
         {
           "name": "collapse_flip",
           "status": "passed",
-          "seconds": 0.3751539579825476,
+          "seconds": 0.4014670409960672,
           "transfer": "flip",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1176,7 +1176,7 @@
         {
           "name": "collapse_flip_blend",
           "status": "passed",
-          "seconds": 0.3744769999757409,
+          "seconds": 0.3960056659998372,
           "transfer": "flip",
           "pic_fraction": 0.3,
           "dynamic": false,
@@ -1198,7 +1198,7 @@
         {
           "name": "collapse_pic",
           "status": "passed",
-          "seconds": 0.33987033303128555,
+          "seconds": 0.41832104203058407,
           "transfer": "pic",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1220,7 +1220,7 @@
         {
           "name": "collapse_apic_gradient",
           "status": "passed",
-          "seconds": 0.36117558303521946,
+          "seconds": 0.4468374580028467,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1242,7 +1242,7 @@
         {
           "name": "collapse_dynamic_cfl",
           "status": "passed",
-          "seconds": 0.6464263329980895,
+          "seconds": 0.7890999169903807,
           "transfer": "flip",
           "pic_fraction": 0.0,
           "dynamic": true,
@@ -1264,7 +1264,7 @@
         {
           "name": "segregation_incline",
           "status": "passed",
-          "seconds": 0.8735051669646055,
+          "seconds": 0.9817384579801001,
           "kind": "incline",
           "species_count": 2,
           "normalise_phi": false,
@@ -1288,20 +1288,20 @@
         {
           "name": "segregation_collapse_walls",
           "status": "passed",
-          "seconds": 0.23394633299903944,
+          "seconds": 0.24484258401207626,
           "kind": "collapse",
           "species_count": 2,
           "normalise_phi": false,
           "steps": 30,
           "fraction_change": 0.23313376727474522,
           "fraction_difference": 7.030726201451287e-06,
-          "species_error": 3.5390257835388184e-08,
+          "species_error": 2.7939677238464355e-08,
           "fraction_sum_error": 4.172325134277344e-07,
           "position_difference": 3.924369880170531e-06,
           "grid_field_differences": {
             "phi": 6.1356913431967116e-06,
-            "dphi": 0.0002160483962850008,
-            "pk": 0.00019641380222464337,
+            "dphi": 0.0002158427933601408,
+            "pk": 0.00019641186478653049,
             "shear_rate": 2.149635361786886e-05
           },
           "limit_differences": {
@@ -1312,7 +1312,7 @@
         {
           "name": "segregation_three_sizes_normalised",
           "status": "passed",
-          "seconds": 0.35482895898167044,
+          "seconds": 0.45184499997412786,
           "kind": "incline",
           "species_count": 3,
           "normalise_phi": true,
@@ -1324,7 +1324,7 @@
           "position_difference": 2.1739551713473304e-05,
           "grid_field_differences": {
             "phi": 1.9360158636329144e-05,
-            "dphi": 0.00045475768581055296,
+            "dphi": 0.00045499857864423547,
             "pk": 0.0003741853092168581,
             "shear_rate": 0.0003357717941466693
           },
@@ -1336,7 +1336,7 @@
         {
           "name": "output_scheduling",
           "status": "passed",
-          "seconds": 2.170711582992226,
+          "seconds": 2.3149600829929113,
           "save_times": [
             0.03,
             0.060000000000000005,
@@ -1348,7 +1348,7 @@
         {
           "name": "reproducibility",
           "status": "passed",
-          "seconds": 0.16952662501716986,
+          "seconds": 0.18283762503415346,
           "steps": 20,
           "sweeps": [
             23,
@@ -1376,7 +1376,7 @@
         {
           "name": "collapse_3200_particles",
           "status": "passed",
-          "seconds": 21.491864999989048,
+          "seconds": 22.24421762500424,
           "particles": 3200,
           "stress_rows": 1271,
           "steps": 3,
@@ -1397,8 +1397,8 @@
             3,
             1
           ],
-          "cpu_seconds": 14.668056208000053,
-          "metal_seconds": 6.82148700003745,
+          "cpu_seconds": 15.213996958977077,
+          "metal_seconds": 7.027763709018473,
           "timing": "single warm samples including the first-step cold solve; not a benchmark"
         }
       ],
@@ -1441,15 +1441,15 @@
       }
     ]
   },
-  "startup_seconds": 0.07949979201657698,
+  "startup_seconds": 0.08387862500967458,
   "accounting": {
     "uploaded_bytes": 15283116,
     "readback_bytes": 2749392,
-    "readback_seconds": 7.818282502936199,
-    "wait_seconds": 0.0004206660087220371,
+    "readback_seconds": 8.845237148576416,
+    "wait_seconds": 0.0008850409649312496,
     "allocated_bytes": 74762020,
     "submissions": 4637,
     "dispatches": 325479,
-    "compile_seconds": 0.10427637310931459
+    "compile_seconds": 0.11067275068489835
   }
 }

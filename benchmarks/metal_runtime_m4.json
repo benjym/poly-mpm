@@ -17,7 +17,7 @@
   "source_sha256": {
     "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
     "config.py": "03fdbcfb6bb5e66a339ca67660ba6e7c7bae16da13a193d1bacfd5b28250ffdc",
-    "runtime.py": "c6c91ebc3cc74e9ee0ddc115b1a6bd9c7e1569fdaa8bbff4603bb83c263671bd",
+    "runtime.py": "c91c930b2cc6493ded6201a2fd8fbe4f4057b80accf175d7e4b36c155984d3f5",
     "primitives.py": "f21d884e24df629ccc6c38f084b53e31faa862082dcfe2cadddca01b2ba05a28",
     "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
     "mechanics.py": "0a809d73dfda2e028b5718cb842b5c5aedae72ec6467118e753edc8022ffb5a0",
@@ -31,9 +31,9 @@
     "validate.py": "4c4a5762c9ad78b71e5ced581cac13646508e1525faebc6d40ca52094f7923e7",
     "shaders/primitives.slang": "14a2b495d2f93897b6b4fa5bc80327e8b1f3043f4e05083fe1e3d7446faa54a8",
     "shaders/mechanics.slang": "81932534ac321f15f491019df8628cd70a9f4116e95b666922457cc6a3d0375b",
-    "shaders/solver.slang": "3afdee57a8b34e76c0d55dba31820b3ae6301fd57c4a8d11b417739c2ea01c89",
+    "shaders/solver.slang": "3102a4c4f88f1227289a27a400925c23b051bb9fd5163e3bbc9804cfceb9e4de",
     "shaders/runner.slang": "5185ee784a47d5d0376f18536c87b032ecb31c7172677cb7b89b9f538e9db455",
-    "shaders/segregation.slang": "11e1ea709b1bc395a31a46d16a147ee5f8195fabd11211548c1f91dd644259c9"
+    "shaders/segregation.slang": "c5a275db9380b8e67435ee591c63c3f97c3005e93274309c6588fa50a17f1396"
   },
   "requested_stage": "runtime",
   "cpu_only": false,
@@ -45,55 +45,55 @@
         {
           "name": "scalar_abi",
           "status": "passed",
-          "seconds": 0.049064624996390194,
+          "seconds": 0.08140866697067395,
           "elements": 5
         },
         {
           "name": "scan_1",
           "status": "passed",
-          "seconds": 0.054476834018714726,
+          "seconds": 0.049714499968104064,
           "elements": 1,
           "scratch_buffers": 2
         },
         {
           "name": "scan_255",
           "status": "passed",
-          "seconds": 0.0006308750016614795,
+          "seconds": 0.0007037920295260847,
           "elements": 255,
           "scratch_buffers": 2
         },
         {
           "name": "scan_256",
           "status": "passed",
-          "seconds": 0.0005712910206057131,
+          "seconds": 0.00046250002924352884,
           "elements": 256,
           "scratch_buffers": 2
         },
         {
           "name": "scan_257",
           "status": "passed",
-          "seconds": 0.03240158304106444,
+          "seconds": 0.035101332992780954,
           "elements": 257,
           "scratch_buffers": 4
         },
         {
           "name": "scan_65537",
           "status": "passed",
-          "seconds": 0.0008959170081652701,
+          "seconds": 0.00180004199501127,
           "elements": 65537,
           "scratch_buffers": 6
         },
         {
           "name": "scan_100003",
           "status": "passed",
-          "seconds": 0.0008842500392347574,
+          "seconds": 0.0009175000013783574,
           "elements": 100003,
           "scratch_buffers": 6
         },
         {
           "name": "bins_random",
           "status": "passed",
-          "seconds": 0.13459079200401902,
+          "seconds": 0.14544812502572313,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "random"
@@ -101,7 +101,7 @@
         {
           "name": "bins_one_bin",
           "status": "passed",
-          "seconds": 0.4639041670016013,
+          "seconds": 0.5401421249844134,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "one_bin"
@@ -109,7 +109,7 @@
         {
           "name": "bins_sparse",
           "status": "passed",
-          "seconds": 0.1287696670042351,
+          "seconds": 0.12444162496831268,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "sparse"
@@ -117,7 +117,7 @@
         {
           "name": "bins_invalid",
           "status": "passed",
-          "seconds": 0.0019243329879827797,
+          "seconds": 0.002098832977935672,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "invalid"
@@ -125,7 +125,7 @@
         {
           "name": "reduction_sum",
           "status": "passed",
-          "seconds": 0.043383541982620955,
+          "seconds": 0.0438189169508405,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": false
@@ -133,7 +133,7 @@
         {
           "name": "reduction_min",
           "status": "passed",
-          "seconds": 0.0008330419659614563,
+          "seconds": 0.0008142910082824528,
           "elements": 100003,
           "operation": "min",
           "expected_nonfinite": false
@@ -141,7 +141,7 @@
         {
           "name": "reduction_max",
           "status": "passed",
-          "seconds": 0.0007453750004060566,
+          "seconds": 0.0007693329825997353,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": false
@@ -149,7 +149,7 @@
         {
           "name": "nonfinite_nan",
           "status": "passed",
-          "seconds": 0.0005202090251259506,
+          "seconds": 0.0005517089739441872,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": true
@@ -157,7 +157,7 @@
         {
           "name": "nonfinite_inf",
           "status": "passed",
-          "seconds": 0.0005182499880902469,
+          "seconds": 0.0005434579798020422,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": true
@@ -165,167 +165,31 @@
         {
           "name": "guarded_all",
           "status": "passed",
-          "seconds": 0.03559416701318696,
+          "seconds": 0.03594725002767518,
           "active": 1003,
           "elements": 1003
         },
         {
           "name": "guarded_none",
           "status": "passed",
-          "seconds": 0.0006235410110093653,
+          "seconds": 0.0004124589613638818,
           "active": 0,
           "elements": 1003
         },
         {
           "name": "guarded_partial",
           "status": "passed",
-          "seconds": 0.0006687500281259418,
+          "seconds": 0.0002993749803863466,
           "active": 517,
           "elements": 1003
         },
         {
           "name": "barriers",
           "status": "passed",
-          "seconds": 0.0010963749955408275,
+          "seconds": 0.0005612500244751573,
           "dispatches": 8,
           "elements": 100003,
-          "wall_seconds": 0.0007557500503025949
-        },
-        {
-          "name": "binning_benchmark_10000",
-          "status": "passed",
-          "seconds": 0.005189749994315207,
-          "elements": 10000,
-          "bin_count": 2500,
-          "samples": [
-            {
-              "pair": 0,
-              "order": "gpu-cpu",
-              "cpu": {
-                "wall_seconds": 0.0003465000190772116
-              },
-              "gpu": {
-                "wall_seconds": 0.0002567089977674186,
-                "encode_seconds": 0.00015008298214524984
-              }
-            },
-            {
-              "pair": 1,
-              "order": "cpu-gpu",
-              "cpu": {
-                "wall_seconds": 0.0003221669467166066
-              },
-              "gpu": {
-                "wall_seconds": 0.0002574169775471091,
-                "encode_seconds": 0.00010474998271092772
-              }
-            },
-            {
-              "pair": 2,
-              "order": "gpu-cpu",
-              "cpu": {
-                "wall_seconds": 0.00031895795837044716
-              },
-              "gpu": {
-                "wall_seconds": 0.0002515409723855555,
-                "encode_seconds": 9.829195914790034e-05
-              }
-            },
-            {
-              "pair": 3,
-              "order": "cpu-gpu",
-              "cpu": {
-                "wall_seconds": 0.00030929199419915676
-              },
-              "gpu": {
-                "wall_seconds": 0.00027362501714378595,
-                "encode_seconds": 9.9916011095047e-05
-              }
-            },
-            {
-              "pair": 4,
-              "order": "gpu-cpu",
-              "cpu": {
-                "wall_seconds": 0.0003850829671137035
-              },
-              "gpu": {
-                "wall_seconds": 0.00023679202422499657,
-                "encode_seconds": 0.0001235419767908752
-              }
-            }
-          ],
-          "scope": "Resident integer binning only, including the per-bin sort; both orders match a stable sort. Not an MPM speedup.",
-          "warmup_pairs": 1,
-          "setup_and_upload_in_timing": false,
-          "allocation_bytes_total": 4561204
-        },
-        {
-          "name": "binning_benchmark_100000",
-          "status": "passed",
-          "seconds": 0.03737583296606317,
-          "elements": 100000,
-          "bin_count": 25000,
-          "samples": [
-            {
-              "pair": 0,
-              "order": "gpu-cpu",
-              "cpu": {
-                "wall_seconds": 0.005219291022513062
-              },
-              "gpu": {
-                "wall_seconds": 0.0007970000151544809,
-                "encode_seconds": 0.00011233403347432613
-              }
-            },
-            {
-              "pair": 1,
-              "order": "cpu-gpu",
-              "cpu": {
-                "wall_seconds": 0.005376083019655198
-              },
-              "gpu": {
-                "wall_seconds": 0.0008085829904302955,
-                "encode_seconds": 0.0001121670356951654
-              }
-            },
-            {
-              "pair": 2,
-              "order": "gpu-cpu",
-              "cpu": {
-                "wall_seconds": 0.004973166971467435
-              },
-              "gpu": {
-                "wall_seconds": 0.0007104169926606119,
-                "encode_seconds": 0.0001124579575844109
-              }
-            },
-            {
-              "pair": 3,
-              "order": "cpu-gpu",
-              "cpu": {
-                "wall_seconds": 0.004970541980583221
-              },
-              "gpu": {
-                "wall_seconds": 0.0007555839838460088,
-                "encode_seconds": 0.00010829203529283404
-              }
-            },
-            {
-              "pair": 4,
-              "order": "gpu-cpu",
-              "cpu": {
-                "wall_seconds": 0.005265124957077205
-              },
-              "gpu": {
-                "wall_seconds": 0.0003358329995535314,
-                "encode_seconds": 0.0001182499690912664
-              }
-            }
-          ],
-          "scope": "Resident integer binning only, including the per-bin sort; both orders match a stable sort. Not an MPM speedup.",
-          "warmup_pairs": 1,
-          "setup_and_upload_in_timing": false,
-          "allocation_bytes_total": 9165956
+          "wall_seconds": 0.00026183301815763116
         }
       ],
       "capabilities": {
@@ -377,15 +241,15 @@
       }
     ]
   },
-  "startup_seconds": 0.07905895804287866,
+  "startup_seconds": 0.08290633402066305,
   "accounting": {
-    "uploaded_bytes": 3265400,
-    "readback_bytes": 1376064,
-    "readback_seconds": 0.6051659569493495,
-    "wait_seconds": 0.006194960849825293,
-    "allocated_bytes": 9174080,
-    "submissions": 34,
-    "dispatches": 215,
-    "compile_seconds": 0.016958664054982364
+    "uploaded_bytes": 2825400,
+    "readback_bytes": 1266056,
+    "readback_seconds": 0.6728440838051029,
+    "wait_seconds": 0.0006430000066757202,
+    "allocated_bytes": 4108800,
+    "submissions": 22,
+    "dispatches": 95,
+    "compile_seconds": 0.017918668047059327
   }
 }

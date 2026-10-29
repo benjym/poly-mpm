@@ -34,7 +34,7 @@ void seg_nodes(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uniform
     uint node = canonical(j % nx, j / nx, nx, periodic);
     int x = int(node % nx), y = int(node / nx);
     int columns = int(nx) - 1;
-    float sums[NS_MAX];
+    float sums[NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) sums[k] = 0.0;
     float p_sum = 0.0, i_sum = 0.0;
     int previous = -1;
@@ -201,7 +201,7 @@ void limited_slope(uint before, uint centre, uint after, uint ns, float spacing,
 {
     // integrators._slopes: one limiter for the whole mixture.
     float theta = 1.0;
-    float centred[NS_MAX];
+    float centred[NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) { slope[k] = 0.0; centred[k] = 0.0; }
     for (uint k = 0; k < ns; k++)
     {
@@ -234,10 +234,10 @@ void seg_faces(uint3 tid : SV_DispatchThreadID, uniform uint face_count, uniform
     uint axis = faces[6 * f + 4];
     bool wall = faces[6 * f + 5] != 0;
     float spacing = face_geometry[2 * f], area = face_geometry[2 * f + 1];
-    float sa[NS_MAX], sb[NS_MAX];
+    float sa[NS_MAX] = {}, sb[NS_MAX] = {};
     limited_slope(ap, a, b, ns, spacing, m_tol, mass, phi_nodes, sa);
     limited_slope(a, b, bn, ns, spacing, m_tol, mass, phi_nodes, sb);
-    float left[NS_MAX], right[NS_MAX];
+    float left[NS_MAX] = {}, right[NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) { left[k] = 0.0; right[k] = 0.0; }
     for (uint k = 0; k < ns; k++)
     {
@@ -245,7 +245,7 @@ void seg_faces(uint3 tid : SV_DispatchThreadID, uniform uint face_count, uniform
         right[k] = phi_nodes[ns * b + k] - 0.5 * spacing * sb[k];
     }
     float forcing = 0.5 * (c_seg * grad_pk[2 * a + axis] + c_seg * grad_pk[2 * b + axis]);
-    float fl[NS_MAX], fr[NS_MAX], al, ar;
+    float fl[NS_MAX] = {}, fr[NS_MAX] = {}, al, ar;
     advection(left, forcing, ns, sizes, fl, al);
     advection(right, forcing, ns, sizes, fr, ar);
     float speed = max(al, ar);
@@ -343,7 +343,7 @@ void seg_node_limit(uint3 tid : SV_DispatchThreadID, uniform uint node_count, un
     uint j = tid.x;
     if (j >= node_count) return;
     uint node = canonical(j % nx, j / nx, nx, periodic);
-    float smallest[NS_MAX];
+    float smallest[NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) smallest[k] = 1.0;
     if (mass[node] > m_tol)
     {
@@ -433,10 +433,10 @@ void seg_coefficients(uint3 tid : SV_DispatchThreadID, uniform uint node_count, 
     uint j = tid.x;
     if (j >= node_count) return;
     uint node = canonical(j % nx, j / nx, nx, periodic);
-    float inventory[NS_MAX];
+    float inventory[NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) inventory[k] = k < ns ? mass[node] * phi_nodes[ns * node + k] : 0.0;
-    float out[NS_MAX], net[NS_MAX];
-    float coefficient[NS_MAX * NS_MAX];
+    float out[NS_MAX] = {}, net[NS_MAX] = {};
+    float coefficient[NS_MAX * NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) { out[k] = 0.0; net[k] = 0.0; }
     for (uint k = 0; k < NS_MAX * NS_MAX; k++) coefficient[k] = 0.0;
     for (uint s = 0; s < 4; s++)
@@ -490,7 +490,7 @@ void seg_particles(uint3 tid : SV_DispatchThreadID, uniform uint count, uniform 
     uint corners[4];
     float w[4];
     corners_of(p, nx, periodic, keys, local_x, local_y, mass, m_tol, corners, w);
-    float old[NS_MAX], next[NS_MAX];
+    float old[NS_MAX] = {}, next[NS_MAX] = {};
     for (uint k = 0; k < NS_MAX; k++) { old[k] = k < ns ? phi[ns * p + k] : 0.0; next[k] = old[k]; }
     for (uint target = 0; target < ns; target++)
     {

@@ -100,6 +100,11 @@ class MetalRuntime:
             self.shader_dir = Path(
                 self._resources.enter_context(resources.as_file(resources.files("mpm_gpu.shaders")))
             )
+            if not debug:
+                # Slang's Metal output keeps every discarded atomic result in a
+                # temporary, which the Metal compiler reports as unused on each
+                # pipeline build; debug runs keep all compiler messages.
+                self.spy.Logger.get().level = self.spy.LogLevel.error
             started = perf_counter()
             self.device = self.spy.Device(
                 type=self.spy.DeviceType.metal,

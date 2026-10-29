@@ -890,7 +890,7 @@ void gmres_givens(uniform uint step, uniform uint groups, StructuredBuffer<float
 {
     // Hessenberg column `step` from both Gram-Schmidt passes.
     if (!open(state, RUNNING | NEWTON | GMRES)) return;
-    float column[RESTART + 1];
+    float column[RESTART + 1] = {};
     for (uint i = 0; i <= RESTART; i++) column[i] = i <= step ? first[i] + second[i] : 0.0;
     float norm2 = 0.0;
     for (uint g = 0; g < groups; g++) norm2 += squares[g];
