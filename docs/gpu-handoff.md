@@ -93,7 +93,8 @@ Remaining items, none started:
    a rheology change, or uncertified solves) before any further solver work.
 2. Remaining benchmark items in `gpu.md`: plotting cost and repeated
    connected 100k domains.
-3. Segregation and the other unsupported settings listed in `gpu.md`.
+3. The settings still rejected on Metal, listed in `gpu.md`. Grid
+   segregation is supported (see the Segregation section of `gpu.md`).
 
 ## First action on the target Mac
 

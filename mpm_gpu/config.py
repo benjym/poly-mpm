@@ -41,8 +41,8 @@ def validate(P):
         raise ValueError("Metal supports only granular_stopping='residual'")
     if P.granular_viscosity != 0:
         raise ValueError("Metal does not support granular_viscosity")
-    if P.segregate:
-        raise ValueError("Metal segregation is not implemented")
+    if P.segregate and (P.smooth_gamma_dot or P.G.ns > 8):
+        raise ValueError("Metal segregation requires smooth_gamma_dot=False and at most 8 grain sizes")
     if P.time_stepping not in ("static", "dynamic"):
         raise ValueError("Metal supports static or built-in dynamic time stepping")
     for name in (

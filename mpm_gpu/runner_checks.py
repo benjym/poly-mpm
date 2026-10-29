@@ -338,6 +338,81 @@ def reproducibility_check(rt, steps=20):
     return dict(steps=steps, sweeps=runs[0][4])
 
 
+SEGREGATION_FRACTION = 1e-2  # Metal-CPU fraction difference, relative to the CPU change
+SEGREGATION_SPECIES = 1e-6  # relative species-mass error (FP32 fractions)
+
+
+def segregation_check(rt, kind, sizes=(0.001, 0.003), normalise=False):
+    """Bidisperse or polydisperse segregation against the CPU: fractions, species and grid fields."""
+    from initialise import prepare
+
+    ns = len(sizes)
+    if kind == "incline":
+        from inputs.granular_column import Params
+
+        P = Params([])
+        P.theta, P.t_f, c = np.arctan(0.75), 0.2, 1e-2
+    else:
+        from inputs.granular_collapse import Params
+
+        P = Params([])
+        P.dt, P.t_f, c = 0.005, 0.15, 1e-1
+    P.granular_solver, P.granular_tolerance, P.diagnostics = "velocity", TOLERANCE, True
+    P.G.ns, P.G.s = ns, list(sizes)
+    P.S.PHI = np.tile(np.full(ns, 1.0 / ns), (P.S.n, 1))
+    P.segregate, P.c, P.normalise_phi = True, c, normalise
+    state = prepare(P)
+    P, G, L = state
+    if kind == "incline":
+        P.B.cyclic_lr = P.B.roughness = True
+        G.boundary_v[:] = False
+    b = L.materials[0]
+    cpu, metal = _pair(state)
+    initial = (b.m[:, None] * b.phi).sum(axis=0)
+    _run(cpu)
+    _run(metal)
+    bc, bm = cpu[2].materials[0], metal[2].materials[0]
+    change = float(np.abs(bc.phi - b.phi).max())
+    difference = float(np.abs(bm.phi - bc.phi).max())
+    species = float(np.abs((bm.m[:, None] * bm.phi).sum(axis=0) - initial).max() / initial.max())
+    unity = float(np.abs(bm.phi.sum(axis=1) - 1).max())
+    h = _spacing(metal[1])
+    position = float(np.abs(bm.x - bc.x).max() / h)
+    _require(change > 1e-3, f"segregation too weak to test ({change:.3g})")
+    _require(
+        difference <= SEGREGATION_FRACTION * change,
+        f"fractions differ by {difference:.3g} (change {change:.3g})",
+    )
+    _require(species <= SEGREGATION_SPECIES, f"species mass error {species:.3g}")
+    _require(unity <= 1e-5, f"fractions sum to one within {unity:.3g}")
+    _require(position <= COLLAPSE_POSITION, f"positions differ by {position:.3g} grid spacings")
+    fields = {}
+    for name in ("phi", "dphi", "pk", "shear_rate"):
+        expected, actual = getattr(cpu[1], name), getattr(metal[1], name)
+        scale = np.abs(expected).max()
+        fields[name] = float(np.abs(actual - expected).max() / scale) if scale else 0.0
+    _require(max(fields.values()) <= 1e-2, f"grid fields differ: {fields}")
+    limits = {
+        name: abs(metal[0].timestep_limits[name] - value) / value
+        for name, value in cpu[0].timestep_limits.items()
+        if name.startswith("segregation")
+    }
+    _require(limits and max(limits.values()) <= 1e-2, f"segregation limits differ: {limits}")
+    return dict(
+        kind=kind,
+        species_count=ns,
+        normalise_phi=normalise,
+        steps=metal[0].tstep,
+        fraction_change=change,
+        fraction_difference=difference,
+        species_error=species,
+        fraction_sum_error=unity,
+        position_difference=position,
+        grid_field_differences=fields,
+        limit_differences=limits,
+    )
+
+
 def output_check(rt, directory):
     """Save times, snapshot freshness, plots, diagnostics file and callback rejection."""
     from pathlib import Path
@@ -409,6 +484,12 @@ def cases(rt):
         ("collapse_pic", lambda: collapse_check(rt, "pic")),
         ("collapse_apic_gradient", lambda: collapse_check(rt, "apic_gradient")),
         ("collapse_dynamic_cfl", lambda: collapse_check(rt, dynamic=True)),
+        ("segregation_incline", lambda: segregation_check(rt, "incline")),
+        ("segregation_collapse_walls", lambda: segregation_check(rt, "collapse")),
+        (
+            "segregation_three_sizes_normalised",
+            lambda: segregation_check(rt, "incline", sizes=(0.001, 0.002, 0.004), normalise=True),
+        ),
         ("output_scheduling", lambda: output_check(rt, directory)),
         ("reproducibility", lambda: reproducibility_check(rt)),
         ("collapse_3200_particles", lambda: scale_check(rt)),

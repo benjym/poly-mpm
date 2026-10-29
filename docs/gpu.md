@@ -100,13 +100,14 @@ mechanics defaults are the compact velocity solver and tolerance `1e-4`.
 Explicit settings are preserved; GPU tolerances below `1e-5` are rejected.
 No supplied tolerance is silently loosened.
 
-The first runner will support one intrinsic 2D granular material, nodal stress,
-linear interpolation, point quadrature, updated mechanics, FLIP (including PIC
-blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls, periodic x and
-built-in static/transport-CFL time stepping. Segregation, P0, plane strain,
-viscosity, particle injection/removal, density correction and callbacks that
-require live NumPy arrays are outside that release. These restrictions do not
-change CPU support.
+The runner supports one intrinsic 2D granular material, nodal stress, linear
+interpolation, point quadrature, updated mechanics, FLIP (including PIC
+blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls, periodic x,
+built-in static/transport-CFL time stepping and grid segregation (up to eight
+grain sizes, `smooth_gamma_dot=False`, optional `normalise_phi`). P0 and
+coarse stresses, plane strain, viscosity, particle injection/removal, density
+correction, increment stopping and callbacks that require live NumPy arrays
+are rejected. These restrictions do not change CPU support.
 
 The runtime uses only explicitly selected Metal devices. SlangPy is imported
 lazily; normal CPU execution never imports the native GPU module. Scalar
@@ -362,8 +363,45 @@ bytes/time, memory, iteration counts and plotting cost. The current results
 are under Performance above; plotting cost and repeated connected domains at
 100k are not measured yet.
 
-Segregation and packing corrections can extend this package after the mechanics
-gates pass; no separate package or GPU-specific input/output format is needed.
+## Segregation
+
+`P.segregate = True` runs `integrators.segregation_update` on the device
+within each step, in the CPU order: after the stress update and before
+advection, with the start-of-step stencil (`mpm_gpu/segregation.py`,
+`shaders/segregation.slang`).
+
+- Grid side: mass-weighted grain fractions and the pressure and inertial-number
+  deposits are gathered per node. The shear rate and `grad pk` use the masked
+  central differences of `Grid.calculate_gradient`, and the diffusivity
+  `10 s^3 |shear rate| / sqrt(I)`.
+- Faces: the static face lists, wall closures and periodic seams are built
+  once on the host with the CPU scheme's own orientation and padding helpers;
+  the central-upwind flux, limited reconstruction and harmonic face density
+  are computed per face on the device.
+- Particles: the inventory-aware limiter and particle exchange of
+  `_particle_exchanges` run as node- and particle-owned gathers, with no
+  floating-point atomics. Each particle keeps its mass; only its fractions
+  change.
+- The segregation advection and diffusion timestep limits and the species
+  inventory come from the per-step record; snapshots fill `G.phi`, `G.dphi`,
+  `G.pk` and `G.grad_pk` as the CPU step leaves them.
+
+Gate cases (in `benchmarks/metal_runner_m4.json`), each against the CPU from
+the same state at tolerance `1e-4`:
+
+| Case | Steps | CPU fraction change | Metal minus CPU | Species error |
+| --- | ---: | ---: | ---: | ---: |
+| Periodic incline, two sizes, `c = 1e-2` | 40 | 0.037 | 1.0e-5 | 4.2e-8 |
+| Walled collapse, two sizes, `c = 0.1` | 30 | 0.23 | 7.0e-6 | 3.5e-8 |
+| Periodic incline, three sizes, `normalise_phi` | 40 | 0.041 | 1.1e-5 | 4.0e-8 |
+
+Grid fields (`phi`, `dphi`, `pk`, shear rate) agree to at most 4.5e-4
+relative and the segregation timestep limits to 5e-4. Species errors are
+relative to the species mass and come from FP32 fractions; the per-step
+diagnostics inventory is an FP32 sum, so its species error can read zero when
+the change is below FP32 resolution.
+
+No separate package or GPU-specific input/output format is needed.
 
 ## Sources
 

@@ -16,7 +16,7 @@
   },
   "source_sha256": {
     "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
-    "config.py": "d59fa4d3e63ff47c9bffc79cc0774978c09346d03a8c177dac06385f3f5d4a21",
+    "config.py": "03fdbcfb6bb5e66a339ca67660ba6e7c7bae16da13a193d1bacfd5b28250ffdc",
     "runtime.py": "c6c91ebc3cc74e9ee0ddc115b1a6bd9c7e1569fdaa8bbff4603bb83c263671bd",
     "primitives.py": "f21d884e24df629ccc6c38f084b53e31faa862082dcfe2cadddca01b2ba05a28",
     "topology.py": "9397c5258a5daacee499b16717712290b94e7ad01ba089ccefe6975101afcdf9",
@@ -25,13 +25,15 @@
     "fixtures.py": "75323ac341544ef9f2535d2eaa5fe31e1285f0bad8695eaff514a2b56ddcb3cb",
     "solver.py": "a9f2e08ce7bee5ccdb3f05d46b50cd3370d23840055a534589212c47bd3e2822",
     "solver_checks.py": "47ff623429f939bbda350e7673ea345d68b0c4487ee7efa49c44d5dfc05494a4",
-    "runner.py": "debfaa80ecbfeefe7117bf38656112aa916188bd5ffa86ede5a041155e435013",
-    "runner_checks.py": "6f7cf6b246de2e17fe3c741dd4a5b84ca4d07994cab5f766e277c01c3755f057",
-    "validate.py": "d50d3752ecce114a23a7795044474c5a6cda55cbeeece9ec38c3b2b00f752017",
+    "runner.py": "ca6120f0b9d2224f158e5c8dd360267d3f9a1ca74ed29f104c2a1711c9ba4da8",
+    "runner_checks.py": "55fd61d1523b64ecd08c439a41ddd090aaec7a059acfe4add4c5b47a099ea20f",
+    "segregation.py": "e85107430a8479b6b070d34cfebc428ee0b3e57913a785196e528527e1bb7b98",
+    "validate.py": "4c4a5762c9ad78b71e5ced581cac13646508e1525faebc6d40ca52094f7923e7",
     "shaders/primitives.slang": "14a2b495d2f93897b6b4fa5bc80327e8b1f3043f4e05083fe1e3d7446faa54a8",
     "shaders/mechanics.slang": "81932534ac321f15f491019df8628cd70a9f4116e95b666922457cc6a3d0375b",
     "shaders/solver.slang": "3afdee57a8b34e76c0d55dba31820b3ae6301fd57c4a8d11b417739c2ea01c89",
-    "shaders/runner.slang": "5185ee784a47d5d0376f18536c87b032ecb31c7172677cb7b89b9f538e9db455"
+    "shaders/runner.slang": "5185ee784a47d5d0376f18536c87b032ecb31c7172677cb7b89b9f538e9db455",
+    "shaders/segregation.slang": "11e1ea709b1bc395a31a46d16a147ee5f8195fabd11211548c1f91dd644259c9"
   },
   "requested_stage": "runtime",
   "cpu_only": false,
@@ -43,55 +45,55 @@
         {
           "name": "scalar_abi",
           "status": "passed",
-          "seconds": 0.04766050004400313,
+          "seconds": 0.049064624996390194,
           "elements": 5
         },
         {
           "name": "scan_1",
           "status": "passed",
-          "seconds": 0.04339158401126042,
+          "seconds": 0.054476834018714726,
           "elements": 1,
           "scratch_buffers": 2
         },
         {
           "name": "scan_255",
           "status": "passed",
-          "seconds": 0.0005833329632878304,
+          "seconds": 0.0006308750016614795,
           "elements": 255,
           "scratch_buffers": 2
         },
         {
           "name": "scan_256",
           "status": "passed",
-          "seconds": 0.0004987919819541276,
+          "seconds": 0.0005712910206057131,
           "elements": 256,
           "scratch_buffers": 2
         },
         {
           "name": "scan_257",
           "status": "passed",
-          "seconds": 0.031744625011924654,
+          "seconds": 0.03240158304106444,
           "elements": 257,
           "scratch_buffers": 4
         },
         {
           "name": "scan_65537",
           "status": "passed",
-          "seconds": 0.0008937920210883021,
+          "seconds": 0.0008959170081652701,
           "elements": 65537,
           "scratch_buffers": 6
         },
         {
           "name": "scan_100003",
           "status": "passed",
-          "seconds": 0.0008438749937340617,
+          "seconds": 0.0008842500392347574,
           "elements": 100003,
           "scratch_buffers": 6
         },
         {
           "name": "bins_random",
           "status": "passed",
-          "seconds": 0.13085675000911579,
+          "seconds": 0.13459079200401902,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "random"
@@ -99,7 +101,7 @@
         {
           "name": "bins_one_bin",
           "status": "passed",
-          "seconds": 0.4530530829797499,
+          "seconds": 0.4639041670016013,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "one_bin"
@@ -107,7 +109,7 @@
         {
           "name": "bins_sparse",
           "status": "passed",
-          "seconds": 0.1352877079625614,
+          "seconds": 0.1287696670042351,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "sparse"
@@ -115,7 +117,7 @@
         {
           "name": "bins_invalid",
           "status": "passed",
-          "seconds": 0.001971582998521626,
+          "seconds": 0.0019243329879827797,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "invalid"
@@ -123,7 +125,7 @@
         {
           "name": "reduction_sum",
           "status": "passed",
-          "seconds": 0.038993708963971585,
+          "seconds": 0.043383541982620955,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": false
@@ -131,7 +133,7 @@
         {
           "name": "reduction_min",
           "status": "passed",
-          "seconds": 0.0008432920440100133,
+          "seconds": 0.0008330419659614563,
           "elements": 100003,
           "operation": "min",
           "expected_nonfinite": false
@@ -139,7 +141,7 @@
         {
           "name": "reduction_max",
           "status": "passed",
-          "seconds": 0.0007730840006843209,
+          "seconds": 0.0007453750004060566,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": false
@@ -147,7 +149,7 @@
         {
           "name": "nonfinite_nan",
           "status": "passed",
-          "seconds": 0.0005455000209622085,
+          "seconds": 0.0005202090251259506,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": true
@@ -155,7 +157,7 @@
         {
           "name": "nonfinite_inf",
           "status": "passed",
-          "seconds": 0.0005431669997051358,
+          "seconds": 0.0005182499880902469,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": true
@@ -163,36 +165,36 @@
         {
           "name": "guarded_all",
           "status": "passed",
-          "seconds": 0.03174470900557935,
+          "seconds": 0.03559416701318696,
           "active": 1003,
           "elements": 1003
         },
         {
           "name": "guarded_none",
           "status": "passed",
-          "seconds": 0.0003529579844325781,
+          "seconds": 0.0006235410110093653,
           "active": 0,
           "elements": 1003
         },
         {
           "name": "guarded_partial",
           "status": "passed",
-          "seconds": 0.0003191250143572688,
+          "seconds": 0.0006687500281259418,
           "active": 517,
           "elements": 1003
         },
         {
           "name": "barriers",
           "status": "passed",
-          "seconds": 0.000583791988901794,
+          "seconds": 0.0010963749955408275,
           "dispatches": 8,
           "elements": 100003,
-          "wall_seconds": 0.0002625830238685012
+          "wall_seconds": 0.0007557500503025949
         },
         {
           "name": "binning_benchmark_10000",
           "status": "passed",
-          "seconds": 0.006644165958277881,
+          "seconds": 0.005189749994315207,
           "elements": 10000,
           "bin_count": 2500,
           "samples": [
@@ -200,55 +202,55 @@
               "pair": 0,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.00035979098174721
+                "wall_seconds": 0.0003465000190772116
               },
               "gpu": {
-                "wall_seconds": 0.0002501659910194576,
-                "encode_seconds": 0.00010150001617148519
+                "wall_seconds": 0.0002567089977674186,
+                "encode_seconds": 0.00015008298214524984
               }
             },
             {
               "pair": 1,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.0003244169638492167
+                "wall_seconds": 0.0003221669467166066
               },
               "gpu": {
-                "wall_seconds": 0.0005857919459231198,
-                "encode_seconds": 9.883299935609102e-05
+                "wall_seconds": 0.0002574169775471091,
+                "encode_seconds": 0.00010474998271092772
               }
             },
             {
               "pair": 2,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.00037299998803064227
+                "wall_seconds": 0.00031895795837044716
               },
               "gpu": {
-                "wall_seconds": 0.0005732079735025764,
-                "encode_seconds": 0.00016233400674536824
+                "wall_seconds": 0.0002515409723855555,
+                "encode_seconds": 9.829195914790034e-05
               }
             },
             {
               "pair": 3,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.00033899996196851134
+                "wall_seconds": 0.00030929199419915676
               },
               "gpu": {
-                "wall_seconds": 0.0005479160463437438,
-                "encode_seconds": 0.00010662502609193325
+                "wall_seconds": 0.00027362501714378595,
+                "encode_seconds": 9.9916011095047e-05
               }
             },
             {
               "pair": 4,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.00033566600177437067
+                "wall_seconds": 0.0003850829671137035
               },
               "gpu": {
-                "wall_seconds": 0.0006060419837012887,
-                "encode_seconds": 9.262497769668698e-05
+                "wall_seconds": 0.00023679202422499657,
+                "encode_seconds": 0.0001235419767908752
               }
             }
           ],
@@ -260,7 +262,7 @@
         {
           "name": "binning_benchmark_100000",
           "status": "passed",
-          "seconds": 0.03628608299186453,
+          "seconds": 0.03737583296606317,
           "elements": 100000,
           "bin_count": 25000,
           "samples": [
@@ -268,55 +270,55 @@
               "pair": 0,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.005075082997791469
+                "wall_seconds": 0.005219291022513062
               },
               "gpu": {
-                "wall_seconds": 0.00067754095653072,
-                "encode_seconds": 0.00010062498040497303
+                "wall_seconds": 0.0007970000151544809,
+                "encode_seconds": 0.00011233403347432613
               }
             },
             {
               "pair": 1,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.004956874996423721
+                "wall_seconds": 0.005376083019655198
               },
               "gpu": {
-                "wall_seconds": 0.0008259579772129655,
-                "encode_seconds": 0.00011541595449671149
+                "wall_seconds": 0.0008085829904302955,
+                "encode_seconds": 0.0001121670356951654
               }
             },
             {
               "pair": 2,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.005166167044080794
+                "wall_seconds": 0.004973166971467435
               },
               "gpu": {
-                "wall_seconds": 0.0007840420003049076,
-                "encode_seconds": 0.00010416697477921844
+                "wall_seconds": 0.0007104169926606119,
+                "encode_seconds": 0.0001124579575844109
               }
             },
             {
               "pair": 3,
               "order": "cpu-gpu",
               "cpu": {
-                "wall_seconds": 0.005107167002279311
+                "wall_seconds": 0.004970541980583221
               },
               "gpu": {
-                "wall_seconds": 0.0008874160121195018,
-                "encode_seconds": 0.00015074998373165727
+                "wall_seconds": 0.0007555839838460088,
+                "encode_seconds": 0.00010829203529283404
               }
             },
             {
               "pair": 4,
               "order": "gpu-cpu",
               "cpu": {
-                "wall_seconds": 0.0049498340231366456
+                "wall_seconds": 0.005265124957077205
               },
               "gpu": {
-                "wall_seconds": 0.000349665991961956,
-                "encode_seconds": 0.00010562501847743988
+                "wall_seconds": 0.0003358329995535314,
+                "encode_seconds": 0.0001182499690912664
               }
             }
           ],
@@ -375,15 +377,15 @@
       }
     ]
   },
-  "startup_seconds": 0.07603212498361245,
+  "startup_seconds": 0.07905895804287866,
   "accounting": {
     "uploaded_bytes": 3265400,
     "readback_bytes": 1376064,
-    "readback_seconds": 0.5994749210076407,
-    "wait_seconds": 0.007300959900021553,
+    "readback_seconds": 0.6051659569493495,
+    "wait_seconds": 0.006194960849825293,
     "allocated_bytes": 9174080,
     "submissions": 34,
     "dispatches": 215,
-    "compile_seconds": 0.016227458021603525
+    "compile_seconds": 0.016958664054982364
   }
 }

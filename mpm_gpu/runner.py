@@ -131,6 +131,12 @@ class MetalRunner:
             ColumnReduction(rt, grid.rows, PACKING_COLUMNS),
             ColumnReduction(rt, n, PARTICLE_COLUMNS),
         ]
+        self.segregation = None
+        if P.segregate:
+            from .segregation import Segregation
+
+            self.segregation = Segregation(rt, grid, P, G, n)
+            self.reductions += self.segregation.reductions
         self.record_size = sum(r.columns for r in self.reductions)
         self.record = vector(self.record_size)
         S = b.material
@@ -202,6 +208,18 @@ class MetalRunner:
             size=b.phi @ P.G.s,
         )
         self.speed = float(np.linalg.norm(b.v, axis=1).max(initial=0))
+        if self.segregation is not None:
+            self.segregation.upload(b, P)
+        # Previous-step segregation maxima, as stability.limits reads G.grad_pk.
+        self.segregation_rates = dict(
+            gradient=float(np.linalg.norm(G.grad_pk, axis=1).max(initial=0)),
+            component=float(np.max(np.abs(G.grad_pk), initial=0)),
+            diffusivity=0.0,
+        )
+        if P.segregate and getattr(G, "shear_rate", None) is not None and len(G.shear_rate) == len(G.m):
+            from integrators import _diffusivity
+
+            self.segregation_rates["diffusivity"] = float(_diffusivity(G, P, G.phi).max(initial=0))
         self.assembled = False
 
     def snapshot(self, P, G, L):
@@ -244,6 +262,10 @@ class MetalRunner:
         work = read(self.work) - read(self.work_compensation)
         b.material_work = self.base["material_work"] + work
         b.plastic_work = self.base["plastic_work"] + work
+        size = self.constants["size"]
+        if self.segregation is not None:
+            b.phi, start = self.segregation.particles(read)
+            size = start @ P.G.s
         b.pressure = np.trace(b.stress, axis1=1, axis2=2) / 3
         b.dp = np.trace(b.dstress, axis1=1, axis2=2) / 3
         b.sigma_kk = 3 * b.pressure
@@ -256,7 +278,7 @@ class MetalRunner:
         b.gammadot = ROOT2 * np.linalg.norm(dev, axis=(1, 2))
         phase_pressure = -np.trace(b.stress, axis1=1, axis2=2) / 3 * S.rho_s / b.rho
         b.I = np.divide(
-            self.constants["size"] * b.gammadot * np.sqrt(S.rho_s),
+            size * b.gammadot * np.sqrt(S.rho_s),
             np.sqrt(np.maximum(phase_pressure, 0)),
             out=np.zeros(n),
             where=phase_pressure > 0,
@@ -285,7 +307,8 @@ class MetalRunner:
         contact = read(self.solver.contact, (self.grid.rows, 3))
         G.granular_contact = contact[self.node_row_host]
         weight = b.N * b.m[:, None]
-        scatter(G.phim, b.n, weight[:, :, None] * b.phi[:, None, :])
+        if self.segregation is None:
+            scatter(G.phim, b.n, weight[:, :, None] * b.phi[:, None, :])
         scatter(G.pkm, b.n, weight * b.pk[:, None])
         saved = P.dt
         P.dt = dt
@@ -294,11 +317,17 @@ class MetalRunner:
         finally:
             P.dt = saved
         if P.B.cyclic_lr:
-            G.make_cyclic(P, G, ["phim", "pkm", *G.diagnostic_fields])
+            G.make_cyclic(
+                P, G, (["phim"] if self.segregation is None else []) + ["pkm", *G.diagnostic_fields]
+            )
         G.phi = divide(G.phim, G.m[:, None])
         G.s_bar = G.phi @ P.G.s
         G.pk = divide(G.pkm, G.m)
+        if self.segregation is not None:
+            self.segregation.grid_fields(P, G, read)
         G.calculate_gammadot(P, G, P.smooth_gamma_dot)
+        if self.segregation is not None:
+            G.update_pk(P, G)
         self._budgets(G, self.last)
         G.granular_stats = dict(self.last["stats"])
 
@@ -314,6 +343,13 @@ class MetalRunner:
                 if not np.isfinite(value) or value <= 0:
                     raise ValueError("material critical_time must be positive and finite")
                 result["material_0"] = value
+        if P.segregate:
+            rate = P.c * (P.G.s_M / P.G.s_m - 1) * self.segregation_rates["gradient"]
+            if rate:
+                result["segregation_advection"] = h / rate
+            diffusion = self.segregation_rates["diffusivity"]
+            if diffusion:
+                result["segregation_diffusion"] = 1 / (2 * diffusion * (1 / P.G.dx**2 + 1 / P.G.dy**2))
         return {name: float(value * P.CFL) for name, value in result.items()}
 
     def update_timestep(self, P):
@@ -321,6 +357,10 @@ class MetalRunner:
         h = min(P.G.dx, P.G.dy)
         speed = self.last["nodal_speed"] if self.last else 0.0
         limits = [0.1 * h / speed] if speed > 0 else []
+        if P.segregate:
+            rate = P.c * (P.G.s_M / P.G.s_m - 1) * self.segregation_rates["component"]
+            if rate > 0:
+                limits.append(h / rate)
         for S in P.S:
             if hasattr(S, "critical_time"):
                 limits.append(S.critical_time(P))
@@ -550,6 +590,21 @@ class MetalRunner:
             work=self.work,
             work_compensation=self.work_compensation,
         )
+        segregation = []
+        if self.segregation is not None:
+            segregation = self.segregation.encode(
+                encoder,
+                P,
+                operator,
+                self.nodal,
+                u,
+                self.mass,
+                self.stress,
+                self.gradient,
+                self.density,
+                self.status,
+                dt,
+            )
         rt.dispatch(
             encoder,
             "particle_inventory",
@@ -597,11 +652,14 @@ class MetalRunner:
             columns=self.packing_columns,
         )
         offset = 0
-        for reduction, columns in zip(
-            self.reductions,
-            (self.node_columns, self.row_columns, self.packing_columns, self.particle_columns),
-        ):
-            result = reduction.encode(encoder, columns, self.status)
+        results = [
+            reduction.encode(encoder, columns, self.status)
+            for reduction, columns in zip(
+                self.reductions[:4],
+                (self.node_columns, self.row_columns, self.packing_columns, self.particle_columns),
+            )
+        ] + segregation
+        for reduction, result in zip(self.reductions, results):
             rt.dispatch(
                 encoder,
                 "copy_record",
@@ -615,12 +673,16 @@ class MetalRunner:
             offset += reduction.columns
 
     def _record(self, P, values, result, body, dt):
-        node, row, packing, particle = np.split(values, np.cumsum([9, 3, 2]))
+        node, row, packing, particle, seg = np.split(values, np.cumsum([9, 3, 2, 16]))
         c = self.constants
+        species = c["species"].tolist()
+        if self.segregation is not None:
+            self.segregation_rates = dict(gradient=seg[0], component=seg[1], diffusivity=seg[2])
+            species = seg[3:].tolist()
         work = particle[6]
         inventory = dict(
             mass=c["mass"],
-            species_mass=c["species"].tolist(),
+            species_mass=species,
             momentum=[particle[0], particle[1], 0.0],
             angular_momentum=[0.0, 0.0, particle[2]],
             kinetic=particle[4],

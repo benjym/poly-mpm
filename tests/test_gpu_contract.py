@@ -119,7 +119,6 @@ def test_supported_tolerance_reaches_hardware_gate(tolerance):
         ("granular_stress_basis", "P0"),
         ("granular_stress", "plane_strain"),
         ("granular_viscosity", 0.01),
-        ("segregate", True),
         ("packing_correction", True),
         ("density_correction", True),
     ],
@@ -128,6 +127,18 @@ def test_unsupported_metal_features_fail_before_native_initialization(name, valu
     P = metal_params()
     setattr(P, name, value)
     with pytest.raises(ValueError, match="Metal"):
+        prepare(P)
+
+
+def test_metal_segregation_is_accepted_with_supported_settings():
+    P = metal_params()
+    P.G.ns, P.G.s = 2, [0.001, 0.003]
+    P.S.PHI = np.tile([0.5, 0.5], (P.S.n, 1))
+    P.segregate, P.c = True, 1e-2
+    prepare(P)
+    P = metal_params()
+    P.segregate, P.smooth_gamma_dot = True, True
+    with pytest.raises(ValueError, match="smooth_gamma_dot"):
         prepare(P)
 
 

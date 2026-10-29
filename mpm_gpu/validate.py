@@ -38,11 +38,13 @@ def fingerprint():
         "solver_checks.py",
         "runner.py",
         "runner_checks.py",
+        "segregation.py",
         "validate.py",
         "shaders/primitives.slang",
         "shaders/mechanics.slang",
         "shaders/solver.slang",
         "shaders/runner.slang",
+        "shaders/segregation.slang",
     ]
     return {name: hashlib.sha256(root.joinpath(name).read_bytes()).hexdigest() for name in names}
 
