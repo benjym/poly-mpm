@@ -267,6 +267,8 @@ class Particles:
     def check_finite(self, P):
         for name in self.persistent_fields:
             value = getattr(self, name)
+            if np.isfinite(value).all():
+                continue
             bad = np.flatnonzero(~np.isfinite(value).reshape(len(self), -1).all(axis=1)) if len(self) else []
             if len(bad):
                 raise FloatingPointError(

@@ -3,6 +3,25 @@
 import numpy as np
 
 
+def _singular_values(F):
+    """Singular values of each 3x3 F, in closed form when it is planar.
+
+    A planar F has F33 = 1 and no out-of-plane coupling; its in-plane
+    singular values follow from the Frobenius norm and determinant of the 2x2
+    block. Other F use LAPACK.
+    """
+    planar = np.all(F[:, 2, :2] == 0) and np.all(F[:, :2, 2] == 0) and np.all(F[:, 2, 2] == 1)
+    if not planar:
+        return np.linalg.svd(F, compute_uv=False)
+    A = F[:, :2, :2]
+    frobenius = np.einsum("nij,nij->n", A, A)
+    determinant = A[:, 0, 0] * A[:, 1, 1] - A[:, 0, 1] * A[:, 1, 0]
+    root = np.sqrt(np.maximum(frobenius**2 - 4 * determinant**2, 0))
+    largest = np.sqrt(0.5 * (frobenius + root))
+    smallest = np.abs(determinant) / np.maximum(largest, np.finfo(float).tiny)
+    return np.column_stack((largest, smallest, np.ones(len(F))))
+
+
 def _state_limits(P, G, L):
     """Unscaled restrictions depending on particle/grid state, not the timestep."""
     h = min(G.dx, G.dy)
@@ -26,7 +45,7 @@ def _state_limits(P, G, L):
             # Frobenius/operator-norm bound on the reference neo-Hookean
             # Hessian, pushed to spatial wave speed by ||F||_2^2/rho0.
             # Unlike a small-strain speed this responds to compression/stretch.
-            singular = np.linalg.svd(b.F, compute_uv=False)
+            singular = _singular_values(b.F)
             f2 = np.sum(singular**2, axis=1)
             inverse2 = np.sum(1 / singular**2, axis=1)
             inverse_operator2 = 1 / np.min(singular, axis=1) ** 2
