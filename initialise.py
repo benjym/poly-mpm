@@ -34,6 +34,27 @@ def update_timestep(P, G):
     P.dt = candidate
 
 
+def validate_cidr(P):
+    """Critical-state CIDR (cidr.py): material fields and the supported configuration."""
+    if P.granular_stress != "intrinsic" or P.granular_stress_basis != "nodal":
+        raise ValueError("granular_solver='cidr' requires intrinsic stress on the nodal basis")
+    S = P.S[0]
+    fields = ("mu", "mu_d", "I0", "grain_diameter", "phi_min", "packing_max", "cidr_deficit", "cidr_p_ref")
+    missing = [name for name in fields if not hasattr(S, name)]
+    if missing:
+        raise ValueError(f"granular_solver='cidr' requires material fields {', '.join(missing)}")
+    values = {name: float(getattr(S, name)) for name in fields}
+    if not all(np.isfinite(v) and v > 0 for v in values.values()):
+        raise ValueError("cidr material fields must be positive and finite")
+    if not values["mu"] < values["mu_d"]:
+        raise ValueError("cidr requires mu < mu_d")
+    if not values["phi_min"] < values["packing_max"] - values["cidr_deficit"]:
+        raise ValueError("cidr requires phi_min < packing_max - cidr_deficit")
+    for name in ("granular_cidr_gamma", "granular_cidr_tolerance"):
+        if not np.isfinite(getattr(P, name)) or getattr(P, name) <= 0:
+            raise ValueError(f"{name} must be positive and finite")
+
+
 def prepare(P, mode="simulation"):
     """Normalise a Params instance; also used by deterministic test fixtures."""
     from mpm_gpu.config import defaults as backend_defaults
@@ -66,6 +87,8 @@ def prepare(P, mode="simulation"):
         granular_max_iterations=200,
         granular_stopping="residual",
         granular_increment=1e-3,
+        granular_cidr_gamma=0.0075,
+        granular_cidr_tolerance=1e-5,
         granular_max_nodes=256,
         interpolation="linear",
         quadrature="point",
@@ -141,8 +164,10 @@ def prepare(P, mode="simulation"):
             raise ValueError("plane_strain requires the hybrid or velocity contact solver")
         if not np.isfinite(P.granular_viscosity) or P.granular_viscosity < 0:
             raise ValueError("granular_viscosity must be finite and nonnegative")
-        if P.granular_solver not in ("block", "hybrid", "velocity"):
-            raise ValueError("granular_solver must be block, hybrid or velocity")
+        if P.granular_solver not in ("block", "hybrid", "velocity", "cidr"):
+            raise ValueError("granular_solver must be block, hybrid, velocity or cidr")
+        if P.granular_solver == "cidr":
+            validate_cidr(P)
         if P.mechanics != "updated" or P.quadrature != "point":
             raise ValueError("granular prototype requires updated mechanics and point quadrature")
         if P.interpolation != "linear":

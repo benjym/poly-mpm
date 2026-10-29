@@ -90,6 +90,17 @@ mixtures, `phi` are optional. See [tutorial](tutorial.rst) for geometry and
 Only one `granular` material is allowed, and it cannot be combined with other
 laws. A `critical_time(P)` method on any material bounds the dynamic timestep.
 
+With `granular_solver = "cidr"` the `granular` material follows critical-state
+CIDR (see [Rigid-grain solver](#rigid-grain-solver)) and needs these fields as
+well:
+
+| Field | Meaning |
+| --- | --- |
+| `mu`, `mu_d`, `I0` | `mu(I) = mu + (mu_d - mu) I / (I0 + I)`, with `mu < mu_d` |
+| `grain_diameter` | Grain diameter `d` (m); `I = 2 d |D| / sqrt(p / rho_s)` |
+| `phi_min`, `packing_max` | Packing range of `C(phi)`, which diverges at `packing_max` |
+| `cidr_deficit`, `cidr_p_ref` | Material on the cap at rest at pressure `cidr_p_ref` sits `cidr_deficit` below `packing_max`; this sets the pressure scale of `C` |
+
 ## Initial state
 
 | Setting | Default | Values | Notes |
@@ -152,7 +163,7 @@ defaults: `granular_tolerance = 1e-4` and `granular_solver = "velocity"`.
 
 | Setting | Default | Values | Metal | Notes |
 | --- | --- | --- | --- | --- |
-| `granular_solver` | `"hybrid"` | `"hybrid"`, `"block"`, `"velocity"` | `velocity` | `velocity` is the compact iteration of [granular-mixed](granular-mixed.md); `wall_mu` and `increment` stopping need it. |
+| `granular_solver` | `"hybrid"` | `"hybrid"`, `"block"`, `"velocity"`, `"cidr"` | `velocity` | `velocity` is the compact iteration of [granular-mixed](granular-mixed.md); `wall_mu` and `increment` stopping need it. `cidr` replaces Coulomb friction and the hard packing limit by critical-state CIDR (below). |
 | `granular_tolerance` | `1e-9` | > 0 | ≥ `1e-5` | Natural-residual tolerance. |
 | `granular_max_iterations` | `200` | integer ≥ 1 | yes | The velocity solver allows ten times this many sweeps. |
 | `granular_stopping` | `"residual"` | `"residual"`, `"increment"` | `residual` | `increment` stops on the strain-rate change per sweep, without certifying the residual. |
@@ -162,6 +173,19 @@ defaults: `granular_tolerance = 1e-4` and `granular_solver = "velocity"`.
 | `granular_stress_coarsening` | `2` | integer ≥ 2 | — | Coarse spacing in velocity cells; cell counts must divide by it. |
 | `granular_viscosity` | `0.0` | ≥ 0 Pa s | `0` | Optional viscous regularisation. |
 | `granular_max_nodes` | `256` | integer ≥ 1 | ignored | CPU guard on active stress nodes. |
+| `granular_cidr_tolerance` | `1e-5` | > 0 | — | `cidr`: velocity change between outer steps, relative to the larger of the velocity and the trial velocity. |
+| `granular_cidr_gamma` | `0.0075` | > 0 | — | `cidr`: smoothing of the Moreau envelope in units of `dt / rho`; the converged step does not depend on it. |
+
+The `cidr` solver needs `granular_stress = "intrinsic"` on the `"nodal"` basis and
+does not support `wall_mu` or Metal. It minimises the kinetic energy of the step
+plus the CIDR dissipation potential over the nodal velocities, by the method of
+multipliers with semismooth Newton subproblems (`cidr.py`). Jammed nodes are
+decided exactly, so jammed material does not creep. The first step starts cold;
+later steps start from the previous step's stress and typically take a few
+Newton iterations. The packing per stress node comes from the particles, and
+the hard packing limit is replaced by the divergence of `C(phi)`. The model,
+its derivation and the verification are in
+[granular-cidr-design](granular-cidr-design.md).
 
 Elastic and viscous timestep estimates do not apply; set `critical_time(P)` on
 the material for dynamic stepping (the square drum uses the time for a grain to

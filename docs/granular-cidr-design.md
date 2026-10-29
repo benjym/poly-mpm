@@ -7,7 +7,8 @@ the discrete problem stalls every solver tried
 [regularisation study](granular-mixed.md#regularised-laws-under-refinement)).
 This note sets out the model, the time step and the solver that would replace
 it, what the code already provides and what must be built or decided first. It
-is a plan for the MPM code, where none of it is implemented yet. Prototypes of the
+began as a plan; the step now runs in the MPM code on the CPU
+([Production solver](#production-solver)). Prototypes of the
 step are verified in one dimension ([Shear-cell results](#shear-cell-results))
 and on the frozen first step of the column collapse
 ([Frozen-step results](#frozen-step-results)).
@@ -140,6 +141,7 @@ of the fixed cap are not yet tested.
 | Volumetric averaging (`fbar`) | Available in the explicit solver |
 | Segregation coupled to the granular step | Available (CPU and Metal) |
 | Dissipation potential for the chosen CIDR model | Derived; checked symbolically and numerically (`benchmarks/cidr_potential.py`) |
+| Rigid-grain step with critical-state CIDR | `granular_solver = "cidr"`, CPU only ([Production solver](#production-solver)) |
 | Newton solver on the potential with line search | Prototype in 1D (`benchmarks/cidr_shear_cell.py`): Newton for the inertial model, truncated nonsmooth Newton in cell strain rates for the critical-state model |
 | Multigrid hierarchy on the MPM grid | Missing |
 | GPU convex solver | Missing; the Metal port solves the stress-space problem this replaces, though its operators, binning, transfers and segregation carry over |
@@ -522,6 +524,43 @@ globalisation (line search, path in `gamma`), not of the linear solver. Starting
 each grid from the coarser grid's velocity shortens only the first outer step,
 and on the 0.0125 m grid Newton then stalled at the round-off allowance at the
 smallest `gamma`.
+
+### Warm-started steps
+
+In a run each step starts close to its solution. `benchmarks/cidr_warm_steps.py`
+repeats the step 20 times on the frozen geometry, a proxy for time stepping: the
+trial velocity of each step is the previous velocity plus one step of gravity,
+and the multiplier (the stress) carries over. Steps after the first keep `gamma`
+fixed at 1e-8, about `dt / (130 rho)`; reducing it further, as the cold path does,
+made Newton fail on round-off at the 0.025 and 0.0125 m grids.
+
+| Spacing (m) | First step (Newton iterations, time) | Later steps (Newton iterations) | Mean time of later steps |
+| --- | --- | --- | --- |
+| 0.05 | 88, 4 s | 2–3 (one 6) | 0.12 s |
+| 0.025 | 164, 17 s | 2–4 (one 12) | 0.39 s |
+| 0.0125 | 276, 104 s | 3–28 (4–6 in the first seven) | 7.8 s |
+
+Warm steps agree with independently converged solves of the same step to 1e-5
+to 2e-4 (0.05 m, against cold Newton solves at 1e-7) and 2e-5 to 5e-5 (0.025 m,
+against ALG2 at 1e-7), without accumulating over the steps. ALG2 gains little
+from warm starts (about 900 iterations per step at 0.05 m). On the finest grid
+the warm count rises in later steps, where the frozen geometry has accelerated
+to over 20 `g dt`; whether this happens in a moving run is not yet measured.
+Each Newton iteration costs a sparse factorisation and the proximal step at
+every node in Python, about 0.6 s at 3,321 nodes.
+
+### Production solver
+
+`granular_solver = "cidr"` (`cidr.py`, `granular.cidr_contact`) uses this solver
+in the rigid-grain step on the CPU: packing per stress node from the particles,
+the previous step's stress as the multiplier, a cold start only on the first
+step. The velocity is the solver's own; rebuilding it from the stress, as the
+other solvers do, added Newton's residual (1e-5 m/s per step) and made a static
+column drift. A column at rest between walls then moves by less than 2e-10 m
+over 20 steps of 0.02 s, with five Newton iterations per step. The collapse of
+the 0.5 by 1 m column on the coarse test grid (30 steps of 0.01 s, 4.6 s in all)
+takes 31 iterations on its cold first step, 8 to 17 on the next five while the
+flow starts, then 3 to 7 (`tests/test_cidr.py`).
 
 ## References
 

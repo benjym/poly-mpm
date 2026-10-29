@@ -7,7 +7,9 @@ solve has a dense Jacobian and sparse block Gauss-Seidel fallback; a block-only
 mode avoids the global factorization. It is NOT a reproduction of Sand6
 or a claim of continuum well-posedness. See docs/granular-prototype.md.
 The opt-in velocity solver uses compact gradients and the local iteration from
-Daviet (2026); see granular_mixed.py and docs/granular-mixed.md.
+Daviet (2026); see granular_mixed.py and docs/granular-mixed.md. The opt-in cidr
+solver replaces Coulomb friction and the hard packing limit by critical-state
+CIDR (cidr.py, docs/granular-cidr-design.md).
 """
 
 import numpy as np
@@ -613,6 +615,59 @@ def assemble(P, G, batch, *, compact=False):
     return B, free, active, occupied, gap
 
 
+_CIDR_MODELS = {}
+
+
+def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial):
+    """Critical-state CIDR step (cidr.py) on the assembled operator; returns contact and statistics.
+
+    The strain rate at a stress node is B u over its solid volume, psi is weighted by its bulk
+    volume and C follows from its packing. The contact, -stress / phi, is the intrinsic stress
+    that the other solvers return, so the force and stress output are shared; the free
+    velocity components are returned as well.
+    initial (the previous contact) warm-starts the multiplier; without it the step starts cold.
+    """
+    from cidr import CriticalStateCIDR, Problem, packing_modulus, solve
+
+    S = batch.material
+    rho_s = S.rho_s
+    key = (float(S.mu), float(S.mu_d), float(S.I0), float(S.grain_diameter), float(rho_s))
+    if key not in _CIDR_MODELS:
+        _CIDR_MODELS[key] = CriticalStateCIDR(S.mu, S.mu_d, S.I0, 2 * S.grain_diameter * np.sqrt(rho_s))
+    model = _CIDR_MODELS[key]
+    canonical = canonical_nodes(P, len(G.m))
+    bulk = np.bincount(
+        canonical[batch.n].ravel(), weights=(batch.V[:, None] * batch.N).ravel(), minlength=len(G.m)
+    )[active]
+    solid = occupied[active]
+    phi = solid / bulk
+    C = packing_modulus(phi, S.phi_min, S.packing_max, S.cidr_deficit, S.cidr_p_ref, S.mu)
+    inverse = sparse.diags(np.repeat(1 / solid, 3))
+    problem = Problem(
+        (inverse @ B[:, free]).tocsr(),
+        inverse @ (B[:, ~free] @ trial[~free]),
+        np.repeat(bulk, 3),
+        np.repeat(G.m, 2)[free] / P.dt,
+        trial[free].copy(),
+        model,
+        C,
+    )
+    lam = -initial * phi[:, None]
+    rho = float(np.sum(batch.m) / np.sum(batch.V))
+    gamma = P.granular_cidr_gamma * P.dt / rho
+    cold = None if np.any(lam) else P.dt / rho
+    u, lam, jam, stats = solve(
+        problem, problem.trial.copy(), lam, gamma, cold=cold, tol=P.granular_cidr_tolerance
+    )
+    stats.update(
+        warm=cold is None,
+        jammed_fraction=float(jam.mean()) if len(jam) else 0.0,
+        minimum_packing=float(phi.min(initial=1.0)),
+        maximum_node_packing=float(phi.max(initial=0.0)),
+    )
+    return -lam / phi[:, None], stats, u
+
+
 def step(P, G, L):
     """Advance the experimental rigid-grain branch using end-of-step stresses."""
     from stability import limits
@@ -683,7 +738,9 @@ def step(P, G, L):
         options = dict(
             tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial
         )
-        if P.granular_solver == "velocity":
+        if P.granular_solver == "cidr":
+            contact, stats, cidr_velocity = cidr_contact(P, G, b, B, free, active, occupied, trial, initial)
+        elif P.granular_solver == "velocity":
             from granular_mixed import solve_velocity
 
             full_inverse_mass = np.zeros_like(trial)
@@ -706,7 +763,11 @@ def step(P, G, L):
             contact, stats = solve_coulomb(W, q, mu, method=P.granular_solver, **options)
         force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
         final = trial.copy()
-        final[free] += P.dt * inverse_mass * force.ravel()[free]
+        if P.granular_solver == "cidr":
+            # The solver's velocity: rebuilding it from the stress adds Newton's residual.
+            final[free] = cidr_velocity
+        else:
+            final[free] += P.dt * inverse_mass * force.ravel()[free]
         if walls:
             # The wall traction is a constraint impulse, not an internal force.
             wall_contact = contact.copy()

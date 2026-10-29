@@ -29,9 +29,9 @@ from pathlib import Path
 from time import perf_counter
 
 import numpy as np
-from scipy import integrate
-from scipy.interpolate import CubicSpline
 from scipy.linalg import solve_banded
+
+from cidr import CriticalStateCIDR, packing_modulus
 
 # Schaeffer et al. (2019), table 1: DEM fit of mu(I) and Phi(I).
 MU_S, MU_D, I0, PHI_C, A_PHI = 0.248, 0.588, 0.145, 0.817, 0.314
@@ -67,8 +67,8 @@ class Inertial:
         return _interior(psi, g_s, -p, g_ss, g_sp, g_pp), p
 
 
-class CriticalState:
-    """Critical-state CIDR with Barker et al.'s alpha, beta and C = (P/b) x, x = psi / (1 - psi).
+class CriticalState(CriticalStateCIDR):
+    """Critical-state CIDR (cidr.py) with C = (P/b) x, x = psi / (1 - psi), from the packing.
 
     P/b follows from a packing deficit e_ref on the cap at pressure p_ref:
     P/b = p_ref / (2 mu(0) (Delta / e_ref - 1)), Delta = phi_max - phi_min.
@@ -80,87 +80,15 @@ class CriticalState:
         self, deficit=0.005, p_ref=0.08, phi_min=0.05, phi_max=PHI_C, mu_s=MU_S, mu_d=MU_D, i0=I0, k=K
     ):
         """mu(I) = mu_s + (mu_d - mu_s) I / (i0 + I) and I = k s / sqrt(p), k = 2 d sqrt(rho_s)."""
-        self.mu_s, self.mu_d, self.i0, self.k = mu_s, mu_d, i0, k
+        super().__init__(mu_s, mu_d, i0, k)
         self.phi_min, self.phi_max = phi_min, phi_max
-        self.Delta = phi_max - phi_min
-        self.scale = p_ref / (2 * mu_s * (self.Delta / deficit - 1))
-        grid = np.logspace(-12, 3, 600)
-        alpha = [
-            0.8 * self.mu(I) + 0.48 * integrate.quad(lambda t: t ** (-0.6) * self.mu(t * I), 0, 1)[0]
-            for I in grid
-        ]
-        self.spline = CubicSpline(np.log(grid), np.array(alpha))
-
-    def mu(self, I):
-        return self.mu_s + (self.mu_d - self.mu_s) * I / (self.i0 + I)
-
-    def dmu(self, I):
-        return (self.mu_d - self.mu_s) * self.i0 / (self.i0 + I) ** 2
+        self.deficit, self.p_ref = deficit, p_ref
 
     def C(self, phi):
-        q = np.clip((phi - self.phi_min) / self.Delta, 1e-12, 1 - 1e-12)
-        return self.scale * q / (1 - q)
-
-    def alpha(self, I):
-        return self.spline(np.log(np.clip(I, 1e-12, 1e3)))
-
-    def functions(self, s, p, C):
-        I = self.k * s / np.sqrt(p)
-        a, m, dm = self.alpha(I), self.mu(I), self.dmu(I)
-        da = np.where(I > 1e-10, (2 * m + 2 * I * dm - a) / (2.5 * np.maximum(I, 1e-300)), 0.0)
-        b = 2 * (a - m)
-        db = 2 * (da - dm)
-        return I, a, da, b, db
-
-    def p_cap(self, s, C):
-        """The fixed cap alpha(0) C: the bound p <= alpha(I) C, where Y = 0, depends on s
-        and makes psi nonconvex on the cap branch; the fixed bound keeps psi a supremum of
-        functions convex in (s, delta), and Y >= 0 below it."""
-        return float(self.alpha(0.0)) * C * np.ones_like(s)
+        return packing_modulus(phi, self.phi_min, self.phi_max, self.deficit, self.p_ref, self.mu_s)
 
     def evaluate(self, s, delta, phi):
         return self.evaluate_C(s, delta, self.C(phi))
-
-    def evaluate_C(self, s, delta, C):
-        """psi and its derivatives in (s, delta) at packing modulus C, and the pressure."""
-        cap = self.p_cap(s, C)
-
-        def gp(p):
-            I, a, da, b, db = self.functions(s, p, C)
-            return 2 * s * (b - 2 * p / C)
-
-        # Bracketed bisection-Newton for g_p(s, p) = delta on (0, cap); g_p decreases in p.
-        lo, hi = np.full_like(s, 1e-300), cap.copy()
-        at_cap = gp(cap) - delta >= 0
-        p = 0.5 * (lo + hi)
-        for _ in range(80):
-            value = gp(p) - delta
-            lo = np.where(value > 0, p, lo)
-            hi = np.where(value <= 0, p, hi)
-            p = 0.5 * (lo + hi)
-        p = np.where(at_cap, cap, p)
-        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-            out, p = self._interior_and_cap(s, delta, C, p, at_cap)
-        return out, p
-
-    def _interior_and_cap(self, s, delta, C, p, at_cap):
-        I, a, da, b, db = self.functions(s, p, C)
-        g = 2 * p * s * ((5 * a - 4 * self.mu(I)) / 3 - p / C)
-        Y = a * p - p**2 / C
-        g_s, g_p = 2 * Y, 2 * s * (b - 2 * p / C)
-        g_ss = 2 * da * p * I / np.maximum(s, 1e-300)
-        g_sp = 2 * (a - 2 * p / C) - da * I
-        g_pp = 2 * s * (-2 / C - I * db / (2 * p))
-        psi = g - p * delta
-        interior = _interior(psi, g_s, -p, g_ss, g_sp, g_pp)
-        # Cap branch (p fixed at the cap): psi_s = g_s, psi_ss = g_ss, psi_delta = -p, rest zero.
-        zero = np.zeros_like(p)
-        out = tuple(np.where(at_cap, c, i) for i, c in zip(interior, (psi, g_s, -p, g_ss, zero, zero)))
-        # Zero-pressure branch (dilating faster than g_p(s, 0+) allows): psi and its derivatives vanish.
-        tiny = np.full_like(s, 1e-300)
-        separating = ~at_cap & (2 * s * (self.functions(s, tiny, C)[3] - 2 * tiny / C) - delta <= 0)
-        out = tuple(np.where(separating, 0.0, x) for x in out)
-        return out, np.where(separating, 0.0, p)
 
     def support(self, ea, eb, phi):
         """Support function h(e) of the static set (the subdifferential of psi at D = 0), |e| = 1.
@@ -171,22 +99,12 @@ class CriticalState:
         """
         return self.static_support(0.5, eb, self.C(phi))
 
-    def static_support(self, s, delta, C):
-        """sup_{0 <= p <= alpha_0 C} [2 s Y_0(p) - p delta]: the limit of psi(t s, t delta) / t."""
-        a0 = float(self.alpha(0.0))
-        s = np.asarray(s, dtype=float)
-        p = np.where(
-            s > 0, C * (2 * s * a0 - delta) / (4 * np.maximum(s, 1e-300)), np.where(delta < 0, np.inf, 0.0)
-        )
-        p = np.clip(p, 0.0, a0 * C)
-        return 2 * s * (a0 * p - p**2 / C) - p * delta
-
     def static_pressure(self, ta, tb, phi):
         """Pressure for a stress (ta, tb) in the static set: the disc it lies deepest inside."""
         C = self.C(phi)
-        a0 = float(self.alpha(0.0))
+        a0 = self.alpha0
         lo, hi = np.zeros_like(ta), a0 * C
-        excess = lambda p: np.hypot(ta, tb + p) - (a0 * p - p**2 / C)  # convex in p
+        excess = lambda p: np.hypot(ta, tb + p) - (a0 * p - p**2 / C)  # noqa: E731 (convex in p)
         for _ in range(60):
             m1, m2 = lo + (hi - lo) / 3, hi - (hi - lo) / 3
             smaller = excess(m1) < excess(m2)

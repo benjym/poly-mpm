@@ -1,0 +1,507 @@
+{
+  "tol": 1e-05,
+  "consolidation": 2.0,
+  "cases": [
+    {
+      "spacing": 0.05,
+      "stress_nodes": 231,
+      "gamma": 1e-08,
+      "steps": [
+        {
+          "iterations": 88,
+          "outer": 20,
+          "step": 0,
+          "seconds": 3.91018566605635,
+          "jammed": 10,
+          "max_speed": 1.1882449433383322
+        },
+        {
+          "iterations": 6,
+          "outer": 5,
+          "step": 1,
+          "seconds": 0.23902400000952184,
+          "jammed": 9,
+          "max_speed": 2.3734631069766743
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 2,
+          "seconds": 0.11239962500985712,
+          "jammed": 9,
+          "max_speed": 3.5557158001877176
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 3,
+          "seconds": 0.11168533295858651,
+          "jammed": 9,
+          "max_speed": 4.735029197344728
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 4,
+          "seconds": 0.11235112498980016,
+          "jammed": 9,
+          "max_speed": 5.911426415178423
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 5,
+          "seconds": 0.11176729097496718,
+          "jammed": 9,
+          "max_speed": 7.084929955991805
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 6,
+          "seconds": 0.111580416909419,
+          "jammed": 5,
+          "max_speed": 8.255568067547522
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 7,
+          "seconds": 0.11320766701828688,
+          "jammed": 5,
+          "max_speed": 9.423380127788398
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 8,
+          "seconds": 0.1136189999524504,
+          "jammed": 5,
+          "max_speed": 10.58838667512266
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 9,
+          "seconds": 0.1122899999609217,
+          "jammed": 5,
+          "max_speed": 11.750607133104458
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 10,
+          "seconds": 0.11399979202542454,
+          "jammed": 5,
+          "max_speed": 12.910062006079277
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 11,
+          "seconds": 0.1125705000013113,
+          "jammed": 5,
+          "max_speed": 14.066772620836973
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 12,
+          "seconds": 0.11196695908438414,
+          "jammed": 5,
+          "max_speed": 15.220760670006824
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 13,
+          "seconds": 0.1119122919626534,
+          "jammed": 5,
+          "max_speed": 16.37204773859391
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 14,
+          "seconds": 0.11276399996131659,
+          "jammed": 5,
+          "max_speed": 17.52065529352159
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 15,
+          "seconds": 0.11384170805104077,
+          "jammed": 5,
+          "max_speed": 18.666604541179044
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 16,
+          "seconds": 0.11306325008627027,
+          "jammed": 5,
+          "max_speed": 19.809916393849978
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 17,
+          "seconds": 0.11259500007145107,
+          "jammed": 5,
+          "max_speed": 20.950611477891663
+        },
+        {
+          "iterations": 2,
+          "outer": 2,
+          "step": 18,
+          "seconds": 0.08504995901603252,
+          "jammed": 5,
+          "max_speed": 22.088710176111015
+        },
+        {
+          "iterations": 2,
+          "outer": 2,
+          "step": 19,
+          "seconds": 0.08676674996968359,
+          "jammed": 5,
+          "max_speed": 23.224232555480814
+        }
+      ]
+    },
+    {
+      "spacing": 0.025,
+      "stress_nodes": 861,
+      "gamma": 1e-08,
+      "steps": [
+        {
+          "iterations": 164,
+          "outer": 14,
+          "step": 0,
+          "seconds": 17.153848374960944,
+          "jammed": 89,
+          "max_speed": 1.5328464789528609
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 1,
+          "seconds": 0.2315847920253873,
+          "jammed": 85,
+          "max_speed": 3.0539855112937904
+        },
+        {
+          "iterations": 4,
+          "outer": 2,
+          "step": 2,
+          "seconds": 0.28708820801693946,
+          "jammed": 83,
+          "max_speed": 4.5636770772729145
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 3,
+          "seconds": 0.22932908299844712,
+          "jammed": 83,
+          "max_speed": 6.062170811519006
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 4,
+          "seconds": 0.2293434590101242,
+          "jammed": 79,
+          "max_speed": 7.549714071774808
+        },
+        {
+          "iterations": 4,
+          "outer": 2,
+          "step": 5,
+          "seconds": 0.28325266705360264,
+          "jammed": 77,
+          "max_speed": 9.026539360773848
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 6,
+          "seconds": 0.2261243340326473,
+          "jammed": 75,
+          "max_speed": 10.492873942689158
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 7,
+          "seconds": 0.22800825000740588,
+          "jammed": 77,
+          "max_speed": 11.948935914565723
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 8,
+          "seconds": 0.22947066696360707,
+          "jammed": 76,
+          "max_speed": 13.39493529136261
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 9,
+          "seconds": 0.22650791599880904,
+          "jammed": 78,
+          "max_speed": 14.831074444754098
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 10,
+          "seconds": 0.22851529205217957,
+          "jammed": 74,
+          "max_speed": 16.257548004729387
+        },
+        {
+          "iterations": 12,
+          "outer": 2,
+          "step": 11,
+          "seconds": 3.4362140420125797,
+          "jammed": 73,
+          "max_speed": 17.674543495401146
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 12,
+          "seconds": 0.22818129102233797,
+          "jammed": 68,
+          "max_speed": 19.082243724296493
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 13,
+          "seconds": 0.23097604198846966,
+          "jammed": 67,
+          "max_speed": 20.48082095028754
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 14,
+          "seconds": 0.22954141697846353,
+          "jammed": 65,
+          "max_speed": 21.87044350615429
+        },
+        {
+          "iterations": 2,
+          "outer": 2,
+          "step": 15,
+          "seconds": 0.17504600004758686,
+          "jammed": 62,
+          "max_speed": 23.251275504396464
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 16,
+          "seconds": 0.23076858290005475,
+          "jammed": 61,
+          "max_speed": 24.623478488759485
+        },
+        {
+          "iterations": 2,
+          "outer": 2,
+          "step": 17,
+          "seconds": 0.17464904102962464,
+          "jammed": 60,
+          "max_speed": 25.987206616542885
+        },
+        {
+          "iterations": 2,
+          "outer": 2,
+          "step": 18,
+          "seconds": 0.17411812499631196,
+          "jammed": 60,
+          "max_speed": 27.342611808402065
+        },
+        {
+          "iterations": 2,
+          "outer": 2,
+          "step": 19,
+          "seconds": 0.17446024995297194,
+          "jammed": 60,
+          "max_speed": 28.689840798032513
+        }
+      ]
+    },
+    {
+      "spacing": 0.0125,
+      "stress_nodes": 3321,
+      "gamma": 1e-08,
+      "steps": [
+        {
+          "iterations": 276,
+          "outer": 10,
+          "step": 0,
+          "seconds": 103.75004333304241,
+          "jammed": 519,
+          "max_speed": 1.9404780069858387
+        },
+        {
+          "iterations": 5,
+          "outer": 2,
+          "step": 1,
+          "seconds": 1.3399180840933695,
+          "jammed": 512,
+          "max_speed": 3.8373206391223165
+        },
+        {
+          "iterations": 4,
+          "outer": 2,
+          "step": 2,
+          "seconds": 1.1329034590162337,
+          "jammed": 512,
+          "max_speed": 5.692751892547095
+        },
+        {
+          "iterations": 4,
+          "outer": 2,
+          "step": 3,
+          "seconds": 1.136161084054038,
+          "jammed": 515,
+          "max_speed": 7.508912429784665
+        },
+        {
+          "iterations": 4,
+          "outer": 2,
+          "step": 4,
+          "seconds": 1.1295087080216035,
+          "jammed": 523,
+          "max_speed": 9.287827941850844
+        },
+        {
+          "iterations": 5,
+          "outer": 2,
+          "step": 5,
+          "seconds": 1.4275007080286741,
+          "jammed": 514,
+          "max_speed": 11.031391864463123
+        },
+        {
+          "iterations": 4,
+          "outer": 2,
+          "step": 6,
+          "seconds": 1.1292271250858903,
+          "jammed": 507,
+          "max_speed": 12.741370420161026
+        },
+        {
+          "iterations": 6,
+          "outer": 2,
+          "step": 7,
+          "seconds": 1.8080937499180436,
+          "jammed": 486,
+          "max_speed": 14.419406392805083
+        },
+        {
+          "iterations": 14,
+          "outer": 2,
+          "step": 8,
+          "seconds": 7.836779332952574,
+          "jammed": 485,
+          "max_speed": 16.06702670223796
+        },
+        {
+          "iterations": 19,
+          "outer": 2,
+          "step": 9,
+          "seconds": 11.229530917014927,
+          "jammed": 479,
+          "max_speed": 17.685651647687504
+        },
+        {
+          "iterations": 6,
+          "outer": 2,
+          "step": 10,
+          "seconds": 1.849099582992494,
+          "jammed": 485,
+          "max_speed": 19.27660330927845
+        },
+        {
+          "iterations": 16,
+          "outer": 2,
+          "step": 11,
+          "seconds": 11.991050209035166,
+          "jammed": 480,
+          "max_speed": 20.841114519041966
+        },
+        {
+          "iterations": 28,
+          "outer": 2,
+          "step": 12,
+          "seconds": 35.76587595802266,
+          "jammed": 482,
+          "max_speed": 22.380336155577183
+        },
+        {
+          "iterations": 11,
+          "outer": 2,
+          "step": 13,
+          "seconds": 9.991166000021622,
+          "jammed": 481,
+          "max_speed": 23.895342734594063
+        },
+        {
+          "iterations": 21,
+          "outer": 2,
+          "step": 14,
+          "seconds": 19.423489499953575,
+          "jammed": 477,
+          "max_speed": 25.387139988335864
+        },
+        {
+          "iterations": 6,
+          "outer": 2,
+          "step": 15,
+          "seconds": 1.6614412909839302,
+          "jammed": 471,
+          "max_speed": 26.856652430884605
+        },
+        {
+          "iterations": 3,
+          "outer": 2,
+          "step": 16,
+          "seconds": 0.890193665982224,
+          "jammed": 468,
+          "max_speed": 28.304755257400785
+        },
+        {
+          "iterations": 12,
+          "outer": 2,
+          "step": 17,
+          "seconds": 9.402270708000287,
+          "jammed": 472,
+          "max_speed": 29.73227812005226
+        },
+        {
+          "iterations": 5,
+          "outer": 2,
+          "step": 18,
+          "seconds": 2.682860790984705,
+          "jammed": 472,
+          "max_speed": 31.140005720133104
+        },
+        {
+          "iterations": 22,
+          "outer": 2,
+          "step": 19,
+          "seconds": 25.60199512494728,
+          "jammed": 482,
+          "max_speed": 32.52867840431897
+        }
+      ]
+    }
+  ]
+}
