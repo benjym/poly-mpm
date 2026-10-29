@@ -67,13 +67,30 @@ compares complete runs with the CPU. The mechanics encoders take preallocated
 workspaces (`mechanics.Operator`, `Preconditioner`, `GridState`,
 `primitives.Binner`, `Scan`, `Reduction`, `ColumnReduction`).
 
-Next work, in order:
+Solver-scaling research (CPU, October 2026) is paused at the user's
+request; see `docs/granular-mixed.md` for the studies and their reports under
+`benchmarks/`. In summary:
 
-1. Solver scaling. `solve_velocity` needs about 2,000 sweeps on the first step
-   of a 3,200-particle collapse and does not converge within 20,000 sweeps for
-   a connected 10,000-particle collapse, on either backend. Connected
-   10k/100k domains need a better-scaling solver; that is a numerical change
-   and must be validated on the CPU first.
+- A connected domain needs far more sweeps as the stress field is resolved
+  more finely, because of the non-dilatant friction law: frictionless and
+  associated versions of the same refined problems solve readily. Colored
+  sweeps, exact Newton, the assembled `hybrid` reference and a velocity-space
+  conic formulation all fail to reach `1e-4` on the refined collapse.
+- Daviet (2026) stops its iteration on a plastic-strain increment (`1e-3`) or
+  250 iterations and does not certify a residual. The opt-in CPU mode
+  `granular_stopping = "increment"` reproduces that rule; it is 15 times
+  cheaper on a 3,200-particle collapse with residuals up to 80 times the
+  tolerance. Metal rejects it.
+- An opt-in CPU coarse stress basis (`granular_stress_basis = "coarse"`)
+  converges at every velocity resolution tested when the stress spacing is
+  held at 0.05 m. Its accuracy on evolving flows has not been checked.
+- The Newton polish rarely helps because the generalised Jacobian is
+  singular on these problems (statically indeterminate stresses).
+
+Remaining items, none started:
+
+1. A modelling decision for refined connected flows (fixed stress spacing,
+   a rheology change, or uncertified solves) before any further solver work.
 2. Remaining benchmark items in `gpu.md`: plotting cost and repeated
    connected 100k domains.
 3. Segregation and the other unsupported settings listed in `gpu.md`.
