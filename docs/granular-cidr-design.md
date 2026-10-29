@@ -205,6 +205,101 @@ critical-state soil mechanics. Completing the flow rule this way is an addition
 to the published model and has to be stated as such. Sampled midpoint tests are
 evidence, not a proof of convexity.
 
+### States at fixed packing
+
+With `phi`, hence `C`, fixed (checked numerically with the glass-bead `mu(I)`):
+
+| State | Condition | `C` needed to carry pressure `p` |
+| --- | --- | --- |
+| Steady isochoric flow | `f = 0`, then `|tau| = mu(I) p` (to 1e-16) | `2 p / beta(I)` |
+| Critical state (`I -> 0`) | `f = 0`, `I = 0` | `p / mu_1` |
+| Loosest state at rest | on the cap at `s = 0` | `p / (2 mu_1)` |
+
+The critical pressure is half the cap pressure at the same packing, as in
+modified Cam-clay. Material on the cap (loose for its load) compacts when
+sheared; material denser than critical dilates.
+
+### Scale of `C`
+
+With the form of Fannon et al., `C = (P / b) x`, `x = psi / (1 - psi)` and
+`psi = (phi - phi_min) / Delta`, `Delta = phi_max - phi_min`, the packing on
+the cap at pressure `p` falls short of `phi_max` by
+
+```text
+e(p) = Delta / (1 + x),   x = b p / (2 mu_1 P),
+```
+
+and the effective bulk stiffness there is `K = phi dp/dphi ~ phi p / e`
+(checked to 0.8%). The scale `P / b` is therefore a choice of compressibility:
+it fixes how far below `phi_max` the material sits at a given load, and the
+stiffness follows. A rule for choosing it is a packing deficit `e_ref` at a
+reference pressure `p_ref`:
+
+```text
+P / b = p_ref / (2 mu_1 (Delta / e_ref - 1)).
+```
+
+For `e_ref = 0.005` at the pressure under 0.1 m of grains (1,470 Pa,
+`Delta = 0.6`), `P / b = 16 Pa`, and the deficit grows to 0.047 at a tenth of
+that pressure: a loose layer forms near the free surface, where `p -> 0`.
+
+This is a physical choice as well as a numerical one. The steady packing of
+critical-state CIDR depends on `p / (P / b)`, whereas for rigid grains in the
+inertial regime DEM gives a packing that depends on `I` alone (Schaeffer et al.
+2019). A pressure scale has to come from somewhere; Schaeffer et al. identify it
+with grain stiffness, `k / d`. Here it can be read either way: as the stiffness
+of real grains, or as a small, stated compressibility added to rigid grains.
+
+### Stress at zero shear
+
+At `D = 0` the potential is `psi(0, delta) = sup_{0 <= p <= 2 mu_1 C} (-p delta)`,
+and its subdifferential gives the stress:
+
+- `delta > 0` (separating): `p = 0` and `tau = 0`, stress-free, as in the present
+  model's opening;
+- `delta < 0` (compacting): `p = 2 mu_1 C` (the cap) and `tau = 0`;
+- `delta = 0` (static): any `p` in `[0, 2 mu_1 C]` and any `tau` with
+  `|tau| <= 2 mu_1 p - p^2 / C`.
+
+In static zones the stress is set-valued; equilibrium selects it globally and
+may not select it uniquely. The velocity is unique regardless. The stress used
+for output can be taken from the solver's dual variables, which depend on the
+algorithm, or made unique by an added criterion (minimum norm, or a small
+elastic compliance). Segregation needs no such choice: its potential uses
+`p I`, and `I = 0` where `D = 0`.
+
+### Evaluating `psi`
+
+At a quadrature point with `s > 0`, `psi(s, delta) = g(s, p*) - p* delta`,
+where `p*` maximises `g - p delta` on `[0, p_cap(s)]`. Because `g` is concave in
+`p`, `p*` is unique and found by a bracketed scalar root of `g_p(s, p) = delta`,
+with three branches:
+
+| Branch | Condition | `p*` | `psi_s` (= `2 |tau|`) | `psi_delta` (= `-p`) |
+| --- | --- | --- | --- | --- |
+| Interior | `g_p(s, 0) > delta > g_p(s, p_cap)` | root of `g_p = delta` | `2 Y(p*, I*)` | `-p*` |
+| Cap | `g_p(s, p_cap) >= delta` | `p_cap(s)` | `(g_p - delta) p_cap'(s)` | `-p_cap(s)` |
+| Zero pressure | `g_p(s, 0) <= delta` | `0` | `0` | `0` |
+
+On the interior branch the Hessian in `(s, delta)` is
+
+```text
+psi_ss = g_ss - g_sp^2 / g_pp,   psi_sdelta = g_sp / g_pp,   psi_deltadelta = -1 / g_pp,
+```
+
+with determinant `-g_ss / g_pp`. Since `g_ss >= 0` and `g_pp < 0` by conditions
+(b) and (c), it is positive definite: `psi` is convex on the interior branch
+analytically, not only by sampling. On the cap branch the shear stress
+`(g_p - delta) p_cap' / 2` is nonzero although `Y = 0` there; this follows from
+the cap bound depending on `s` through `I`, and is a consequence of the
+completion at the cap rather than of the published model. Gradients on all three
+branches agree with finite differences to 1e-8 or better, and the Hessian to
+2e-4 (the remaining difference shrinks with the step, so it is
+finite-difference error).
+
+The stress tensor follows from `s = |D|`: `tau_ij = psi_s D_ij / (2 s)`, so that
+`|tau| = psi_s / 2`, and `p = -psi_delta`.
+
 ### Consequences for the time step
 
 - The step is the convex minimisation of the [Time step](#time-step) section with
@@ -222,10 +317,15 @@ evidence, not a proof of convexity.
 
 ### Open points
 
-- The scale of `C(phi)` (`P / b` in Fannon et al.) and its form near `phi_max`.
-- Whether holding `phi` fixed within a step preserves well-posedness.
-- How to recover the stress where `D = 0`, where only its admissible set is
-  determined.
+- The value of the packing deficit `e_ref`, and hence `P / b`: a modelling
+  choice, as above. The form of `C` near `phi_max` is speculative in the
+  published model.
+- Whether holding `phi` fixed within a step preserves well-posedness. This is
+  not settled analytically here; the one-dimensional shear cell of Schaeffer et
+  al. (2019), solved once with `phi` lagged and once with `phi` implicit, would
+  show it.
+- Convexity on the cap branch and across branch boundaries rests on sampling
+  (section [The cap](#the-cap)); the interior branch is convex analytically.
 
 ## References
 

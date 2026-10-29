@@ -15,6 +15,10 @@ C. For critical-state CIDR, g = 2 p s [(5 alpha(I) - 4 mu(I)) / 3 - p / C].
 D. Its static limit: g_s -> 2 p (2 mu(0) - p / C) as s -> 0.
 E. The cap p <= alpha(I) C, where Y >= 0: numerically, whether it bounds a
    convex region of (s, p).
+F. Convexity of the dissipation potential psi with and without the cap.
+G. Steady flow, critical state and the cap at rest.
+H. The packing scale of C and the effective compressibility it implies.
+I. psi's gradient and Hessian on each branch against finite differences.
 
     python -m benchmarks.cidr_potential            (sympy and scipy required)
 """
@@ -212,6 +216,145 @@ def dissipation(capped, C=4e4, k=2 * 0.003 * np.sqrt(2500.0), seed=1, trials=400
     )
 
 
+class Point:
+    """Critical-state CIDR at one quadrature point, with phi (hence C) fixed."""
+
+    def __init__(self, C=4e4, k=2 * 0.003 * np.sqrt(2500.0)):
+        self.m, self.C, self.k = Jop(), C, k
+
+    def I(self, s, p):
+        return self.k * s / np.sqrt(p)
+
+    def g(self, s, p):
+        I = self.I(s, p)
+        return 2 * p * s * ((5 * self.m.alpha(I) - 4 * self.m.mu(I)) / 3 - p / self.C)
+
+    def Y(self, s, p):
+        return self.m.alpha(self.I(s, p)) * p - p**2 / self.C
+
+    def gp(self, s, p):
+        return 2 * (self.m.beta(self.I(s, p)) - 2 * p / self.C) * s
+
+    def p_cap(self, s):
+        return optimize.brentq(
+            lambda p: p - self.m.alpha(self.I(s, p)) * self.C, 1e-9, 10 * self.m.mu2 * self.C
+        )
+
+    def optimum(self, s, delta):
+        """p* maximising g - p delta on [0, p_cap(s)], and its branch."""
+        cap = self.p_cap(s)
+        if self.gp(s, cap) - delta >= 0:
+            return cap, "cap"
+        if s == 0 or self.gp(s, 1e-12 * cap) - delta <= 0:
+            return 0.0, "zero"
+        return (
+            optimize.brentq(lambda p: self.gp(s, p) - delta, 1e-12 * cap, cap, xtol=1e-14 * cap),
+            "interior",
+        )
+
+    def psi(self, s, delta):
+        p, _ = self.optimum(s, delta)
+        return (self.g(s, p) if p > 0 else 0.0) - p * delta
+
+
+def states():
+    """Steady flow, critical state and the cap at rest, at fixed C."""
+    m, C = Jop(), 4e4
+    Is = np.logspace(-5, 0, 30)
+    steady = [
+        (m.alpha(I) * (m.beta(I) * C / 2) - (m.beta(I) * C / 2) ** 2 / C) / (m.beta(I) * C / 2) - m.mu(I)
+        for I in Is
+    ]
+    return dict(
+        steady_flow_recovers_mu_I=float(np.max(np.abs(steady))),
+        critical_pressure_over_C_mu1=float(m.beta(1e-12) * C / 2 / (C * m.mu1)),
+        cap_over_critical_pressure=float(m.alpha(1e-12) * C / (m.beta(1e-12) * C / 2)),
+    )
+
+
+def packing_scale(deficit=0.005, p_ref=1500 * 9.81 * 0.1, phi_min=0.05, phi_max=0.65):
+    """Fannon et al.'s C = (P/b) x, x = psi/(1-psi): choose P/b from a packing deficit at p_ref (on the cap)."""
+    m = Jop()
+    Delta = phi_max - phi_min
+    c0 = 2 * m.mu1  # cap at rest: p = 2 mu1 C
+    x_ref = Delta / deficit - 1
+    scale = p_ref / (c0 * x_ref)  # P / b
+
+    def phi_cap(p):
+        x = p / (c0 * scale)
+        return phi_min + Delta * x / (1 + x)
+
+    h = 1e-6 * p_ref
+    dphi = (phi_cap(p_ref + h) - phi_cap(p_ref - h)) / (2 * h)
+    K = phi_cap(p_ref) / dphi
+    return dict(
+        P_over_b=scale,
+        deficit_at_p_ref=float(phi_max - phi_cap(p_ref)),
+        K_over_phi_p_over_e=float(K / (phi_cap(p_ref) * p_ref / deficit)),
+        deficit_at_tenth_p_ref=float(phi_max - phi_cap(0.1 * p_ref)),
+    )
+
+
+def derivatives(seed=2, trials=30):
+    """psi's gradient and Hessian against finite differences, on each branch."""
+    q = Point()
+    rng = np.random.default_rng(seed)
+    worst = dict(interior_grad=0.0, interior_hess=0.0, cap_grad=0.0, zero_grad=0.0, interior_det=0.0)
+    seen = {"interior": 0, "cap": 0, "zero": 0}
+
+    def fd(fun, x, h):
+        return (fun(x + h) - fun(x - h)) / (2 * h)
+
+    for _ in range(trials * 4):
+        s, delta = rng.uniform(0.2, 10), rng.uniform(-3, 3)
+        p, branch = q.optimum(s, delta)
+        if seen[branch] >= trials:
+            continue
+        seen[branch] += 1
+        hs, hd = 1e-4 * s, 1e-4 * max(abs(delta), 1)
+        psi_s = fd(lambda x: q.psi(x, delta), s, hs)
+        psi_d = fd(lambda x: q.psi(s, x), delta, hd)
+        if branch == "interior":
+            grad = (2 * q.Y(s, p), -p)
+            # g second derivatives by finite differences of g.
+            e = 1e-4
+            g_ss = (q.g(s * (1 + e), p) - 2 * q.g(s, p) + q.g(s * (1 - e), p)) / (s * e) ** 2
+            g_pp = (q.g(s, p * (1 + e)) - 2 * q.g(s, p) + q.g(s, p * (1 - e))) / (p * e) ** 2
+            g_sp = (
+                q.g(s * (1 + e), p * (1 + e))
+                - q.g(s * (1 + e), p * (1 - e))
+                - q.g(s * (1 - e), p * (1 + e))
+                + q.g(s * (1 - e), p * (1 - e))
+            ) / (4 * s * p * e * e)
+            hess = np.array([[g_ss - g_sp**2 / g_pp, g_sp / g_pp], [g_sp / g_pp, -1 / g_pp]])
+            numeric = np.array(
+                [
+                    [
+                        fd(lambda x: fd(lambda y: q.psi(y, delta), x, hs), s, hs),
+                        fd(lambda x: fd(lambda y: q.psi(x, y), delta, hd), s, hs),
+                    ],
+                    [0, fd(lambda x: fd(lambda y: q.psi(s, y), x, hd), delta, hd)],
+                ]
+            )
+            numeric[1, 0] = numeric[0, 1]
+            worst["interior_hess"] = max(
+                worst["interior_hess"], float(np.abs(hess - numeric).max() / np.abs(hess).max())
+            )
+            det = np.linalg.det(hess)
+            worst["interior_det"] = max(worst["interior_det"], abs(det - (-g_ss / g_pp)) / abs(det))
+            key = "interior_grad"
+        elif branch == "cap":
+            dcap = fd(q.p_cap, s, hs)
+            grad = ((q.gp(s, p) - delta) * dcap, -p)
+            key = "cap_grad"
+        else:
+            grad = (0.0, 0.0)
+            key = "zero_grad"
+        scale = max(abs(grad[0]), abs(grad[1]), 1.0)
+        worst[key] = max(worst[key], abs(psi_s - grad[0]) / scale, abs(psi_d - grad[1]) / scale)
+    return dict(samples=seen, **{k: float(v) for k, v in worst.items()})
+
+
 def main():
     for name, check in (
         ("A general", general),
@@ -221,6 +364,9 @@ def main():
         ("E cap", cap),
         ("F dissipation, capped", lambda: dissipation(True)),
         ("F dissipation, uncapped", lambda: dissipation(False)),
+        ("G states", states),
+        ("H packing scale", packing_scale),
+        ("I derivatives of psi", derivatives),
     ):
         print(name, check(), flush=True)
 
