@@ -154,8 +154,15 @@ def solve_velocity(
     inverse_mass = np.asarray(inverse_mass).reshape(-1, 2)
     mu = np.broadcast_to(mu, count)
     q = (operator @ trial.ravel()).reshape(gap.shape) + gap
-    magnitude = max(float(np.max(-q[:, 0], initial=0)), float(np.max(np.abs(q[:, 1:]), initial=0)))
     blocks = np.einsum("kcd,nsd->nskc", operator.basis, operator.gradients)
+    # A row whose strain rate is at the roundoff of B u (for example under a
+    # rigid motion) carries no scale; normalising by it would make the
+    # residual unreachable. metal solver_rows_setup applies the same rule.
+    roundoff = 64 * np.finfo(float).eps * np.einsum(
+        "nskc,nsc->nk", np.abs(blocks), np.abs(trial)[operator.nodes]
+    ).max(axis=1)
+    rows = np.maximum(np.maximum(-q[:, 0], 0), np.abs(q[:, 1:]).max(axis=1, initial=0))
+    magnitude = float(np.max(np.where(rows > roundoff, rows, 0), initial=0))
     local = dt * np.einsum("nskc,nsc,nslc->nkl", blocks, inverse_mass[operator.nodes], blocks)
     # ||B M^-1 B.T||_infinity <= || |B| M^-1 |B.T| 1 ||_infinity.
     absolute_force = np.zeros_like(trial)

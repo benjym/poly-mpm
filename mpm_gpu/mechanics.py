@@ -273,12 +273,23 @@ def local_coulomb(rt, encoder, diagonal, q, mu, output, status, count):
 TRANSFERS = {"flip": 0, "pic": 1, "apic_gradient": 2}
 
 
-def fixed_components(boundary_v, boundary_h, roughness):
-    """Static per-node wall mask: bit 1 fixes x, bit 2 fixes y (grid.update_momentum)."""
+def fixed_components(boundary_v, boundary_h, nx, separable=False):
+    """Static per-node wall mask for grid.wall_contact.
+
+    Bit 1 marks a wall normal to x (boundary_v), bit 2 a wall normal to y
+    (boundary_h). With separable, the domain edges are one-sided: bits 4/8 free
+    an x wall while the node moves in +x/-x (left/right edge), bits 16/32 a y
+    wall while it moves in +y/-y (bottom/top). Interior walls stay two-sided.
+    Roughness is applied on the device from the walls in contact.
+    """
     boundary_v, boundary_h = np.asarray(boundary_v, bool), np.asarray(boundary_h, bool)
-    fixed_x = boundary_v | (bool(roughness) & boundary_h)
-    fixed_y = boundary_h | (bool(roughness) & boundary_v)
-    return (fixed_x * 1 + fixed_y * 2).astype(np.uint32)
+    mask = boundary_v * 1 + boundary_h * 2
+    if separable:
+        row, column = np.divmod(np.arange(len(mask)), nx)
+        ny = len(mask) // nx
+        mask += boundary_v * ((column == 0) * 4 + (column == nx - 1) * 8)
+        mask += boundary_h * ((row == 0) * 16 + (row == ny - 1) * 32)
+    return mask.astype(np.uint32)
 
 
 class GridState:
@@ -289,6 +300,7 @@ class GridState:
         self.momentum = rt.buffer(count=2 * n, dtype=np.float32)
         self.trial = rt.buffer(count=2 * n, dtype=np.float32)
         self.inverse_mass = rt.buffer(count=2 * n, dtype=np.float32)
+        self.contact = rt.buffer(count=n, dtype=np.uint32)
 
 
 def p2g(
@@ -305,9 +317,13 @@ def p2g(
     m_tol,
     body,
     affine,
+    rough,
     state=None,
 ):
     """Nodal mass, raw momentum, masked momentum after dt*m*g, trial velocity, free inverse mass.
+
+    state.contact receives the walls each node is in contact with (bit 1 x
+    wall, bit 2 y wall); rough fixes both components at a wall in contact.
 
     Uses the particle bins and local coordinates from assemble(). velocity has
     two and gradient four (row-major 2x2 L) components per particle.
@@ -330,6 +346,7 @@ def p2g(
         body_x=float(body[0]),
         body_y=float(body[1]),
         affine=int(bool(affine)),
+        rough=int(bool(rough)),
         fixed=fixed,
         cell_offsets=operator.bins.offsets,
         cell_counts=operator.bins.counts,
@@ -344,8 +361,31 @@ def p2g(
         momentum=state.momentum,
         trial=state.trial,
         inverse_mass=state.inverse_mass,
+        contact=state.contact,
     )
     return state
+
+
+def wall_recheck(rt, encoder, grid, fixed, state, velocity, changed, *, rough):
+    """Clamp released wall nodes that the solved velocity drives into their wall.
+
+    Adds them to state.contact, zeroes their trial velocity and inverse mass and
+    sets changed[0] when any node was added (granular.step).
+    """
+    rt.dispatch(
+        encoder,
+        "wall_recheck",
+        grid.nodes,
+        module=MODULE,
+        node_count=grid.nodes,
+        rough=int(bool(rough)),
+        fixed=fixed,
+        velocity=velocity,
+        contact=state.contact,
+        trial=state.trial,
+        inverse_mass=state.inverse_mass,
+        changed=changed,
+    )
 
 
 def g2p(

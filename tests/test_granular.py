@@ -139,6 +139,33 @@ def test_low_packing_free_fall_and_recompaction_are_stress_free(method):
     assert G.granular_stats["maximum_packing"] < 0.2
 
 
+@pytest.mark.parametrize("separable", [False, True])
+def test_upward_gravity_lifts_column_off_floor_only_with_one_sided_walls(separable):
+    # Two-sided walls hold the mass mapped to wall nodes, so the cell next to
+    # the floor lags; one-sided walls release it and the column is ballistic.
+    P, G, L = column(dt=0.005, t_f=0.05, max_g=2.0, granular_solver="velocity")
+    P.B.separable = separable
+    b = L.materials[0]
+    before = b.v[:, 1].copy()
+    run(P, G, L, output=False)
+    assert_allclose(b.pressure, 0, atol=1e-8)
+    change = b.v[:, 1] - before
+    if separable:
+        assert_allclose(change, 2.0 * P.t, rtol=1e-12)
+    else:
+        assert change.min() < 0.5 * 2.0 * P.t
+
+
+def test_one_sided_walls_still_support_a_static_column():
+    P, G, L = column(dt=0.02, t_f=0.2, granular_solver="velocity")
+    P.B.separable = True
+    b = L.materials[0]
+    initial = b.x.copy()
+    run(P, G, L, output=False)
+    assert np.abs(b.x - initial).max() <= 1e-3 * min(G.dx, G.dy)
+    assert b.pressure.min() < -100
+
+
 def test_rigid_grain_response_independent_of_elastic_and_viscosity_parameters(monkeypatch):
     import granular
 

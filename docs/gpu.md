@@ -35,11 +35,18 @@ Time stepping is dynamic. The material time sqrt(h/|g|), the time for a grain
 at rest to fall one grid spacing, bounds the step while the bed is at rest;
 otherwise the advection and segregation limits apply, each scaled by `CFL`.
 Once the bed avalanches (near 32 deg of tilt at ny = 11) the solve needs more
-than the default 2,000 sweeps, so the example allows 20,000. Over the first
-second at ny = 11, Fr = 2 (450 particles) the CPU took 977 steps in 37 s and
-Metal 994 steps in 34 s on the M4; the segregation advection limit set 852 of
-the CPU steps. The step counts differ because the dynamic step sequence
-depends on FP32 rounding. At this size the device is not faster than the CPU.
+than the default 2,000 sweeps, so the example allows 20,000.
+
+The example uses one-sided walls (`B.separable`, described in
+[granular-prototype.md](granular-prototype.md)). With two-sided walls a row of
+grains stays inside the first cell along each wall as the drum turns: at
+t = 1 s, ny = 11, Fr = 2 (450 particles), 32 particles remain in the bottom
+row of cells on both backends, against none with one-sided walls. Re-solving
+after a released wall node is pushed back raises the CPU cost from 990 solves
+and 14,600 sweeps to 2,560 solves and 40,500 sweeps over that second. On the
+M4 the CPU took 1,018 steps in 109 s and Metal 1,013 steps in 69 s, against
+38 s and 26 s with two-sided walls. The step counts differ because the dynamic
+step sequence depends on FP32 rounding.
 
 ## Run the first hardware gate
 
@@ -125,7 +132,8 @@ No supplied tolerance is silently loosened.
 
 The runner supports one intrinsic 2D granular material, nodal stress, linear
 interpolation, point quadrature, updated mechanics, FLIP (including PIC
-blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls, periodic x,
+blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls (two-sided or
+one-sided), periodic x,
 built-in static/transport-CFL time stepping and grid segregation (up to eight
 grain sizes, `smooth_gamma_dot=False`, optional `normalise_phi`). P0 and
 coarse stresses, plane strain, viscosity, particle injection/removal, density
@@ -290,6 +298,8 @@ independent and avoid a CPU solver fallback.
      | Collapse positions/runout, FLIP, FLIP+PIC 0.3, PIC, `apic_gradient`, dynamic CFL | at most 7.5e-6 grid spacings | ≤ 1% |
      | Integrated nodal overpacking, Metal minus CPU | at most 6.5e-8 | ≤ 1e-3 |
      | Free fall at low packing | stress free; velocity change within 1e-6 of `g dt` | — |
+     | Upward gravity, one-sided walls: velocity change against `g t` | 1.3e-8 m/s; positions 2.2e-8 grid spacings from the CPU | ≤ 1e-5 relative |
+     | Collapse positions/runout, one-sided walls (re-solves when a released wall node is pushed back) | 1.5e-5 grid spacings | ≤ 1% |
    - Budgets: momentum residuals relative to the external impulse are at most
      1.3e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
      larger of external and constraint work agree with the CPU to 5e-6 in the

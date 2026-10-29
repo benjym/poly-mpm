@@ -93,6 +93,7 @@ class MetalRunner:
         self.node_row = rt.buffer(node_row)
         self.volumes = rt.buffer(basis_volumes(P, G)[T.nodes], dtype=f32)
         self.fixed = vector(grid.nodes, np.uint32)
+        self.wall_changed = vector(1, np.uint32)
         # Particle state.
         self.particles = mechanics.Particles(
             n, *(vector(n, np.uint32) for _ in range(2)), vector(n), vector(n), vector(n)
@@ -187,7 +188,7 @@ class MetalRunner:
         rt.write(self.stress_change, _planar(b.dstress), f32)
         for buffer in (self.strain, self.work, self.work_compensation):
             rt.write(buffer, np.zeros(buffer.size // 4), f32)
-        rt.write(self.fixed, fixed_components(G.boundary_v, G.boundary_h, P.B.roughness), np.uint32)
+        rt.write(self.fixed, fixed_components(G.boundary_v, G.boundary_h, P.G.nx, P.B.separable), np.uint32)
         previous = getattr(G, "granular_contact", None)
         rows = self.grid.topology.nodes
         rt.write(self.previous, np.zeros((len(rows), 3)) if previous is None else previous[rows], f32)
@@ -406,6 +407,7 @@ class MetalRunner:
             m_tol=P.M_tol,
             body=body,
             affine=P.transfer == "apic_gradient",
+            rough=P.B.roughness,
             state=self.nodal,
         )
         rt.dispatch(
@@ -422,23 +424,48 @@ class MetalRunner:
             gap=self.gap,
             initial=self.initial,
         )
-        rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.precondition_status)
-        pre = mechanics.preconditioner(
-            rt,
-            encoder,
-            grid,
-            operator,
-            nodal.inverse_mass,
-            dt,
-            status=self.precondition_status,
-            workspace=self.preconditioner,
-        )
         solver = self.solver
         solver.dt = dt
         solver.tolerance = float(P.granular_tolerance)
-        result = solver.solve(
-            operator, pre, nodal.trial, nodal.inverse_mass, self.gap, self.initial, encoder=encoder
-        )
+        # One-sided walls: re-solve after clamping released wall nodes that the
+        # solve drives into their wall (granular.step).
+        for _ in range(grid.nodes if P.B.separable else 1):
+            rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.precondition_status)
+            pre = mechanics.preconditioner(
+                rt,
+                encoder,
+                grid,
+                operator,
+                nodal.inverse_mass,
+                dt,
+                status=self.precondition_status,
+                workspace=self.preconditioner,
+            )
+            result = solver.solve(
+                operator, pre, nodal.trial, nodal.inverse_mass, self.gap, self.initial, encoder=encoder
+            )
+            if not P.B.separable or not result.converged:
+                break
+            encoder = rt.device.create_command_encoder()
+            rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.wall_changed)
+            mechanics.wall_recheck(
+                rt, encoder, grid, self.fixed, nodal, solver.u, self.wall_changed, rough=P.B.roughness
+            )
+            rt.submit(encoder)
+            if not rt.read(self.wall_changed, np.uint32)[0]:
+                break
+            # The re-solve starts from the attempt it replaces (same rows).
+            encoder = rt.device.create_command_encoder()
+            rt.dispatch(
+                encoder,
+                "copy_record",
+                3 * grid.rows,
+                module=MODULE,
+                count=3 * grid.rows,
+                offset=0,
+                source=solver.contact,
+                record=self.initial,
+            )
         status = int(rt.read(operator.status, np.uint32)[0])
         if status & 1:
             raise ValueError(f"material {b.material_id}: particle outside domain before cell lookup")

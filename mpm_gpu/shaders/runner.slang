@@ -3,8 +3,6 @@
 
 import mechanics;
 
-static const float FLT_EPSILON = 1.1920928955078125e-7;
-
 [shader("compute")]
 [numthreads(256, 1, 1)]
 void packing_gap(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float packing_max,

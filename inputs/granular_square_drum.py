@@ -29,6 +29,10 @@ class Params(SquareDrumParams):
         self.granular_max_iterations = 2000
         self.dt = 1e-3
         self.pressure = None
+        # One-sided walls: grains next to a wall leave it when gravity turns
+        # away. Two-sided walls hold the mass mapped to wall nodes, which leaves
+        # a row of grains stuck inside the first cell along each wall.
+        self.B.separable = True
         self.supername = f"im/granular_drum/ny_{self.G.ny}/Fr_{self.Fr}/"
         legacy = self.S[0]
         self.S = NS(

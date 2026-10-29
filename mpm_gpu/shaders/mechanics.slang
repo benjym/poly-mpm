@@ -4,6 +4,7 @@
 
 static const uint INVALID = 0xffffffffu;
 static const float HALF_ROOT2 = 0.70710678118654752;
+static const float FLT_EPSILON = 1.1920928955078125e-7;
 
 uint canonical(uint column, uint row, uint nx, uint periodic)
 {
@@ -363,13 +364,36 @@ void local_coulomb_test(uint3 tid : SV_DispatchThreadID, uniform uint count,
 
 static const uint FIXED_X = 1;
 static const uint FIXED_Y = 2;
+// fixed_components: bits 1/2 an x/y wall; one-sided edges leave it while the
+// node moves in +x (4), -x (8), +y (16) or -y (32).
+static const uint LEAVES_POSITIVE_X = 4;
+static const uint LEAVES_NEGATIVE_X = 8;
+static const uint LEAVES_POSITIVE_Y = 16;
+static const uint LEAVES_NEGATIVE_Y = 32;
+
+// grid.wall_contact: the walls (bit 1 x, bit 2 y) a node at velocity v presses.
+uint wall_contact(uint walls, float2 v)
+{
+    uint contact = walls & (FIXED_X | FIXED_Y);
+    if (((walls & LEAVES_POSITIVE_X) != 0 && v.x > 0.0) || ((walls & LEAVES_NEGATIVE_X) != 0 && v.x < 0.0))
+        contact &= ~FIXED_X;
+    if (((walls & LEAVES_POSITIVE_Y) != 0 && v.y > 0.0) || ((walls & LEAVES_NEGATIVE_Y) != 0 && v.y < 0.0))
+        contact &= ~FIXED_Y;
+    return contact;
+}
+
+// Fixed components of the walls in contact; a rough wall also fixes the tangent.
+uint fixed_of(uint contact, uint rough)
+{
+    return rough != 0 && contact != 0 ? FIXED_X | FIXED_Y : contact;
+}
 
 [shader("compute")]
 [numthreads(64, 1, 1)]
 void p2g_nodes(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
                uniform uint nx, uniform uint ny, uniform uint periodic,
                uniform float dx, uniform float dy, uniform float dt, uniform float m_tol,
-               uniform float body_x, uniform float body_y, uniform uint affine,
+               uniform float body_x, uniform float body_y, uniform uint affine, uniform uint rough,
                StructuredBuffer<uint> fixed, StructuredBuffer<uint> cell_offsets,
                StructuredBuffer<uint> cell_counts, StructuredBuffer<uint> permutation,
                StructuredBuffer<float> local_x, StructuredBuffer<float> local_y,
@@ -377,7 +401,7 @@ void p2g_nodes(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
                StructuredBuffer<float> particle_gradient,
                RWStructuredBuffer<float> mass, RWStructuredBuffer<float> reference,
                RWStructuredBuffer<float> momentum, RWStructuredBuffer<float> trial,
-               RWStructuredBuffer<float> inverse_mass)
+               RWStructuredBuffer<float> inverse_mass, RWStructuredBuffer<uint> contact)
 {
     // Node-owned gather of mass and momentum over the four adjacent cells.
     // An alias column gathers as its canonical node, so the periodic merge
@@ -434,12 +458,20 @@ void p2g_nodes(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
             }
         }
     }
-    uint mask = fixed[j];
     bool valid = m > m_tol;
     reference[2 * j] = q.x;
     reference[2 * j + 1] = q.y;
-    // Wall masks on momentum, then q += dt * masked(m g); grid.update_momentum.
+    // Walls in contact at the gathered velocity mask the momentum
+    // (particles.get_nodal_mass_momentum); walls in contact after dt * m g mask
+    // the force and fix the trial velocity (grid.update_momentum).
+    uint walls = fixed[j];
+    uint gathered = fixed_of(wall_contact(walls, m != 0.0 ? q / m : float2(0.0, 0.0)), rough);
+    if ((gathered & FIXED_X) != 0) q.x = 0.0;
+    if ((gathered & FIXED_Y) != 0) q.y = 0.0;
     float2 force = m * float2(body_x, body_y);
+    uint touching = wall_contact(walls, m != 0.0 ? (q + dt * force) / m : float2(0.0, 0.0));
+    contact[j] = touching;
+    uint mask = fixed_of(touching, rough);
     if ((mask & FIXED_X) != 0) { q.x = 0.0; force.x = 0.0; }
     if ((mask & FIXED_Y) != 0) { q.y = 0.0; force.y = 0.0; }
     q += dt * force;
@@ -453,6 +485,28 @@ void p2g_nodes(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
     bool unique = node == j;
     inverse_mass[2 * j] = valid && unique && (mask & FIXED_X) == 0 ? 1.0 / m : 0.0;
     inverse_mass[2 * j + 1] = valid && unique && (mask & FIXED_Y) == 0 ? 1.0 / m : 0.0;
+}
+
+[shader("compute")]
+[numthreads(64, 1, 1)]
+void wall_recheck(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uniform uint rough,
+                  StructuredBuffer<uint> fixed, RWStructuredBuffer<float> velocity,
+                  RWStructuredBuffer<uint> contact, RWStructuredBuffer<float> trial,
+                  RWStructuredBuffer<float> inverse_mass, RWStructuredBuffer<uint> changed)
+{
+    // granular.step: a released wall node that the solve drives into its wall
+    // is clamped again before the step is re-solved.
+    uint j = tid.x;
+    if (j >= node_count) return;
+    uint before = contact[j];
+    uint after = before | wall_contact(fixed[j], float2(velocity[2 * j], velocity[2 * j + 1]));
+    if (after == before) return;
+    contact[j] = after;
+    uint mask = fixed_of(after, rough);
+    if ((mask & FIXED_X) != 0) { trial[2 * j] = 0.0; inverse_mass[2 * j] = 0.0; }
+    if ((mask & FIXED_Y) != 0) { trial[2 * j + 1] = 0.0; inverse_mass[2 * j + 1] = 0.0; }
+    uint ignored;
+    InterlockedOr(changed[0], 1, ignored);
 }
 
 [shader("compute")]

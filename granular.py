@@ -526,11 +526,12 @@ def assemble(P, G, batch, *, compact=False):
             shape=(components * len(active), 2 * len(G.m)),
         ).tocsr()
     free = np.repeat(G.valid_nodes & (canonical == np.arange(len(G.m))), 2)
-    free[2 * np.flatnonzero(G.boundary_v)] = False
-    free[2 * np.flatnonzero(G.boundary_h) + 1] = False
+    contact_h, contact_v = getattr(G, "contact_h", G.boundary_h), getattr(G, "contact_v", G.boundary_v)
+    free[2 * np.flatnonzero(contact_v)] = False
+    free[2 * np.flatnonzero(contact_h) + 1] = False
     if P.B.roughness:
-        free[2 * np.flatnonzero(G.boundary_h)] = False
-        free[2 * np.flatnonzero(G.boundary_v) + 1] = False
+        free[2 * np.flatnonzero(contact_h)] = False
+        free[2 * np.flatnonzero(contact_v) + 1] = False
     gap = np.zeros((len(active), components))
     capacity = batch.material.packing_max * volumes[active]
     # Positive-part gap follows the paper's dissipative packing linearisation.
@@ -572,50 +573,66 @@ def step(P, G, L):
         G.make_cyclic(P, G, ["fe"])
     G.BCs(P)
     G.update_momentum(P)
-    trial = nodal_velocity(G, P)[:, :2].ravel()
-    B, free, active, occupied, gap = assemble(P, G, b, compact=P.granular_solver == "velocity")
-    inverse_mass = 1 / np.repeat(G.m, 2)[free]
-    viscous_force = np.zeros_like(trial)
-    viscous_dissipation = 0.0
-    if P.granular_viscosity:
-        stiffness = viscosity_matrix(P, G, b)
-        mass = 1 / inverse_mass
-        system = sparse.diags(mass) + P.dt * stiffness[free][:, free]
-        trial[free] = spsolve(system, mass * trial[free])
-        if P.B.cyclic_lr:
-            periodic_velocity = trial.reshape(-1, 2)
-            periodic_velocity[P.G.nx - 1 :: P.G.nx] = periodic_velocity[:: P.G.nx]
-        viscous_force = stiffness @ trial
-        viscous_dissipation = float(P.dt * trial @ viscous_force)
-    old = getattr(G, "granular_contact", np.zeros((len(occupied), components)))
-    options = dict(
-        tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=old[active]
-    )
-    mu = b.material.mu * np.sqrt(2 / dimension)
-    if P.granular_solver == "velocity":
-        from granular_mixed import solve_velocity
+    predicted = nodal_velocity(G, P)[:, :2]
+    # One-sided walls: a node released because its predicted velocity leaves
+    # its wall is clamped again, and the step re-solved, if the contact
+    # stresses drive it into the wall.
+    for attempt in range(len(G.m) if P.B.separable else 1):
+        trial = predicted.copy()
+        trial[G.contact_v, 0] = 0
+        trial[G.contact_h, 1] = 0
+        if P.B.roughness:
+            trial[G.contact_h, 0] = 0
+            trial[G.contact_v, 1] = 0
+        trial = trial.ravel()
+        B, free, active, occupied, gap = assemble(P, G, b, compact=P.granular_solver == "velocity")
+        inverse_mass = 1 / np.repeat(G.m, 2)[free]
+        viscous_force = np.zeros_like(trial)
+        viscous_dissipation = 0.0
+        if P.granular_viscosity:
+            stiffness = viscosity_matrix(P, G, b)
+            mass = 1 / inverse_mass
+            system = sparse.diags(mass) + P.dt * stiffness[free][:, free]
+            trial[free] = spsolve(system, mass * trial[free])
+            if P.B.cyclic_lr:
+                periodic_velocity = trial.reshape(-1, 2)
+                periodic_velocity[P.G.nx - 1 :: P.G.nx] = periodic_velocity[:: P.G.nx]
+            viscous_force = stiffness @ trial
+            viscous_dissipation = float(P.dt * trial @ viscous_force)
+        old = getattr(G, "granular_contact", np.zeros((len(occupied), components)))
+        # A re-solve starts from the attempt it replaces (same active rows).
+        initial = old[active] if attempt == 0 else contact
+        options = dict(tolerance=P.granular_tolerance, max_iterations=P.granular_max_iterations, initial=initial)
+        mu = b.material.mu * np.sqrt(2 / dimension)
+        if P.granular_solver == "velocity":
+            from granular_mixed import solve_velocity
 
-        full_inverse_mass = np.zeros_like(trial)
-        full_inverse_mass[free] = inverse_mass
-        contact, stats = solve_velocity(
-            B,
-            trial,
-            full_inverse_mass,
-            gap,
-            mu,
-            P.dt,
-            stopping=P.granular_stopping,
-            increment=P.granular_increment,
-            **options,
-        )
-    else:
-        operator = B[:, free]
-        W = (operator.multiply(inverse_mass) @ operator.T) * P.dt
-        q = (B @ trial).reshape(-1, components) + gap
-        contact, stats = solve_coulomb(W, q, mu, method=P.granular_solver, **options)
-    force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
-    final = trial.copy()
-    final[free] += P.dt * inverse_mass * force.ravel()[free]
+            full_inverse_mass = np.zeros_like(trial)
+            full_inverse_mass[free] = inverse_mass
+            contact, stats = solve_velocity(
+                B,
+                trial,
+                full_inverse_mass,
+                gap,
+                mu,
+                P.dt,
+                stopping=P.granular_stopping,
+                increment=P.granular_increment,
+                **options,
+            )
+        else:
+            operator = B[:, free]
+            W = (operator.multiply(inverse_mass) @ operator.T) * P.dt
+            q = (B @ trial).reshape(-1, components) + gap
+            contact, stats = solve_coulomb(W, q, mu, method=P.granular_solver, **options)
+        force = np.asarray(B.T @ contact.ravel()).reshape(-1, 2)
+        final = trial.copy()
+        final[free] += P.dt * inverse_mass * force.ravel()[free]
+        contact_h, contact_v = G.wall_contact(P, final.reshape(-1, 2))
+        if not np.any((contact_h & ~G.contact_h) | (contact_v & ~G.contact_v)):
+            break
+        G.contact_h |= contact_h
+        G.contact_v |= contact_v
     velocity = np.column_stack((final.reshape(-1, 2), np.zeros(len(G.m))))
     G.fi[:, :2] = -force + viscous_force.reshape(-1, 2)
     G.q = G.m[:, None] * velocity

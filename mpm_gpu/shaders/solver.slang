@@ -95,6 +95,21 @@ float3 strain(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<float> 
     return HALF_ROOT2 * w;
 }
 
+// Bound on each component of |B| |u| for row a: the roundoff scale of strain().
+float strain_bound(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
+                   RWStructuredBuffer<float> velocity)
+{
+    float w = 0.0;
+    for (uint s = 0; s < 9; s++)
+    {
+        uint j = neighbors[9 * a + s];
+        if (j == INVALID) continue;
+        w += abs(gradients[2 * (9 * a + s)] * velocity[2 * j])
+             + abs(gradients[2 * (9 * a + s) + 1] * velocity[2 * j + 1]);
+    }
+    return HALF_ROOT2 * w;
+}
+
 float2 transpose_force(uint j, StructuredBuffer<uint> transpose_rows,
                        StructuredBuffer<uint> transpose_slots, StructuredBuffer<float> gradients,
                        RWStructuredBuffer<float> stress, uint offset)
@@ -156,12 +171,14 @@ void solver_rows_setup(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
                        RWStructuredBuffer<float> trial, StructuredBuffer<float> gap,
                        RWStructuredBuffer<float> magnitude, RWStructuredBuffer<float> compression)
 {
-    // q = B u_trial + gap. Positive normal gaps do not enter the scaling.
+    // q = B u_trial + gap. Positive normal gaps do not enter the scaling, nor
+    // does a row at the roundoff of B u (granular_mixed.solve_velocity).
     uint a = tid.x;
     if (a >= row_count) return;
     float3 q = strain(a, neighbors, gradients, trial)
                + float3(gap[3 * a], gap[3 * a + 1], gap[3 * a + 2]);
-    magnitude[a] = max(max(-q.x, 0.0), max(abs(q.y), abs(q.z)));
+    float row = max(max(-q.x, 0.0), max(abs(q.y), abs(q.z)));
+    magnitude[a] = row > 64.0 * FLT_EPSILON * strain_bound(a, neighbors, gradients, trial) ? row : 0.0;
     compression[a] = -q.x;
 }
 

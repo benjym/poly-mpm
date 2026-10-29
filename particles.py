@@ -487,11 +487,12 @@ class ParticleSystem:
         G.pk = divide(G.pkm, G.m)
         raw_momentum = G.q.copy()
         G.q_reference = raw_momentum.copy()
-        G.q[G.boundary_v, 0] = 0
-        G.q[G.boundary_h, 1] = 0
+        contact_h, contact_v = G.wall_contact(P, divide(G.q, G.m[:, None]))
+        G.q[contact_v, 0] = 0
+        G.q[contact_h, 1] = 0
         if P.B.roughness:
-            G.q[G.boundary_h, 0] = 0
-            G.q[G.boundary_v, 1] = 0
+            G.q[contact_h, 0] = 0
+            G.q[contact_v, 1] = 0
         unique = np.ones(len(G.m), dtype=bool)
         if P.B.cyclic_lr:
             unique[P.G.nx - 1 :: P.G.nx] = False

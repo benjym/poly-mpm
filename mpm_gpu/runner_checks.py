@@ -208,6 +208,30 @@ def freefall_check(rt):
     return dict(velocity_change_error=change, maximum_packing=G.granular_stats["maximum_packing"])
 
 
+def lift_check(rt):
+    """One-sided walls: a column under upward gravity leaves the floor ballistically."""
+    cpu, metal = _pair(_column(dt=0.005, t_f=0.05, max_g=2.0))
+    for P, G, L in (cpu, metal):
+        P.B.separable = True
+    before = metal[2].materials[0].v[:, 1].copy()
+    _run(cpu)
+    _run(metal)
+    (Pc, Gc, Lc), (P, G, L) = cpu, metal
+    b, bc = L.materials[0], Lc.materials[0]
+    change = float(np.abs(b.v[:, 1] - before - 2.0 * P.t).max())
+    cpu_change = float(np.abs(bc.v[:, 1] - before - 2.0 * Pc.t).max())
+    _require(np.abs(b.pressure).max() <= 1e-8, f"lift pressure {np.abs(b.pressure).max():.3g}")
+    _require(change <= 1e-5 * 2.0 * P.t, f"lift velocity change error {change:.3g}")
+    position = float(np.abs(b.x - bc.x).max() / _spacing(G))
+    _require(position <= COLLAPSE_POSITION, f"lift positions differ by {position:.3g} grid spacings")
+    return dict(
+        steps=P.tstep,
+        velocity_change_error=change,
+        cpu_velocity_change_error=cpu_change,
+        position_difference=position,
+    )
+
+
 def incline_check(rt, slope):
     cpu, metal = _pair(_incline(slope))
     _run(cpu)
@@ -236,12 +260,14 @@ def incline_check(rt, slope):
     return result
 
 
-def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False):
+def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False, separable=False):
     """Column collapse: positions, runout and overpacking against the CPU at the same tolerance."""
     options = dict(dt=0.005, transfer=transfer, pic_fraction=pic_fraction)
     if dynamic:
         options.update(time_stepping="dynamic", CFL=0.1)
-    cpu, metal = _pair(_collapse(**options))
+    state = _collapse(**options)
+    state[0].B.separable = separable
+    cpu, metal = _pair(state)
     initial = cpu[2].materials[0].x[:, 0].max()
     _run(cpu)
     _run(metal)
@@ -261,6 +287,7 @@ def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False):
         transfer=transfer,
         pic_fraction=pic_fraction,
         dynamic=dynamic,
+        separable=separable,
         steps=P.tstep,
         position_difference=position,
         runout_difference=runout,
@@ -477,6 +504,7 @@ def cases(rt):
         ("frozen_residual_incline", lambda: frozen_residual_check(rt, "incline")),
         ("static_column", lambda: static_check(rt)),
         ("freefall", lambda: freefall_check(rt)),
+        ("lift_separable_walls", lambda: lift_check(rt)),
         ("incline_static", lambda: incline_check(rt, 0.25)),
         ("incline_yielding", lambda: incline_check(rt, 0.75)),
         ("collapse_flip", lambda: collapse_check(rt)),
@@ -484,6 +512,7 @@ def cases(rt):
         ("collapse_pic", lambda: collapse_check(rt, "pic")),
         ("collapse_apic_gradient", lambda: collapse_check(rt, "apic_gradient")),
         ("collapse_dynamic_cfl", lambda: collapse_check(rt, dynamic=True)),
+        ("collapse_separable_walls", lambda: collapse_check(rt, separable=True)),
         ("segregation_incline", lambda: segregation_check(rt, "incline")),
         ("segregation_collapse_walls", lambda: segregation_check(rt, "collapse")),
         (

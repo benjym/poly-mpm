@@ -163,6 +163,19 @@ class Grid:
         if P.mode == "anisotropy" and P.t == 0:
             self.fe[P.G.nx * P.G.ny // 2, 2] = 1
 
+    def wall_contact(self, P, velocity):
+        """Wall nodes whose velocity does not move them away from their wall.
+
+        With P.B.separable the domain edges are one-sided: a node moving away
+        from its wall is left free. Interior walls stay two-sided.
+        """
+        h, v = self.boundary_h.copy(), self.boundary_v.copy()
+        if P.B.separable:
+            row, column = np.divmod(np.arange(len(self.m)), P.G.nx)
+            h &= ~(((row == 0) & (velocity[:, 1] > 0)) | ((row == P.G.ny - 1) & (velocity[:, 1] < 0)))
+            v &= ~(((column == 0) & (velocity[:, 0] > 0)) | ((column == P.G.nx - 1) & (velocity[:, 0] < 0)))
+        return h, v
+
     def update_momentum(self, P):
         initial_velocity = divide(self.q, self.m[:, None])
         initial_momentum = self.q.copy()
@@ -170,6 +183,7 @@ class Grid:
         self.q_dot = physical_force.copy()
         if P.damping:
             self.q_dot *= 0.7
+        self.contact_h, self.contact_v = self.wall_contact(P, divide(self.q + self.q_dot * P.dt, self.m[:, None]))
         if P.B.roughness:
             if P.B.wall_mu:
                 # Friction acts only where the normal force points into a wall.
@@ -192,10 +206,10 @@ class Grid:
                 self.q_dot[:, 0] -= np.sign(self.q_dot[:, 0]) * fh
                 self.q_dot[:, 1] -= np.sign(self.q_dot[:, 1]) * fv
             else:
-                self.q_dot[self.boundary_h, 0] = 0
-                self.q_dot[self.boundary_v, 1] = 0
-        self.q_dot[self.boundary_v, 0] = 0
-        self.q_dot[self.boundary_h, 1] = 0
+                self.q_dot[self.contact_h, 0] = 0
+                self.q_dot[self.contact_v, 1] = 0
+        self.q_dot[self.contact_v, 0] = 0
+        self.q_dot[self.contact_h, 1] = 0
         self.q += self.q_dot * P.dt
         if P.B.conveyor:
             self.q[self.boundary_conveyor, 0] = P.v_0 * self.m[self.boundary_conveyor]

@@ -267,7 +267,7 @@ def transfer_check(rt, spacing, particles_per_cell, periodic, transfer, pic_frac
     P, G, b = state["P"], state["G"], state["batch"]
     body, trial_reference = _cpu_grid_step(state)
     grid, particles = _upload(rt, state)
-    fixed = rt.buffer(mechanics.fixed_components(G.boundary_v, G.boundary_h, P.B.roughness))
+    fixed = rt.buffer(mechanics.fixed_components(G.boundary_v, G.boundary_h, P.G.nx, P.B.separable))
     masses = rt.buffer(b.m, dtype=np.float32)
     velocity = rt.buffer(b.v[:, :2], dtype=np.float32)
     gradient = rt.buffer(b.L[:, :2, :2], dtype=np.float32)
@@ -291,6 +291,7 @@ def transfer_check(rt, spacing, particles_per_cell, periodic, transfer, pic_frac
         m_tol=P.M_tol,
         body=body,
         affine=transfer == "apic_gradient",
+        rough=P.B.roughness,
     )
     final_device = rt.buffer(final, dtype=np.float32)
     mechanics.g2p(

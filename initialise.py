@@ -180,6 +180,7 @@ def prepare(P, mode="simulation"):
         "wall",
         "two_walls",
         "roughness",
+        "separable",
         "wall_mu",
         "no_slip_bottom",
         "cyclic_lr",

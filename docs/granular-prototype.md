@@ -89,6 +89,19 @@ experiment. Quadratic interpolation/APIC and finite-domain quadrature are
 excluded pending a suitable mixed discretization and convergence checks.
 Fixed frictionless or no-slip walls and horizontal periodicity are supported;
 conveyors, traction boundary flags, finite wall friction and damping are rejected.
+
+By default a wall node has its normal velocity (and, for no-slip walls, its
+tangential velocity) set to zero in both directions. The mass mapped to wall
+nodes then cannot move away from the wall, so grains within one cell of a wall
+lag the material that is leaving it: under upward gravity a resting column
+stays partly on the floor. `B.separable = True` makes the domain edges
+one-sided. A wall node is fixed only while its velocity, after the gathered
+momentum and again after gravity, does not move it away from the wall. If the
+solve then drives a released node into its wall, the node is fixed again and
+the step re-solved, starting from the stresses of the attempt it replaces.
+Interior walls stay two-sided. A no-slip wall still fixes the tangential
+velocity of a node that is not moving away from it, even without a normal
+load.
 Any existing segregation operator remains separately explicit and uncalibrated
 for this constitutive model.
 
