@@ -407,3 +407,41 @@ the step (for example a Levenberg–Marquardt or trust-region solve, which the
 assembled `hybrid` reference already uses and which also fails at 0.025) or
 change the unknowns, for example to a velocity-space formulation in which the
 velocity solution is unique.
+
+## Velocity-space formulation
+
+The [velocity-space study](../benchmarks/granular_velocity_space_study.json)
+(`uv run --locked --with clarabel python -m benchmarks.granular_velocity_space_study`)
+recasts the frozen first-step problem with De Saxcé's change of variable. For
+a fixed shift `s`, the problem
+
+```text
+minimise   1/2 (u - u_trial)^T (M / dt) (u - u_trial)
+subject to mu |w_t| <= w_n + s,  w = B u + gap   (every stress node)
+```
+
+is convex in the free velocity components, with a unique velocity solution;
+the cone multipliers give the contact stress `r = (lambda_n, mu lambda_t)`.
+The non-dilatant law is its fixed point under `s = mu |w_t|`. Each convex
+problem is solved with the Clarabel interior-point solver and the stress is
+certified with the natural residual used by `solve_velocity`. Without
+friction a single solve reaches 6e-7. The undamped shift update oscillates
+near 2e-2; the study uses `s <- (1 - omega) s + omega mu |w_t|` with
+`omega = 0.5`:
+
+| Grid spacing | Particles | Stress unknowns | Interior-point iterations per solve | Outer iterations | Result |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 0.05 | 3,200 | 693 | 23–26 | 32 | converged, 8.8e-5 |
+| 0.025 | 12,800 | 2,583 | 27–35 | 100 | 8.2e-3, oscillating near 1.3e-2 |
+| 0.0125 | 51,200 | 9,963 | 31–46 | 100 | 3.8e-2, oscillating near 2e-2 |
+
+The convex subproblems scale well: their iteration count grows slowly with
+resolution, and the associated problem (`s = 0`) is a single such solve. The
+fixed point that recovers the non-associated law does not converge on the
+refined grids, and stalls at the same level as the colored sweeps, the exact
+Newton steps and the assembled reference. Four unrelated methods failing
+alike on the refined non-dilatant problem, while its frictionless and convex
+(associated) versions solve readily, points to the discrete non-associated
+problem itself rather than to any one algorithm: at these resolutions it may
+have no solution meeting the tolerance, or one that iterative methods cannot
+reach. This has not been proven.

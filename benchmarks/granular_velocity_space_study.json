@@ -1,0 +1,1671 @@
+{
+  "tolerance": 0.0001,
+  "cases": [
+    {
+      "spacing": 0.05,
+      "particles": 3200,
+      "stress_unknowns": 693,
+      "free_velocity": 400,
+      "converged": true,
+      "outer": 32,
+      "omega": 0.5,
+      "ipm_iterations": 766,
+      "residual": 8.843967767165008e-05,
+      "seconds": 0.6712117500137538,
+      "history": [
+        {
+          "outer": 0,
+          "residual": 0.7803124680525428,
+          "ipm_iterations": 25,
+          "status": "Solved",
+          "shift_change": 1.0
+        },
+        {
+          "outer": 1,
+          "residual": 0.13547011907034184,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.2698538185325809
+        },
+        {
+          "outer": 2,
+          "residual": 0.1377718194489649,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.2871343707759706
+        },
+        {
+          "outer": 3,
+          "residual": 0.11495995298071564,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.24245655187099324
+        },
+        {
+          "outer": 4,
+          "residual": 0.08447891917559872,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.17913121988390396
+        },
+        {
+          "outer": 5,
+          "residual": 0.0590765251326495,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.12555686659454782
+        },
+        {
+          "outer": 6,
+          "residual": 0.04052769513108956,
+          "ipm_iterations": 25,
+          "status": "Solved",
+          "shift_change": 0.08620246216621043
+        },
+        {
+          "outer": 7,
+          "residual": 0.0280081813226545,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.05958282966793583
+        },
+        {
+          "outer": 8,
+          "residual": 0.01936337717989646,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.04118985911105796
+        },
+        {
+          "outer": 9,
+          "residual": 0.013570055280228387,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.02886303159504497
+        },
+        {
+          "outer": 10,
+          "residual": 0.009508430141519175,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.020222044604628373
+        },
+        {
+          "outer": 11,
+          "residual": 0.007514431599293741,
+          "ipm_iterations": 26,
+          "status": "Solved",
+          "shift_change": 0.015980083857220908
+        },
+        {
+          "outer": 12,
+          "residual": 0.0059828560768397845,
+          "ipm_iterations": 25,
+          "status": "Solved",
+          "shift_change": 0.012722470446953071
+        },
+        {
+          "outer": 13,
+          "residual": 0.004702590888317624,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.009999754090564831
+        },
+        {
+          "outer": 14,
+          "residual": 0.0036495881436623316,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.007760516577682777
+        },
+        {
+          "outer": 15,
+          "residual": 0.0027998346893402556,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.005953569159238272
+        },
+        {
+          "outer": 16,
+          "residual": 0.002126418752765297,
+          "ipm_iterations": 23,
+          "status": "Solved",
+          "shift_change": 0.0045216220792169085
+        },
+        {
+          "outer": 17,
+          "residual": 0.0016012207090499429,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0034048531918485798
+        },
+        {
+          "outer": 18,
+          "residual": 0.0011972064838256446,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0025457663941014933
+        },
+        {
+          "outer": 19,
+          "residual": 0.0008899958290225675,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0018925175782244074
+        },
+        {
+          "outer": 20,
+          "residual": 0.0006586476889935144,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0014005786224251737
+        },
+        {
+          "outer": 21,
+          "residual": 0.000515250319786881,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0010956573287161696
+        },
+        {
+          "outer": 22,
+          "residual": 0.0004308560855869215,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0009162005711551908
+        },
+        {
+          "outer": 23,
+          "residual": 0.0003601969414940762,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0007659490447555812
+        },
+        {
+          "outer": 24,
+          "residual": 0.00030111978061025295,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0006403248632080732
+        },
+        {
+          "outer": 25,
+          "residual": 0.0002517575912452869,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0005353583655653529
+        },
+        {
+          "outer": 26,
+          "residual": 0.00021051729079825973,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0004476622578085699
+        },
+        {
+          "outer": 27,
+          "residual": 0.0001760541981525015,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0003743773549600336
+        },
+        {
+          "outer": 28,
+          "residual": 0.0001472416079016868,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.00031310790937021354
+        },
+        {
+          "outer": 29,
+          "residual": 0.00012313988278538613,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0002618559114915409
+        },
+        {
+          "outer": 30,
+          "residual": 0.00010296747462988,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.00021895948219102925
+        },
+        {
+          "outer": 31,
+          "residual": 8.843967767165008e-05,
+          "ipm_iterations": 24,
+          "status": "Solved",
+          "shift_change": 0.0001880662280385783
+        }
+      ]
+    },
+    {
+      "spacing": 0.025,
+      "particles": 12800,
+      "stress_unknowns": 2583,
+      "free_velocity": 1600,
+      "converged": false,
+      "outer": 100,
+      "omega": 0.5,
+      "ipm_iterations": 2957,
+      "residual": 0.00823316976905637,
+      "seconds": 17.35634408297483,
+      "history": [
+        {
+          "outer": 0,
+          "residual": 0.9049136844112553,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 1.0
+        },
+        {
+          "outer": 1,
+          "residual": 0.13510403572315255,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.2749865177648452
+        },
+        {
+          "outer": 2,
+          "residual": 0.13638992157722818,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.27876359896218367
+        },
+        {
+          "outer": 3,
+          "residual": 0.11730383659212151,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.24264271676049962
+        },
+        {
+          "outer": 4,
+          "residual": 0.09258136203808931,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.19317716598324747
+        },
+        {
+          "outer": 5,
+          "residual": 0.06825028805999267,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.14311514472507997
+        },
+        {
+          "outer": 6,
+          "residual": 0.04998436065815782,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.10514859068785826
+        },
+        {
+          "outer": 7,
+          "residual": 0.03742821915290051,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.07892098304622425
+        },
+        {
+          "outer": 8,
+          "residual": 0.0284672189922901,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.06013749793283723
+        },
+        {
+          "outer": 9,
+          "residual": 0.021900170599657542,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.04633634893592642
+        },
+        {
+          "outer": 10,
+          "residual": 0.0171745335852478,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.036389009783876686
+        },
+        {
+          "outer": 11,
+          "residual": 0.01369739538717598,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.029062434918753093
+        },
+        {
+          "outer": 12,
+          "residual": 0.013046502554743732,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.02772484705476014
+        },
+        {
+          "outer": 13,
+          "residual": 0.016403797348075965,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.03492852261237551
+        },
+        {
+          "outer": 14,
+          "residual": 0.02030796355718687,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.04335542404812567
+        },
+        {
+          "outer": 15,
+          "residual": 0.023610346599411972,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.0505622342636453
+        },
+        {
+          "outer": 16,
+          "residual": 0.022468694690815028,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.04825780670749106
+        },
+        {
+          "outer": 17,
+          "residual": 0.021925160190107824,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.04718855535537003
+        },
+        {
+          "outer": 18,
+          "residual": 0.01989554896235292,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.04287508444604074
+        },
+        {
+          "outer": 19,
+          "residual": 0.018099655057085332,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.03902578443515351
+        },
+        {
+          "outer": 20,
+          "residual": 0.01733254198973283,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.03737614270994046
+        },
+        {
+          "outer": 21,
+          "residual": 0.01673922703008659,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.036094222258958565
+        },
+        {
+          "outer": 22,
+          "residual": 0.017342096065874592,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.037378409295180604
+        },
+        {
+          "outer": 23,
+          "residual": 0.01680140982986701,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.03619696903901803
+        },
+        {
+          "outer": 24,
+          "residual": 0.01503783670200681,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.032379360503602246
+        },
+        {
+          "outer": 25,
+          "residual": 0.014472610305091425,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.031129788282531125
+        },
+        {
+          "outer": 26,
+          "residual": 0.014046623691328365,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.030181916272756102
+        },
+        {
+          "outer": 27,
+          "residual": 0.014623649433019694,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.03139117181124344
+        },
+        {
+          "outer": 28,
+          "residual": 0.014959043114686309,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.032083411064547464
+        },
+        {
+          "outer": 29,
+          "residual": 0.014757464132486648,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.03162700750353905
+        },
+        {
+          "outer": 30,
+          "residual": 0.013541648134037167,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.029002388263748912
+        },
+        {
+          "outer": 31,
+          "residual": 0.013847732035657243,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.02963881882567415
+        },
+        {
+          "outer": 32,
+          "residual": 0.014203600448581917,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03037989719128698
+        },
+        {
+          "outer": 33,
+          "residual": 0.015139639828134942,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.032357390198647445
+        },
+        {
+          "outer": 34,
+          "residual": 0.015529461335944475,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.033161066166328815
+        },
+        {
+          "outer": 35,
+          "residual": 0.015017760457936928,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03203778303627605
+        },
+        {
+          "outer": 36,
+          "residual": 0.01386633448001369,
+          "ipm_iterations": 27,
+          "status": "Solved",
+          "shift_change": 0.029550592636956672
+        },
+        {
+          "outer": 37,
+          "residual": 0.01319676733913885,
+          "ipm_iterations": 27,
+          "status": "Solved",
+          "shift_change": 0.028096498307976
+        },
+        {
+          "outer": 38,
+          "residual": 0.012962019832031083,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.027568015706585694
+        },
+        {
+          "outer": 39,
+          "residual": 0.012734005378661959,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.027052612556957012
+        },
+        {
+          "outer": 40,
+          "residual": 0.01382962773016159,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.029348794864348455
+        },
+        {
+          "outer": 41,
+          "residual": 0.014853581777430387,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03149100349407466
+        },
+        {
+          "outer": 42,
+          "residual": 0.015469125992396669,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03276613230605275
+        },
+        {
+          "outer": 43,
+          "residual": 0.015697325931981386,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03322292741241349
+        },
+        {
+          "outer": 44,
+          "residual": 0.015516478830377975,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03281718373892158
+        },
+        {
+          "outer": 45,
+          "residual": 0.015193197451779586,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03211532132382862
+        },
+        {
+          "outer": 46,
+          "residual": 0.014794296502742556,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.031258409593004924
+        },
+        {
+          "outer": 47,
+          "residual": 0.014352315980346609,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.03031455309944691
+        },
+        {
+          "outer": 48,
+          "residual": 0.01388720033196482,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.02932460788354093
+        },
+        {
+          "outer": 49,
+          "residual": 0.013421625404234413,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.028335159176380544
+        },
+        {
+          "outer": 50,
+          "residual": 0.013317416116251507,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.028108917843289248
+        },
+        {
+          "outer": 51,
+          "residual": 0.013009149549304775,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.027452251594650857
+        },
+        {
+          "outer": 52,
+          "residual": 0.01325377046003951,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.027960022522267407
+        },
+        {
+          "outer": 53,
+          "residual": 0.013080916818694322,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.027586078304803027
+        },
+        {
+          "outer": 54,
+          "residual": 0.013093070728445157,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.027602249020581275
+        },
+        {
+          "outer": 55,
+          "residual": 0.013120302639009662,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.027650752961829325
+        },
+        {
+          "outer": 56,
+          "residual": 0.013063997149373638,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.02752459335274803
+        },
+        {
+          "outer": 57,
+          "residual": 0.012902561762558697,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.027176409032854027
+        },
+        {
+          "outer": 58,
+          "residual": 0.012638229937522422,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.0266110659369489
+        },
+        {
+          "outer": 59,
+          "residual": 0.012301439072473967,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.02589319445348522
+        },
+        {
+          "outer": 60,
+          "residual": 0.011666733713981267,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.024548733898528775
+        },
+        {
+          "outer": 61,
+          "residual": 0.011059957872846013,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.023262649654228383
+        },
+        {
+          "outer": 62,
+          "residual": 0.01131835653231443,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.023795123932004815
+        },
+        {
+          "outer": 63,
+          "residual": 0.011738313490582446,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.024665777120580608
+        },
+        {
+          "outer": 64,
+          "residual": 0.012046640476967484,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.02530096521645533
+        },
+        {
+          "outer": 65,
+          "residual": 0.011978140006363222,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.025145233751453746
+        },
+        {
+          "outer": 66,
+          "residual": 0.011996537465876169,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.025172809203863947
+        },
+        {
+          "outer": 67,
+          "residual": 0.012150920582798168,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.02548629599055505
+        },
+        {
+          "outer": 68,
+          "residual": 0.012401716811979251,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.026003216628047818
+        },
+        {
+          "outer": 69,
+          "residual": 0.012599666168085845,
+          "ipm_iterations": 27,
+          "status": "Solved",
+          "shift_change": 0.026411155809660438
+        },
+        {
+          "outer": 70,
+          "residual": 0.012859801156224692,
+          "ipm_iterations": 27,
+          "status": "Solved",
+          "shift_change": 0.026948911636114035
+        },
+        {
+          "outer": 71,
+          "residual": 0.013141843956759677,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.027532735686558285
+        },
+        {
+          "outer": 72,
+          "residual": 0.013312065602633557,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.02788588058697055
+        },
+        {
+          "outer": 73,
+          "residual": 0.013321259908821069,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.02790553638492355
+        },
+        {
+          "outer": 74,
+          "residual": 0.012405832800894925,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.0259935128469502
+        },
+        {
+          "outer": 75,
+          "residual": 0.012311040516010898,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.025805272971981607
+        },
+        {
+          "outer": 76,
+          "residual": 0.011831719210377442,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.024814238192858544
+        },
+        {
+          "outer": 77,
+          "residual": 0.011506426439339773,
+          "ipm_iterations": 28,
+          "status": "Solved",
+          "shift_change": 0.024148839852978266
+        },
+        {
+          "outer": 78,
+          "residual": 0.011460261244551026,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.024072129165318354
+        },
+        {
+          "outer": 79,
+          "residual": 0.011945466255909868,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.025114472886507568
+        },
+        {
+          "outer": 80,
+          "residual": 0.013188213788055242,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.027754599521171576
+        },
+        {
+          "outer": 81,
+          "residual": 0.015007409457027256,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.03161580766864253
+        },
+        {
+          "outer": 82,
+          "residual": 0.01577863234986413,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.03327328115017567
+        },
+        {
+          "outer": 83,
+          "residual": 0.015511733461693338,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.03274263909747675
+        },
+        {
+          "outer": 84,
+          "residual": 0.014459535768850272,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.03055341038867532
+        },
+        {
+          "outer": 85,
+          "residual": 0.015135429410705309,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.03201725907326482
+        },
+        {
+          "outer": 86,
+          "residual": 0.01468032308962128,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.0310912740859221
+        },
+        {
+          "outer": 87,
+          "residual": 0.01418813308026776,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.03008107207524909
+        },
+        {
+          "outer": 88,
+          "residual": 0.013236366401173634,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.028084450475204463
+        },
+        {
+          "outer": 89,
+          "residual": 0.013005908682345095,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.027609537426149466
+        },
+        {
+          "outer": 90,
+          "residual": 0.01178706864956798,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.025028709871005164
+        },
+        {
+          "outer": 91,
+          "residual": 0.010374843598983897,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.02203321724353334
+        },
+        {
+          "outer": 92,
+          "residual": 0.009371732252165378,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.01990451286475892
+        },
+        {
+          "outer": 93,
+          "residual": 0.009509158313762008,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.020198189514991326
+        },
+        {
+          "outer": 94,
+          "residual": 0.009576532028521817,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.02034285053780953
+        },
+        {
+          "outer": 95,
+          "residual": 0.00951062060637496,
+          "ipm_iterations": 29,
+          "status": "Solved",
+          "shift_change": 0.02020465159676068
+        },
+        {
+          "outer": 96,
+          "residual": 0.009212410471594814,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.01957245316231282
+        },
+        {
+          "outer": 97,
+          "residual": 0.008437053098106556,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.01792474937331592
+        },
+        {
+          "outer": 98,
+          "residual": 0.008840635919512159,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.01877996767618801
+        },
+        {
+          "outer": 99,
+          "residual": 0.00823316976905637,
+          "ipm_iterations": 30,
+          "status": "Solved",
+          "shift_change": 0.017486207688683142
+        }
+      ]
+    },
+    {
+      "spacing": 0.0125,
+      "particles": 51200,
+      "stress_unknowns": 9963,
+      "free_velocity": 6400,
+      "converged": false,
+      "outer": 100,
+      "omega": 0.5,
+      "ipm_iterations": 3557,
+      "residual": 0.03781802988760323,
+      "seconds": 90.22006266698008,
+      "history": [
+        {
+          "outer": 0,
+          "residual": 1.0372231534154608,
+          "ipm_iterations": 39,
+          "status": "Solved",
+          "shift_change": 1.0
+        },
+        {
+          "outer": 1,
+          "residual": 0.13085796698215546,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.29172601008085064
+        },
+        {
+          "outer": 2,
+          "residual": 0.13814080377743565,
+          "ipm_iterations": 40,
+          "status": "Solved",
+          "shift_change": 0.2813123130030352
+        },
+        {
+          "outer": 3,
+          "residual": 0.13306284630800036,
+          "ipm_iterations": 46,
+          "status": "Solved",
+          "shift_change": 0.27390766258655835
+        },
+        {
+          "outer": 4,
+          "residual": 0.09927192788735795,
+          "ipm_iterations": 41,
+          "status": "Solved",
+          "shift_change": 0.20661646084661306
+        },
+        {
+          "outer": 5,
+          "residual": 0.08213960934202191,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.17202595868965548
+        },
+        {
+          "outer": 6,
+          "residual": 0.05850298074904005,
+          "ipm_iterations": 40,
+          "status": "Solved",
+          "shift_change": 0.12310786041238556
+        },
+        {
+          "outer": 7,
+          "residual": 0.05249181431250351,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.1109677511942835
+        },
+        {
+          "outer": 8,
+          "residual": 0.05703966133137329,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.12162114449329556
+        },
+        {
+          "outer": 9,
+          "residual": 0.06511290162501382,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.14184914700270593
+        },
+        {
+          "outer": 10,
+          "residual": 0.06338797507675055,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.14097494566363758
+        },
+        {
+          "outer": 11,
+          "residual": 0.06016326396272122,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.13448013382386356
+        },
+        {
+          "outer": 12,
+          "residual": 0.05979449091637435,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.13426785299188695
+        },
+        {
+          "outer": 13,
+          "residual": 0.047748446631544546,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.10742720193363198
+        },
+        {
+          "outer": 14,
+          "residual": 0.03609012187101318,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.08112498254674184
+        },
+        {
+          "outer": 15,
+          "residual": 0.03243667471696199,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.07260172291376817
+        },
+        {
+          "outer": 16,
+          "residual": 0.030316194898858846,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.06760812170152093
+        },
+        {
+          "outer": 17,
+          "residual": 0.03122379135029975,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.06940388772216617
+        },
+        {
+          "outer": 18,
+          "residual": 0.030878356874325198,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.0684663131744972
+        },
+        {
+          "outer": 19,
+          "residual": 0.029461083664898576,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.06513639807921022
+        },
+        {
+          "outer": 20,
+          "residual": 0.02765998905545081,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.060959757941275734
+        },
+        {
+          "outer": 21,
+          "residual": 0.026447762271089942,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.05808027362834907
+        },
+        {
+          "outer": 22,
+          "residual": 0.026395240581081256,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.05775477390372776
+        },
+        {
+          "outer": 23,
+          "residual": 0.02624746077842138,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.057257199487688856
+        },
+        {
+          "outer": 24,
+          "residual": 0.02720521838176645,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.05916350494491044
+        },
+        {
+          "outer": 25,
+          "residual": 0.028175332139824427,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.06110803668372898
+        },
+        {
+          "outer": 26,
+          "residual": 0.029659429630671755,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.06414606047357496
+        },
+        {
+          "outer": 27,
+          "residual": 0.030707759215431465,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.06616929740001225
+        },
+        {
+          "outer": 28,
+          "residual": 0.026599030046897575,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.05713063711151497
+        },
+        {
+          "outer": 29,
+          "residual": 0.024966400487329714,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.05345692193903996
+        },
+        {
+          "outer": 30,
+          "residual": 0.02666507141753983,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.056984298897428134
+        },
+        {
+          "outer": 31,
+          "residual": 0.025721826848865776,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.05491773514957523
+        },
+        {
+          "outer": 32,
+          "residual": 0.02273896811564696,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.04852324422022624
+        },
+        {
+          "outer": 33,
+          "residual": 0.021927786117970752,
+          "ipm_iterations": 31,
+          "status": "Solved",
+          "shift_change": 0.04676974958371603
+        },
+        {
+          "outer": 34,
+          "residual": 0.022202302723272564,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.047353899554207955
+        },
+        {
+          "outer": 35,
+          "residual": 0.023526145181449645,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.050211800439177404
+        },
+        {
+          "outer": 36,
+          "residual": 0.017530189695065798,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.037459887556383575
+        },
+        {
+          "outer": 37,
+          "residual": 0.018031235206706613,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.03859079174400611
+        },
+        {
+          "outer": 38,
+          "residual": 0.020133371041197307,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.04315354175656838
+        },
+        {
+          "outer": 39,
+          "residual": 0.01979587769659645,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.042480683337908616
+        },
+        {
+          "outer": 40,
+          "residual": 0.020674338107665093,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.04439232526929541
+        },
+        {
+          "outer": 41,
+          "residual": 0.02051598405172689,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.04407229272518566
+        },
+        {
+          "outer": 42,
+          "residual": 0.021931404215025093,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.04713490394701882
+        },
+        {
+          "outer": 43,
+          "residual": 0.026391368597785875,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.056733399096133154
+        },
+        {
+          "outer": 44,
+          "residual": 0.029981759726553158,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.06447861232482656
+        },
+        {
+          "outer": 45,
+          "residual": 0.03141701826842795,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.06756956328766085
+        },
+        {
+          "outer": 46,
+          "residual": 0.031945301062904795,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.06870222251954602
+        },
+        {
+          "outer": 47,
+          "residual": 0.0308662083496643,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.06641001277070724
+        },
+        {
+          "outer": 48,
+          "residual": 0.029594481102350335,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.0637156247060658
+        },
+        {
+          "outer": 49,
+          "residual": 0.02975078078573293,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.06407993521726939
+        },
+        {
+          "outer": 50,
+          "residual": 0.026901557562638397,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.05794966343910892
+        },
+        {
+          "outer": 51,
+          "residual": 0.025891662445589096,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.05575913933263027
+        },
+        {
+          "outer": 52,
+          "residual": 0.02383457599188708,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.05129910180969576
+        },
+        {
+          "outer": 53,
+          "residual": 0.027171878544180662,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.05844361308168974
+        },
+        {
+          "outer": 54,
+          "residual": 0.02667371471346771,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.05732737172406478
+        },
+        {
+          "outer": 55,
+          "residual": 0.03145443613674117,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.06754924901600956
+        },
+        {
+          "outer": 56,
+          "residual": 0.02944263957013714,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.06316679754166331
+        },
+        {
+          "outer": 57,
+          "residual": 0.02233244445478305,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.047874213012982274
+        },
+        {
+          "outer": 58,
+          "residual": 0.01820766089296302,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.039020665864521055
+        },
+        {
+          "outer": 59,
+          "residual": 0.017460553511910816,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.03739395672751769
+        },
+        {
+          "outer": 60,
+          "residual": 0.016682230128864786,
+          "ipm_iterations": 39,
+          "status": "Solved",
+          "shift_change": 0.03569670561731503
+        },
+        {
+          "outer": 61,
+          "residual": 0.018015413244920193,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.03849681577805051
+        },
+        {
+          "outer": 62,
+          "residual": 0.019604874258046467,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.04180326967255537
+        },
+        {
+          "outer": 63,
+          "residual": 0.0193804364354839,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.041226109792779755
+        },
+        {
+          "outer": 64,
+          "residual": 0.017747188515287088,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.0376666604152409
+        },
+        {
+          "outer": 65,
+          "residual": 0.016514199524863656,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.034994741945815755
+        },
+        {
+          "outer": 66,
+          "residual": 0.01569870078304812,
+          "ipm_iterations": 40,
+          "status": "Solved",
+          "shift_change": 0.033247420085324185
+        },
+        {
+          "outer": 67,
+          "residual": 0.01599884571990661,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.03388287562347904
+        },
+        {
+          "outer": 68,
+          "residual": 0.016432106372905257,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.03480245998144093
+        },
+        {
+          "outer": 69,
+          "residual": 0.019837603295087693,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.04200533828757368
+        },
+        {
+          "outer": 70,
+          "residual": 0.024475928034945624,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.051808047503427775
+        },
+        {
+          "outer": 71,
+          "residual": 0.028981107143153037,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.06129160958591562
+        },
+        {
+          "outer": 72,
+          "residual": 0.032656501682453175,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.0689851068932819
+        },
+        {
+          "outer": 73,
+          "residual": 0.035322536686379656,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.0745030696871665
+        },
+        {
+          "outer": 74,
+          "residual": 0.032477745528154876,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.06843096241313512
+        },
+        {
+          "outer": 75,
+          "residual": 0.0250951761031786,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.0528687738819119
+        },
+        {
+          "outer": 76,
+          "residual": 0.022950660419752692,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.048322330623830366
+        },
+        {
+          "outer": 77,
+          "residual": 0.021799143696952718,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.04583699811431805
+        },
+        {
+          "outer": 78,
+          "residual": 0.02127925203620887,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.044661495230255574
+        },
+        {
+          "outer": 79,
+          "residual": 0.02138536645006196,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.04477656751875043
+        },
+        {
+          "outer": 80,
+          "residual": 0.01795569623007544,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.037490189398466524
+        },
+        {
+          "outer": 81,
+          "residual": 0.018612748997640382,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.038761870579326375
+        },
+        {
+          "outer": 82,
+          "residual": 0.020046579511544864,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.04166486472440584
+        },
+        {
+          "outer": 83,
+          "residual": 0.018713507442786947,
+          "ipm_iterations": 39,
+          "status": "Solved",
+          "shift_change": 0.03884202711665417
+        },
+        {
+          "outer": 84,
+          "residual": 0.01562556925537847,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.03239654007753625
+        },
+        {
+          "outer": 85,
+          "residual": 0.01351953427439447,
+          "ipm_iterations": 39,
+          "status": "Solved",
+          "shift_change": 0.027994726795079177
+        },
+        {
+          "outer": 86,
+          "residual": 0.014009738286433059,
+          "ipm_iterations": 39,
+          "status": "Solved",
+          "shift_change": 0.028982070857504785
+        },
+        {
+          "outer": 87,
+          "residual": 0.016686216528967346,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.03450934651018154
+        },
+        {
+          "outer": 88,
+          "residual": 0.01841519829997657,
+          "ipm_iterations": 40,
+          "status": "Solved",
+          "shift_change": 0.038103872531387924
+        },
+        {
+          "outer": 89,
+          "residual": 0.019690193464526898,
+          "ipm_iterations": 35,
+          "status": "Solved",
+          "shift_change": 0.04077919513224395
+        },
+        {
+          "outer": 90,
+          "residual": 0.019676118102296507,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.04078831505759221
+        },
+        {
+          "outer": 91,
+          "residual": 0.018702536417720482,
+          "ipm_iterations": 32,
+          "status": "Solved",
+          "shift_change": 0.03880285006095974
+        },
+        {
+          "outer": 92,
+          "residual": 0.02079967199179595,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.04318066796239855
+        },
+        {
+          "outer": 93,
+          "residual": 0.024380733820550223,
+          "ipm_iterations": 33,
+          "status": "Solved",
+          "shift_change": 0.05064678082386108
+        },
+        {
+          "outer": 94,
+          "residual": 0.02531061670774257,
+          "ipm_iterations": 34,
+          "status": "Solved",
+          "shift_change": 0.05261593668635024
+        },
+        {
+          "outer": 95,
+          "residual": 0.023466436608032396,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.04881228765474794
+        },
+        {
+          "outer": 96,
+          "residual": 0.02631823840892114,
+          "ipm_iterations": 37,
+          "status": "Solved",
+          "shift_change": 0.05478248665664488
+        },
+        {
+          "outer": 97,
+          "residual": 0.0271482007182816,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.05657878901419262
+        },
+        {
+          "outer": 98,
+          "residual": 0.029885893669018174,
+          "ipm_iterations": 38,
+          "status": "Solved",
+          "shift_change": 0.0624648536842508
+        },
+        {
+          "outer": 99,
+          "residual": 0.03781802988760323,
+          "ipm_iterations": 36,
+          "status": "Solved",
+          "shift_change": 0.07939663237784611
+        }
+      ]
+    }
+  ]
+}
