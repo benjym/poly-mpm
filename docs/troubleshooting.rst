@@ -61,7 +61,8 @@ A run appears to take forever
     Check ``dt``, ``t_f``, and plot frequency in the input. Some examples
     request millions of steps. Start with ``run(..., max_steps=100, output=False)``.
     The CLI has no generic duration or maximum-step switch. Ctrl-C interrupts a
-    run but does not create a restart checkpoint or guarantee end callbacks run.
+    run and does not guarantee end callbacks run; set ``O.save_checkpoint`` to
+    keep a restart file from the last save time (see :doc:`outputs`).
 
 A Matplotlib cache warning appears
     Matplotlib needs a writable cache/config directory. If your home directory
@@ -97,7 +98,7 @@ This is a research solver with a regular 2D grid and explicit mechanics sharing
 one nodal momentum field. Updated mode evolves deformation/volume/density and
 supports linear/quadratic interpolation plus FLIP/PIC/APIC transfers. APIC requires
 a quadratic basis and planar motion. There is no GIMP, independent multi-body
-contact, general curved boundary, implicit/quasistatic solve, or checkpoint/restart.
+contact, general curved boundary or implicit/quasistatic solve.
 Rate-form plasticity is not a multiplicative finite-strain plasticity model.
 Legacy mode preserves the earlier numerical conventions explicitly.
 

@@ -111,8 +111,8 @@ Geometry is 2D despite three-component vectors and 3-by-3 stress tensors. Update
 mechanics evolves deformation, volume, and physical density. Linear/quadratic
 interpolation and FLIP/PIC/APIC transfers are selectable; `modern_ball` demonstrates
 the combined configuration. Mechanics still uses explicit stepping and shared
-nodal momentum, with no independent body contact, implicit solve, or general
-checkpoint/restart. Finite-domain integration is available in source checkouts through
+nodal momentum, with no independent body contact or implicit solve; runs can be
+checkpointed and restarted (`O.save_checkpoint`). Finite-domain integration is available in source checkouts through
 `quadrature='domain'` with declared particle geometry; the published `1.0.0`
 package uses point quadrature. The explicit `mechanics='legacy'` compatibility configuration uses fixed-volume,
 incremental mechanics; the user guide describes the default configuration.

@@ -67,29 +67,70 @@ experimental validation and application calibration remain separate tasks.
 
 ## Deferred implementation backlog
 
-- [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
-- [ ] Resolve Q1–P0 iterative convergence and flow-accuracy limits, or evaluate
-      dP1 stresses, before selecting a compact discretization for GPU porting.
+### Implemented from the backlog
 
-- [ ] Control remaining gaps/overlaps of independently convected domains, and
-      verify convergence for broader nonuniform deformation and material interfaces.
-- [ ] Well-balanced hydrostatics with quadratic interpolation on general particle clouds.
-- [ ] Higher-order position integration consistent with deformation/stress evolution;
-      isolate timestep accuracy from the number of remaps.
-- [ ] Broader application benchmarks and experimental validation.
-- [ ] Assess shared-corner/topology tracking or alternative quadrature against the
-      remaining geometric integration defects.
-- [ ] Profile and accelerate rotated/sheared polygon integration while retaining
-      the exact reference path and its conservation checks.
+- [x] Checkpoint/restart including controller and constitutive state:
+      `O.save_checkpoint` and `checkpoint.save`/`load`. A restarted CPU run is
+      bitwise identical to an uninterrupted one for elastic, quadratic APIC,
+      segregation, finite-domain and rigid-grain runs (`tests/test_checkpoint.py`).
+
+### Actionable without further input
 
 - [ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.
-- [ ] Curved rigid boundaries, contact reactions, friction and separate body fields.
-- [ ] Implicit/quasistatic solver and constitutive consistent tangents.
-- [ ] Finite-strain multiplicative plasticity and calibrated granular constitutive extensions.
-- [ ] Nonlocal granular rheology / size effects, with independent validation data.
-- [ ] Checkpoint/restart including controller and constitutive state.
-- [ ] Conservative particle adaptivity and/or grid refinement.
-- [ ] Three-dimensional mechanics, transport, boundaries, and verification.
-- [ ] Pore-pressure / solid–fluid coupling if required by the intended applications.
+- [ ] Profile and accelerate rotated/sheared polygon integration while retaining
+      the exact reference path and its conservation checks.
 - [ ] Profile and accelerate verified kernels; retain a numerical reference backend.
+- [ ] Metal: support settings that the CPU granular solver already supports and
+      Metal still rejects (silo walls, increment stopping), and measure the
+      plotting cost listed in `gpu.md`.
+
+### Needs your input (second pass)
+
+Each item below depends on a decision, data or a scope choice that the code
+cannot settle. The question to answer is given for each.
+
+- [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
+      *Question:* which thresholds (overall and patch) should CI enforce?
+- [ ] Resolve Q1–P0 iterative convergence and flow-accuracy limits, or evaluate
+      dP1 stresses, before selecting a compact discretization for GPU porting.
+      *Question:* tied to the modelling decision for refined connected flows in
+      `gpu-handoff.md` (fixed stress spacing, a rheology change or uncertified
+      solves); which direction?
+- [ ] Repeated connected 100k-particle Metal benchmark (`gpu.md`). Blocked by the
+      same decision: connected refined domains do not converge on either backend.
+- [ ] Control remaining gaps/overlaps of independently convected domains, and
+      verify convergence for broader nonuniform deformation and material interfaces.
+      *Question:* which approach (shared-corner topology tracking, CPDI-style
+      shared corners or an alternative quadrature)? This also settles the
+      shared-corner assessment item below.
+- [ ] Assess shared-corner/topology tracking or alternative quadrature against the
+      remaining geometric integration defects. *Question:* as above.
+- [ ] Well-balanced hydrostatics with quadratic interpolation on general particle
+      clouds. *Question:* which well-balancing approach (hydrostatic
+      reconstruction, a reference-state subtraction or quadrature changes), and
+      which particle clouds must it cover?
+- [ ] Higher-order position integration consistent with deformation/stress
+      evolution; isolate timestep accuracy from the number of remaps.
+      *Question:* which integrator family (midpoint/RK2 positions with matching
+      F updates, or a convected-grid scheme), and is a change to the default
+      update acceptable?
+- [ ] Curved rigid boundaries, contact reactions, friction and separate body
+      fields. Frictional and one-sided walls on the domain edges now exist.
+      *Question:* which geometries and body interactions are needed?
+- [ ] Implicit/quasistatic solver and constitutive consistent tangents.
+      *Question:* is this in scope, and for which materials?
+- [ ] Finite-strain multiplicative plasticity and calibrated granular
+      constitutive extensions. *Question:* which yield/flow laws, and which data
+      to calibrate against?
+- [ ] Nonlocal granular rheology / size effects, with independent validation
+      data. *Question:* which nonlocal model and which validation data?
+- [ ] Conservative particle adaptivity and/or grid refinement.
+      *Question:* splitting/merging, adaptive grids or both, and for which flows?
+- [ ] Three-dimensional mechanics, transport, boundaries, and verification.
+      *Question:* is 3D in scope?
+- [ ] Pore-pressure / solid–fluid coupling if required by the intended
+      applications. *Question:* do the applications need it?
+- [ ] Broader application benchmarks and experimental validation.
+      *Question:* which applications and data sets?
 - [ ] Experimental validation and application-specific parameter calibration.
+      *Question:* as above.

@@ -112,9 +112,31 @@ Use ``G.physical('pressure')`` to obtain the physical field. ``G.phi``,
 ``G.s_bar``, and ``G.shear_rate`` are already physical fields; do not divide them
 by mass again. Periodic endpoint columns duplicate one physical grid node.
 
-``run`` advances ``P.t`` and ``P.tstep``. ``step`` intentionally does not. Neither
-saved NPY/NPZ output nor a bounded stop is a general checkpoint/restart facility;
-reconstructing all state and callback/controller history is not implemented.
+``run`` advances ``P.t`` and ``P.tstep``. ``step`` intentionally does not.
+
+Checkpoint and restart
+----------------------
+
+``O.save_checkpoint = True`` writes ``data/checkpoint.pkl`` at each save time
+and at the end of the run, replacing the previous file. ``checkpoint.save`` and
+``checkpoint.load`` do the same from Python. A checkpoint holds the evolving
+state of ``P`` (clock, timestep, save schedule), the grid, every particle batch
+and the diagnostics. Inputs, materials, callbacks and controllers are rebuilt
+from the same input, so restart with the same example and arguments::
+
+    import checkpoint
+    from initialise import get_parameters
+    from MPM import run
+
+    P, G, L = get_parameters(['bi_seg_test', '22', '2', '11'])
+    checkpoint.load(P.save_dir + 'data/checkpoint.pkl', P, G, L)
+    run(P, G, L)
+
+On the CPU a restarted run is bitwise identical to an uninterrupted one, checked
+for elastic, quadratic APIC, segregation, finite-domain and rigid-grain runs with
+one-sided and frictional walls. A Metal restart re-uploads the host state; in the
+frictional-wall column it reproduced the uninterrupted run exactly. The file is a
+Python pickle: load only checkpoints you wrote.
 
 Diagnostics also record the selected ``mechanics``, ``interpolation``,
 ``quadrature`` and ``transfer``, plus ``maximum_stencil_entries``. Finite-domain

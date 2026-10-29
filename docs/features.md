@@ -36,8 +36,9 @@ rigid-grain solver on the GPU. "Rejected" means `prepare` raises an error.
 | `damping` | `False` | bool | Multiplies nodal forces by 0.7; a numerical scaling, not physical damping. Rejected by granular and Metal. |
 | `M_tol` | `1e-10` | ≥ 0 kg | Nodes with less mass have no resolved velocity. |
 
-`MPM.run(P, G, L, max_steps=..., output=...)` stops after a number of steps;
-there is no checkpoint or restart.
+`MPM.run(P, G, L, max_steps=..., output=...)` stops after a number of steps.
+`O.save_checkpoint` writes a restart file at each save time; see
+[outputs](outputs.rst) for checkpoint and restart.
 
 ## Grid
 
@@ -186,6 +187,7 @@ See [segregation-conservation](segregation-conservation.md).
 | `O.save_u`, `O.save_density`, `O.save_s_bar`, `O.save_phi_MP` | `False` | NumPy arrays at each `savetime`. |
 | `O.measure_energy`, `O.measure_stiffness` | `False` | Energy history and stiffness; Metal rejects `measure_energy`. |
 | `O.save_diagnostics` | `True` | Writes `data/diagnostics.json`. |
+| `O.save_checkpoint` | `False` | Writes `data/checkpoint.pkl` at each save time and at the end; see [outputs](outputs.rst). |
 | `O.check_positions` | `False` | Assert each step that particle positions are consistent with the grid stencil; rejected by Metal. |
 | `diagnostics` | `True` | Conservation and work budgets each step. |
 | `diagnostics_stride` | `1` | Record every n-th step. |

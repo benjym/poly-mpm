@@ -42,7 +42,7 @@ docs = ["sphinx>=8.2", "myst-parser>=4"]
 poly-mpm = "MPM:main"
 
 [tool.setuptools]
-py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed"]
+py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed", "checkpoint"]
 
 [tool.setuptools.packages.find]
 include = ["inputs", "mpm_gpu", "mpm_gpu.*"]

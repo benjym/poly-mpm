@@ -2,8 +2,10 @@
 """Array MPM timestep and command-line entry point."""
 
 import sys
+from pathlib import Path
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 import numpy as np
+import checkpoint
 import initialise
 
 
@@ -92,7 +94,9 @@ def run(P, G, L, *, max_steps=None, output=True, progress=False):
         if output:
             P.O.at_start(L, P, G)
         count = 0
-        next_save = P.t + P.savetime
+        # Kept on P so that a continued or restarted run keeps the save schedule.
+        if getattr(P, "next_save", None) is None or P.next_save <= P.t:
+            P.next_save = P.t + P.savetime
         limit_cache = {}
         while P.t < P.t_f and (max_steps is None or count < max_steps):
             if progress:
@@ -119,17 +123,20 @@ def run(P, G, L, *, max_steps=None, output=True, progress=False):
             count += 1
             if progress:
                 display.update(task, completed=P.t, time=P.t)
-            if output:
-                if not engine:
-                    # check_callbacks admits only the built-in no-op for Metal.
-                    P.O.after_every_timestep(L, P, G)
-                if P.t >= next_save:
+            if output and not engine:
+                # check_callbacks admits only the built-in no-op for Metal.
+                P.O.after_every_timestep(L, P, G)
+            if P.t >= P.next_save:
+                # The schedule advances without output too, so it is restart state.
+                P.next_save += (np.floor((P.t - P.next_save) / P.savetime) + 1) * P.savetime
+                if output:
                     if progress:
                         display.update(task, description="Saving output")
                     if engine:
                         engine.snapshot(P, G, L)
                     P.O.after_every_savetime(L, P, G)
-                    next_save += (np.floor((P.t - next_save) / P.savetime) + 1) * P.savetime
+                    if P.O.save_checkpoint:
+                        checkpoint.save(Path(P.save_dir) / "data" / "checkpoint.pkl", P, G, L)
             P.dt = nominal_dt
             if P.time_stepping == "dynamic" and P.t < P.t_f:
                 if engine:
@@ -148,6 +155,8 @@ def run(P, G, L, *, max_steps=None, output=True, progress=False):
             P.O.at_end(L, P, G)
             if L.diagnostics is not None and P.O.save_diagnostics:
                 L.diagnostics.save(P.save_dir)
+            if P.O.save_checkpoint:
+                checkpoint.save(Path(P.save_dir) / "data" / "checkpoint.pkl", P, G, L)
         if progress:
             display.update(
                 task,

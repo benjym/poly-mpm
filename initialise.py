@@ -233,6 +233,7 @@ def prepare(P, mode="simulation"):
         "save_density",
         "save_u",
         "save_phi_MP",
+        "save_checkpoint",
     ):
         defaults(P.O, **{name: False})
     defaults(P.O, save_diagnostics=True)
