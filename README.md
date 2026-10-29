@@ -85,6 +85,7 @@ for example `silo 11`; its two grain size classes are fixed in the input.
 
 ## User guide
 
+- [Feature reference](https://github.com/benjym/poly-mpm/blob/main/docs/features.md): every setting, its default, which solver and backend support it, and where it is described.
 - [Experimental rigid-grain solver](docs/granular-prototype.md): coupled packing/friction prototype for static zones and free surfaces; run `granular_column` or `granular_collapse`, or `granular_square_drum 11 2 metal` for a segregating square drum on the GPU.
 - [Getting started](https://github.com/benjym/poly-mpm/blob/main/docs/getting_started.rst): setup, first run, previews, and examples.
 - [Create a simulation](https://github.com/benjym/poly-mpm/blob/main/docs/tutorial.rst): a complete runnable input, units, geometry,
@@ -104,7 +105,8 @@ for example `silo 11`; its two grain size classes are fixed in the input.
 - [Build the HTML manual](https://github.com/benjym/poly-mpm/blob/main/docs/README.md): optional documentation dependencies and checks.
 
 The solver supports `rigid`, `elastic`, `viscous`, `von_mises`, `pouliquen`,
-`bingham`, `dp`, `dp_rate`, and `linear_mu`. Retired or absent laws fail explicitly.
+`bingham`, `dp`, `dp_rate`, and `linear_mu`, and the rigid-grain solver the
+`granular` law. Retired or absent laws fail explicitly.
 Geometry is 2D despite three-component vectors and 3-by-3 stress tensors. Updated
 mechanics evolves deformation, volume, and physical density. Linear/quadratic
 interpolation and FLIP/PIC/APIC transfers are selectable; `modern_ball` demonstrates

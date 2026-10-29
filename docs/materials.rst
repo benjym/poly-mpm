@@ -47,6 +47,11 @@ components use SI units and tension-positive Cauchy stress.
      - ``K``, ``rho_s``, ``mu_0``, ``b``, ``eta_max``
      - Dense flowing ``mu(I)=mu_0+b I`` law with a viscosity cap. ``b=0`` gives
        constant friction. It is not a dilute/collisional granular model.
+   * - ``granular``
+     - ``rho_s``, ``mu``, ``packing_max`` (at most 1); optional ``critical_time(P)``
+     - Rigid grains with constant Coulomb friction and a maximum packing
+       fraction, solved as a contact problem. Requires ``solver='granular'`` and
+       is the only material in the run. See :doc:`granular-prototype`.
 
 ``K`` and ``G`` are Pa; ``rho_s`` is solid-grain density in kg/m³; grain diameters
 ``P.G.s`` are metres; ``eta_max`` and viscosities are Pa s; ``tau_0`` is Pa.
