@@ -376,3 +376,34 @@ the two resolutions (0.255 m and 0.282 m), so these runs are not converged in
 space either. Increment stopping is therefore a speed–accuracy choice, not an
 equivalent of the certified solve; the size of its error depends on the
 quantity examined.
+
+## Newton polish on refined problems
+
+The Newton correction of `solve_velocity` is almost never accepted on the
+collapse problems above, on either backend. Frozen-problem checks on the
+first collapse step (CPU, FP64) show why:
+
+- The Jacobian-vector product agrees with finite differences of the natural
+  residual except on rows with exactly zero normal stress, where the friction
+  radius `mu max(z_n, 0)` has a kink. The current choice applies the radius
+  derivative at `z_n >= 0`; using `z_n > 0` instead makes no difference to
+  the outcome below.
+- With the Jacobian assembled densely and Newton solved exactly
+  (least squares), no step fraction down to 1/64 reduces the natural residual
+  (maximum or root mean square), starting after 30, 300 or 3,000 sweeps, at
+  grid spacings 0.05 and 0.025.
+- At grid spacing 0.05 the frozen Jacobian has 8–9 singular values near
+  1e-17 (largest 1.3) among 693 stress unknowns, with 400 free velocity
+  components. The minimum-norm Newton step then has length of order 1e6,
+  against 1e3 for the scaled stress itself, and lies almost entirely in these
+  near-null directions, so every fraction of it crosses a branch change.
+
+Stress is statically indeterminate here: there are more stress unknowns than
+free velocity components, and at the active branch some stress directions
+change the natural residual only through the friction and complementarity
+kinks. A preconditioner for the Newton–Krylov polish therefore cannot make it
+effective; exact Newton steps already fail. Remedies would have to regularise
+the step (for example a Levenberg–Marquardt or trust-region solve, which the
+assembled `hybrid` reference already uses and which also fails at 0.025) or
+change the unknowns, for example to a velocity-space formulation in which the
+velocity solution is unique.
