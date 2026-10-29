@@ -133,12 +133,20 @@ No supplied tolerance is silently loosened.
 The runner supports one intrinsic 2D granular material, nodal stress, linear
 interpolation, point quadrature, updated mechanics, FLIP (including PIC
 blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls (two-sided or
-one-sided), frictional walls (`B.wall_mu`), periodic x,
-built-in static/transport-CFL time stepping and grid segregation (up to eight
-grain sizes, `smooth_gamma_dot=False`, optional `normalise_phi`). P0 and
-coarse stresses, plane strain, viscosity, particle injection/removal, density
+one-sided), frictional walls (`B.wall_mu`), interior and silo walls, periodic
+x, inlets and outlets, built-in static/transport-CFL time stepping and grid
+segregation (up to eight grain sizes, `smooth_gamma_dot=False`, optional
+`normalise_phi`). P0 and coarse stresses, plane strain, viscosity, density
 correction, increment stopping and callbacks that require live NumPy arrays
 are rejected. These restrictions do not change CPU support.
+
+Inlets and outlets change the particle count, which the resident buffers
+cannot. The device counts the particles that `process_boundaries` would remove
+(in the per-step particle reduction), and the host knows from the clock when
+an inlet fires. On such a step the runner synchronises the state to the host,
+applies `process_boundaries` as the CPU step does, books the boundary flux in
+the diagnostics and rebuilds itself for the new count. A silo that drains
+every step therefore runs mostly on the host path.
 
 The runtime uses only explicitly selected Metal devices. SlangPy is imported
 lazily; normal CPU execution never imports the native GPU module. Scalar
@@ -303,6 +311,7 @@ independent and avoid a CPU solver fallback.
      | Collapse positions/runout, frictional walls `wall_mu = 0.3` | 7.5e-5 grid spacings | ≤ 1% |
      | Periodic layer on a frictional floor, `tan θ = 0.4`, `μ = 0.5`, `wall_mu = 0.2`: speed against `g (sin θ - wall_mu cos θ) t` | 0.34% (CPU 0.32%) | ≤ 1% |
      | Same layer, `wall_mu = 0.6` | at rest (2.8e-4 m/s; CPU 1.9e-4) | — |
+     | Silo draining through `silo_bottom` into `outlet_bottom`, with and without `inlet_top` (0.3 s) | same particle counts (155, 170 of 240); positions 4.8e-5 grid spacings; mass budget exact | ≤ 1% |
    - Budgets: momentum residuals relative to the external impulse are at most
      1.9e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
      larger of external and constraint work agree with the CPU to 5e-6 in the
@@ -351,6 +360,14 @@ iteration count grows with the size of a connected domain, which limits both
 backends until a better-scaling solver is available. Device memory for one
 runner was 62 MB at 99,200 particles.
 
+Saving output costs the same on both backends apart from the Metal snapshot.
+For the disconnected 9,600-particle collapse, one save with the material-point
+and continuum figures took 0.34 s on either backend; the Metal snapshot that
+precedes it took 8.9 ms (`plotting` in the report,
+`python -m mpm_gpu.benchmark --plotting`). Against the warm Metal step of
+about 2 s for that case, a save every step would add roughly a sixth; at the
+usual save intervals the figures are a small part of the run.
+
 Measured costs on the M4 that shaped the implementation:
 
 - Each dispatch in its own compute pass cost about 27 us of GPU time; within
@@ -396,8 +413,9 @@ time steps, diagnostics and tolerance on the same target Mac. Keep cold startup
 and compilation separate from warm timings; record wall time per waited
 submission (kernel timestamps are unavailable in the current backend), transfer
 bytes/time, memory, iteration counts and plotting cost. The current results
-are under Performance above; plotting cost and repeated connected domains at
-100k are not measured yet.
+are under Performance above, including the plotting cost; repeated connected
+domains at 100k are not measured, because connected refined domains do not
+converge on either backend.
 
 ## Segregation
 

@@ -530,9 +530,19 @@ class MetalRunner:
         self.speed = self.last["speed"]
         self._budgets(G, self.last)
         G.granular_stats = dict(self.last["stats"])
+        event = self._boundary_event(P, L)
+        if event:
+            # Inlets and outlets change the particle count: apply them to the
+            # synchronised host state, as granular.step does, then rebuild.
+            self.snapshot(P, G, L)
+            L.process_boundaries(P, G)
         if L.diagnostics is not None:
             now = self.last["inventory"]
             before = dict(now, angular_momentum=self.last["angular_before"])
+            if event:
+                from diagnostics import inventory
+
+                now = inventory(P, L)
             stats = G.granular_stats
             diagnostics_stats = dict(
                 maximum_packing_after=self.last["packing_after"],
@@ -542,7 +552,23 @@ class MetalRunner:
             stats.update(diagnostics_stats)
             self.last["stats"].update(diagnostics_stats)
             L.diagnostics.finish(P, G, L, before, now=now, support=(self.last["incomplete_support"], 0))
-        return self.last
+        last = self.last
+        if event:
+            self.__init__(P, G, L)
+            _runners[L] = self
+            self.upload(P, G, L)
+            self.last, self.speed = last, last["speed"]
+        return last
+
+    def _boundary_event(self, P, L):
+        """Whether process_boundaries will add or remove particles this step."""
+        if self.last["leaving"]:
+            return True
+        for side, template in (("right", L.templates[0]), ("top", L.templates[0])):
+            rate = getattr(template, "inlet_rate", None)
+            if getattr(P.B, "inlet_" + side) and rate and P.t and P.t % rate < P.dt:
+                return True
+        return False
 
     def _encode_finish(self, encoder, P, G, operator, body, dt):
         rt, grid, n = self.rt, self.grid, self.count
@@ -681,6 +707,7 @@ class MetalRunner:
             m_tol=float(P.M_tol),
             rho_s=float(S.rho_s),
             affine=int(P.transfer == "apic_gradient"),
+            outlets=int(bool(P.B.outlet_left)) + 2 * int(bool(P.B.outlet_bottom)),
             keys=operator.keys,
             local_x=operator.local_x,
             local_y=operator.local_y,
@@ -797,6 +824,7 @@ class MetalRunner:
             particle_packing=particle[12],
             incomplete_support=int(round(particle[13])),
             device_mass=particle[14],
+            leaving=int(round(particle[15])),
             packing_after=packing[0],
             overpacking=packing[1] / solid if solid else 0.0,
             constraint_impulse=[node[0], node[1], 0.0],

@@ -194,7 +194,7 @@ void particle_update(uint3 tid : SV_DispatchThreadID, uniform uint count, unifor
 void particle_inventory(uint3 tid : SV_DispatchThreadID, uniform uint count, uniform uint nx,
                         uniform uint periodic, uniform float dx, uniform float dy, uniform float x_m,
                         uniform float y_m, uniform float m_tol, uniform float rho_s,
-                        uniform uint affine, StructuredBuffer<uint> keys,
+                        uniform uint affine, uniform uint outlets, StructuredBuffer<uint> keys,
                         StructuredBuffer<float> local_x, StructuredBuffer<float> local_y,
                         StructuredBuffer<float> nodal_mass, StructuredBuffer<float> mass,
                         StructuredBuffer<float> velocity, StructuredBuffer<float> gradient,
@@ -205,7 +205,8 @@ void particle_inventory(uint3 tid : SV_DispatchThreadID, uniform uint count, uni
                         StructuredBuffer<float> work_compensation, RWStructuredBuffer<float> columns)
 {
     // diagnostics.inventory after advection, plus the angular momentum before
-    // the periodic wrap (process_boundaries), the CFL speed and support counts.
+    // the periodic wrap (process_boundaries), the CFL speed, support counts and
+    // particles that process_boundaries removes (outlets bit 1 left, bit 2 bottom).
     uint p = tid.x;
     if (p >= count) return;
     float m = mass[p];
@@ -236,10 +237,11 @@ void particle_inventory(uint3 tid : SV_DispatchThreadID, uniform uint count, uni
     float coverage = 0.0;
     for (uint c = 0; c < 4; c++) coverage += nodal_mass[corners[c]] > m_tol ? w[c] : 0.0;
     float total = work[p] - work_compensation[p];
+    bool leaving = ((outlets & 1) != 0 && x.x < x_m + dx) || ((outlets & 2) != 0 && x.y < y_m);
     float values[16] = {
         m * v.x, m * v.y, m * (x.x * v.y - x.y * v.x) + spin, m * (before * v.y - x.y * v.x) + spin,
         0.5 * m * dot(v, v), affine_kinetic, total, jacobian[p], jacobian[p], density[p], density[p],
-        length(v), density[p] / rho_s, coverage < 1.0 - 1e-6 ? 1.0 : 0.0, m, 0.0,
+        length(v), density[p] / rho_s, coverage < 1.0 - 1e-6 ? 1.0 : 0.0, m, leaving ? 1.0 : 0.0,
     };
     for (uint k = 0; k < 16; k++) columns[k * count + p] = values[k];
 }

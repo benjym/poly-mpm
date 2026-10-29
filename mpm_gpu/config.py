@@ -46,16 +46,10 @@ def validate(P):
     if P.time_stepping not in ("static", "dynamic"):
         raise ValueError("Metal supports static or built-in dynamic time stepping")
     for name in (
-        "outlet_left",
-        "outlet_bottom",
-        "inlet_right",
-        "inlet_top",
         "conveyor",
         "force_boundaries",
         "vertical_force",
         "horizontal_force",
-        "silo_left",
-        "silo_bottom",
     ):
         if getattr(P.B, name, False):
             raise ValueError(f"Metal does not support boundary flag {name}")

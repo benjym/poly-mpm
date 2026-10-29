@@ -142,11 +142,19 @@ def test_metal_segregation_is_accepted_with_supported_settings():
         prepare(P)
 
 
-@pytest.mark.parametrize("flag", ["inlet_top", "inlet_right", "outlet_bottom", "outlet_left"])
-def test_particle_count_changing_boundaries_rejected(flag):
+@pytest.mark.parametrize("flag", ["inlet_top", "inlet_right", "outlet_bottom", "outlet_left", "silo_bottom"])
+def test_particle_count_changing_boundaries_accepted(flag):
+    # The runner applies them on the host (runner_checks.boundary_events_check).
     P = metal_params()
     setattr(P.B, flag, True)
-    with pytest.raises(ValueError, match=flag):
+    prepare(P)
+
+
+@pytest.mark.parametrize("flag", ["conveyor", "vertical_force", "horizontal_force"])
+def test_unsupported_boundaries_rejected(flag):
+    P = metal_params()
+    setattr(P.B, flag, True)
+    with pytest.raises(ValueError):
         prepare(P)
 
 

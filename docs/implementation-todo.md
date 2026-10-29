@@ -76,14 +76,17 @@ experimental validation and application calibration remain separate tasks.
 - [x] Profile and accelerate rotated/sheared polygon integration while retaining
       the exact reference path and its conservation checks: batched clipping is
       about 8 times faster and agrees with the per-domain reference to 4e-15.
+- [x] Profile and accelerate verified kernels, first pass: the per-step finite
+      check and the elastic timestep estimate (closed-form planar singular
+      values, LAPACK kept for nonplanar F) cut 10–32% per step in the profiled
+      examples. The remaining time is spread over `einsum` products and the
+      stress update with no single hotspot.
+- [x] Metal: silo walls, inlets and outlets (host boundary events, checked
+      against the CPU), and the plotting cost in `gpu.md`.
 
 ### Actionable without further input
 
 - [ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.
-- [ ] Profile and accelerate verified kernels; retain a numerical reference backend.
-- [ ] Metal: support settings that the CPU granular solver already supports and
-      Metal still rejects (silo walls, increment stopping), and measure the
-      plotting cost listed in `gpu.md`.
 
 ### Needs your input (second pass)
 
@@ -99,6 +102,10 @@ cannot settle. The question to answer is given for each.
       solves); which direction?
 - [ ] Repeated connected 100k-particle Metal benchmark (`gpu.md`). Blocked by the
       same decision: connected refined domains do not converge on either backend.
+- [ ] Metal `increment` stopping and `granular_viscosity`. Both are options
+      within the same decision: increment stopping is the "uncertified solves"
+      route and the viscosity a regularisation of the rheology. *Question:* is
+      either the chosen direction, so that it should run on Metal?
 - [ ] Control remaining gaps/overlaps of independently convected domains, and
       verify convergence for broader nonuniform deformation and material interfaces.
       *Question:* which approach (shared-corner topology tracking, CPDI-style

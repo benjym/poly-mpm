@@ -264,6 +264,68 @@ def wall_slide_check(rt, wall_mu):
     return result
 
 
+def _silo(inlet):
+    """A box draining through a silo_bottom opening into outlet_bottom, optionally fed at the top."""
+    from types import SimpleNamespace as NS
+
+    from initialise import prepare
+
+    spacing = 0.05
+    x, y = np.meshgrid(np.arange(0.025, 1.0, spacing), np.arange(0.025, 0.6, spacing))
+    P = NS(
+        solver="granular",
+        granular_solver="velocity",
+        granular_tolerance=TOLERANCE,
+        diagnostics=True,
+        dt=0.005,
+        t_f=0.3,
+        savetime=0.1,
+        max_g=-9.81,
+        save_dir="im/metal_silo/",
+        # Ten nodes keep the top inlet at x = 0.5 off a node line.
+        G=NS(nx=10, ny=11, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0),
+        B=NS(has_left=True, has_right=True, silo_bottom=True, outlet_bottom=True, inlet_top=inlet),
+        O=NS(),
+    )
+    P.S = NS(
+        law="granular",
+        n=x.size,
+        X=x.ravel(),
+        Y=y.ravel(),
+        A=spacing**2,
+        rho=1500.0,
+        rho_s=2500.0,
+        packing_max=0.6,
+        mu=0.5,
+    )
+    if inlet:
+        P.S.inlet_rate, P.S.gap = 0.02, (0.025, 0.025)
+    return prepare(P)
+
+
+def boundary_events_check(rt, inlet):
+    """Silo outlet (and inlet): host boundary events keep the particle set equal to the CPU's."""
+    state = _silo(inlet)
+    start = len(state[2].materials[0])
+    cpu, metal = _pair(state)
+    _run(cpu)
+    _run(metal)
+    bc, b = cpu[2].materials[0], metal[2].materials[0]
+    _require(len(b) == len(bc), f"particle counts differ: {len(b)} and {len(bc)}")
+    position = float(np.abs(b.x - bc.x).max() / _spacing(metal[1]))
+    mass_error = abs(metal[2].diagnostics.last["mass_error"]) / metal[2].diagnostics.last["mass"]
+    _require(position <= COLLAPSE_POSITION, f"silo positions differ by {position:.3g} grid spacings")
+    _require(mass_error <= MASS_ERROR, f"mass error with boundary flux {mass_error:.3g}")
+    return dict(
+        inlet=inlet,
+        steps=metal[0].tstep,
+        particles_start=start,
+        particles_end=len(b),
+        position_difference=position,
+        relative_mass_error=mass_error,
+    )
+
+
 def incline_check(rt, slope):
     cpu, metal = _pair(_incline(slope))
     _run(cpu)
@@ -551,6 +613,8 @@ def cases(rt):
         ("collapse_dynamic_cfl", lambda: collapse_check(rt, dynamic=True)),
         ("collapse_separable_walls", lambda: collapse_check(rt, separable=True)),
         ("collapse_frictional_walls", lambda: collapse_check(rt, wall_mu=0.3)),
+        ("silo_outlet", lambda: boundary_events_check(rt, False)),
+        ("silo_outlet_and_inlet", lambda: boundary_events_check(rt, True)),
         ("segregation_incline", lambda: segregation_check(rt, "incline")),
         ("segregation_collapse_walls", lambda: segregation_check(rt, "collapse")),
         (

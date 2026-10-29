@@ -16,23 +16,23 @@
   },
   "source_sha256": {
     "__init__.py": "79afbaef86b0bf8d1cdd7e2a055433ee2f07d15b1adc3c8a14663a314af8dc33",
-    "config.py": "0be8252dde35a8817e8472ca48a3c1a5ad63eeb677684174d328c1dd6506f892",
+    "config.py": "b0f389eb97cdde51396b4c84694a25d53576a174358949763086fc3c0c9cb2bb",
     "runtime.py": "c91c930b2cc6493ded6201a2fd8fbe4f4057b80accf175d7e4b36c155984d3f5",
     "primitives.py": "f21d884e24df629ccc6c38f084b53e31faa862082dcfe2cadddca01b2ba05a28",
-    "topology.py": "ee9e09e641052c1b72d54a5a0eba312b1d02f8d42a962a250acb9275c5b2a508",
+    "topology.py": "2e9bfc49b170af54ee56582d1233e90682393b0ec970f4ac54a0d20462cab49f",
     "mechanics.py": "469eef5c46fd9ecd0a0999e99b4a2d5a38f0da9554695597a7d44ca93edb2c20",
     "mechanics_checks.py": "36ad93d77a7b0886468eb39d85f40f28ca853b055b48ad3b1fd88f6f1044e44c",
     "fixtures.py": "75323ac341544ef9f2535d2eaa5fe31e1285f0bad8695eaff514a2b56ddcb3cb",
     "solver.py": "d7b9a2250f90f7f58fb6ea0ab85ee6316744512239c841340955d5e0ac8784d3",
     "solver_checks.py": "45e96f55bee3b7e2d6742ababf83eeddf1c1521cbab0b3580650a5e5b430887d",
-    "runner.py": "b7b336b744de0defde8e6ed1498442b31fa5b11e528cc0ee990ef80e94ca4edc",
-    "runner_checks.py": "726fda908c831ad18954a19ee99d85ca8cb26abbf4227fd7dd95d90bed939b1d",
+    "runner.py": "9fb303a09c82de577de2c51f0890589ee9b31bc69e893804b832e8ce47daefaa",
+    "runner_checks.py": "dd9c49e2c723e10b70b238fbfffb2df5e7fac99cc17d84ee688ba861217157fd",
     "segregation.py": "e85107430a8479b6b070d34cfebc428ee0b3e57913a785196e528527e1bb7b98",
     "validate.py": "4c4a5762c9ad78b71e5ced581cac13646508e1525faebc6d40ca52094f7923e7",
     "shaders/primitives.slang": "14a2b495d2f93897b6b4fa5bc80327e8b1f3043f4e05083fe1e3d7446faa54a8",
     "shaders/mechanics.slang": "e7f907833990a2aada8efae595874e3a1784dac62a8af4bd9642816b0e7316be",
     "shaders/solver.slang": "5e62b150968c9b06a0ca63f3484ea78077eba6da4e52877e962d78c4f7c0a329",
-    "shaders/runner.slang": "5bf1ec245acdfb37745a738f5abbf861b14907898311cb78ee0387e26fb1a645",
+    "shaders/runner.slang": "f0a2def2f0554a990cc71608fad275ba959c3d7cd67b9bbbdac57c9000d79bc6",
     "shaders/segregation.slang": "c5a275db9380b8e67435ee591c63c3f97c3005e93274309c6588fa50a17f1396"
   },
   "requested_stage": "runner",
@@ -45,55 +45,55 @@
         {
           "name": "scalar_abi",
           "status": "passed",
-          "seconds": 0.0704424160066992,
+          "seconds": 0.05441129195969552,
           "elements": 5
         },
         {
           "name": "scan_1",
           "status": "passed",
-          "seconds": 0.0594209999544546,
+          "seconds": 0.0598469169344753,
           "elements": 1,
           "scratch_buffers": 2
         },
         {
           "name": "scan_255",
           "status": "passed",
-          "seconds": 0.0004450830165296793,
+          "seconds": 0.0004247500328347087,
           "elements": 255,
           "scratch_buffers": 2
         },
         {
           "name": "scan_256",
           "status": "passed",
-          "seconds": 0.00018579198513180017,
+          "seconds": 0.00046125007793307304,
           "elements": 256,
           "scratch_buffers": 2
         },
         {
           "name": "scan_257",
           "status": "passed",
-          "seconds": 0.03880587499588728,
+          "seconds": 0.039916542009450495,
           "elements": 257,
           "scratch_buffers": 4
         },
         {
           "name": "scan_65537",
           "status": "passed",
-          "seconds": 0.0008331249700859189,
+          "seconds": 0.0008722089696675539,
           "elements": 65537,
           "scratch_buffers": 6
         },
         {
           "name": "scan_100003",
           "status": "passed",
-          "seconds": 0.0007894999580457807,
+          "seconds": 0.0008518329123035073,
           "elements": 100003,
           "scratch_buffers": 6
         },
         {
           "name": "bins_random",
           "status": "passed",
-          "seconds": 0.1641617079731077,
+          "seconds": 0.16625904198735952,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "random"
@@ -101,7 +101,7 @@
         {
           "name": "bins_one_bin",
           "status": "passed",
-          "seconds": 1.787692250101827,
+          "seconds": 1.7773364590248093,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "one_bin"
@@ -109,7 +109,7 @@
         {
           "name": "bins_sparse",
           "status": "passed",
-          "seconds": 0.4001113340491429,
+          "seconds": 0.3873794589890167,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "sparse"
@@ -117,7 +117,7 @@
         {
           "name": "bins_invalid",
           "status": "passed",
-          "seconds": 0.0015648750122636557,
+          "seconds": 0.0014857500791549683,
           "elements": 10003,
           "bin_count": 513,
           "distribution": "invalid"
@@ -125,7 +125,7 @@
         {
           "name": "reduction_sum",
           "status": "passed",
-          "seconds": 0.0538013749755919,
+          "seconds": 0.04759562492836267,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": false
@@ -133,7 +133,7 @@
         {
           "name": "reduction_min",
           "status": "passed",
-          "seconds": 0.000693458947353065,
+          "seconds": 0.0010645420989021659,
           "elements": 100003,
           "operation": "min",
           "expected_nonfinite": false
@@ -141,7 +141,7 @@
         {
           "name": "reduction_max",
           "status": "passed",
-          "seconds": 0.0006557920714840293,
+          "seconds": 0.0009825000306591392,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": false
@@ -149,7 +149,7 @@
         {
           "name": "nonfinite_nan",
           "status": "passed",
-          "seconds": 0.00043999997433274984,
+          "seconds": 0.000826624920591712,
           "elements": 100003,
           "operation": "sum",
           "expected_nonfinite": true
@@ -157,7 +157,7 @@
         {
           "name": "nonfinite_inf",
           "status": "passed",
-          "seconds": 0.00048054102808237076,
+          "seconds": 0.0007060839561745524,
           "elements": 100003,
           "operation": "max",
           "expected_nonfinite": true
@@ -165,31 +165,31 @@
         {
           "name": "guarded_all",
           "status": "passed",
-          "seconds": 0.040510250022634864,
+          "seconds": 0.04129183304030448,
           "active": 1003,
           "elements": 1003
         },
         {
           "name": "guarded_none",
           "status": "passed",
-          "seconds": 0.00027537497226148844,
+          "seconds": 0.0006424590246751904,
           "active": 0,
           "elements": 1003
         },
         {
           "name": "guarded_partial",
           "status": "passed",
-          "seconds": 0.00021883298177272081,
+          "seconds": 0.0001514999894425273,
           "active": 517,
           "elements": 1003
         },
         {
           "name": "barriers",
           "status": "passed",
-          "seconds": 0.0008832499152049422,
+          "seconds": 0.0009026670595631003,
           "dispatches": 8,
           "elements": 100003,
-          "wall_seconds": 0.0006375000812113285
+          "wall_seconds": 0.0006323748966678977
         }
       ],
       "capabilities": {
@@ -210,7 +210,7 @@
         {
           "name": "operator_h0.25_ppc2_walls",
           "status": "passed",
-          "seconds": 0.6866912500699982,
+          "seconds": 0.6547551250550896,
           "particles": 64,
           "rows": 35,
           "active_rows": 25,
@@ -224,7 +224,7 @@
         {
           "name": "operator_h0.25_ppc2_periodic",
           "status": "passed",
-          "seconds": 0.003670042031444609,
+          "seconds": 0.004747166996821761,
           "particles": 64,
           "rows": 28,
           "active_rows": 20,
@@ -238,7 +238,7 @@
         {
           "name": "operator_h0.1_ppc3_walls",
           "status": "passed",
-          "seconds": 0.005621666903607547,
+          "seconds": 0.006951041053980589,
           "particles": 900,
           "rows": 176,
           "active_rows": 121,
@@ -252,7 +252,7 @@
         {
           "name": "operator_h0.1_ppc3_periodic",
           "status": "passed",
-          "seconds": 0.006363999913446605,
+          "seconds": 0.0061688750283792615,
           "particles": 900,
           "rows": 160,
           "active_rows": 110,
@@ -266,7 +266,7 @@
         {
           "name": "operator_h0.5_ppc4_periodic",
           "status": "passed",
-          "seconds": 0.002251334022730589,
+          "seconds": 0.0020012499298900366,
           "particles": 64,
           "rows": 8,
           "active_rows": 6,
@@ -280,7 +280,7 @@
         {
           "name": "operator_h1.0_ppc6_periodic",
           "status": "passed",
-          "seconds": 0.0031703340355306864,
+          "seconds": 0.0033661670750007033,
           "particles": 36,
           "rows": 3,
           "active_rows": 3,
@@ -294,7 +294,7 @@
         {
           "name": "operator_edges_walls",
           "status": "passed",
-          "seconds": 0.0023381670471280813,
+          "seconds": 0.002582999994046986,
           "particles": 96,
           "rows": 35,
           "active_rows": 35,
@@ -308,7 +308,7 @@
         {
           "name": "operator_edges_periodic",
           "status": "passed",
-          "seconds": 0.0023202499141916633,
+          "seconds": 0.0024130840320140123,
           "particles": 96,
           "rows": 28,
           "active_rows": 28,
@@ -322,13 +322,13 @@
         {
           "name": "invalid_particles",
           "status": "passed",
-          "seconds": 0.0019184580305591226,
+          "seconds": 0.0016217919765040278,
           "particles": 4
         },
         {
           "name": "metric_h0.25_walls",
           "status": "passed",
-          "seconds": 0.17950650001876056,
+          "seconds": 0.17698541702702641,
           "rows": 25,
           "norm_error": 5.802210672978857e-08,
           "metric_error": 1.2057393998385603e-07,
@@ -340,7 +340,7 @@
         {
           "name": "metric_h0.1_periodic",
           "status": "passed",
-          "seconds": 0.005511957919225097,
+          "seconds": 0.006043832981958985,
           "rows": 110,
           "norm_error": 1.9447758223356112e-07,
           "metric_error": 3.131898177094934e-07,
@@ -352,7 +352,7 @@
         {
           "name": "metric_h1.0_periodic",
           "status": "passed",
-          "seconds": 0.003040499985218048,
+          "seconds": 0.004173333058133721,
           "rows": 3,
           "norm_error": 1.983295896359831e-07,
           "metric_error": 1.0599236734138974e-07,
@@ -364,7 +364,7 @@
         {
           "name": "local_coulomb",
           "status": "passed",
-          "seconds": 0.05229020805563778,
+          "seconds": 0.05275683291256428,
           "rows": 4007,
           "reaction_error": 2.1485019075495384e-07,
           "complementarity_error": 8.339771386697735e-08,
@@ -379,7 +379,7 @@
         {
           "name": "transfer_flip_walls",
           "status": "passed",
-          "seconds": 0.14343245909549296,
+          "seconds": 0.14335274999029934,
           "particles": 900,
           "transfer": "flip",
           "pic_fraction": 0.0,
@@ -395,7 +395,7 @@
         {
           "name": "transfer_flip_blend_periodic",
           "status": "passed",
-          "seconds": 0.006842499948106706,
+          "seconds": 0.007689459016546607,
           "particles": 900,
           "transfer": "flip",
           "pic_fraction": 0.3,
@@ -411,7 +411,7 @@
         {
           "name": "transfer_pic_walls",
           "status": "passed",
-          "seconds": 0.005521167069673538,
+          "seconds": 0.006352166994474828,
           "particles": 64,
           "transfer": "pic",
           "pic_fraction": 0.0,
@@ -427,7 +427,7 @@
         {
           "name": "transfer_apic_gradient_walls",
           "status": "passed",
-          "seconds": 0.007680500042624772,
+          "seconds": 0.005530333030037582,
           "particles": 900,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
@@ -443,7 +443,7 @@
         {
           "name": "transfer_apic_gradient_periodic",
           "status": "passed",
-          "seconds": 0.003536999924108386,
+          "seconds": 0.0032318750163540244,
           "particles": 64,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
@@ -459,7 +459,7 @@
         {
           "name": "deformation",
           "status": "passed",
-          "seconds": 0.09971949993632734,
+          "seconds": 0.09896141604986042,
           "cases": {
             "tiny": {
               "F_error": 1.1000760995847518e-07,
@@ -509,7 +509,7 @@
         {
           "name": "solve_h0.25_ppc2_walls",
           "status": "passed",
-          "seconds": 0.7841203330317512,
+          "seconds": 0.7782149590784684,
           "rows": 35,
           "active_rows": 25,
           "single_iteration": true,
@@ -539,7 +539,7 @@
         {
           "name": "solve_h0.25_ppc2_periodic",
           "status": "passed",
-          "seconds": 0.041130000026896596,
+          "seconds": 0.04141929198522121,
           "rows": 28,
           "active_rows": 20,
           "single_iteration": true,
@@ -569,7 +569,7 @@
         {
           "name": "solve_h0.1_ppc3_walls",
           "status": "passed",
-          "seconds": 0.06925220799166709,
+          "seconds": 0.07123624999076128,
           "rows": 176,
           "active_rows": 121,
           "single_iteration": true,
@@ -599,7 +599,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic",
           "status": "passed",
-          "seconds": 0.07021354092285037,
+          "seconds": 0.07121887500397861,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": true,
@@ -629,7 +629,7 @@
         {
           "name": "solve_h0.5_ppc4_periodic",
           "status": "passed",
-          "seconds": 1.025735417031683,
+          "seconds": 1.0235409170854837,
           "rows": 8,
           "active_rows": 6,
           "single_iteration": true,
@@ -659,7 +659,7 @@
         {
           "name": "solve_h1.0_ppc6_periodic",
           "status": "passed",
-          "seconds": 0.0036290419520810246,
+          "seconds": 0.003440583939664066,
           "rows": 3,
           "active_rows": 3,
           "single_iteration": true,
@@ -689,7 +689,7 @@
         {
           "name": "solve_h0.1_ppc3_walls_moving",
           "status": "passed",
-          "seconds": 0.1951056671096012,
+          "seconds": 0.1919498749775812,
           "rows": 176,
           "active_rows": 121,
           "single_iteration": true,
@@ -719,7 +719,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic_moving",
           "status": "passed",
-          "seconds": 0.06310412497259676,
+          "seconds": 0.06260904099326581,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": true,
@@ -749,7 +749,7 @@
         {
           "name": "solve_h0.05_ppc2_walls",
           "status": "passed",
-          "seconds": 0.14231108408421278,
+          "seconds": 0.14196949999313802,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": true,
@@ -779,7 +779,7 @@
         {
           "name": "solve_h0.05_ppc3_walls_moving",
           "status": "passed",
-          "seconds": 0.12536520801950246,
+          "seconds": 0.12498179206158966,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": true,
@@ -809,7 +809,7 @@
         {
           "name": "solve_h0.1_ppc3_periodic_moving_multi_dispatch",
           "status": "passed",
-          "seconds": 0.408184084109962,
+          "seconds": 0.4113813750445843,
           "rows": 160,
           "active_rows": 110,
           "single_iteration": false,
@@ -839,7 +839,7 @@
         {
           "name": "solve_h0.05_ppc3_walls_moving_multi_dispatch",
           "status": "passed",
-          "seconds": 0.14472170802764595,
+          "seconds": 0.14115062495693564,
           "rows": 651,
           "active_rows": 441,
           "single_iteration": false,
@@ -869,7 +869,7 @@
         {
           "name": "solve_h0.5_ppc4_periodic_multi_dispatch",
           "status": "passed",
-          "seconds": 0.2512030419893563,
+          "seconds": 0.26428233308251947,
           "rows": 8,
           "active_rows": 6,
           "single_iteration": false,
@@ -899,7 +899,7 @@
         {
           "name": "jacobian_walls_moving",
           "status": "passed",
-          "seconds": 0.1732567499857396,
+          "seconds": 0.1471077079186216,
           "rows": 121,
           "sliding_rows": 111,
           "open_rows": 44,
@@ -910,7 +910,7 @@
         {
           "name": "jacobian_periodic_moving",
           "status": "passed",
-          "seconds": 0.01932966709136963,
+          "seconds": 0.019339042017236352,
           "rows": 110,
           "sliding_rows": 105,
           "open_rows": 44,
@@ -921,7 +921,7 @@
         {
           "name": "anderson_full_rank",
           "status": "passed",
-          "seconds": 0.003148999996483326,
+          "seconds": 0.0032151249470189214,
           "size": 1200,
           "tsqr_levels": 2,
           "history": 13,
@@ -933,7 +933,7 @@
         {
           "name": "anderson_rank_deficient",
           "status": "passed",
-          "seconds": 0.0028991670114919543,
+          "seconds": 0.0029142919229343534,
           "size": 1200,
           "tsqr_levels": 2,
           "history": 13,
@@ -945,7 +945,7 @@
         {
           "name": "anderson_short_history",
           "status": "passed",
-          "seconds": 0.0015327089931815863,
+          "seconds": 0.001057000015862286,
           "size": 105,
           "tsqr_levels": 1,
           "history": 4,
@@ -957,7 +957,7 @@
         {
           "name": "anderson_three_levels",
           "status": "passed",
-          "seconds": 0.16220808308571577,
+          "seconds": 0.1599322500405833,
           "size": 108300,
           "tsqr_levels": 4,
           "history": 13,
@@ -969,7 +969,7 @@
         {
           "name": "newton_accepted",
           "status": "passed",
-          "seconds": 0.09659070800989866,
+          "seconds": 0.09845158399548382,
           "sweeps": 25,
           "fp64_residual_before": 7.76962366738443e-05,
           "fp64_candidate_residuals": [
@@ -989,7 +989,7 @@
         {
           "name": "newton_rejected",
           "status": "passed",
-          "seconds": 0.1646850829711184,
+          "seconds": 0.16422837495338172,
           "sweeps": 125,
           "fp64_residual_before": 0.000969496935374703,
           "fp64_candidate_residuals": [
@@ -1009,7 +1009,7 @@
         {
           "name": "gmres_identity",
           "status": "passed",
-          "seconds": 0.05691587505862117,
+          "seconds": 0.057676541968248785,
           "mode": "identity",
           "gmres_iterations": 1,
           "breakdowns": 0,
@@ -1018,7 +1018,7 @@
         {
           "name": "gmres_singular_breakdown",
           "status": "passed",
-          "seconds": 0.05683691706508398,
+          "seconds": 0.05636379192583263,
           "mode": "singular",
           "gmres_iterations": 0,
           "breakdowns": 1
@@ -1026,7 +1026,7 @@
         {
           "name": "gmres_general",
           "status": "passed",
-          "seconds": 0.058622875018045306,
+          "seconds": 0.058558415970765054,
           "mode": "general",
           "gmres_iterations": 37,
           "breakdowns": 0,
@@ -1036,7 +1036,7 @@
         {
           "name": "failure_budget",
           "status": "passed",
-          "seconds": 0.017144415993243456,
+          "seconds": 0.017099916003644466,
           "mode": "budget",
           "sweeps": 20,
           "status_bits": 256,
@@ -1047,7 +1047,7 @@
         {
           "name": "failure_nonfinite",
           "status": "passed",
-          "seconds": 0.002586625050753355,
+          "seconds": 0.0026149579789489508,
           "mode": "nonfinite",
           "sweeps": 0,
           "status_bits": 2,
@@ -1058,7 +1058,7 @@
         {
           "name": "failure_unsupported",
           "status": "passed",
-          "seconds": 0.0026434159372001886,
+          "seconds": 0.002591917058452964,
           "mode": "unsupported",
           "sweeps": 0,
           "status_bits": 128,
@@ -1075,7 +1075,7 @@
         {
           "name": "frozen_residual_static",
           "status": "passed",
-          "seconds": 0.44802270899526775,
+          "seconds": 0.4488542079925537,
           "kind": "static",
           "active_rows": 25,
           "frozen_residual": 9.360539988445711e-05,
@@ -1085,7 +1085,7 @@
         {
           "name": "frozen_residual_collapse",
           "status": "passed",
-          "seconds": 0.07006216701120138,
+          "seconds": 0.07375079102348536,
           "kind": "collapse",
           "active_rows": 15,
           "frozen_residual": 0.00010764701776188202,
@@ -1095,7 +1095,7 @@
         {
           "name": "frozen_residual_incline",
           "status": "passed",
-          "seconds": 0.07671920792199671,
+          "seconds": 0.08103166590444744,
           "kind": "incline",
           "active_rows": 20,
           "frozen_residual": 8.811679534482073e-05,
@@ -1105,7 +1105,7 @@
         {
           "name": "static_column",
           "status": "passed",
-          "seconds": 1.0765062080463395,
+          "seconds": 1.0763276249635965,
           "steps": 10,
           "displacement": 9.045004844665527e-06,
           "max_speed": 4.2490508349146694e-05,
@@ -1120,14 +1120,14 @@
         {
           "name": "freefall",
           "status": "passed",
-          "seconds": 0.007246082997880876,
+          "seconds": 0.00729845801834017,
           "velocity_change_error": 2.2351741811588166e-10,
           "maximum_packing": 0.11999999731779099
         },
         {
           "name": "lift_separable_walls",
           "status": "passed",
-          "seconds": 0.07546879106666893,
+          "seconds": 0.07763612503185868,
           "kind": "separable",
           "steps": 10,
           "velocity_change_error": 1.3411045080014006e-08,
@@ -1137,7 +1137,7 @@
         {
           "name": "lift_frictional_walls",
           "status": "passed",
-          "seconds": 0.08454220904968679,
+          "seconds": 0.08139912493061274,
           "kind": "frictional",
           "steps": 10,
           "velocity_change_error": 1.3411045080014006e-08,
@@ -1147,7 +1147,7 @@
         {
           "name": "wall_friction_sliding",
           "status": "passed",
-          "seconds": 0.1310746669769287,
+          "seconds": 0.13385070802178234,
           "wall_mu": 0.2,
           "steps": 10,
           "expected": 0.09108356337584395,
@@ -1161,7 +1161,7 @@
         {
           "name": "wall_friction_resting",
           "status": "passed",
-          "seconds": 0.2646096250973642,
+          "seconds": 0.2661874999757856,
           "wall_mu": 0.6,
           "steps": 10,
           "max_speed": 0.0002773174492176622,
@@ -1174,7 +1174,7 @@
         {
           "name": "incline_static",
           "status": "passed",
-          "seconds": 0.11328604200389236,
+          "seconds": 0.1133900829590857,
           "slope": 0.25,
           "steps": 10,
           "max_speed": 4.3754444050136954e-05,
@@ -1186,7 +1186,7 @@
         {
           "name": "incline_yielding",
           "status": "passed",
-          "seconds": 0.14629533304832876,
+          "seconds": 0.14598808297887444,
           "slope": 0.75,
           "steps": 10,
           "speed": 0.09838016331195831,
@@ -1201,7 +1201,7 @@
         {
           "name": "collapse_flip",
           "status": "passed",
-          "seconds": 0.31276625010650605,
+          "seconds": 0.30375270801596344,
           "transfer": "flip",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1225,7 +1225,7 @@
         {
           "name": "collapse_flip_blend",
           "status": "passed",
-          "seconds": 0.30658637499436736,
+          "seconds": 0.30488383292686194,
           "transfer": "flip",
           "pic_fraction": 0.3,
           "dynamic": false,
@@ -1249,7 +1249,7 @@
         {
           "name": "collapse_pic",
           "status": "passed",
-          "seconds": 0.28349570790305734,
+          "seconds": 0.28776950004976243,
           "transfer": "pic",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1273,7 +1273,7 @@
         {
           "name": "collapse_apic_gradient",
           "status": "passed",
-          "seconds": 0.30626700003631413,
+          "seconds": 0.29916954098735005,
           "transfer": "apic_gradient",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1297,7 +1297,7 @@
         {
           "name": "collapse_dynamic_cfl",
           "status": "passed",
-          "seconds": 0.5403463329421356,
+          "seconds": 0.5323412499856204,
           "transfer": "flip",
           "pic_fraction": 0.0,
           "dynamic": true,
@@ -1321,7 +1321,7 @@
         {
           "name": "collapse_separable_walls",
           "status": "passed",
-          "seconds": 0.658744000014849,
+          "seconds": 0.6531119170831516,
           "transfer": "flip",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1345,7 +1345,7 @@
         {
           "name": "collapse_frictional_walls",
           "status": "passed",
-          "seconds": 0.5788270840421319,
+          "seconds": 0.5558942089555785,
           "transfer": "flip",
           "pic_fraction": 0.0,
           "dynamic": false,
@@ -1367,9 +1367,31 @@
           "energy_residual_metal": -0.05315141880906637
         },
         {
+          "name": "silo_outlet",
+          "status": "passed",
+          "seconds": 1.2242677500471473,
+          "inlet": false,
+          "steps": 60,
+          "particles_start": 240,
+          "particles_end": 155,
+          "position_difference": 4.7879322557231596e-05,
+          "relative_mass_error": 0.0
+        },
+        {
+          "name": "silo_outlet_and_inlet",
+          "status": "passed",
+          "seconds": 1.265220083994791,
+          "inlet": true,
+          "steps": 60,
+          "particles_start": 240,
+          "particles_end": 170,
+          "position_difference": 4.711697311921004e-05,
+          "relative_mass_error": 0.0
+        },
+        {
           "name": "segregation_incline",
           "status": "passed",
-          "seconds": 0.9002567919669673,
+          "seconds": 0.8895908329868689,
           "kind": "incline",
           "species_count": 2,
           "normalise_phi": false,
@@ -1393,7 +1415,7 @@
         {
           "name": "segregation_collapse_walls",
           "status": "passed",
-          "seconds": 0.196609792066738,
+          "seconds": 0.1844690419966355,
           "kind": "collapse",
           "species_count": 2,
           "normalise_phi": false,
@@ -1417,7 +1439,7 @@
         {
           "name": "segregation_three_sizes_normalised",
           "status": "passed",
-          "seconds": 0.30791420897003263,
+          "seconds": 0.29312412498984486,
           "kind": "incline",
           "species_count": 3,
           "normalise_phi": true,
@@ -1441,7 +1463,7 @@
         {
           "name": "output_scheduling",
           "status": "passed",
-          "seconds": 2.2666962089715526,
+          "seconds": 2.181716667022556,
           "save_times": [
             0.03,
             0.060000000000000005,
@@ -1453,7 +1475,7 @@
         {
           "name": "reproducibility",
           "status": "passed",
-          "seconds": 0.1305938750738278,
+          "seconds": 0.1308715830091387,
           "steps": 20,
           "sweeps": [
             23,
@@ -1481,7 +1503,7 @@
         {
           "name": "collapse_3200_particles",
           "status": "passed",
-          "seconds": 12.991923708003014,
+          "seconds": 12.830346292001195,
           "particles": 3200,
           "stress_rows": 1271,
           "steps": 3,
@@ -1502,8 +1524,8 @@
             3,
             2
           ],
-          "cpu_seconds": 7.853922124952078,
-          "metal_seconds": 5.13576983299572,
+          "cpu_seconds": 7.614729667082429,
+          "metal_seconds": 5.213676332961768,
           "timing": "single warm samples including the first-step cold solve; not a benchmark"
         }
       ],
@@ -1546,15 +1568,15 @@
       }
     ]
   },
-  "startup_seconds": 0.08297233295161277,
+  "startup_seconds": 0.08015066594816744,
   "accounting": {
-    "uploaded_bytes": 16150276,
-    "readback_bytes": 2856480,
-    "readback_seconds": 7.873612095601857,
-    "wait_seconds": 0.0010562490206211805,
-    "allocated_bytes": 75554520,
-    "submissions": 5468,
-    "dispatches": 303009,
-    "compile_seconds": 0.11325650126673281
+    "uploaded_bytes": 20657644,
+    "readback_bytes": 5516936,
+    "readback_seconds": 8.65459216805175,
+    "wait_seconds": 0.0010702931322157383,
+    "allocated_bytes": 95690408,
+    "submissions": 6130,
+    "dispatches": 317093,
+    "compile_seconds": 0.10982741578482091
   }
 }

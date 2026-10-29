@@ -116,9 +116,9 @@ contact between separate bodies or along curved surfaces.
 | `wall` | Interior vertical wall in the lower half at mid-width | yes | yes | accepted |
 | `two_walls` | Two staggered interior vertical walls | yes | yes | accepted |
 | `box` | Fixed interior box of walls (grid nodes 4 to 8) | yes | yes | accepted |
-| `silo_left`, `silo_bottom` | Wall with an opening at mid-height or mid-width | yes | yes | rejected |
-| `outlet_left`, `outlet_bottom` | Remove particles within one cell of the left edge, or below the bottom edge | yes | yes | rejected |
-| `inlet_right`, `inlet_top` | Add particles every `inlet_rate` seconds (material setting) | yes | yes | rejected |
+| `silo_left`, `silo_bottom` | Wall with an opening at mid-height or mid-width | yes | yes | `silo_bottom` checked; `silo_left` accepted |
+| `outlet_left`, `outlet_bottom` | Remove particles within one cell of the left edge, or below the bottom edge | yes | yes | yes, on the host (see below) |
+| `inlet_right`, `inlet_top` | Add particles every `inlet_rate` seconds (material setting) | yes | yes | yes, on the host (see below) |
 | `conveyor` | Horizontal velocity `v_0` (m/s) on the bottom edge, away from the corners | yes | rejected | rejected |
 | `vertical_force`, `horizontal_force` | Edge traction `max_q` with the legacy density scaling (see [array-conversion](array-conversion.md)) | yes | rejected | rejected |
 
@@ -208,10 +208,14 @@ newer. It runs the complete granular step on the device in FP32. It requires
 `granular_stress = "intrinsic"`, `granular_stress_basis = "nodal"`, linear
 interpolation, point quadrature and one `granular` material. Supported:
 `flip`, `pic` and `apic_gradient` transfers; static or dynamic time stepping;
-two-sided, one-sided and frictional walls; periodic x; grid segregation.
-Rejected: tolerances below `1e-5`, `increment` stopping, `granular_viscosity`,
-silos, inlets, outlets, conveyors, traction flags, `damping`,
-`O.check_positions`, `O.measure_energy` and custom timestep controllers.
+two-sided, one-sided and frictional walls; interior and silo walls; periodic
+x; inlets and outlets; grid segregation. On a step where an inlet fires or a
+particle reaches an outlet, the state is synchronised to the host,
+`process_boundaries` runs as on the CPU and the runner is rebuilt for the new
+particle count, so draining silos run mostly on the host path. Rejected:
+tolerances below `1e-5`, `increment` stopping, `granular_viscosity`,
+conveyors, traction flags, `damping`, `O.check_positions`,
+`O.measure_energy` and custom timestep controllers.
 Results, timings and the validation gates are in [gpu](gpu.md).
 
 ## Examples

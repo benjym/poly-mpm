@@ -655,5 +655,23 @@
       "median_cpu_over_metal": 25.61627467854664,
       "position_difference_grid_spacings": 2.2792326359599713e-07
     }
+  ],
+  "plotting": [
+    {
+      "backend": "cpu",
+      "particles": 9600,
+      "steps": 3,
+      "seconds_per_step": 5.368651444325224,
+      "snapshot_seconds": 0.0,
+      "figure_seconds": 0.33991212502587587
+    },
+    {
+      "backend": "metal",
+      "particles": 9600,
+      "steps": 3,
+      "seconds_per_step": 2.5478961109959832,
+      "snapshot_seconds": 0.008875750005245209,
+      "figure_seconds": 0.3391576660797
+    }
   ]
 }

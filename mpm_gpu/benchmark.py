@@ -24,12 +24,28 @@ import numpy as np
 TOLERANCE = 1e-4
 
 
-def columns(count, *, spacing=0.05, particle_spacing=0.0125, height=1.0, width=0.5, pitch=1.0, static=False):
-    """count columns of width x height, one per `pitch` of domain, on a grid of `spacing`."""
+def columns(
+    count,
+    *,
+    spacing=0.05,
+    particle_spacing=0.0125,
+    height=1.0,
+    width=0.5,
+    pitch=1.0,
+    static=False,
+    figures=None,
+):
+    """count columns of width x height, one per `pitch` of domain, on a grid of `spacing`.
+
+    figures, a directory, turns on the material-point and continuum figures there.
+    """
     from initialise import prepare
     from inputs.granular_collapse import Params
 
     P = Params([])
+    if figures is not None:
+        P.save_dir = str(figures) + "/"
+        P.O.plot_material_points = P.O.plot_continuum = True
     P.granular_solver, P.granular_tolerance, P.diagnostics = "velocity", TOLERANCE, True
     P.granular_max_nodes, P.granular_max_iterations, P.dt = 10**8, 2000, 0.002
     P.G.x_M = count * pitch
@@ -123,6 +139,43 @@ def case(name, state, *, steps, pairs, rt):
     return record
 
 
+def plotting(rt, count=3, steps=3, repeats=3):
+    """Cost of one save (Metal snapshot plus the standard figures) against the steps."""
+    import tempfile
+
+    from MPM import run
+    from .runner import _runners
+
+    rows = []
+    for backend in ("cpu", "metal"):
+        with tempfile.TemporaryDirectory() as directory:
+            P, G, L = columns(count, figures=directory)
+            P.backend = backend
+            started = perf_counter()
+            run(P, G, L, max_steps=steps, output=False)
+            stepping = perf_counter() - started
+            snapshot, figures = [], []
+            for _ in range(repeats):
+                if backend == "metal":
+                    started = perf_counter()
+                    _runners[L].snapshot(P, G, L)
+                    snapshot.append(perf_counter() - started)
+                started = perf_counter()
+                P.O.after_every_savetime(L, P, G)
+                figures.append(perf_counter() - started)
+            rows.append(
+                dict(
+                    backend=backend,
+                    particles=len(L.materials[0]),
+                    steps=steps,
+                    seconds_per_step=stepping / steps,
+                    snapshot_seconds=float(np.median(snapshot)) if snapshot else 0.0,
+                    figure_seconds=float(np.median(figures)),
+                )
+            )
+    return rows
+
+
 def main(argv=None):
     from .runner import runtime
     from .runtime import environment
@@ -132,8 +185,15 @@ def main(argv=None):
     parser.add_argument("--quick", action="store_true", help="Only the small cases")
     parser.add_argument("--cases", nargs="*", help="Run only these case names")
     parser.add_argument("--append", action="store_true", help="Add the cases to an existing report")
+    parser.add_argument("--plotting", action="store_true", help="Only measure the cost of one save")
     args = parser.parse_args(argv)
     rt = runtime()
+    if args.plotting:
+        report = json.loads(args.output.read_text()) if args.output.exists() else {}
+        report["plotting"] = plotting(rt)
+        args.output.write_text(json.dumps(report, indent=2) + "\n")
+        print(json.dumps(report["plotting"], indent=2), flush=True)
+        return 0
     report = dict(
         schema_version=1,
         environment=rt.environment,
