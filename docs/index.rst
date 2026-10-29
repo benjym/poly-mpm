@@ -30,6 +30,7 @@ the examples are research fixtures, not a catalogue of calibrated materials.
    granular-prototype
    granular-source-audit
    granular-mixed
+   connected-flows-literature
    gpu
    gpu-handoff
    quadrature

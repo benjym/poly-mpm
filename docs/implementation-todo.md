@@ -104,6 +104,10 @@ cannot settle. The question to answer is given for each.
       *Question:* tied to the modelling decision for refined connected flows in
       `gpu-handoff.md` (fixed stress spacing, a rheology change or uncertified
       solves); which direction?
+      The [literature review](connected-flows-literature.md) points at the model:
+      the constant-friction, incompressible, rate-independent law is ill-posed,
+      and it recommends a frozen-problem test of a near-associated,
+      rate-dependent variant before choosing.
 - [ ] Repeated connected 100k-particle Metal benchmark (`gpu.md`). Blocked by the
       same decision: connected refined domains do not converge on either backend.
 - [ ] Metal `increment` stopping and `granular_viscosity`. Both are options
