@@ -85,7 +85,7 @@ for example `silo 11`; its two grain size classes are fixed in the input.
 
 ## User guide
 
-- [Experimental rigid-grain solver](docs/granular-prototype.md): coupled packing/friction prototype for static zones and free surfaces; run `granular_column` or `granular_collapse`.
+- [Experimental rigid-grain solver](docs/granular-prototype.md): coupled packing/friction prototype for static zones and free surfaces; run `granular_column` or `granular_collapse`, or `granular_square_drum 11 2 metal` for a segregating square drum on the GPU.
 - [Getting started](https://github.com/benjym/poly-mpm/blob/main/docs/getting_started.rst): setup, first run, previews, and examples.
 - [Create a simulation](https://github.com/benjym/poly-mpm/blob/main/docs/tutorial.rst): a complete runnable input, units, geometry,
   boundaries, material parameters, and segregation settings.

@@ -46,6 +46,7 @@ CHANNEL_GRID = ("grid_nodes", integer_at_least(2), "vertical grid nodes (integer
 SIZES = ("size_classes", integer_at_least(2), "grain size classes (integer, at least 2)")
 ANGLE = ("slope_degrees", finite_float, "slope angle in degrees (finite number)")
 FROUDE = ("Froude_number", positive_float, "Froude number (finite and positive)")
+BACKEND = ("backend", ("metal", "cpu"), "metal (Apple silicon GPU) or cpu")
 ARRANGEMENT = ("arrangement", ("top", "bot", "mix"), "small grains on top, on bottom, or mixed")
 
 # Inputs without an entry accept no positional arguments. Register new arguments
@@ -58,6 +59,7 @@ ARGUMENTS = {
     "bi_square_drum": (GRID, FROUDE),
     "bi_vertical_chute": (SIZES, CHANNEL_GRID),
     "francois": (GRID,),
+    "granular_square_drum": (GRID, FROUDE, BACKEND),
     "poly_seg_test": (ANGLE,),
     "silo": (GRID,),
 }

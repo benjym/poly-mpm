@@ -236,6 +236,19 @@
     ]
   },
   {
+    "example": "granular_square_drum",
+    "args": [
+      "granular_square_drum",
+      "11",
+      "2",
+      "cpu"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      450
+    ]
+  },
+  {
     "example": "gsd",
     "args": [
       "gsd"
@@ -291,7 +304,7 @@
       "poly_avalanche"
     ],
     "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'viscous_size'. No implemented and tested constitutive law with this name. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu."
+    "error": "ValueError: Unsupported material law 'viscous_size'. No implemented and tested constitutive law with this name. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu, granular."
   },
   {
     "example": "poly_seg_test",
@@ -362,7 +375,7 @@
       "tri_seg_test"
     ],
     "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'viscous_size'. No implemented and tested constitutive law with this name. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu."
+    "error": "ValueError: Unsupported material law 'viscous_size'. No implemented and tested constitutive law with this name. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu, granular."
   },
   {
     "example": "triaxial",
@@ -380,7 +393,7 @@
       "tunnel"
     ],
     "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'elastic_time'. Retired: arbitrary per-step mass deletion is not a constitutive law; use elastic for constant stiffness. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu."
+    "error": "ValueError: Unsupported material law 'elastic_time'. Retired: arbitrary per-step mass deletion is not a constitutive law; use elastic for constant stiffness. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu, granular."
   },
   {
     "example": "vicky",

@@ -48,3 +48,21 @@ def test_runner_and_science_on_actual_metal_device():
     report = validate_runner(runtime())
     failures = [row for row in report["cases"] if row["status"] != "passed"]
     assert not failures, failures
+
+
+def test_granular_square_drum_example_on_actual_metal_device():
+    import contextlib
+    import io
+
+    import numpy as np
+
+    from initialise import get_parameters
+    from MPM import run
+
+    with contextlib.redirect_stdout(io.StringIO()):
+        P, G, L = get_parameters(["granular_square_drum", "11", "2", "metal"])
+    run(P, G, L, max_steps=20, output=False)
+    b = L.materials[0]
+    assert P.tstep == 20
+    assert np.isfinite(b.x).all() and np.isfinite(b.phi).all()
+    assert np.allclose(b.phi.sum(axis=1), 1, atol=1e-5)

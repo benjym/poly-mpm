@@ -19,6 +19,7 @@ ARGUMENTS = {
     "bi_square_drum": ["11", "2"],
     "bi_vertical_chute": ["2", "11"],
     "francois": ["11"],
+    "granular_square_drum": ["11", "2", "cpu"],
     "poly_seg_test": ["22"],
     "silo": ["11"],
 }

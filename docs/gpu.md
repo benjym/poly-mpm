@@ -18,6 +18,29 @@ either backend within the sweep budget.
 The baseline is commit `3d72a69`, without the concurrent density experiments.
 The scientific model and CPU numerical defaults remain unchanged.
 
+## Example
+
+`granular_square_drum` is the square drum of `bi_square_drum` (rotating
+gravity, two grain sizes, grid segregation) with rigid grains in place of the
+Pouliquen material. Friction is the constant quasi-static value
+mu = tan(20.9 deg), so the rate dependence of mu(I) and the elasticity are
+absent. The last argument selects the backend:
+
+```sh
+uv sync --extra gpu --python 3.14
+uv run python MPM.py granular_square_drum 11 2 metal
+```
+
+Time stepping is dynamic. The material time sqrt(h/|g|), the time for a grain
+at rest to fall one grid spacing, bounds the step while the bed is at rest;
+otherwise the advection and segregation limits apply, each scaled by `CFL`.
+Once the bed avalanches (near 32 deg of tilt at ny = 11) the solve needs more
+than the default 2,000 sweeps, so the example allows 20,000. Over the first
+second at ny = 11, Fr = 2 (450 particles) the CPU took 977 steps in 37 s and
+Metal 994 steps in 34 s on the M4; the segregation advection limit set 852 of
+the CPU steps. The step counts differ because the dynamic step sequence
+depends on FP32 rounding. At this size the device is not faster than the CPU.
+
 ## Run the first hardware gate
 
 Use an Apple silicon Mac, macOS 26 or newer, native CPython 3.14, Xcode and its
