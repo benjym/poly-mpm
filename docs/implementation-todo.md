@@ -106,8 +106,9 @@ cannot settle. The question to answer is given for each.
       solves); which direction?
       The [literature review](connected-flows-literature.md) points at the model:
       the constant-friction, incompressible, rate-independent law is ill-posed,
-      and it recommends a frozen-problem test of a near-associated,
-      rate-dependent variant before choosing.
+      and a frozen-problem test confirms it: the associated law converges and
+      its solution converges under refinement, while the current law does not
+      and a viscosity alone does not fix it.
 - [ ] Repeated connected 100k-particle Metal benchmark (`gpu.md`). Blocked by the
       same decision: connected refined domains do not converge on either backend.
 - [ ] Metal `increment` stopping and `granular_viscosity`. Both are options

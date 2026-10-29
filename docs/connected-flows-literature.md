@@ -258,6 +258,14 @@ implementing. If they do not, the discretisation (stress indeterminacy, the
 Q1–Q1 pair) needs attention first, along the lines of Daviet's thesis and Zhao
 and Choo (2020).
 
+This experiment has been run ([regularisation study](granular-mixed.md#regularised-laws-under-refinement)).
+On the frozen first step, the associated law converges in one interior-point
+solve on grids from 0.05 to 0.00625 m (25 to 41 iterations) and its velocity
+field converges at about first order, while the non-associated law fails beyond
+0.05 m with residuals that grow under refinement. A shear viscosity alone does
+not restore convergence. The model, not the solver, is the obstacle; the next
+step is a critical-state dilatancy law and a test of an evolving flow.
+
 For production runs in the meantime, the fixed coarser stress spacing is the
 only option already shown to converge in this code. It should be reported as a
 numerical regularisation with a stated length.

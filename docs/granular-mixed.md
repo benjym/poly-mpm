@@ -445,3 +445,51 @@ alike on the refined non-dilatant problem, while its frictionless and convex
 problem itself rather than to any one algorithm: at these resolutions it may
 have no solution meeting the tolerance, or one that iterative methods cannot
 reach. This has not been proven.
+
+## Regularised laws under refinement
+
+The [regularisation study](../benchmarks/granular_regularisation_study.json)
+(`python -m benchmarks.granular_regularisation_study`, Clarabel required)
+tests the conclusion of the [literature review](connected-flows-literature.md)
+that the non-associated, rate-independent law is ill-posed. It solves the frozen
+first step of the collapse from rest, in the velocity form above, at grid
+spacings 0.05, 0.025, 0.0125 and 0.00625 m (3,200 to 204,800 particles, 231 to
+13,041 stress nodes) under four laws: associated (`s = 0`), associated with a
+shear viscosity `eta`, non-associated (the damped fixed point on `s`, 60 outer
+iterations at most) and non-associated with `eta`. The viscosity enters the
+objective as the dissipation `sum_a 2 eta |w_dev,a|^2 / V_a`, which keeps each
+subproblem convex. Each solution is sampled at 1,176 fixed points in the column
+(nodal velocity, in units of `g dt`), and the relative L2 change from the next
+coarser grid is reported.
+
+| Law | `eta` (Pa s) | Converged | Interior-point iterations | Change 0.05 → 0.025 | → 0.0125 | → 0.00625 | Final residual at 0.00625 |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| associated | 0 | all grids | 25, 33, 39, 41 | 5.9% | 2.6% | 1.1% | 1.3e-5 |
+| associated | 100 | all grids | 26, 36, 37, 43 | 5.6% | 2.3% | 0.8% | 9.7e-6 |
+| associated | 1000 | all grids | 26, 32, 37, 37 | 4.8% | 1.7% | 0.8% | 1.0e-5 |
+| non-associated | 0 | 0.05 only | 23–52 per solve | 7.6% | 6.9% | 5.6% | 3.7e-2 |
+| non-associated | 100 | 0.05 only | 23–58 per solve | 7.3% | 5.9% | 5.2% | 2.5e-2 |
+| non-associated | 1000 | 0.05 only | 23–50 per solve | 4.3% | 3.0% | 3.2% | 9.0e-3 |
+
+The associated law converges in one interior-point solve on every grid, with
+iteration counts that grow from 25 to 41 as the problem grows 56-fold, and its
+velocity field converges at about first order in the grid spacing. Its kinetic
+energy settles near 0.034 J. The non-associated law converges only on the
+coarsest grid; its final residual grows with refinement (1.2e-2, 1.8e-2,
+3.7e-2), its kinetic energy keeps rising (0.047 to 0.051 J) and its change
+between grids does not fall. A shear viscosity alone does not change this: at
+100 Pa s it has no measurable effect, and at 1000 Pa s, which lowers the
+kinetic energy by about 13% at the finest grid, the residual is lower but still grows from 1.6e-3 to
+9.0e-3 and the change stays near 3%.
+
+The non-associated rows compare the last iterates of a fixed point that did not
+converge, so they show that the refined problem cannot be solved this way, not
+that it has no solution. Together with the review, they support the reading that
+normality (or a dilatancy law close to it) is what makes the refined problem
+solvable and its solution grid-convergent, and that rate dependence through a
+viscosity is not enough on its own. The associated law used here dilates at
+`w_n = mu |w_t|` throughout the flow, which overstates dilatancy: a
+critical-state law (Barker et al. 2017) has dilatancy that vanishes at the
+critical packing and couples it to the pressure dependence of the yield
+surface. This is one instant from rest; the behaviour of an evolving flow under
+the associated or a critical-state law has not been tested.
