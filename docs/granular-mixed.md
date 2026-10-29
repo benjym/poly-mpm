@@ -266,27 +266,27 @@ tolerance `1e-4` with a 3,000-sweep budget:
 | Stress space | Grid spacing | Particles | Stress unknowns | Result |
 | --- | ---: | ---: | ---: | --- |
 | nodal | 0.05 | 3,200 | 693 | converged, 2,329 sweeps |
-| nodal | 0.025 | 12,800 | 2,583 | stalls at 1.75e-2 |
+| nodal | 0.025 | 12,800 | 2,583 | 1.75e-2 after 3,000 sweeps |
 | P0 | 0.05 | 3,200 | 600 | 5.3e-4 after 3,000 sweeps |
-| P0 | 0.025 | 12,800 | 2,400 | stalls at 1.37e-2 |
+| P0 | 0.025 | 12,800 | 2,400 | 1.37e-2 after 3,000 sweeps |
 | coarse, k = 2 | 0.05 | 3,200 | 198 | converged, 95 sweeps |
 | coarse, k = 2 | 0.025 | 12,800 | 693 | converged at the budget (3,000 sweeps) |
-| coarse, k = 2 | 0.0125 | 51,200 | 2,583 | stalls at 4.4e-3 |
+| coarse, k = 2 | 0.0125 | 51,200 | 2,583 | 4.4e-3 after 3,000 sweeps |
 
-The assembled reference solver (`hybrid`) also stalls on the nodal problem at
-0.025, at 1.9e-2, so the stall is not specific to the compact iteration. The
-stalled level does not change with `dt`: from rest with zero packing gaps the
-scaled first-step problem is independent of the timestep.
+The assembled reference solver (`hybrid`) also fails on the nodal problem at
+0.025 (1.9e-2 after 200 least-squares evaluations and 2,000 block sweeps).
+These are not plateaus: run to 20,000 sweeps, the nodal 0.025 residual keeps
+falling slowly (9.6e-3 at 5,000, 5.7e-3 at 10,000, 2.6e-3 at 20,000). The
+residuals do not change with `dt`: from rest with zero packing gaps the scaled
+first-step problem is independent of the timestep.
 
 Friction sets the difficulty. Without friction the nodal problem at 0.025
 converges in 44 sweeps and the coarse problem at 0.0125 in 30; with `mu = 0.1`
-they need 1,232 and 1,500 sweeps; with the input's `mu = 0.5` both stall. The
-stall therefore follows the stress resolution of the frictional problem, not
-the ratio of stress to velocity unknowns (nodal at 0.025 and coarse k = 2 at
-0.0125 share a 0.025 m stress spacing and both stall). This is consistent with
-the known ill-posedness of incompressible, rate-independent non-associated
-Coulomb flow under refinement, but that mechanism has not been demonstrated
-here.
+they need 1,232 and 1,500 sweeps; with the input's `mu = 0.5` neither
+converges within 3,000. The difficulty follows the stress resolution of the
+frictional problem, not the ratio of stress to velocity unknowns (nodal at
+0.025 and coarse k = 2 at 0.0125 share a 0.025 m stress spacing and behave
+alike).
 
 Holding the stress spacing at 0.05 m while the velocity grid refines, every
 case converges: 3,000, 1,275 and 1,223 sweeps at 12,800, 51,200 and 204,800
@@ -294,7 +294,7 @@ particles. Nested iteration (solve on a coarser stress grid, interpolate the
 stress field, which stays admissible because the Coulomb cone is convex, and
 use it as the warm start) reduces the 12,800-particle case to 48 + 175 sweeps
 (3 s against 46 s) and the 204,800-particle case to 41 + 197 sweeps. It does
-not rescue the stalled 0.025 m stress spacing.
+not bring the 0.025 m stress spacing within the budget.
 
 A fixed physical stress spacing is a regularisation: it sets a minimum length
 for the stress field independent of the velocity grid. Whether it, a rheology
@@ -302,3 +302,32 @@ change such as dilatancy or a rate-dependent friction law, or another
 regularisation is appropriate is a modelling decision that has not been made.
 The coarse space has not been compared with the nodal space for accuracy on
 evolving flows.
+
+### Dilatancy
+
+The [dilatancy study](../benchmarks/granular_dilatancy_study.json)
+(`uv run --locked python -m benchmarks.granular_dilatancy_study`) repeats the
+nodal frozen problems with a dilatant flow rule: while pressed, sliding
+separates at `w_n = beta |w_t|`, so normal complementarity applies to
+`w_n - beta |w_t|` (`beta = 0` is the current law, `beta = mu` associated
+Coulomb flow). The exact local solve becomes the monotone scalar equation
+`|r_t(alpha)| (D_n - mu beta alpha) + mu q_n = 0` with
+`r_t(alpha) = -q_t / (D_t + alpha)` and `r_n = |r_t| / mu`; the prototype
+matches `diagonal_coulomb` at `beta = 0` to 2e-12. The global iteration is the
+colored sweeps with Anderson acceleration (no Newton). Residuals after 3,000
+sweeps:
+
+| Grid spacing | Particles | beta/mu = 0 | 0.1 | 0.25 | 0.5 | 1 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.05 | 3,200 | converged | converged | 2.6e-4 | 6.0e-4 | 4.3e-4 |
+| 0.025 | 12,800 | 1.3e-2 | 1.3e-2 | 4.4e-3 | 4.4e-4 | 4.1e-4 |
+| 0.0125 | 51,200 | 4.5e-2 | 3.7e-2 | 1.8e-2 | 6.1e-3 | 1.6e-3 |
+
+At 12,800 particles the associated problem converges after 12,200 sweeps,
+against 2.6e-3 after 20,000 for `beta = 0`. Dilatancy lowers the residual
+reached on refined grids but slows the coarse case, and even the associated
+problem, which is a convex cone complementarity problem, needs a number of
+sweeps that grows rapidly with resolution. Dilatancy alone therefore does not
+remove the obstacle: the colored-sweep iteration itself does not scale, and a
+multilevel solver is needed whichever flow rule is used. No dilatancy law is
+implemented in the model; this prototype lives only in the study script.
