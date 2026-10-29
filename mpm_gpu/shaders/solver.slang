@@ -86,28 +86,24 @@ float3 strain(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<float> 
     {
         uint j = neighbors[9 * a + s];
         if (j == INVALID) continue;
-        float gx = gradients[2 * (9 * a + s)];
-        float gy = gradients[2 * (9 * a + s) + 1];
-        float ux = velocity[2 * j];
-        float uy = velocity[2 * j + 1];
-        w += float3(gx * ux + gy * uy, gx * ux - gy * uy, gy * ux + gx * uy);
+        w += mul(row_block(a, row_slot(a, s, neighbors), gradients), float2(velocity[2 * j], velocity[2 * j + 1]));
     }
-    return HALF_ROOT2 * w;
+    return w;
 }
 
-// Bound on each component of |B| |u| for row a: the roundoff scale of strain().
+// Largest component of |B| |u| for row a: the roundoff scale of strain().
 float strain_bound(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
                    RWStructuredBuffer<float> velocity)
 {
-    float w = 0.0;
+    float3 w = float3(0.0, 0.0, 0.0);
     for (uint s = 0; s < 9; s++)
     {
         uint j = neighbors[9 * a + s];
         if (j == INVALID) continue;
-        w += abs(gradients[2 * (9 * a + s)] * velocity[2 * j])
-             + abs(gradients[2 * (9 * a + s) + 1] * velocity[2 * j + 1]);
+        float3x2 B = abs(row_block(a, row_slot(a, s, neighbors), gradients));
+        w += mul(B, abs(float2(velocity[2 * j], velocity[2 * j + 1])));
     }
-    return HALF_ROOT2 * w;
+    return max(w.x, max(w.y, w.z));
 }
 
 float2 transpose_force(uint j, StructuredBuffer<uint> transpose_rows,
@@ -119,15 +115,16 @@ float2 transpose_force(uint j, StructuredBuffer<uint> transpose_rows,
     {
         uint a = transpose_rows[9 * j + i];
         if (a == INVALID) break;
-        uint s = transpose_slots[9 * j + i];
-        float gx = gradients[2 * (9 * a + s)];
-        float gy = gradients[2 * (9 * a + s) + 1];
-        float z0 = stress[offset + 3 * a];
-        float z1 = stress[offset + 3 * a + 1];
-        float z2 = stress[offset + 3 * a + 2];
-        f += float2((z0 + z1) * gx + z2 * gy, (z0 - z1) * gy + z2 * gx);
+        float3 z = float3(stress[offset + 3 * a], stress[offset + 3 * a + 1], stress[offset + 3 * a + 2]);
+        f += mul(z, row_block(a, transpose_slots[9 * j + i], gradients));
     }
-    return HALF_ROOT2 * f;
+    return f;
+}
+
+// Wall contact rows follow the stress rows and use the wall friction.
+float row_mu(uint a, uint stress_rows, float mu, float wall_mu)
+{
+    return a < stress_rows ? mu : wall_mu;
 }
 
 // Normal reaction nonnegative, tangential reaction inside the Coulomb disk.
@@ -214,7 +211,7 @@ void solver_setup(StructuredBuffer<float> magnitude, StructuredBuffer<float> com
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void stress_initial(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float mu,
+void stress_initial(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float mu, uniform uint stress_rows, uniform float wall_mu,
                     uniform uint warm, StructuredBuffer<uint> state, StructuredBuffer<float> scalars,
                     StructuredBuffer<float> initial, RWStructuredBuffer<float> z)
 {
@@ -224,7 +221,7 @@ void stress_initial(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uni
     float3 value = float3(0.0, 0.0, 0.0);
     if (warm != 0 && open(state, RUNNING))
         value = feasible(float3(initial[3 * a], initial[3 * a + 1], initial[3 * a + 2])
-                         / scalars[SCALE], mu);
+                         / scalars[SCALE], row_mu(a, stress_rows, mu, wall_mu));
     store3(z, a, value);
 }
 
@@ -251,7 +248,7 @@ void velocity_refresh(uint3 tid : SV_DispatchThreadID, uniform uint gate, unifor
 [shader("compute")]
 [numthreads(256, 1, 1)]
 void residual_rows(uint3 tid : SV_DispatchThreadID, uniform uint gate, uniform uint row_count,
-                   uniform float mu, StructuredBuffer<uint> state, StructuredBuffer<float> scalars,
+                   uniform float mu, uniform uint stress_rows, uniform float wall_mu, StructuredBuffer<uint> state, StructuredBuffer<float> scalars,
                    StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
                    StructuredBuffer<float> gap, RWStructuredBuffer<float> z,
                    RWStructuredBuffer<float> u, RWStructuredBuffer<float> residual)
@@ -262,7 +259,7 @@ void residual_rows(uint3 tid : SV_DispatchThreadID, uniform uint gate, uniform u
     float inverse = m > 0.0 ? 1.0 / m : 0.0;
     float3 w = (strain(a, neighbors, gradients, u) + float3(gap[3 * a], gap[3 * a + 1], gap[3 * a + 2]))
                * inverse;
-    residual[a] = natural(load3(z, a), w, mu);
+    residual[a] = natural(load3(z, a), w, row_mu(a, stress_rows, mu, wall_mu));
 }
 
 [shader("compute")]
@@ -341,7 +338,7 @@ void sweep_row(uint a, float mu, float dt, RWStructuredBuffer<float> scalars,
     {
         uint j = neighbors[9 * a + k];
         if (j == INVALID) continue;
-        float3x2 B = block(gradients[2 * (9 * a + k)], gradients[2 * (9 * a + k) + 1]);
+        float3x2 B = row_block(a, row_slot(a, k, neighbors), gradients);
         float2 f = delta.x * B[0] + delta.y * B[1] + delta.z * B[2];
         u[2 * j] += factor * inverse_mass[2 * j] * f.x;
         u[2 * j + 1] += factor * inverse_mass[2 * j + 1] * f.y;
@@ -351,7 +348,7 @@ void sweep_row(uint a, float mu, float dt, RWStructuredBuffer<float> scalars,
 [shader("compute")]
 [numthreads(64, 1, 1)]
 void sweep_color(uint3 tid : SV_DispatchThreadID, uniform uint color_offset,
-                 uniform uint color_count, uniform float mu, uniform float dt,
+                 uniform uint color_count, uniform float mu, uniform uint stress_rows, uniform float wall_mu, uniform float dt,
                  StructuredBuffer<uint> state, RWStructuredBuffer<float> scalars,
                  StructuredBuffer<uint> color_rows, StructuredBuffer<uint> neighbors,
                  StructuredBuffer<float> gradients, StructuredBuffer<float> gap,
@@ -361,7 +358,8 @@ void sweep_color(uint3 tid : SV_DispatchThreadID, uniform uint color_offset,
 {
     uint t = tid.x;
     if (t >= color_count || !open(state, RUNNING)) return;
-    sweep_row(color_rows[color_offset + t], mu, dt, scalars, neighbors, gradients, gap, diagonal,
+    uint a = color_rows[color_offset + t];
+    sweep_row(a, row_mu(a, stress_rows, mu, wall_mu), dt, scalars, neighbors, gradients, gap, diagonal,
               rotation, inverse_mass, status, z, u);
 }
 
@@ -568,7 +566,7 @@ void anderson_solve(uniform float rcond, StructuredBuffer<float> factor,
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void anderson_candidate(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float mu,
+void anderson_candidate(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float mu, uniform uint stress_rows, uniform float wall_mu,
                         StructuredBuffer<uint> state, StructuredBuffer<float> coefficients,
                         RWStructuredBuffer<float> starts, RWStructuredBuffer<float> steps,
                         RWStructuredBuffer<float> z, RWStructuredBuffer<float> candidate)
@@ -590,7 +588,7 @@ void anderson_candidate(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
                     - float3(steps[i0], steps[i0 + 1], steps[i0 + 2]);
         value -= coefficients[c] * (dx + df);
     }
-    store3(candidate, a, feasible(value, mu));
+    store3(candidate, a, feasible(value, row_mu(a, stress_rows, mu, wall_mu)));
 }
 
 // ---- Candidate acceptance (Anderson and Newton) -----------------------------
@@ -676,7 +674,7 @@ void newton_begin(RWStructuredBuffer<uint> state)
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void newton_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float mu,
+void newton_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float mu, uniform uint stress_rows, uniform float wall_mu,
                  StructuredBuffer<uint> state, StructuredBuffer<float> scalars,
                  StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
                  StructuredBuffer<float> gap, RWStructuredBuffer<float> z,
@@ -690,7 +688,7 @@ void newton_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count, unifor
                / scalars[MAGNITUDE];
     float3 value = load3(z, a);
     float3 argument = value - w;
-    float radius = mu * max(value.x, 0.0);
+    float radius = row_mu(a, stress_rows, mu, wall_mu) * max(value.x, 0.0);
     float size = length(argument.yz);
     float2 unit = size > 0.0 ? argument.yz / size : float2(0.0, 0.0);
     float ratio = size > 0.0 ? radius / size : 0.0;
@@ -746,7 +744,7 @@ float3 jv_row(uint a, float mu, StructuredBuffer<uint> neighbors, StructuredBuff
 [shader("compute")]
 [numthreads(256, 1, 1)]
 void jv_rows(uint3 tid : SV_DispatchThreadID, uniform uint gate, uniform uint row_count,
-             uniform float mu, uniform uint offset, StructuredBuffer<uint> state,
+             uniform float mu, uniform uint stress_rows, uniform float wall_mu, uniform uint offset, StructuredBuffer<uint> state,
              StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
              RWStructuredBuffer<float> frozen, RWStructuredBuffer<float> source,
              RWStructuredBuffer<float> du, RWStructuredBuffer<float> output)
@@ -754,7 +752,7 @@ void jv_rows(uint3 tid : SV_DispatchThreadID, uniform uint gate, uniform uint ro
     // Generalized Jacobian of the natural residual at the frozen branch.
     uint a = tid.x;
     if (a >= row_count || !open(state, gate)) return;
-    float3 out = jv_row(a, mu, neighbors, gradients, frozen, source, offset, du);
+    float3 out = jv_row(a, row_mu(a, stress_rows, mu, wall_mu), neighbors, gradients, frozen, source, offset, du);
     store3(output, a, out);
 }
 
@@ -1098,7 +1096,8 @@ void refresh_nodes(uint t, uint node_count, float dt, RWStructuredBuffer<float> 
     }
 }
 
-float residual_max(uint t, uint row_count, float mu, RWStructuredBuffer<float> scalars,
+float residual_max(uint t, uint row_count, float mu, uint stress_rows, float wall_mu,
+                   RWStructuredBuffer<float> scalars,
                    StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
                    StructuredBuffer<float> gap, RWStructuredBuffer<float> z, RWStructuredBuffer<float> u,
                    inout bool finite)
@@ -1111,7 +1110,7 @@ float residual_max(uint t, uint row_count, float mu, RWStructuredBuffer<float> s
     {
         float3 w = (strain(a, neighbors, gradients, u) + float3(gap[3 * a], gap[3 * a + 1], gap[3 * a + 2]))
                    * inverse;
-        float value = natural(load3(z, a), w, mu);
+        float value = natural(load3(z, a), w, row_mu(a, stress_rows, mu, wall_mu));
         if (isfinite(value)) largest = max(largest, value);
         else ok = false;
     }
@@ -1126,7 +1125,7 @@ float residual_max(uint t, uint row_count, float mu, RWStructuredBuffer<float> s
 [shader("compute")]
 [numthreads(1024, 1, 1)]
 void iteration_front(uint3 lane : SV_GroupThreadID, uniform uint budget, uniform float tolerance,
-                     uniform float mu, uniform float dt, uniform uint colors, uniform uint node_count,
+                     uniform float mu, uniform uint stress_rows, uniform float wall_mu, uniform float dt, uniform uint colors, uniform uint node_count,
                      uniform uint row_count, RWStructuredBuffer<uint> state, RWStructuredBuffer<uint> status,
                      RWStructuredBuffer<float> scalars, StructuredBuffer<uint> color_offsets,
                      StructuredBuffer<uint> color_rows, StructuredBuffer<uint> neighbors,
@@ -1148,8 +1147,8 @@ void iteration_front(uint3 lane : SV_GroupThreadID, uniform uint budget, uniform
     for (uint c = 0; c < colors; c++)
     {
         for (uint k = color_offsets[c] + t; k < color_offsets[c + 1]; k += 1024)
-            sweep_row(color_rows[k], mu, dt, scalars, neighbors, gradients, gap, diagonal, rotation,
-                      inverse_mass, status, z, u);
+            sweep_row(color_rows[k], row_mu(color_rows[k], stress_rows, mu, wall_mu), dt, scalars, neighbors,
+                      gradients, gap, diagonal, rotation, inverse_mass, status, z, u);
         DeviceMemoryBarrierWithGroupSync();
     }
     // Periodic refresh avoids accumulating incremental roundoff.
@@ -1157,7 +1156,8 @@ void iteration_front(uint3 lane : SV_GroupThreadID, uniform uint budget, uniform
                   trial, z, u);
     DeviceMemoryBarrierWithGroupSync();
     bool finite = true;
-    float error = residual_max(t, row_count, mu, scalars, neighbors, gradients, gap, z, u, finite);
+    float error = residual_max(t, row_count, mu, stress_rows, wall_mu, scalars, neighbors, gradients, gap, z, u,
+                               finite);
     for (uint e = t; e < size; e += 1024) steps[head * size + e] = z[e] - starts[head * size + e];
     DeviceMemoryBarrierWithGroupSync();
     if (t == 0)
@@ -1189,7 +1189,7 @@ void iteration_front(uint3 lane : SV_GroupThreadID, uniform uint budget, uniform
 
 [shader("compute")]
 [numthreads(1024, 1, 1)]
-void iteration_back(uint3 lane : SV_GroupThreadID, uniform float tolerance, uniform float mu,
+void iteration_back(uint3 lane : SV_GroupThreadID, uniform float tolerance, uniform float mu, uniform uint stress_rows, uniform float wall_mu,
                     uniform float dt, uniform uint node_count, uniform uint row_count,
                     RWStructuredBuffer<uint> state, RWStructuredBuffer<float> scalars,
                     StructuredBuffer<float> coefficients, StructuredBuffer<uint> neighbors,
@@ -1222,15 +1222,15 @@ void iteration_back(uint3 lane : SV_GroupThreadID, uniform float tolerance, unif
                         - float3(steps[i0], steps[i0 + 1], steps[i0 + 2]);
             value -= coefficients[c] * (dx + df);
         }
-        store3(candidate, a, feasible(value, mu));
+        store3(candidate, a, feasible(value, row_mu(a, stress_rows, mu, wall_mu)));
     }
     DeviceMemoryBarrierWithGroupSync();
     refresh_nodes(t, node_count, dt, scalars, transpose_rows, transpose_slots, gradients, inverse_mass,
                   trial, candidate, candidate_u);
     DeviceMemoryBarrierWithGroupSync();
     bool finite = true;
-    float error = residual_max(t, row_count, mu, scalars, neighbors, gradients, gap, candidate, candidate_u,
-                               finite);
+    float error = residual_max(t, row_count, mu, stress_rows, wall_mu, scalars, neighbors, gradients, gap,
+                               candidate, candidate_u, finite);
     if (t == 0) accept_logic(RUNNING | ANDERSON, 0, error, finite, state, scalars);
     DeviceMemoryBarrierWithGroupSync();
     if ((state[FLAGS] & ACCEPTED) != 0)

@@ -44,7 +44,7 @@ def runtime():
 
 def runner_for(P, G, L):
     """The cached runner for this particle system, rebuilt if the problem shape changed."""
-    key = (P.G.nx, P.G.ny, bool(P.B.cyclic_lr), len(L.materials[0]))
+    key = (P.G.nx, P.G.ny, bool(P.B.cyclic_lr), len(L.materials[0]), bool(P.B.wall_mu))
     runner = _runners.get(L)
     if runner is None or runner.key != key:
         runner = MetalRunner(P, G, L)
@@ -71,27 +71,36 @@ def check_callbacks(P):
 
 class MetalRunner:
     def __init__(self, P, G, L):
-        from granular import basis_volumes
+        from granular import basis_volumes, wall_candidates
 
         self.rt = rt = runtime()
-        self.key = (P.G.nx, P.G.ny, bool(P.B.cyclic_lr), len(L.materials[0]))
+        self.key = (P.G.nx, P.G.ny, bool(P.B.cyclic_lr), len(L.materials[0]), bool(P.B.wall_mu))
         b = L.materials[0]
         self.count = n = len(b)
         if n == 0:
             raise ValueError("Metal runs require at least one particle")
-        self.grid = grid = mechanics.device_grid(rt, P.G.nx, P.G.ny, G.dx, G.dy, periodic=P.B.cyclic_lr)
-        T = grid.topology
         f32 = np.float32
+        # Frictional walls: one static contact row per wall node (granular.wall_rows).
+        empty = np.zeros(0, dtype=int)
+        self.wall_nodes, self.wall_sides, blocks = (
+            wall_candidates(P, G, 3) if P.B.wall_mu else (empty, empty, np.zeros((0, 3, 2)))
+        )
+        self.grid = grid = mechanics.device_grid(
+            rt, P.G.nx, P.G.ny, G.dx, G.dy, periodic=P.B.cyclic_lr, wall_nodes=self.wall_nodes
+        )
+        T = grid.topology
+        self.wall_blocks = rt.buffer(blocks if len(blocks) else np.zeros(6), dtype=f32)
 
         def vector(count, dtype=f32):
             return rt.buffer(count=count, dtype=dtype)
 
         node_row = np.zeros(grid.nodes, dtype=np.uint32)
-        node_row[T.nodes] = np.arange(grid.rows)
+        node_row[T.nodes] = np.arange(grid.stress_rows)
         node_row = node_row[T.canonical]
         self.node_row_host = node_row
         self.node_row = rt.buffer(node_row)
-        self.volumes = rt.buffer(basis_volumes(P, G)[T.nodes], dtype=f32)
+        volumes = np.concatenate((basis_volumes(P, G)[T.nodes], np.zeros(len(self.wall_nodes))))
+        self.volumes = rt.buffer(volumes, dtype=f32)
         self.fixed = vector(grid.nodes, np.uint32)
         self.wall_changed = vector(1, np.uint32)
         # Particle state.
@@ -148,6 +157,7 @@ class MetalRunner:
             dt=P.dt,
             tolerance=P.granular_tolerance,
             max_iterations=P.granular_max_iterations,
+            wall_mu=P.B.wall_mu or 0.0,
         )
         self.last = None
 
@@ -188,10 +198,14 @@ class MetalRunner:
         rt.write(self.stress_change, _planar(b.dstress), f32)
         for buffer in (self.strain, self.work, self.work_compensation):
             rt.write(buffer, np.zeros(buffer.size // 4), f32)
-        rt.write(self.fixed, fixed_components(G.boundary_v, G.boundary_h, P.G.nx, P.B.separable), np.uint32)
+        fixed = fixed_components(G.boundary_v, G.boundary_h, P.G.nx, P.B.separable, bool(P.B.wall_mu))
+        rt.write(self.fixed, fixed, np.uint32)
         previous = getattr(G, "granular_contact", None)
         rows = self.grid.topology.nodes
-        rt.write(self.previous, np.zeros((len(rows), 3)) if previous is None else previous[rows], f32)
+        previous = np.zeros((len(rows), 3)) if previous is None else previous[rows]
+        walls = getattr(G, "granular_wall_contact", None)
+        walls = np.zeros((len(self.wall_nodes), 3)) if walls is None else walls[self.wall_nodes, self.wall_sides]
+        rt.write(self.previous, np.vstack((previous, walls)), f32)
         # FP64 bases and constants; the device holds increments.
         self.base = dict(
             strain=b.strain.copy(),
@@ -307,6 +321,11 @@ class MetalRunner:
         G.fe[:, :2] = G.m[:, None] * self.last["body"]
         contact = read(self.solver.contact, (self.grid.rows, 3))
         G.granular_contact = contact[self.node_row_host]
+        if len(self.wall_nodes):
+            from granular import WALL_SIDES
+
+            G.granular_wall_contact = np.zeros((len(G.m), len(WALL_SIDES), 3))
+            G.granular_wall_contact[self.wall_nodes, self.wall_sides] = contact[self.grid.stress_rows :]
         weight = b.N * b.m[:, None]
         if self.segregation is None:
             scatter(G.phim, b.n, weight[:, :, None] * b.phi[:, None, :])
@@ -410,12 +429,25 @@ class MetalRunner:
             rough=P.B.roughness,
             state=self.nodal,
         )
+        mechanics.wall_blocks(
+            rt,
+            encoder,
+            grid,
+            operator,
+            self.wall_blocks,
+            self.node_row,
+            self.volumes,
+            nodal.mass,
+            P.M_tol,
+            S.packing_max,
+        )
         rt.dispatch(
             encoder,
             "packing_gap",
             grid.rows,
             module=MODULE,
             row_count=grid.rows,
+            stress_rows=grid.stress_rows,
             packing_max=float(S.packing_max),
             dt=dt,
             occupied=operator.occupied,

@@ -99,11 +99,13 @@ class SolveResult:
 class Solver:
     """Workspaces sized by the grid; reusable across solves on that grid."""
 
-    def __init__(self, rt, grid, *, mu, dt, tolerance=1e-4, max_iterations=200):
+    def __init__(self, rt, grid, *, mu, dt, tolerance=1e-4, max_iterations=200, wall_mu=0.0):
         if not np.isfinite(tolerance) or tolerance < 1e-5:
             raise ValueError("Metal FP32 requires a solver tolerance >= 1e-5")
         self.rt, self.grid = rt, grid
         self.mu, self.dt, self.tolerance = float(mu), float(dt), float(tolerance)
+        # Rows from grid.stress_rows on are wall contact rows with wall_mu.
+        self.friction = dict(mu=self.mu, stress_rows=grid.stress_rows, wall_mu=float(wall_mu))
         self.budget = int(max_iterations) * 10
         R, N = grid.rows, grid.nodes
         n = self.size = 3 * R
@@ -194,7 +196,7 @@ class Solver:
             R,
             gate=gate,
             row_count=R,
-            mu=self.mu,
+            **self.friction,
             state=self.state,
             scalars=self.scalars,
             neighbors=self.grid.neighbors,
@@ -296,7 +298,7 @@ class Solver:
             self.grid.rows,
             gate=gate,
             row_count=self.grid.rows,
-            mu=self.mu,
+            **self.friction,
             offset=offset,
             state=self.state,
             neighbors=self.grid.neighbors,
@@ -356,7 +358,7 @@ class Solver:
             "stress_initial",
             R,
             row_count=R,
-            mu=self.mu,
+            **self.friction,
             warm=int(initial is not None),
             state=self.state,
             scalars=self.scalars,
@@ -396,7 +398,7 @@ class Solver:
                 encoder, "history_begin", n, size=n, state=self.state, z=self.z, starts=self.starts
             )
             rows = dict(
-                mu=self.mu,
+                **self.friction,
                 dt=self.dt,
                 state=self.state,
                 scalars=self.scalars,
@@ -445,7 +447,7 @@ class Solver:
         """One iteration as iteration_front, the TSQR/SVD dispatches and iteration_back."""
         b = self.bindings
         common = dict(
-            mu=self.mu,
+            **self.friction,
             dt=self.dt,
             node_count=self.grid.nodes,
             row_count=self.grid.rows,
@@ -546,7 +548,7 @@ class Solver:
             "anderson_candidate",
             self.grid.rows,
             row_count=self.grid.rows,
-            mu=self.mu,
+            **self.friction,
             state=self.state,
             coefficients=self.coefficients,
             starts=self.starts,
@@ -600,7 +602,7 @@ class Solver:
             "newton_rows",
             R,
             row_count=R,
-            mu=self.mu,
+            **self.friction,
             state=self.state,
             scalars=self.scalars,
             neighbors=self.grid.neighbors,
@@ -670,7 +672,7 @@ class Solver:
             self.grid.rows,
             gate=gmres,
             row_count=self.grid.rows,
-            mu=self.mu,
+            **self.friction,
             offset=j * n,
             state=self.state,
             neighbors=self.grid.neighbors,

@@ -36,7 +36,12 @@ class DeviceGrid:
 
     @property
     def rows(self):
-        return len(self.topology.nodes)
+        """Stress rows followed by any wall contact rows."""
+        return len(self.topology.neighbors)
+
+    @property
+    def stress_rows(self):
+        return self.topology.stress_rows
 
     @property
     def nodes(self):
@@ -47,8 +52,8 @@ class DeviceGrid:
         return (self.nx - 1) * (self.ny - 1)
 
 
-def device_grid(rt, nx, ny, dx, dy, *, periodic=False):
-    T = q1_topology(nx, ny, periodic=periodic)
+def device_grid(rt, nx, ny, dx, dy, *, periodic=False, wall_nodes=()):
+    T = q1_topology(nx, ny, periodic=periodic, wall_nodes=wall_nodes)
     return DeviceGrid(
         nx,
         ny,
@@ -95,8 +100,9 @@ class Operator:
         self.local_x = rt.buffer(count=count, dtype=np.float32)
         self.local_y = rt.buffer(count=count, dtype=np.float32)
         self.status = rt.buffer(count=1)
-        self.gradients = rt.buffer(count=grid.rows * 18, dtype=np.float32)
-        self.occupied = rt.buffer(count=grid.rows, dtype=np.float32)
+        # Wall rows are written by wall_blocks, not assembled; start from zero.
+        self.gradients = rt.buffer(np.zeros(grid.rows * 18), dtype=np.float32)
+        self.occupied = rt.buffer(np.zeros(grid.rows), dtype=np.float32)
         self.bins = Binner(rt, count, grid.cells)
 
 
@@ -132,9 +138,9 @@ def assemble(rt, encoder, grid, particles, workspace=None):
     rt.dispatch(
         encoder,
         "assemble_gradients",
-        grid.rows,
+        grid.stress_rows,
         module=MODULE,
-        row_count=grid.rows,
+        row_count=grid.stress_rows,
         nx=grid.nx,
         ny=grid.ny,
         periodic=int(grid.periodic),
@@ -198,6 +204,30 @@ class Preconditioner:
         self.reduction = Reduction(rt, grid.rows, operation="max")
         self.norm = self.reduction.result
         self.status = None
+
+
+def wall_blocks(rt, encoder, grid, operator, blocks, node_row, volumes, mass, m_tol, packing_max):
+    """Write each wall row's scaled block where its node has resolved mass, else zero."""
+    walls = grid.rows - grid.stress_rows
+    if walls == 0:
+        return
+    rt.dispatch(
+        encoder,
+        "wall_blocks",
+        walls,
+        module=MODULE,
+        stress_rows=grid.stress_rows,
+        wall_count=walls,
+        m_tol=float(m_tol),
+        packing_max=float(packing_max),
+        neighbors=grid.neighbors,
+        node_row=node_row,
+        volumes=volumes,
+        blocks=blocks,
+        mass=mass,
+        gradients=operator.gradients,
+        occupied=operator.occupied,
+    )
 
 
 def preconditioner(rt, encoder, grid, operator, inverse_mass, dt, status=None, workspace=None):
@@ -273,20 +303,25 @@ def local_coulomb(rt, encoder, diagonal, q, mu, output, status, count):
 TRANSFERS = {"flip": 0, "pic": 1, "apic_gradient": 2}
 
 
-def fixed_components(boundary_v, boundary_h, nx, separable=False):
+def fixed_components(boundary_v, boundary_h, nx, separable=False, frictional=False):
     """Static per-node wall mask for grid.wall_contact.
 
     Bit 1 marks a wall normal to x (boundary_v), bit 2 a wall normal to y
     (boundary_h). With separable, the domain edges are one-sided: bits 4/8 free
     an x wall while the node moves in +x/-x (left/right edge), bits 16/32 a y
     wall while it moves in +y/-y (bottom/top). Interior walls stay two-sided.
-    Roughness is applied on the device from the walls in contact.
+    Roughness is applied on the device from the walls in contact. With
+    frictional walls (wall_mu) the domain edges are contact rows in the solve
+    and carry no mask.
     """
     boundary_v, boundary_h = np.asarray(boundary_v, bool), np.asarray(boundary_h, bool)
+    row, column = np.divmod(np.arange(len(boundary_v)), nx)
+    ny = len(boundary_v) // nx
+    if frictional:
+        boundary_v = boundary_v & (column != 0) & (column != nx - 1)
+        boundary_h = boundary_h & (row != 0) & (row != ny - 1)
     mask = boundary_v * 1 + boundary_h * 2
-    if separable:
-        row, column = np.divmod(np.arange(len(mask)), nx)
-        ny = len(mask) // nx
+    if separable and not frictional:
         mask += boundary_v * ((column == 0) * 4 + (column == nx - 1) * 8)
         mask += boundary_h * ((row == 0) * 16 + (row == ny - 1) * 32)
     return mask.astype(np.uint32)

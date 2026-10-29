@@ -10,6 +10,10 @@ from dataclasses import dataclass
 import numpy as np
 
 
+# Transpose slot of a wall contact row's single node (granular.wall_rows).
+WALL_SLOT = 9
+
+
 @dataclass(frozen=True)
 class Topology:
     nodes: np.ndarray
@@ -18,9 +22,19 @@ class Topology:
     transpose_slots: np.ndarray
     colors: np.ndarray
     canonical: np.ndarray
+    wall_nodes: np.ndarray = None
+
+    @property
+    def stress_rows(self):
+        return len(self.nodes)
 
 
-def q1_topology(nx, ny, *, periodic=False):
+def q1_topology(nx, ny, *, periodic=False, wall_nodes=()):
+    """Stress rows at canonical nodes, then one contact row per entry of wall_nodes.
+
+    A wall row has a single neighbour, its node, in slot 0; the node's
+    transpose lists it with slot WALL_SLOT.
+    """
     if int(nx) != nx or int(ny) != ny or nx < 2 or ny < 2:
         raise ValueError("Q1 grid dimensions must be integers >= 2")
     nx, ny = int(nx), int(ny)
@@ -56,10 +70,28 @@ def q1_topology(nx, ny, *, periodic=False):
             neighbors[row, slot] = j
             incidence[j].append((row, slot))
             users[j].add(color)
+    wall_nodes = np.asarray(wall_nodes, dtype=np.int64)
+    wall_neighbors = np.full((len(wall_nodes), 9), -1, dtype=np.int32)
+    wall_colors = np.zeros(len(wall_nodes), dtype=np.uint32)
+    for w, node in enumerate(wall_nodes):
+        row = len(nodes) + w
+        color = 0
+        while color in users[node]:
+            color += 1
+        wall_colors[w] = color
+        users[node].add(color)
+        wall_neighbors[w, 0] = node
+        incidence[node].append((row, WALL_SLOT))
+    neighbors = np.vstack((neighbors, wall_neighbors))
+    colors = np.concatenate((colors, wall_colors))
     for j, values in enumerate(incidence):
+        if len(values) > 9:
+            raise ValueError(f"node {j} is in {len(values)} rows; the transpose holds nine")
         for i, (row, slot) in enumerate(values):
             transpose_rows[j, i], transpose_slots[j, i] = row, slot
-    return Topology(nodes, neighbors, transpose_rows, transpose_slots, colors, canonical.ravel())
+    return Topology(
+        nodes, neighbors, transpose_rows, transpose_slots, colors, canonical.ravel(), wall_nodes.astype(np.uint32)
+    )
 
 
 def split_positions(positions, origin, spacing):

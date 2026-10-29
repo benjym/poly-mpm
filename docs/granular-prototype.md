@@ -107,18 +107,31 @@ load.
 With `B.wall_mu` set, each node on the left, right, bottom or top wall is a
 contact row in the same complementarity problem as the grain stresses,
 instead of a fixed velocity. The row's strain-rate equivalent is
-`s (-n.u, t.u, 0)`, with outward normal `n`, tangent `t` and `s` the wall
-length times thickness carried by the node, so its reaction is the wall
-traction. The grain contact law applies unchanged with `wall_mu` in place of
-`mu`: the node may leave the wall (`r_n w_n = 0`), sticks while
-`|r_t| < wall_mu r_n` and otherwise slides against the wall. No re-solve is
-needed, and `roughness` and `separable` do not affect these walls. The wall
-traction enters the step as a constraint impulse, not an internal force.
+`s (-n.u, t.u, 0)`, with outward normal `n` and tangent `t`. The grain
+contact law applies unchanged with `wall_mu` in place of `mu`: the node may
+leave the wall (`r_n w_n = 0`), sticks while `|r_t| < wall_mu r_n` and
+otherwise slides against the wall. No re-solve is needed, and `roughness`
+and `separable` do not affect these walls. The wall reaction enters the step
+as a constraint impulse, not an internal force.
+
+The scale `s = V/h` does not change the solution. `h` is half the spacing
+normal to the wall and `V` the smaller of the node's basis volume and its
+grain volume over `packing_max`, so at full packing `s` is the wall length
+times thickness and `r` the wall traction. With a fixed geometric `s`, a
+wall node carrying little mass had a local metric `dt s^2 / m` that set the
+solver's norm bound (0.54 against 6e-6 for the stress rows in one collapse
+step), and the FP32 solve stalled. Scaling by grain volume alone (0.6 of the
+geometric value at full packing) made a sliding-layer step stall at `1e-7` in
+FP64, so the scale is capped at the geometric value.
+
 Checks: a column under upward gravity leaves the floor ballistically, and a
 periodic layer on a slope `tan(theta) = 0.4` with internal `mu = 0.5` slides
 as a block at `g (sin(theta) - wall_mu cos(theta)) t` for `wall_mu = 0.2`
-and rests for `wall_mu = 0.6`, to `1e-8`. The Metal backend rejects
-`wall_mu`.
+and rests for `wall_mu = 0.6`, to `1e-8` at tolerance `1e-9`. The Metal
+backend appends the wall rows to its static row topology and agrees with the
+CPU (`docs/gpu.md`). In the walled collapse with `wall_mu = 0.3` the
+integrated nodal overpacking reaches 0.029 on both backends, against 0.008
+with fixed walls; this has not been investigated.
 Any existing segregation operator remains separately explicit and uncalibrated
 for this constitutive model.
 

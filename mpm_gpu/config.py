@@ -54,7 +54,6 @@ def validate(P):
         "force_boundaries",
         "vertical_force",
         "horizontal_force",
-        "wall_mu",
         "silo_left",
         "silo_bottom",
     ):

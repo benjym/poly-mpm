@@ -464,19 +464,24 @@ def cell_packing_fraction(P, G, batch):
 WALL_SIDES = (((-1.0, 0.0), (0.0, 1.0)), ((1.0, 0.0), (0.0, 1.0)), ((0.0, -1.0), (1.0, 0.0)), ((0.0, 1.0), (1.0, 0.0)))
 
 
-def wall_rows(P, G, components):
-    """Contact rows for the left, right, bottom and top walls when wall_mu is set.
+def wall_candidates(P, G, components):
+    """Every possible wall contact row: canonical nodes on the left, right,
+    bottom and top walls, whatever their mass (static, for the Metal topology).
 
     A row's strain-rate equivalent is s (-n.u, t.u, 0, ...), with outward
-    normal n, tangent t and s the wall length times thickness carried by the
-    node. Its reaction is the wall traction: r_n >= 0 pushes the node into the
-    domain, r_n w_n = 0 lets it leave, and |r_t| <= wall_mu r_n opposes slip.
-    Returns the velocity node, side (index into WALL_SIDES) and block per row.
+    normal n and tangent t: r_n >= 0 pushes the node into the domain,
+    r_n w_n = 0 lets it leave, and |r_t| <= wall_mu r_n opposes slip. The
+    scale s = V/h, with h half the spacing normal to the wall and V the
+    smaller of the node's basis volume and its grain volume over packing_max
+    (wall_rows), does not change the solution. At full packing s is the wall
+    length times thickness, so r is the wall traction; like the stress rows'
+    V_grain grad N it vanishes with the node's mass, whereas a fixed scale
+    gives light wall nodes a metric dt s^2/m that dominates the solver's norm
+    bound. Returns the velocity node, side (index into WALL_SIDES) and block
+    per row, with the 1/h but without V.
     """
-    canonical = canonical_nodes(P, len(G.m))
-    resolved = G.valid_nodes & (canonical == np.arange(len(G.m)))
+    resolved = canonical_nodes(P, len(G.m)) == np.arange(len(G.m))
     row, column = np.divmod(np.arange(len(G.m)), P.G.nx)
-    volumes = basis_volumes(P, G)
     masks = (
         G.boundary_v & (column == 0),
         G.boundary_v & (column == P.G.nx - 1),
@@ -491,8 +496,19 @@ def wall_rows(P, G, components):
         block[0], block[1] = -np.asarray(normal), tangent
         nodes.append(selected)
         sides.append(np.full(len(selected), side))
-        blocks.append((volumes[selected] / half)[:, None, None] * block)
+        blocks.append(np.broadcast_to(block / half, (len(selected), components, 2)))
     return np.concatenate(nodes), np.concatenate(sides), np.concatenate(blocks).reshape(-1, components, 2)
+
+
+def wall_rows(P, G, components, volume):
+    """Wall contact rows at nodes with resolved mass (wall_candidates).
+
+    volume is the nodal grain volume over packing_max.
+    """
+    nodes, sides, blocks = wall_candidates(P, G, components)
+    nodes, sides, blocks = (part[G.valid_nodes[nodes]] for part in (nodes, sides, blocks))
+    scale = np.minimum(basis_volumes(P, G)[nodes], volume[nodes])
+    return nodes, sides, scale[:, None, None] * blocks
 
 
 def assemble(P, G, batch, *, compact=False):
@@ -549,7 +565,12 @@ def assemble(P, G, batch, *, compact=False):
         )
         walls = None
         if P.B.wall_mu:
-            wall_nodes, wall_sides, wall_blocks = wall_rows(P, G, components)
+            nodal_volume = np.bincount(
+                nodes.ravel(), weights=(solid_volume[:, None] * batch.N).ravel(), minlength=len(G.m)
+            )
+            wall_nodes, wall_sides, wall_blocks = wall_rows(
+                P, G, components, nodal_volume / batch.material.packing_max
+            )
             walls = wall_nodes, wall_blocks
         B = GradientOperator(
             np.broadcast_to(index[stress_nodes][:, :, None], shape).ravel(),

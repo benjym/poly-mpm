@@ -133,7 +133,7 @@ No supplied tolerance is silently loosened.
 The runner supports one intrinsic 2D granular material, nodal stress, linear
 interpolation, point quadrature, updated mechanics, FLIP (including PIC
 blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls (two-sided or
-one-sided), periodic x,
+one-sided), frictional walls (`B.wall_mu`), periodic x,
 built-in static/transport-CFL time stepping and grid segregation (up to eight
 grain sizes, `smooth_gamma_dot=False`, optional `normalise_phi`). P0 and
 coarse stresses, plane strain, viscosity, particle injection/removal, density
@@ -293,15 +293,18 @@ independent and avoid a CPU solver fallback.
      | FP64 frozen natural residual of one Metal step (static, collapse, periodic incline) | at most 1.08e-4 | ≤ 2e-4 |
      | Relative mass error, static column | 0 | ≤ 1e-5 |
      | Static column displacement, 0.2 s at `dt = 0.02` | 9.1e-6 grid spacings | ≤ 1e-3 |
-     | Periodic incline, slope 0.75: speed against `g (sin θ - μ cos θ) t` | 0.25% (CPU 0.28%) | ≤ 1% |
+     | Periodic incline, slope 0.75: speed against `g (sin θ - μ cos θ) t` | 0.29% (CPU 0.28%) | ≤ 1% |
      | Periodic incline, slope 0.25 | static | — |
-     | Collapse positions/runout, FLIP, FLIP+PIC 0.3, PIC, `apic_gradient`, dynamic CFL | at most 7.5e-6 grid spacings | ≤ 1% |
-     | Integrated nodal overpacking, Metal minus CPU | at most 6.5e-8 | ≤ 1e-3 |
+     | Collapse positions/runout, FLIP, FLIP+PIC 0.3, PIC, `apic_gradient`, dynamic CFL | at most 6.4e-6 grid spacings | ≤ 1% |
+     | Integrated nodal overpacking, Metal minus CPU | at most 3.0e-7 | ≤ 1e-3 |
      | Free fall at low packing | stress free; velocity change within 1e-6 of `g dt` | — |
-     | Upward gravity, one-sided walls: velocity change against `g t` | 1.3e-8 m/s; positions 2.2e-8 grid spacings from the CPU | ≤ 1e-5 relative |
-     | Collapse positions/runout, one-sided walls (re-solves when a released wall node is pushed back) | 1.5e-5 grid spacings | ≤ 1% |
+     | Upward gravity, one-sided or frictional walls: velocity change against `g t` | 1.3e-8 m/s; positions 2.2e-8 grid spacings from the CPU | ≤ 1e-5 relative |
+     | Collapse positions/runout, one-sided walls (re-solves when a released wall node is pushed back) | 1.3e-5 grid spacings | ≤ 1% |
+     | Collapse positions/runout, frictional walls `wall_mu = 0.3` | 7.5e-5 grid spacings | ≤ 1% |
+     | Periodic layer on a frictional floor, `tan θ = 0.4`, `μ = 0.5`, `wall_mu = 0.2`: speed against `g (sin θ - wall_mu cos θ) t` | 0.34% (CPU 0.32%) | ≤ 1% |
+     | Same layer, `wall_mu = 0.6` | at rest (2.8e-4 m/s; CPU 1.9e-4) | — |
    - Budgets: momentum residuals relative to the external impulse are at most
-     1.3e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
+     1.9e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
      larger of external and constraint work agree with the CPU to 5e-6 in the
      collapses (for example -0.04197 and -0.04198 for FLIP). In the static
      column and static incline the work terms are close to zero, so these

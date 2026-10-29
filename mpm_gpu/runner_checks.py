@@ -208,11 +208,14 @@ def freefall_check(rt):
     return dict(velocity_change_error=change, maximum_packing=G.granular_stats["maximum_packing"])
 
 
-def lift_check(rt):
-    """One-sided walls: a column under upward gravity leaves the floor ballistically."""
+def lift_check(rt, kind="separable"):
+    """One-sided or frictional walls: a column under upward gravity leaves the floor ballistically."""
     cpu, metal = _pair(_column(dt=0.005, t_f=0.05, max_g=2.0))
     for P, G, L in (cpu, metal):
-        P.B.separable = True
+        if kind == "separable":
+            P.B.separable = True
+        else:
+            P.B.wall_mu = 0.3
     before = metal[2].materials[0].v[:, 1].copy()
     _run(cpu)
     _run(metal)
@@ -225,11 +228,40 @@ def lift_check(rt):
     position = float(np.abs(b.x - bc.x).max() / _spacing(G))
     _require(position <= COLLAPSE_POSITION, f"lift positions differ by {position:.3g} grid spacings")
     return dict(
+        kind=kind,
         steps=P.tstep,
         velocity_change_error=change,
         cpu_velocity_change_error=cpu_change,
         position_difference=position,
     )
+
+
+def wall_slide_check(rt, wall_mu):
+    """Frictional floor: a periodic layer on tan(theta) = 0.4 with internal mu = 0.5 slides
+    as a block at g (sin - wall_mu cos) t when wall_mu < 0.4 and otherwise rests."""
+    state = _column(dt=0.005, t_f=0.05, theta=np.arctan(0.4))
+    P, G, L = state
+    P.B.wall_mu, P.B.cyclic_lr = wall_mu, True
+    P.B.has_left = P.B.has_right = False
+    G.boundary_v[:] = False
+    cpu, metal = _pair(state)
+    _run(cpu)
+    _run(metal)
+    (Pc, Gc, Lc), (P, G, L) = cpu, metal
+    speed, cpu_speed = -L.materials[0].v[:, 0], -Lc.materials[0].v[:, 0]
+    result = dict(wall_mu=wall_mu, steps=P.tstep)
+    if wall_mu < 0.4:
+        expected = -P.g * (np.sin(P.theta) - wall_mu * np.cos(P.theta)) * P.t
+        error = float(np.abs(speed - expected).max() / expected)
+        cpu_error = float(np.abs(cpu_speed - expected).max() / expected)
+        _require(error <= INCLINE_SPEED, f"wall sliding speed error {error:.3g}")
+        result.update(expected=float(expected), speed_error=error, cpu_speed_error=cpu_error)
+    else:
+        moved = float(np.abs(L.materials[0].v).max())
+        _require(moved <= 1e-3 * _spacing(G) / P.t_f, f"layer on a rough floor moved {moved:.3g}")
+        result.update(max_speed=moved, cpu_max_speed=float(np.abs(Lc.materials[0].v).max()))
+    result.update(_budgets(cpu, metal))
+    return result
 
 
 def incline_check(rt, slope):
@@ -260,13 +292,14 @@ def incline_check(rt, slope):
     return result
 
 
-def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False, separable=False):
+def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False, separable=False, wall_mu=0.0):
     """Column collapse: positions, runout and overpacking against the CPU at the same tolerance."""
     options = dict(dt=0.005, transfer=transfer, pic_fraction=pic_fraction)
     if dynamic:
         options.update(time_stepping="dynamic", CFL=0.1)
     state = _collapse(**options)
     state[0].B.separable = separable
+    state[0].B.wall_mu = wall_mu
     cpu, metal = _pair(state)
     initial = cpu[2].materials[0].x[:, 0].max()
     _run(cpu)
@@ -288,6 +321,7 @@ def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False, sepa
         pic_fraction=pic_fraction,
         dynamic=dynamic,
         separable=separable,
+        wall_mu=wall_mu,
         steps=P.tstep,
         position_difference=position,
         runout_difference=runout,
@@ -505,6 +539,9 @@ def cases(rt):
         ("static_column", lambda: static_check(rt)),
         ("freefall", lambda: freefall_check(rt)),
         ("lift_separable_walls", lambda: lift_check(rt)),
+        ("lift_frictional_walls", lambda: lift_check(rt, "frictional")),
+        ("wall_friction_sliding", lambda: wall_slide_check(rt, 0.2)),
+        ("wall_friction_resting", lambda: wall_slide_check(rt, 0.6)),
         ("incline_static", lambda: incline_check(rt, 0.25)),
         ("incline_yielding", lambda: incline_check(rt, 0.75)),
         ("collapse_flip", lambda: collapse_check(rt)),
@@ -513,6 +550,7 @@ def cases(rt):
         ("collapse_apic_gradient", lambda: collapse_check(rt, "apic_gradient")),
         ("collapse_dynamic_cfl", lambda: collapse_check(rt, dynamic=True)),
         ("collapse_separable_walls", lambda: collapse_check(rt, separable=True)),
+        ("collapse_frictional_walls", lambda: collapse_check(rt, wall_mu=0.3)),
         ("segregation_incline", lambda: segregation_check(rt, "incline")),
         ("segregation_collapse_walls", lambda: segregation_check(rt, "collapse")),
         (

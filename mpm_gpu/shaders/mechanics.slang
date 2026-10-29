@@ -147,13 +147,8 @@ void apply_b(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
     {
         uint j = neighbors[9 * a + s];
         if (j == INVALID) continue;
-        float gx = gradients[2 * (9 * a + s)];
-        float gy = gradients[2 * (9 * a + s) + 1];
-        float ux = velocity[2 * j];
-        float uy = velocity[2 * j + 1];
-        w += float3(gx * ux + gy * uy, gx * ux - gy * uy, gy * ux + gx * uy);
+        w += mul(row_block(a, row_slot(a, s, neighbors), gradients), float2(velocity[2 * j], velocity[2 * j + 1]));
     }
-    w *= HALF_ROOT2;
     output[3 * a] = w.x;
     output[3 * a + 1] = w.y;
     output[3 * a + 2] = w.z;
@@ -174,14 +169,8 @@ void apply_bt(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
         uint a = transpose_rows[9 * j + i];
         if (a == INVALID) break;
         uint s = transpose_slots[9 * j + i];
-        float gx = gradients[2 * (9 * a + s)];
-        float gy = gradients[2 * (9 * a + s) + 1];
-        float z0 = stress[3 * a];
-        float z1 = stress[3 * a + 1];
-        float z2 = stress[3 * a + 2];
-        f += float2((z0 + z1) * gx + z2 * gy, (z0 - z1) * gy + z2 * gx);
+        f += mul(float3(stress[3 * a], stress[3 * a + 1], stress[3 * a + 2]), row_block(a, s, gradients));
     }
-    f *= HALF_ROOT2;
     output[2 * j] = f.x;
     output[2 * j + 1] = f.y;
 }
@@ -191,6 +180,47 @@ void apply_bt(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
 float3x2 block(float gx, float gy)
 {
     return HALF_ROOT2 * float3x2(gx, gy, gx, -gy, gy, gx);
+}
+
+// Transpose slot of a wall contact row's single node (topology.WALL_SLOT).
+static const uint WALL_SLOT = 9;
+
+// Block of row a at slot s. A wall contact row (granular.wall_rows) stores
+// its 3x2 block row-major in place of gradients, written by wall_blocks.
+float3x2 row_block(uint a, uint s, StructuredBuffer<float> gradients)
+{
+    if (s != WALL_SLOT) return block(gradients[2 * (9 * a + s)], gradients[2 * (9 * a + s) + 1]);
+    uint o = 18 * a;
+    return float3x2(gradients[o], gradients[o + 1], gradients[o + 2], gradients[o + 3], gradients[o + 4],
+                    gradients[o + 5]);
+}
+
+// Block slot of neighbour s of row a: a wall row has one neighbour, a stress
+// row at least two.
+uint row_slot(uint a, uint s, StructuredBuffer<uint> neighbors)
+{
+    return neighbors[9 * a + 1] == INVALID ? WALL_SLOT : s;
+}
+
+[shader("compute")]
+[numthreads(64, 1, 1)]
+void wall_blocks(uint3 tid : SV_DispatchThreadID, uniform uint stress_rows, uniform uint wall_count,
+                 uniform float m_tol, uniform float packing_max, StructuredBuffer<uint> neighbors,
+                 StructuredBuffer<uint> node_row, StructuredBuffer<float> volumes,
+                 StructuredBuffer<float> blocks, StructuredBuffer<float> mass,
+                 RWStructuredBuffer<float> gradients, RWStructuredBuffer<float> occupied)
+{
+    // granular.wall_rows: a wall row carries its block, scaled by the smaller
+    // of its node's basis volume and grain volume over packing_max, only while
+    // the node has resolved mass. It holds no grain volume itself.
+    uint w = tid.x;
+    if (w >= wall_count) return;
+    uint a = stress_rows + w;
+    uint node = neighbors[9 * a];
+    uint row = node_row[node];
+    float scale = mass[node] > m_tol ? min(volumes[row], occupied[row] / packing_max) : 0.0;
+    for (uint i = 0; i < 18; i++) gradients[18 * a + i] = i < 6 ? scale * blocks[6 * w + i] : 0.0;
+    occupied[a] = 0.0;
 }
 
 [shader("compute")]
@@ -207,8 +237,7 @@ void absolute_force(uint3 tid : SV_DispatchThreadID, uniform uint node_count,
     {
         uint a = transpose_rows[9 * j + i];
         if (a == INVALID) break;
-        uint s = transpose_slots[9 * j + i];
-        float3x2 B = block(gradients[2 * (9 * a + s)], gradients[2 * (9 * a + s) + 1]);
+        float3x2 B = row_block(a, transpose_slots[9 * j + i], gradients);
         for (uint k = 0; k < 3; k++) f += abs(B[k]);
     }
     output[2 * j] = f.x;
@@ -232,7 +261,7 @@ void local_metric(uint3 tid : SV_DispatchThreadID, uniform uint row_count, unifo
     {
         uint j = neighbors[9 * a + s];
         if (j == INVALID) continue;
-        float3x2 B = block(gradients[2 * (9 * a + s)], gradients[2 * (9 * a + s) + 1]);
+        float3x2 B = row_block(a, row_slot(a, s, neighbors), gradients);
         float2 m = float2(inverse_mass[2 * j], inverse_mass[2 * j + 1]);
         float2 weighted = m * float2(absolute[2 * j], absolute[2 * j + 1]);
         for (uint k = 0; k < 3; k++)

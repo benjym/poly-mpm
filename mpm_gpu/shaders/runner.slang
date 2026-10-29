@@ -5,14 +5,15 @@ import mechanics;
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void packing_gap(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float packing_max,
-                 uniform float dt, StructuredBuffer<float> occupied, StructuredBuffer<float> volumes,
+void packing_gap(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform uint stress_rows,
+                 uniform float packing_max, uniform float dt, StructuredBuffer<float> occupied, StructuredBuffer<float> volumes,
                  StructuredBuffer<float> previous, RWStructuredBuffer<float> gap,
                  RWStructuredBuffer<float> initial)
 {
     // granular.assemble: gap_n = max(clearance, 0) / (sqrt(2) dt), with
     // clearances at summation roundoff set to zero (here FP32 roundoff).
-    // Rows without grain volume carry no constraint and start from zero.
+    // Rows without grain volume carry no constraint and start from zero; wall
+    // rows have no gap and start from the previous traction.
     uint a = tid.x;
     if (a >= row_count) return;
     float occupancy = occupied[a];
@@ -23,7 +24,8 @@ void packing_gap(uint3 tid : SV_DispatchThreadID, uniform uint row_count, unifor
     gap[3 * a] = active ? max(clearance, 0.0) / (sqrt(2.0) * dt) : 0.0;
     gap[3 * a + 1] = 0.0;
     gap[3 * a + 2] = 0.0;
-    for (uint k = 0; k < 3; k++) initial[3 * a + k] = active ? previous[3 * a + k] : 0.0;
+    bool warm = active || a >= stress_rows;
+    for (uint k = 0; k < 3; k++) initial[3 * a + k] = warm ? previous[3 * a + k] : 0.0;
 }
 
 [shader("compute")]
@@ -38,8 +40,9 @@ void grid_finish(uint3 tid : SV_DispatchThreadID, uniform uint node_count, unifo
                  RWStructuredBuffer<float> internal, RWStructuredBuffer<float> momentum,
                  RWStructuredBuffer<float> rate, RWStructuredBuffer<float> columns)
 {
-    // Final nodal velocity on periodic aliases, internal force fi = -B.T s,
-    // q = m u, q_dot and the per-node constraint/external budget terms.
+    // Final nodal velocity on periodic aliases, internal force fi = -B.T s
+    // over stress rows (wall traction is a constraint), q = m u, q_dot and the
+    // per-node constraint/external budget terms.
     uint j = tid.x;
     if (j >= node_count) return;
     uint column = j % nx, row = j / nx;
@@ -56,12 +59,9 @@ void grid_finish(uint3 tid : SV_DispatchThreadID, uniform uint node_count, unifo
         uint a = transpose_rows[9 * c + i];
         if (a == INVALID) break;
         uint s = transpose_slots[9 * c + i];
-        float gx = gradients[2 * (9 * a + s)];
-        float gy = gradients[2 * (9 * a + s) + 1];
-        float z0 = contact[3 * a], z1 = contact[3 * a + 1], z2 = contact[3 * a + 2];
-        force += float2((z0 + z1) * gx + z2 * gy, (z0 - z1) * gy + z2 * gx);
+        if (s == WALL_SLOT) continue;
+        force += mul(float3(contact[3 * a], contact[3 * a + 1], contact[3 * a + 2]), row_block(a, s, gradients));
     }
-    force *= HALF_ROOT2;
     float m = mass[j];
     float2 start = float2(reference[2 * j], reference[2 * j + 1]);
     float2 q = m * u;
@@ -103,12 +103,8 @@ void contact_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
     {
         uint j = neighbors[9 * a + s];
         if (j == INVALID) continue;
-        float gx = gradients[2 * (9 * a + s)];
-        float gy = gradients[2 * (9 * a + s) + 1];
-        float ux = velocity[2 * j], uy = velocity[2 * j + 1];
-        w += float3(gx * ux + gy * uy, gx * ux - gy * uy, gy * ux + gx * uy);
+        w += mul(row_block(a, row_slot(a, s, neighbors), gradients), float2(velocity[2 * j], velocity[2 * j + 1]));
     }
-    w *= HALF_ROOT2;
     float3 z = float3(contact[3 * a], contact[3 * a + 1], contact[3 * a + 2]);
     for (uint k = 0; k < 3; k++) previous[3 * a + k] = z[k];
     float volume = volumes[a];
