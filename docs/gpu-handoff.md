@@ -87,14 +87,12 @@ request; see `docs/granular-mixed.md` for the studies and their reports under
 - The Newton polish rarely helps because the generalised Jacobian is
   singular on these problems (statically indeterminate stresses).
 
-Remaining items, none started:
-
-1. A modelling decision for refined connected flows (fixed stress spacing,
-   a rheology change, or uncertified solves) before any further solver work.
-2. Remaining benchmark items in `gpu.md`: plotting cost and repeated
-   connected 100k domains.
-3. The settings still rejected on Metal, listed in `gpu.md`. Grid
-   segregation is supported (see the Segregation section of `gpu.md`).
+Remaining items: the modelling decision for refined connected flows (fixed
+stress spacing, a rheology change, or uncertified solves) blocks further solver
+work, the repeated connected 100k-particle benchmark, and Metal increment
+stopping and `granular_viscosity`. The plotting cost is measured, and inlets,
+outlets and silo walls run on Metal. The
+[implementation checklist](implementation-todo.md) holds the current backlog.
 
 ## First action on the target Mac
 

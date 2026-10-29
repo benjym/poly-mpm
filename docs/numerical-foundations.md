@@ -58,6 +58,44 @@ initial prestress, not an inferred pre-deformation. Physical density follows
 mass/volume; nodal mass divided by nodal control volume remains a separate grid
 occupancy diagnostic. No separate porosity or critical-state dilation law is implied.
 
+## Volumetric locking and F-bar
+
+Particle quadrature samples the volumetric strain rate at every particle, which
+over-constrains nearly incompressible materials: the discrete velocity field
+cannot change volume freely, and bending is too stiff. `fbar = True` (explicit
+solver, updated mechanics, default off) replaces each particle's in-plane
+volumetric rate `tr(L)` by its volume-weighted projection through the
+material's grid nodes,
+
+```
+d_i = sum_p N_ip V_p tr(L_p) / sum_p N_ip V_p
+tr(L_p) <- sum_i N_ip d_i
+```
+
+and adds half the difference to each in-plane diagonal entry of `L`. The
+deviatoric part of `L` is unchanged, `F`, the strain increment and every law see
+the averaged volume change, and partition of unity keeps each material's total
+`sum_p V_p tr(L_p)`. Materials are averaged separately, so an interface between
+them is not smoothed. Affine motion is reproduced exactly.
+
+The benchmark (`benchmarks/locking_cantilever.py`, report
+`benchmarks/locking_cantilever.json`) loads a plane-strain elastic cantilever
+(length 1 m, height 0.125 m, four cells through the height, `E = 1e8` Pa) by
+gravity from rest at a no-slip wall. The static tip deflection is the midpoint
+of the tip's extremes over 1.5 analytical periods, compared with
+Euler-Bernoulli `1.5 rho g L^4 / (E' h^2)`, `E' = E / (1 - nu^2)`:
+
+| nu | Steps | Without F-bar | With F-bar |
+| --- | ---: | ---: | ---: |
+| 0.3 | 8,771 | 0.986 | 1.035 |
+| 0.49 | 28,579 | 0.598 | 0.954 |
+| 0.499 | 88,778 | 0.148 | 0.941 |
+
+Without F-bar the beam locks as `nu` approaches 0.5; with it the deflection
+stays within 6% of the beam theory, which itself neglects shear deformation.
+This is one geometry at one resolution; F-bar has not been checked for
+plasticity, finite rotations at large strain or mixed-material interfaces.
+
 ## Stress and work conventions
 
 All Cauchy stresses are tension positive. Geometry remains 2D/plane strain, with

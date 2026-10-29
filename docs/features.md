@@ -17,6 +17,7 @@ rigid-grain solver on the GPU. "Rejected" means `prepare` raises an error.
 | --- | --- | --- | --- |
 | `solver` | `"explicit"` | `"explicit"`, `"granular"` | `granular` is the rigid-grain contact solver; it requires one `granular` material. See [granular-prototype](granular-prototype.md). |
 | `backend` | `"cpu"` | `"cpu"`, `"metal"` | `metal` runs the granular step on Apple silicon in FP32; see [Metal backend](#metal-backend) and [gpu](gpu.md). |
+| `fbar` | `False` | bool | F-bar volumetric averaging against locking of nearly incompressible materials; explicit solver with updated mechanics only. See [numerical-foundations](numerical-foundations.md). |
 | `mechanics` | `"updated"` | `"updated"`, `"legacy"` | `updated` evolves deformation, volume and density; `legacy` keeps fixed-volume incremental mechanics. Granular and Metal require `updated`. See [numerical-foundations](numerical-foundations.md). |
 
 ## Time and loading

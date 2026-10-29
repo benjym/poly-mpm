@@ -83,10 +83,14 @@ experimental validation and application calibration remain separate tasks.
       stress update with no single hotspot.
 - [x] Metal: silo walls, inlets and outlets (host boundary events, checked
       against the CPU), and the plotting cost in `gpu.md`.
+- [x] Locking mitigation: opt-in F-bar volumetric averaging (`fbar`) with an
+      incompressible cantilever benchmark; at nu = 0.499 the tip deflection
+      ratio rises from 0.148 to 0.941 of beam theory. A mixed pressure
+      formulation was not added.
 
 ### Actionable without further input
 
-- [ ] Locking mitigation: F-bar / mixed pressure formulation, with incompressible benchmarks.
+None remaining; every item below needs a decision first.
 
 ### Needs your input (second pass)
 
@@ -122,6 +126,9 @@ cannot settle. The question to answer is given for each.
       *Question:* which integrator family (midpoint/RK2 positions with matching
       F updates, or a convected-grid scheme), and is a change to the default
       update acceptable?
+- [ ] Mixed pressure formulation beyond F-bar, and F-bar checks for plasticity,
+      large-strain rotation and mixed-material interfaces. *Question:* which
+      materials and benchmarks matter, and is F-bar enough for them?
 - [ ] Curved rigid boundaries, contact reactions, friction and separate body
       fields. Frictional and one-sided walls on the domain edges now exist.
       *Question:* which geometries and body interactions are needed?

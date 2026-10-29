@@ -358,12 +358,37 @@ class Particles:
                 (~resolved) & (np.linalg.norm(self.G, axis=2) > 1e-12), axis=1
             ).astype(float)
         self.L = np.einsum("nri,nrj->nij", velocity, self.G)
+        if P.fbar and self.material.law != "rigid":
+            self.average_volumetric_rate(P, G)
         self.dstrain = 0.5 * (self.L + self.L_T) * P.dt
         self.strain += self.dstrain
         if P.mechanics == "updated":
             advance(self, P)
         update_stress(self, self.material, P)
         self.check_finite(P)
+
+    def average_volumetric_rate(self, P, G):
+        """F-bar: replace each particle's in-plane volumetric rate tr(L) by its
+        volume-weighted projection through this material's grid nodes.
+
+        The deviatoric part of L is unchanged, so F, the strain increment and
+        every law see the averaged volume change. Partition of unity keeps the
+        material's total rate of volume change, sum_p V_p tr(L_p).
+        """
+        trace = self.L[:, 0, 0] + self.L[:, 1, 1]
+        weight = self.N * self.V[:, None]
+        count = len(G.m)
+        volume = np.bincount(self.n.ravel(), weights=weight.ravel(), minlength=count)
+        rate = np.bincount(self.n.ravel(), weights=(weight * trace[:, None]).ravel(), minlength=count)
+        if P.B.cyclic_lr:
+            for value in (volume, rate):
+                combined = value[:: P.G.nx] + value[P.G.nx - 1 :: P.G.nx]
+                value[:: P.G.nx] = value[P.G.nx - 1 :: P.G.nx] = combined
+        nodal = divide(rate, volume)
+        averaged = np.sum(self.N * nodal[self.n], axis=1)
+        correction = 0.5 * (averaged - trace)
+        self.L[:, 0, 0] += correction
+        self.L[:, 1, 1] += correction
 
     def get_nodal_forces(self, P, G):
         if P.mechanics == "updated" and np.any(self.gradient_support_missing > 0):
