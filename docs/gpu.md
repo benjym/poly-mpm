@@ -539,6 +539,14 @@ the benchmark columns, one pair, host wall time, each backend with its defaults
 | three collapses | 9,600 | 3.5 | 0.079 | 44 | 14 | 783 |
 | connected collapse | 10,000 | 20.7 | 0.54 | 38 | 22 | 3,212 |
 
+The same collapse refined 3.2 times in each direction, 102,400 particles on a
+0.00625 m grid (77,361 stress rows), runs on Metal alone (`--cases
+collapse_connected_102400`; the CPU solver would take many minutes per step): 5
+steps in 42.5 s, 87 MB of device memory. The cold first step takes 214 Newton
+and 82,094 CG iterations, the warm steps 60 to 79 Newton and 18,562 to 26,969
+CG iterations: 309 to 341 CG iterations per Newton system on the warm steps,
+against 109 to 162 at 10,000 particles.
+
 Before the changes above, Metal took 0.044, 0.186, 0.362 and 2.2 s per step on
 these cases. CPU and Metal positions agree to 6e-5 grid spacings after 20 steps,
 the difference of their tolerances. The Coulomb solver in

@@ -95,7 +95,9 @@ def _run(state, backend, steps):
     return seconds, history
 
 
-def case(name, state, *, steps, pairs, rt):
+def case(name, state, *, steps, pairs, rt, backends=("cpu", "metal")):
+    """Paired CPU/Metal samples; backends=("metal",) times Metal alone, for cases too large
+    for the CPU solver."""
     P0, G0, _ = state
     record = dict(
         name=name,
@@ -121,7 +123,7 @@ def case(name, state, *, steps, pairs, rt):
     record["metal_runner_allocated_bytes"] = rt.accounting.allocated_bytes - allocated
     finals = {}
     for pair in range(pairs):
-        order = ("cpu", "metal") if pair % 2 == 0 else ("metal", "cpu")
+        order = tuple(backends) if pair % 2 == 0 else tuple(reversed(backends))
         sample = dict(pair=pair, order="-".join(order))
         for backend in order:
             run_state = deepcopy(state)
@@ -148,7 +150,7 @@ def case(name, state, *, steps, pairs, rt):
                 finals[backend] = run_state[2].materials[0].x.copy()
             except RuntimeError as exc:
                 sample[backend] = dict(seconds=None, converged=False, error=str(exc)[:200])
-        if sample["cpu"].get("seconds") and sample["metal"].get("seconds"):
+        if sample.get("cpu", {}).get("seconds") and sample["metal"].get("seconds"):
             sample["cpu_over_metal"] = sample["cpu"]["seconds"] / sample["metal"]["seconds"]
         record["samples"].append(sample)
     ratios = [s["cpu_over_metal"] for s in record["samples"] if "cpu_over_metal" in s]
@@ -248,15 +250,38 @@ def main(argv=None):
             ),
             ("collapse_disconnected_99200", lambda: columns(31, solver=solver), 2, 1),
         ]
-    plan = [(name, build, args.steps or steps, args.pairs or pairs) for name, build, steps, pairs in plan]
+        if solver == "cidr":
+            # The connected collapse refined 3.2 times each way, on Metal alone.
+            plan.append(
+                (
+                    "collapse_connected_102400",
+                    lambda: columns(
+                        1, spacing=0.00625, particle_spacing=0.003125, width=1.0, pitch=2.0, solver=solver
+                    ),
+                    5,
+                    1,
+                    ("metal",),
+                )
+            )
+    plan = [
+        (
+            entry[0],
+            entry[1],
+            args.steps or entry[2],
+            args.pairs or entry[3],
+            entry[4] if len(entry) > 4 else None,
+        )
+        for entry in plan
+    ]
     if args.cases:
         plan = [entry for entry in plan if entry[0] in args.cases]
     if args.append and args.output.exists():
         previous = json.loads(args.output.read_text())
         report["cases"] = [c for c in previous["cases"] if c["name"] not in {entry[0] for entry in plan}]
-    for name, build, steps, pairs in plan:
+    for name, build, steps, pairs, backends in plan:
         print(name, flush=True)
-        report["cases"].append(case(name, build(), steps=steps, pairs=pairs, rt=rt))
+        options = dict(backends=backends) if backends else {}
+        report["cases"].append(case(name, build(), steps=steps, pairs=pairs, rt=rt, **options))
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(f"written: {args.output}", flush=True)

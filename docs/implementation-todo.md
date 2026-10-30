@@ -88,33 +88,50 @@ experimental validation and application calibration remain separate tasks.
       ratio rises from 0.148 to 0.941 of beam theory. A mixed pressure
       formulation was not added.
 
+- [x] Refined connected granular flows: the constant-friction rigid-grain law
+      is ill-posed ([literature review](connected-flows-literature.md)), and
+      critical-state CIDR replaces it as the default `granular_solver`
+      ([granular-cidr-design](granular-cidr-design.md)). It converges under
+      refinement in the shear cell and the frozen first step, runs in
+      production on the CPU and on Metal, and limits each step by the packing
+      gap. This closes the Q1–P0 convergence item and the Metal `increment`
+      stopping and `granular_viscosity` items, which belonged to the routes not
+      chosen.
+- [x] Settings schema (`settings.py`): every name on `P`, `P.G`, `P.B`, `P.O`
+      and the materials is checked, with defaults, suggestions for unknown
+      names and one name per quantity.
+- [x] CIDR walls on both backends: one-sided walls (`B.one_sided`) by
+      re-solving, and Coulomb walls as a friction term whose threshold follows
+      the normal reaction between outer steps.
+- [x] Connected 100k-particle Metal benchmark with CIDR (`gpu.md`): 102,400
+      particles, 5 steps in 42.5 s, the CPU solver too slow to pair with it.
+- [x] Inclined-plane verification against the Bagnold profile
+      (`benchmarks/cidr_incline.py`): held to within 8.9% per layer for 0.4 s;
+      see the open item below for what follows.
+
 ### Actionable without further input
 
-None remaining; every item below needs a decision first.
+- [ ] Multigrid preconditioner for the Metal CIDR conjugate-gradient solves
+      (`gpu.md`): CG iterations per Newton system rise from 109–162 at 10,000
+      particles to 309–341 at 102,400.
 
-### Needs your input (second pass)
+### Needs your input (CIDR)
+
+- [ ] Particle packing under sustained shear: on the inclined plane particles
+      cluster below the stress-node resolution and a node passes `phi_max`
+      after about 0.4 s ([granular-cidr-design](granular-cidr-design.md#inclined-plane)).
+      Updating particle volumes from the nodes' rates hid the clustering
+      without stopping it, and packing from the nodes' basis volumes failed at
+      the free surface. *Question:* stabilise the modes, or change the packing
+      estimate (and accept its free-surface treatment)?
+
+### Needs your input (general)
 
 Each item below depends on a decision, data or a scope choice that the code
 cannot settle. The question to answer is given for each.
 
 - [ ] Establish coverage thresholds after reviewing the first Codecov baseline.
       *Question:* which thresholds (overall and patch) should CI enforce?
-- [ ] Resolve Q1–P0 iterative convergence and flow-accuracy limits, or evaluate
-      dP1 stresses, before selecting a compact discretization for GPU porting.
-      *Question:* tied to the modelling decision for refined connected flows in
-      `gpu-handoff.md` (fixed stress spacing, a rheology change or uncertified
-      solves); which direction?
-      The [literature review](connected-flows-literature.md) points at the model:
-      the constant-friction, incompressible, rate-independent law is ill-posed,
-      and a frozen-problem test confirms it: the associated law converges and
-      its solution converges under refinement, while the current law does not
-      and a viscosity alone does not fix it.
-- [ ] Repeated connected 100k-particle Metal benchmark (`gpu.md`). Blocked by the
-      same decision: connected refined domains do not converge on either backend.
-- [ ] Metal `increment` stopping and `granular_viscosity`. Both are options
-      within the same decision: increment stopping is the "uncertified solves"
-      route and the viscosity a regularisation of the rheology. *Question:* is
-      either the chosen direction, so that it should run on Metal?
 - [ ] Control remaining gaps/overlaps of independently convected domains, and
       verify convergence for broader nonuniform deformation and material interfaces.
       *Question:* which approach (shared-corner topology tracking, CPDI-style

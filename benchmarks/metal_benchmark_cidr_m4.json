@@ -1032,6 +1032,66 @@
       "metal_runner_allocated_bytes": 8250748,
       "median_cpu_over_metal": 38.447305111510616,
       "position_difference_grid_spacings": 5.0643637095060257e-05
+    },
+    {
+      "name": "collapse_connected_102400",
+      "particles": 102400,
+      "stress_rows": 77361,
+      "steps": 5,
+      "dt": 0.002,
+      "tolerance": 0.0001,
+      "max_sweeps": 20000,
+      "samples": [
+        {
+          "pair": 0,
+          "order": "metal",
+          "metal": {
+            "seconds": 42.53253912506625,
+            "sweeps": [
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "newton_attempts": [
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "gmres_iterations": [
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "newton": [
+              214,
+              79,
+              73,
+              72,
+              60
+            ],
+            "cg_iterations": [
+              82094,
+              26969,
+              23771,
+              22554,
+              18562
+            ],
+            "converged": true,
+            "submissions": 5287,
+            "dispatches": 1137870,
+            "readback_bytes": 21275840,
+            "uploaded_bytes": 40738256
+          }
+        }
+      ],
+      "metal_warmup_seconds": 22.659651750000194,
+      "metal_runner_allocated_bytes": 87231116
     }
   ]
 }
