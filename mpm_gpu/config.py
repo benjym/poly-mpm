@@ -21,8 +21,6 @@ def validate(P):
         return
     if P.granular_solver not in ("velocity", "cidr"):
         raise ValueError("Metal requires granular_solver='velocity' or 'cidr'")
-    if P.granular_solver == "cidr" and P.B.separable:
-        raise ValueError("Metal granular_solver='cidr' does not support one-sided walls (B.one_sided)")
     if P.granular_solver == "cidr" and P.granular_cidr_tolerance < 1e-5:
         raise ValueError("Metal FP32 requires granular_cidr_tolerance >= 1e-5")
     required = dict(

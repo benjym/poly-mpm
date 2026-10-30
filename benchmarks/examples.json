@@ -115,6 +115,16 @@
     ]
   },
   {
+    "example": "cidr_incline",
+    "args": [
+      "cidr_incline"
+    ],
+    "status": "supported smoke-tested",
+    "particles": [
+      288
+    ]
+  },
+  {
     "example": "dam_break",
     "args": [
       "dam_break"

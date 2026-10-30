@@ -107,3 +107,29 @@ def test_packing_limit_on_metal():
     run(P, G, L, output=False)
     history = [r["granular_solver"]["packing_closure"] for r in L.diagnostics.history]
     assert max(history[1:]) < 0.5
+
+
+@pytest.mark.parametrize("module, gravity", [("granular_collapse", None), ("granular_column", 2.0)])
+def test_one_sided_walls_agree_with_the_cpu(module, gravity):
+    from initialise import prepare
+    from MPM import run
+    from test_cidr import CIDR
+
+    finals = {}
+    for backend in ("cpu", "metal"):
+        Params = __import__(f"inputs.{module}", fromlist=["Params"]).Params
+        P = Params([])
+        P.granular_solver, P.dt, P.t_f, P.backend = "cidr", 0.01, 0.1, backend
+        if gravity is not None:
+            P.gravity = gravity  # upwards: the column leaves the floor
+        P.B.one_sided = True
+        for key, value in CIDR.items():
+            setattr(P.S, key, value)
+        P, G, L = prepare(P)
+        start = L.materials[0].x.copy()
+        run(P, G, L, output=False)
+        finals[backend] = L.materials[0].x.copy()
+    # FP32 differences grow through the re-solves (1.25e-1 m spacing).
+    assert np.max(np.abs(finals["cpu"] - finals["metal"])) < 2e-5
+    if gravity is not None:
+        assert np.min(finals["metal"][:, 1] - start[:, 1]) > 0.5 * gravity * 0.1**2 * 0.9

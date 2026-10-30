@@ -253,35 +253,27 @@ Envelope envelope(Law m, StructuredBuffer<float> table, float3 q, float r, float
     float2 n = qv / nv;
     Psi e = L.psi;
     out.grad = float3(ROOT2 * e.pd, e.ps / ROOT2 * n.x, e.ps / ROOT2 * n.y);
-    // Hessian of psi at d in the components, then r H (H + r I)^-1 without cancellation.
-    float3x3 Hp;
+    // r H (H + r I)^-1 with H the Hessian of psi at d, from the eigenvalues of H: f(l) = r l / (l + r)
+    // on each. The transverse deviatoric direction t is an eigenvector, with ps / (sqrt 2 sigma),
+    // which grows without bound towards D = 0; the rest is a 2x2 block on (volumetric, n). A
+    // 3x3 inverse of H + r I in FP32 lost positive definiteness there.
     float transverse = e.ps / (ROOT2 * sigma);
-    float2x2 outer = float2x2(n.x * n.x, n.x * n.y, n.y * n.x, n.y * n.y);
-    float2x2 dev = 0.5 * e.pss * outer + transverse * (float2x2(1, 0, 0, 1) - outer);
-    Hp = float3x3(2 * e.pdd, e.psd * n.x, e.psd * n.y,
-                  e.psd * n.x, dev[0][0], dev[0][1],
-                  e.psd * n.y, dev[1][0], dev[1][1]);
-    float3x3 A = Hp + r * identity;
-    float3x3 Ainv = inverse3(A);
-    float3x3 M = r * mul(Hp, Ainv);
+    float a = 2 * e.pdd, b = e.psd, c = 0.5 * e.pss;
+    float mean = 0.5 * (a + c), radius = sqrt(0.25 * (a - c) * (a - c) + b * b);
+    float angle = 0.5 * atan2(2 * b, a - c);
+    float3 v1 = float3(cos(angle), sin(angle) * n.x, sin(angle) * n.y);
+    float3 v2 = float3(-sin(angle), cos(angle) * n.x, cos(angle) * n.y);
+    float3 t = float3(0.0, -n.y, n.x);
+    float l1 = max(mean + radius, 0.0), l2 = max(mean - radius, 0.0), lt = max(transverse, 0.0);
+    float f1 = l1 / (1 + l1 / r), f2 = l2 / (1 + l2 / r), ft = lt / (1 + lt / r);
+    float3x3 M = f1 * outer3(v1) + f2 * outer3(v2) + ft * outer3(t);
     out.H = 0.5 * (M + transpose(M));
     return out;
 }
 
-float3x3 inverse3(float3x3 a)
+float3x3 outer3(float3 v)
 {
-    float3x3 c;
-    c[0][0] = a[1][1] * a[2][2] - a[1][2] * a[2][1];
-    c[0][1] = a[0][2] * a[2][1] - a[0][1] * a[2][2];
-    c[0][2] = a[0][1] * a[1][2] - a[0][2] * a[1][1];
-    c[1][0] = a[1][2] * a[2][0] - a[1][0] * a[2][2];
-    c[1][1] = a[0][0] * a[2][2] - a[0][2] * a[2][0];
-    c[1][2] = a[0][2] * a[1][0] - a[0][0] * a[1][2];
-    c[2][0] = a[1][0] * a[2][1] - a[1][1] * a[2][0];
-    c[2][1] = a[0][1] * a[2][0] - a[0][0] * a[2][1];
-    c[2][2] = a[0][0] * a[1][1] - a[0][1] * a[1][0];
-    float det = a[0][0] * c[0][0] + a[0][1] * c[1][0] + a[0][2] * c[2][0];
-    return c / det;
+    return float3x3(v.x * v, v.y * v, v.z * v);
 }
 
 float3 row_strain(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
@@ -923,19 +915,18 @@ void cidr_closing(uint3 tid : SV_DispatchThreadID, uniform uint row_count, unifo
                   StructuredBuffer<float> phi, RWStructuredBuffer<float> work)
 {
     // Compaction rate -tr D over the relative packing gap (phi_max - phi) / phi
-    // (granular.closing_rate); tr D = sqrt(2) D_0.
+    // (granular.closing_rate); tr D = sqrt(2) D_0. Nodes already at phi_max are left out.
     uint a = tid.x;
     if (a >= row_count) return;
     float solid = occupied[a];
     float f = phi[a];
-    if (!(solid > 0.0) || !(f > 0.0))
+    if (!(solid > 0.0) || !(f > 0.0) || !(f < phi_max))
     {
         work[a] = 0.0;
         return;
     }
     float delta = ROOT2 * row_strain(a, neighbors, gradients, velocity).x / solid;
-    float gap = max((phi_max - f) / f, 1e-30);
-    work[a] = max(-delta, 0.0) / gap;
+    work[a] = max(-delta, 0.0) / ((phi_max - f) / f);
 }
 
 [shader("compute")]

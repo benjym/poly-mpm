@@ -32,6 +32,8 @@ CG_LIMIT = 4000
 TABLE = 1024
 # A decrement this small relative to the kinetic scale is FP32 roundoff of the gradient.
 DECREMENT = 1e-12
+# After 20 Newton iterations a decrement this small (a velocity error of about 3e-5) ends Newton.
+LATE_DECREMENT = 1e-9
 # A Newton step smaller than this, relative to the trial velocity in the mass norm, ends Newton.
 STEP = 1e-6
 # Default envelope smoothing in units of dt / rho: iterative linear solves favour a smoother
@@ -94,6 +96,7 @@ class CidrSolver:
             return rt.buffer(count=count, dtype=dtype)
 
         self.bulk, self.phi, self.C, self.lam_abs = vector(R), vector(R), vector(R), vector(R)
+
         self.lam, self.grad, self.force, self.contact = (
             vector(3 * R),
             vector(3 * R),
@@ -451,8 +454,13 @@ class CidrSolver:
             self._submit(encoder)
             slope, size = (float(v) for v in self._read(self.packed))
             # Stop on the step's size, which does not depend on the stiffness 1 / gamma of
-            # jammed rows; the decrement test is a backstop at FP32 roundoff.
-            if size <= STEP**2 * scale or not -slope > DECREMENT * scale:
+            # jammed rows; the decrement tests are backstops at FP32 roundoff, the second
+            # (as on the CPU) once many iterations have not reached the first.
+            if (
+                size <= STEP**2 * scale
+                or not -slope > DECREMENT * scale
+                or (iteration > 20 and -slope <= LATE_DECREMENT * scale)
+            ):
                 return iteration - 1, cg_total
             step, at_step = self._line_search(operator, nodal, gamma, slope)
             if DEBUG:

@@ -619,9 +619,15 @@ _CIDR_MODELS = {}
 
 
 def closing_rate(delta, phi, phi_max):
-    """Largest compaction rate -delta over the relative packing gap (phi_max - phi) / phi."""
-    gap = np.maximum((phi_max - phi) / phi, np.finfo(float).tiny)
-    return float(np.max(np.maximum(-delta, 0) / gap, initial=0.0))
+    """Largest compaction rate -delta over the relative packing gap (phi_max - phi) / phi.
+
+    Nodes at or past phi_max are left out: C(phi) is clipped there to about 1e12 times its
+    scale, so they do not compact beyond round-off, and they reach phi_max by advection of
+    the particles rather than by the step, which a shorter step would not prevent.
+    """
+    below = phi < phi_max
+    gap = (phi_max - phi[below]) / phi[below]
+    return float(np.max(np.maximum(-delta[below], 0) / gap, initial=0.0))
 
 
 # Default envelope smoothing in units of dt / rho on the CPU (Metal: mpm_gpu.cidr.GAMMA).

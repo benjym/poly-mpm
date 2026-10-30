@@ -485,7 +485,17 @@ at each stress row. The device version differs as follows:
 - Newton stops when its step is below 1e-6 of the trial velocity in the mass
   norm. A test on the decrement, as on the CPU, depends on the stiffness 1/gamma
   of jammed rows: at the larger smoothing below it let a column at rest drift at
-  9e-6 m/s; with the step test it moves by less than 6e-7 m/s.
+  9e-6 m/s; with the step test it moves by less than 6e-7 m/s. As on the CPU,
+  after 20 iterations a decrement below 1e-9 of the kinetic scale also stops
+  it: in the incline's steady flow FP32 round-off held Newton at 2e-7.
+- The envelope Hessian `r H (H + r I)^-1` is formed from the eigenvalues of
+  the Hessian `H` of `psi`: the transverse deviatoric direction is an
+  eigenvector, with curvature `ps / (sqrt 2 sigma)` that grows without bound
+  towards `D = 0`, and the rest is a 2x2 block solved in closed form. A 3x3
+  FP32 inverse of `H + r I` gave eigenvalues down to -3.6e9 at near-zero
+  stress, where CG broke down and Newton returned its starting point: a
+  column lifted by upward gravity off one-sided walls stalled at the previous
+  step's velocity.
 - `granular_cidr_gamma` defaults to 1.0 (in units of `dt / rho`) rather than the
   CPU's 0.075. With iterative linear solves the smoother envelope needs fewer
   Newton iterations and CG iterations per Newton system: on the connected
@@ -497,6 +507,12 @@ The envelope kernel agrees with the CPU envelope on 400 random rows: the same
 jammed rows, gradients to 5e-5 of the stress scale, Hessians to 1e-5 (median);
 rows within roundoff of the cap or of zero pressure can take either side of the
 Hessian's jump (`tests/test_gpu_cidr.py`).
+
+One-sided walls (`B.one_sided`) re-solve the step as the Coulomb solver does:
+a wall node released because it leaves its wall is clamped again if the
+solved velocity drives it into the wall. With them, CPU and Metal positions
+agree to 2e-5 m after 10 steps of the collapse and of a column lifted by
+upward gravity (`tests/test_gpu_cidr.py`).
 
 On both backends a warm step starts from the transferred velocity before the
 step's body force: the trial velocity includes one step of gravity, which is

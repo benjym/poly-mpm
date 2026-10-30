@@ -308,7 +308,9 @@ class Problem:
         H[jam] = r * np.eye(3)
         if np.any(smooth):
             Hpsi = self.hessian(d[smooth], self.C[smooth])
-            H[smooth] = r * (np.eye(3) - r * np.linalg.inv(Hpsi + r * np.eye(3)))
+            # r (I - r (H + r I)^-1) = r H (H + r I)^-1, without the cancellation of the first
+            # form when r is large against H.
+            H[smooth] = r * Hpsi @ np.linalg.inv(Hpsi + r * np.eye(3))
         # Pure volumetric nodes: the deviatoric part is held at zero (stiff), the volumetric
         # part passes through unless thresholded at the cap.
         H[flat] = r * np.eye(3)

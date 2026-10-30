@@ -272,8 +272,7 @@ backend changes two defaults: `granular_tolerance = 1e-4` and
 | `granular_cidr_gamma` | yes | `cidr`: Metal's iterative linear solves favour a smoother envelope, hence its default of 1.0. The converged step does not depend on it. |
 
 The `cidr` solver needs `granular_stress = "intrinsic"` on the `"nodal"` basis and
-does not support Coulomb walls; on Metal it does not support one-sided walls
-(`B.one_sided`) either. It minimises the kinetic energy of the step plus the CIDR
+does not support Coulomb walls. It minimises the kinetic energy of the step plus the CIDR
 dissipation potential over the nodal velocities, by the method of multipliers
 with semismooth Newton subproblems (`cidr.py`; on Metal `mpm_gpu/cidr.py`, with
 conjugate gradients for each Newton system). Jammed nodes are decided exactly,
@@ -286,7 +285,9 @@ divergence of `C(phi)`. `C` is evaluated at the packing at the start of each ste
 so a long step could compact a node past `phi_max`: the time to close the
 largest relative packing gap at the last step's compaction rate is a timestep
 limit (`packing`, scaled by `cfl`, used by dynamic stepping), and a step that
-would close a gap stops the run with an error. The model, its derivation and the verification are in
+would close a gap stops the run with an error. Nodes already at `phi_max` are
+left out: `C` is clipped there and holds them, and they get there by advection of
+the particles, which a shorter step does not prevent. The model, its derivation and the verification are in
 [granular-cidr-design](granular-cidr-design.md).
 
 Elastic and viscous timestep estimates do not apply; set `critical_time(P)` on

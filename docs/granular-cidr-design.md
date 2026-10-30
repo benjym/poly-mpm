@@ -124,7 +124,8 @@ of the fixed cap are not yet tested.
 1. One-dimensional gravity-free shear cell against the steady solution and the
    transient DEM results of Schaeffer et al. (2019).
 2. The frozen first-step refinement study, extended to the new model.
-3. Steady flow on an inclined plane against the Bagnold profile.
+3. Steady flow on an inclined plane against the Bagnold profile: held for
+   0.4 s ([Inclined plane](#inclined-plane)), not yet beyond.
 4. Refined column collapse against experiments.
 5. The rotating drum, with segregation.
 
@@ -569,6 +570,16 @@ and a step that would close a gap stops with an error. In the collapse at
 `dt = 0.02` s one step closes 91% of a gap; at `0.05` s the fourth step would
 close 173% and is stopped; dynamic stepping at `cfl = 0.2` keeps every step
 after the first below half a gap (the limit uses the previous step's rate).
+Nodes at or past `phi_max` are left out of the limit. `C` is clipped there to
+about 1e12 times its scale, so their compaction is round-off, and they reach
+`phi_max` as particles are advected between nodes rather than by a step's
+compaction. On the [incline](#inclined-plane), FP32 round-off at such a node
+made the closing rate 1e22 per step before they were left out.
+
+The envelope Hessian is formed as `r H (H + r I)^-1` rather than
+`r (I - r (H + r I)^-1)`: at the CPU's smallest `gamma` the second form
+subtracted nearly equal matrices, lost about `log10(r / |H|)` digits, and
+stalled Newton in the incline's first step.
 
 ### GPU solver
 
@@ -580,6 +591,50 @@ collapses it is 8.5 to 44 times faster than the CPU solver and agrees with it to
 6e-5 grid spacings; the connected collapse of 10,000 particles, on which the
 Coulomb solver does not converge, runs at 0.54 s per step. Details and timings
 are in [gpu](gpu.md#critical-state-cidr).
+
+## Inclined plane
+
+`inputs/cidr_incline.py` is a layer 30 grains deep (3 mm glass beads, the
+`mu(I)` parameters of the shear cell) on a no-slip base at 25 degrees,
+periodic along the slope, 18 cells deep with four particles per cell. In
+steady isochoric flow CIDR reduces to `mu(I)`: every depth flows at `I_theta`
+with `mu(I_theta) = tan(theta)` (0.133 here), so the shear rate is
+`I_theta sqrt(p / rho_s) / d` with `p` the weight above (the Bagnold profile).
+The layer starts in this state, at the critical packing of each depth from
+`C(phi) = 2 p / beta(I_theta)`, loose only within about a grain of the surface,
+and at the Bagnold velocity (1.73 m/s at the surface). A layer at uniform
+packing 0.6 instead formed a jammed plug over a basal shear band: near the
+surface its static strength `2 mu_s - p / C` exceeds `tan(theta)`.
+
+`benchmarks/cidr_incline.py` runs it on Metal and compares the shear rate in
+18 layers, one per cell, with the prediction from the simulated weight above
+(`benchmarks/cidr_incline.json`). With these layers the initial state agrees
+to 0.7% below the second layer. After 0.4 s (6,888 steps, 43 s) the surface
+moves at 1.720 m/s and the shear rate of layers 3 to 15 is on average 0.990 of
+the prediction, within 8.9% in every layer; the two layers at the base,
+where the no-slip wall holds the velocity, are 17% and 40% above it.
+
+The state does not persist beyond about 0.4 s. The spread of particle packing
+in the lower half of the layer, 0.594 to 0.600 at 0.2 s, is 0.538 to 0.651 at
+0.4 s, and near 0.45 s a stress node passes `phi_max` and the step is stopped
+(the CPU behaves the same: by 0.5 s the densest particle is at 0.78). The
+solver controls only the volumetric rate of each stress node, a solid-weighted
+average over its particles, and under sustained shear the velocity field
+moves particles together and apart below that resolution. Two remedies were
+tried and rejected:
+
+- Updating particle volumes from the nodes' volumetric rate interpolated to
+  the particles (as B-bar) kept their packing within 0.597 to 0.600, but the
+  positions still followed the velocity field: the packing measured from the
+  occupied area rose to 1.16 by 1.5 s while the particle volumes stayed at
+  0.55, and the flow stopped.
+- Packing from the nodes' basis volumes, which sees particle positions,
+  failed on the first step: the initial state is set from particle packing,
+  and partly filled surface nodes read much looser.
+
+A remedy needs either a stabilisation of these modes or a packing estimate
+that follows the particle positions and is consistent at the free surface; it
+is not yet chosen.
 
 ## References
 

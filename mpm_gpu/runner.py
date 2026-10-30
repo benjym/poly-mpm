@@ -480,9 +480,32 @@ class MetalRunner:
         solver.dt = dt
         if self.cidr:
             solver.gamma = (P.granular_cidr_gamma or GAMMA) * dt / self.rho
-            result = solver.solve(
-                operator, nodal, self.initial, self.volume, encoder, cold_gamma=dt / self.rho, body=body
-            )
+            # One-sided walls as for the Coulomb solver below.
+            for _ in range(grid.nodes if P.B.separable else 1):
+                result = solver.solve(
+                    operator, nodal, self.initial, self.volume, encoder, cold_gamma=dt / self.rho, body=body
+                )
+                if not P.B.separable or not result.converged:
+                    break
+                encoder = rt.device.create_command_encoder()
+                rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.wall_changed)
+                mechanics.wall_recheck(
+                    rt, encoder, grid, self.fixed, nodal, solver.u, self.wall_changed, rough=P.B.roughness
+                )
+                rt.submit(encoder)
+                if not rt.read(self.wall_changed, np.uint32)[0]:
+                    break
+                encoder = rt.device.create_command_encoder()
+                rt.dispatch(
+                    encoder,
+                    "copy_record",
+                    3 * grid.rows,
+                    module=MODULE,
+                    count=3 * grid.rows,
+                    offset=0,
+                    source=solver.contact,
+                    record=self.initial,
+                )
             status = int(rt.read(operator.status, np.uint32)[0])
             if status & 1:
                 raise ValueError(f"material {b.material_id}: particle outside domain before cell lookup")

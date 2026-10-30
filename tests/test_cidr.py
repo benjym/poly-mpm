@@ -115,3 +115,44 @@ def test_dynamic_stepping_limits_the_packing_closure_per_step():
     history = [r["granular_solver"]["packing_closure"] for r in L.diagnostics.history]
     # The limit uses the previous step's closing rate, so the first step is unconstrained.
     assert max(history[1:]) < 0.5
+
+
+def test_envelope_hessian_keeps_its_precision_at_small_gamma():
+    # At small gamma the envelope's Hessian tends to psi's own; written as
+    # r (I - r (H + r I)^-1) it lost about log10(r / |H|) digits and stalled Newton.
+    from cidr import Problem
+
+    model = CriticalStateCIDR(CIDR["mu_s"], CIDR["mu_d"], CIDR["I_0"], 2 * 0.003 * np.sqrt(2500))
+    C = np.array([50.0, 200.0])
+    problem = Problem(np.zeros((6, 1)), np.zeros(6), np.ones(6), np.ones(1), np.zeros(1), model, C)
+    x = np.array([[-0.006, 0.006, -3.4], [-0.008, 0.008, -5.6]])
+    gamma = 5e-9
+    *_, H, jam = problem.envelope(x, gamma)
+    assert not jam.any()
+    r = 1 / gamma
+    d, _, _ = problem.prox(x, r)
+    Hpsi = problem.hessian(d, C)
+    # r H (H + r I)^-1 = H - H^2 / r + H^3 / r^2 - ..., |H| / r about 1e-6 here.
+    series = Hpsi - Hpsi @ Hpsi / r + Hpsi @ Hpsi @ Hpsi / r**2
+    assert np.abs(H - series).max() <= 1e-12 * np.abs(Hpsi).max()
+
+
+def test_closing_rate_leaves_out_nodes_already_at_phi_max():
+    from granular import closing_rate
+
+    delta = np.array([-1.0, -1e-6, -1e-6])
+    phi = np.array([0.5, 0.605, 0.61])
+    assert closing_rate(delta, phi, 0.605) == pytest.approx(1.0 / (0.105 / 0.5))
+
+
+def test_incline_holds_the_bagnold_profile():
+    # The steady state of benchmarks/cidr_incline.py, over a short run on the CPU.
+    from benchmarks.cidr_incline import profile
+    from initialise import get_parameters
+
+    P, G, L = get_parameters(["cidr_incline"])
+    P.t_f = 0.01
+    run(P, G, L, output=False)
+    result = profile(P, G, L, 18)
+    ratio = np.array(result["shear_rate"]) / np.array(result["bagnold_shear_rate"])
+    assert np.all(np.abs(ratio[2:15] - 1) < 0.03)

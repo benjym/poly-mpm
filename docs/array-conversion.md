@@ -187,6 +187,7 @@ remain enabled where configured. Durations, loading, and output frequency are co
 | `python MPM.py bi_square_drum 11 2` | supported smoke-tested |
 | `python MPM.py bi_vertical_chute 2 11` | supported smoke-tested |
 | `python MPM.py cidr_collapse` | supported smoke-tested |
+| `python MPM.py cidr_incline` | supported smoke-tested |
 | `python MPM.py dam_break` | supported smoke-tested |
 | `python MPM.py domain_column` | supported smoke-tested |
 | `python MPM.py dp_rate_unit_test` | supported smoke-tested |
