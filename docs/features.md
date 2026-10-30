@@ -282,7 +282,11 @@ start from the previous step's stress and take from none to a few Newton
 iterations for material at rest or in fast flow, and several tens in slow,
 nearly jammed flow on fine grids (see [gpu](gpu.md)). The packing per stress
 node comes from the particles, and the hard packing limit is replaced by the
-divergence of `C(phi)`. The model, its derivation and the verification are in
+divergence of `C(phi)`. `C` is evaluated at the packing at the start of each step,
+so a long step could compact a node past `phi_max`: the time to close the
+largest relative packing gap at the last step's compaction rate is a timestep
+limit (`packing`, scaled by `cfl`, used by dynamic stepping), and a step that
+would close a gap stops the run with an error. The model, its derivation and the verification are in
 [granular-cidr-design](granular-cidr-design.md).
 
 Elastic and viscous timestep estimates do not apply; set `critical_time(P)` on

@@ -562,6 +562,14 @@ the 0.5 by 1 m column on the coarse test grid (30 steps of 0.01 s, 4.6 s in all)
 takes 31 iterations on its cold first step, 8 to 17 on the next five while the
 flow starts, then 3 to 7 (`tests/test_cidr.py`).
 
+The compaction limit of the shear cell carries over: after each solve, the
+largest ratio of a node's compaction rate to its relative packing gap
+`(phi_max - phi) / phi` sets a `packing` timestep limit for dynamic stepping,
+and a step that would close a gap stops with an error. In the collapse at
+`dt = 0.02` s one step closes 91% of a gap; at `0.05` s the fourth step would
+close 173% and is stopped; dynamic stepping at `cfl = 0.2` keeps every step
+after the first below half a gap (the limit uses the previous step's rate).
+
 ### GPU solver
 
 `granular_solver = "cidr"` also runs on Metal in FP32 (`mpm_gpu/cidr.py`): the

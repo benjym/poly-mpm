@@ -616,6 +616,14 @@ def assemble(P, G, batch, *, compact=False):
 
 
 _CIDR_MODELS = {}
+
+
+def closing_rate(delta, phi, phi_max):
+    """Largest compaction rate -delta over the relative packing gap (phi_max - phi) / phi."""
+    gap = np.maximum((phi_max - phi) / phi, np.finfo(float).tiny)
+    return float(np.max(np.maximum(-delta, 0) / gap, initial=0.0))
+
+
 # Default envelope smoothing in units of dt / rho on the CPU (Metal: mpm_gpu.cidr.GAMMA).
 CIDR_GAMMA = 0.075
 
@@ -664,7 +672,19 @@ def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
     if cold is None:
         start -= P.dt * np.tile(body[:2], len(G.m))[free]
     u, lam, jam, stats = solve(problem, start, lam, gamma, cold=cold, tol=P.granular_cidr_tolerance)
+    # C(phi) is evaluated at the start-of-step packing, so nothing in the step stops a node
+    # compacting past phi_max. The closing rate, compaction rate over the relative gap
+    # (phi_max - phi) / phi, bounds the timestep (stability.limits) and stops a step that
+    # would close a gap.
+    closing = closing_rate(problem.D(u)[:, 0] * np.sqrt(2), phi, S.phi_max)
+    G.cidr_closing_rate = closing
+    if closing * P.dt >= 1:
+        raise FloatingPointError(
+            f"CIDR step compacts a stress node past phi_max (dt x closing rate = {closing * P.dt:.3g}); "
+            "reduce dt or use time_stepping='dynamic'"
+        )
     stats.update(
+        packing_closure=float(closing * P.dt),
         warm=cold is None,
         jammed_fraction=float(jam.mean()) if len(jam) else 0.0,
         minimum_packing=float(phi.min(initial=1.0)),

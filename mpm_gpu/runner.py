@@ -381,6 +381,8 @@ class MetalRunner:
                 if not np.isfinite(value) or value <= 0:
                     raise ValueError("material critical_time must be positive and finite")
                 result["material_0"] = value
+        if self.cidr and self.solver.closing_rate > 0:
+            result["packing"] = 1 / self.solver.closing_rate
         if P.segregate:
             rate = P.c * (P.G.s_M / P.G.s_m - 1) * self.segregation_rates["gradient"]
             if rate:
@@ -488,6 +490,11 @@ class MetalRunner:
                 raise GPUError(f"Metal operator assembly status {status}")
             if not result.converged:
                 raise RuntimeError(f"Metal CIDR step did not converge: {result}")
+            if solver.closing_rate * dt >= 1:
+                raise FloatingPointError(
+                    "CIDR step compacts a stress node past phi_max "
+                    f"(dt x closing rate = {solver.closing_rate * dt:.3g}); reduce dt or use time_stepping='dynamic'"
+                )
             return self._finish_step(P, G, L, operator, body, dt, result)
         solver.tolerance = float(P.granular_tolerance)
         # One-sided walls: re-solve after clamping released wall nodes that the
@@ -828,6 +835,7 @@ class MetalRunner:
                 cg_iterations=result.cg,
                 warm=result.warm,
                 jammed_fraction=result.jammed / result.active if result.active else 0.0,
+                packing_closure=solver.closing_rate * dt,
                 local_status=result.status,
                 submissions=result.submissions,
                 active_nodes=int(round(row[2])),

@@ -38,6 +38,11 @@ def _state_limits(P, G, L):
         if S.law == "granular":
             # Contact pressure/friction are solved implicitly; no artificial
             # elastic stiffness or capped effective viscosity is introduced.
+            # CIDR's packing modulus is lagged: limit the time to close a node's
+            # packing gap, at the last step's compaction rate.
+            closing = getattr(G, "cidr_closing_rate", 0.0)
+            if P.granular_solver == "cidr" and closing > 0:
+                result["packing"] = 1 / closing
             continue
         rho = b.rho.min()
         shear = getattr(S, "G", 0.0) if S.law in ("elastic", "von_mises", "dp", "dp_rate") else 0.0

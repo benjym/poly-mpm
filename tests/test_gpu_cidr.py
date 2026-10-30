@@ -93,3 +93,17 @@ def test_collapse_agrees_with_the_cpu():
         finals[backend] = L.materials[0].x.copy()
     assert np.max(np.abs(finals["cpu"] - finals["metal"])) < 1e-6
     assert np.max(np.abs(finals["metal"][:, 0])) > np.max(np.abs(state[2].materials[0].x[:, 0])) + 0.01
+
+
+def test_packing_limit_on_metal():
+    from MPM import run
+
+    P, G, L = cidr_case("granular_collapse", dt=0.05, t_f=0.3)
+    P.backend = "metal"
+    with pytest.raises(FloatingPointError, match="past phi_max"):
+        run(P, G, L, output=False)
+    P, G, L = cidr_case("granular_collapse", dt=0.02, t_f=0.3, time_stepping="dynamic", cfl=0.2)
+    P.backend = "metal"
+    run(P, G, L, output=False)
+    history = [r["granular_solver"]["packing_closure"] for r in L.diagnostics.history]
+    assert max(history[1:]) < 0.5

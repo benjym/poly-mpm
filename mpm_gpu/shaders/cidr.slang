@@ -916,6 +916,29 @@ void cidr_unforced(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uni
 }
 
 [shader("compute")]
+[numthreads(256, 1, 1)]
+void cidr_closing(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float phi_max,
+                  StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
+                  StructuredBuffer<float> velocity, StructuredBuffer<float> occupied,
+                  StructuredBuffer<float> phi, RWStructuredBuffer<float> work)
+{
+    // Compaction rate -tr D over the relative packing gap (phi_max - phi) / phi
+    // (granular.closing_rate); tr D = sqrt(2) D_0.
+    uint a = tid.x;
+    if (a >= row_count) return;
+    float solid = occupied[a];
+    float f = phi[a];
+    if (!(solid > 0.0) || !(f > 0.0))
+    {
+        work[a] = 0.0;
+        return;
+    }
+    float delta = ROOT2 * row_strain(a, neighbors, gradients, velocity).x / solid;
+    float gap = max((phi_max - f) / f, 1e-30);
+    work[a] = max(-delta, 0.0) / gap;
+}
+
+[shader("compute")]
 [numthreads(1, 1, 1)]
 void cidr_pack(uint3 tid : SV_DispatchThreadID, StructuredBuffer<float> a, StructuredBuffer<float> b,
                RWStructuredBuffer<float> output)

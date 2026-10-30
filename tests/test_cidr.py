@@ -100,3 +100,18 @@ def test_cidr_requires_its_material_fields(missing):
             setattr(P.S, key, value)
     with pytest.raises(ValueError, match=missing):
         prepare(P)
+
+
+def test_a_step_that_would_compact_past_phi_max_is_stopped():
+    P, G, L = cidr_case("granular_collapse", dt=0.05, t_f=0.3)
+    with pytest.raises(FloatingPointError, match="past phi_max"):
+        run(P, G, L, output=False)
+
+
+def test_dynamic_stepping_limits_the_packing_closure_per_step():
+    P, G, L = cidr_case("granular_collapse", dt=0.02, t_f=0.3, time_stepping="dynamic", cfl=0.2)
+    run(P, G, L, output=False)
+    assert "packing" in P.timestep_limits
+    history = [r["granular_solver"]["packing_closure"] for r in L.diagnostics.history]
+    # The limit uses the previous step's closing rate, so the first step is unconstrained.
+    assert max(history[1:]) < 0.5

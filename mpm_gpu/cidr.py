@@ -116,6 +116,7 @@ class CidrSolver:
         self.cg_iterations = vector(1, np.uint32)
         self.cg_estimate = CG_CHUNK  # iterations of the previous CG solve: when to first check
         self.fresh = False  # whether the envelope buffers hold the envelope at self.u
+        self.closing_rate = 0.0  # granular.closing_rate of the last step
         self.status = vector(1, np.uint32)
         self.node_sums = [Reduction(rt, N, operation="sum") for _ in range(3)]
         self.row_sum = Reduction(rt, R, operation="sum")
@@ -299,6 +300,24 @@ class CidrSolver:
         )
         jammed = self.row_sum.encode(encoder, self.row_work, self.status)
         self._submit(encoder)
+        jammed_count = int(round(float(self._read(jammed)[0])))
+        encoder = rt.device.create_command_encoder()
+        self._dispatch(
+            encoder,
+            "cidr_closing",
+            R,
+            row_count=R,
+            phi_max=self.modulus["phi_max"],
+            neighbors=g.neighbors,
+            gradients=operator.gradients,
+            velocity=self.u,
+            occupied=operator.occupied,
+            phi=self.phi,
+            work=self.row_work,
+        )
+        closing = self.row_max.encode(encoder, self.row_work, self.status)
+        self._submit(encoder)
+        self.closing_rate = float(self._read(closing)[0])
         local = int(self._read(self.flags, np.uint32)[1])
         if int(self._read(self.status, np.uint32)[0]) & 2:
             raise FloatingPointError("Metal CIDR step: nonfinite reduction")
@@ -308,7 +327,7 @@ class CidrSolver:
             outer=outer,
             newton=newton_total,
             cg=cg_total,
-            jammed=int(round(float(self._read(jammed)[0]))),
+            jammed=jammed_count,
             active=int(np.count_nonzero(occupied[: g.stress_rows] > 0)),
             warm=warm,
             status=local,
