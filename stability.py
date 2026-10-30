@@ -41,7 +41,7 @@ def _state_limits(P, G, L):
             continue
         rho = b.rho.min()
         shear = getattr(S, "G", 0.0) if S.law in ("elastic", "von_mises", "dp", "dp_rate") else 0.0
-        if S.law == "elastic" and P.mechanics == "updated":
+        if S.law == "elastic":
             # Frobenius/operator-norm bound on the reference neo-Hookean
             # Hessian, pushed to spatial wave speed by ||F||_2^2/rho0.
             # Unlike a small-strain speed this responds to compression/stretch.

@@ -166,7 +166,6 @@ def test_rotated_domains_preserve_uniform_translation_through_full_steps():
     "overrides,message",
     [
         ({"quadrature": "unknown"}, "quadrature must"),
-        ({"mechanics": "legacy", "quadrature": "domain"}, "updated mechanics"),
         ({"quadrature": "domain", "domain_max_support": 3}, "domain_max_support"),
     ],
 )

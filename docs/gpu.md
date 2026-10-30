@@ -131,7 +131,7 @@ Explicit settings are preserved; GPU tolerances below `1e-5` are rejected.
 No supplied tolerance is silently loosened.
 
 The runner supports one intrinsic 2D granular material, nodal stress, linear
-interpolation, point quadrature, updated mechanics, FLIP (including PIC
+interpolation, point quadrature, FLIP (including PIC
 blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls (two-sided or
 one-sided), frictional walls (`B.wall_mu`), interior and silo walls, periodic
 x, inlets and outlets, built-in static/transport-CFL time stepping and grid

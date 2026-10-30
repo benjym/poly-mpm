@@ -66,11 +66,11 @@ class Particles:
         self.material = material if material is not None else P.S
         S = self.material
         self.material_id = material_id
-        self.law = get_law(S.law, P.mechanics)
+        self.law = get_law(S.law)
         self.interpolation = P.interpolation
         self.transfer = P.transfer
         self.quadrature = P.quadrature
-        validate_material(S, P.mechanics)
+        validate_material(S)
         count = int(S.n)
         if count < 0 or count != S.n:
             raise ValueError("particle count must be a non-negative integer")
@@ -126,7 +126,7 @@ class Particles:
         self._scratch()
         self._initialise_stress(P)
         self.reference_stress = self.stress.copy()
-        if P.mechanics == "updated" and S.law in ("dp", "dp_rate", "von_mises"):
+        if S.law in ("dp", "dp_rate", "von_mises"):
             from constit import _compliance
 
             self.elastic_strain = _compliance(self.stress, S)
@@ -179,7 +179,7 @@ class Particles:
 
     def _initialise_stress(self, P):
         S = self.material
-        algebraic = S.law in ALGEBRAIC or (P.mechanics == "updated" and S.law in FLUIDS)
+        algebraic = S.law in ALGEBRAIC + FLUIDS
         if P.pressure == "lithostatic":
             depth = P.G.y_M - getattr(P.G, "top_gap", 0) - self.x[:, 1]
             normal = np.cos(P.theta) * self.rho * P.max_g * depth
@@ -341,29 +341,27 @@ class Particles:
         if self.material.law == "rigid":
             return
         coverage = np.sum(self.N * G.valid_nodes[self.n], axis=1)
-        if P.mechanics == "updated" and np.any(coverage < 1 - 1e-8):
+        if np.any(coverage < 1 - 1e-8):
             raise FloatingPointError("incomplete particle grid support; check M_tol and particle mass")
         velocity = nodal_velocity(G, P)[self.n]
         if self.quadrature == "domain" and np.any(np.abs(velocity[:, :, 2]) > 1e-12):
             raise ValueError("domain quadrature requires planar grid motion")
-        if P.mechanics == "updated":
-            resolved = G.valid_nodes[self.n]
-            center_velocity = np.einsum("nr,nri->ni", self.N, velocity)
-            fallback = np.broadcast_to(center_velocity[:, None, :], velocity.shape).copy()
-            if self.transfer == "apic":
-                C = self.affine_momentum @ self.apic_matrices()[1]
-                fallback += np.einsum("nij,nrj->nri", C, self.offsets)
-            velocity = np.where(resolved[:, :, None], velocity, fallback)
-            self.gradient_support_missing = np.sum(
-                (~resolved) & (np.linalg.norm(self.G, axis=2) > 1e-12), axis=1
-            ).astype(float)
+        resolved = G.valid_nodes[self.n]
+        center_velocity = np.einsum("nr,nri->ni", self.N, velocity)
+        fallback = np.broadcast_to(center_velocity[:, None, :], velocity.shape).copy()
+        if self.transfer == "apic":
+            C = self.affine_momentum @ self.apic_matrices()[1]
+            fallback += np.einsum("nij,nrj->nri", C, self.offsets)
+        velocity = np.where(resolved[:, :, None], velocity, fallback)
+        self.gradient_support_missing = np.sum(
+            (~resolved) & (np.linalg.norm(self.G, axis=2) > 1e-12), axis=1
+        ).astype(float)
         self.L = np.einsum("nri,nrj->nij", velocity, self.G)
         if P.fbar and self.material.law != "rigid":
             self.average_volumetric_rate(P, G)
         self.dstrain = 0.5 * (self.L + self.L_T) * P.dt
         self.strain += self.dstrain
-        if P.mechanics == "updated":
-            advance(self, P)
+        advance(self, P)
         update_stress(self, self.material, P)
         self.check_finite(P)
 
@@ -391,7 +389,7 @@ class Particles:
         self.L[:, 1, 1] += correction
 
     def get_nodal_forces(self, P, G):
-        if P.mechanics == "updated" and np.any(self.gradient_support_missing > 0):
+        if np.any(self.gradient_support_missing > 0):
             force_at_unsupported = np.einsum("nij,nrj->nri", self.stress, self.G)
             bad = (~G.valid_nodes[self.n]) & (np.linalg.norm(force_at_unsupported, axis=2) > 1e-10)
             if np.any(bad):
@@ -438,15 +436,10 @@ class Particles:
             elif self.transfer in ("pic", "apic_gradient"):
                 self.v = pic
             else:
-                if P.mechanics == "legacy":
-                    delta = P.dt * nodal_velocity(G, P, "q_dot")
-                else:
-                    delta = velocity - divide(G.q_reference, G.m[:, None])
+                delta = velocity - divide(G.q_reference, G.m[:, None])
                 flip = self.v + gather(delta, self.n, self.N, G.valid_nodes)
                 self.v = (1 - P.pic_fraction) * flip + P.pic_fraction * pic
             self.x += P.dt * pic
-            if P.mechanics == "legacy":
-                self.rho = gather(divide(G.m, G.V), self.n, self.N, G.valid_nodes)
         self.check_finite(P)
 
     def move_grainsize_on_grid(self, P, G, increment=None):

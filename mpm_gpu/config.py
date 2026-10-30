@@ -29,7 +29,6 @@ def validate(P):
         raise ValueError("Metal FP32 requires granular_cidr_tolerance >= 1e-5")
     required = dict(
         solver="granular",
-        mechanics="updated",
         granular_stress="intrinsic",
         granular_stress_basis="nodal",
         interpolation="linear",

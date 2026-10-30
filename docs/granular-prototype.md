@@ -82,7 +82,7 @@ nonunique even when velocities agree.
 
 ## Scope and controls
 
-The current branch requires updated mechanics, linear interpolation, point
+The current branch requires linear interpolation, point
 quadrature and one granular material. FLIP is the example default. PIC is
 available but showed substantial timestep-dependent damping in the collapse
 experiment. Quadratic interpolation/APIC and finite-domain quadrature are

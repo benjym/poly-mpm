@@ -3,8 +3,6 @@
 The material registry supports prescribed rigid motion, hyperelastic solids,
 rate-form plastic solids, Newtonian/Bingham fluids, and local granular flow.
 Select parameters and units using [material selection](materials.rst).
-These equations describe the default `mechanics='updated'` configuration.
-
 All tensors are 3 by 3, including the out-of-plane normal stress in plane strain.
 Cauchy stress is tension positive. Below, `p = -tr(stress)/3` is compression
 positive, `s = stress + p I`, `q = sqrt(3/2 s:s)`, and the engineering equivalent
@@ -138,10 +136,6 @@ Use `elastic` for constant stiffness, `pouliquen` for the supported bounded loca
 friction law, or `linear_mu` with `b=0` for capped constant friction. These are
 model choices requiring appropriate parameters, not automatic substitutions.
 `viscous_size` and the separate `P.F` compressible-fluid path are unimplemented.
-
-`mechanics='legacy'` is a compatibility option with fixed particle volume,
-occupancy-based density, and incremental constitutive equations. Use the default
-configuration and the equations on this page for physical interpretation.
 
 ## Checks and outputs
 

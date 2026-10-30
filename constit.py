@@ -1,7 +1,6 @@
 """Array constitutive kernels. Cauchy stress uses tension-positive signs.
 
-Experimental scalar implementations are retained in legacy/constit_scalar.py.
-Kernels update history and dstress; update_stress selects the integration scheme.
+Kernels update history and dstress; update_stress integrates them objectively.
 """
 
 import numpy as np
@@ -29,10 +28,10 @@ RETIRED = {
 }
 
 
-def validate_material(material, mechanics="updated"):
-    """Physical parameter domain for the newly restored laws (scalar SI inputs)."""
+def validate_material(material):
+    """Physical parameter domain of each law (scalar SI inputs)."""
     name = material.law
-    if name == "rigid" or (mechanics == "legacy" and name not in ALGEBRAIC + COROTATIONAL):
+    if name == "rigid":
         return
 
     def scalar(key, lower=0.0, strict=False, default=None):
@@ -109,73 +108,6 @@ def rigid(mp, material, params):
 
 def granular(mp, material, params):
     raise RuntimeError("granular material requires solver='granular'; no explicit stress update exists")
-
-
-def elastic(mp, material, params):
-    trace, dev = invariants(mp.dstrain)
-    mp.dstress = material.K * trace[:, None, None] * EYE + 2 * material.G * dev
-    mp.gammadot = np.linalg.norm(dev, axis=(1, 2)) / params.dt
-    mp.pressure = np.trace(mp.stress, axis1=1, axis2=2) / 3
-
-
-def viscous(mp, material, params):
-    trace, dev = invariants(mp.dstrain)
-    mp.de_kk = trace / 3
-    mp.de_ij = dev
-    mp.dp = material.K * mp.de_kk
-    mp.pressure += mp.dp
-    mp.dev_stress = 2 * material.mu_s * dev / params.dt
-    volumetric = material.mu_v * mp.de_kk[:, None, None] * EYE / params.dt
-    mp.dstress = mp.pressure[:, None, None] * EYE + mp.dev_stress - volumetric - mp.stress
-    mp.gammadot = np.linalg.norm(dev, axis=(1, 2)) / params.dt
-
-
-def von_mises(mp, material, params):
-    trace, dev = invariants(mp.dstrain)
-    work = np.abs(np.sum(mp.dev_stress * dev, axis=(1, 2)))
-    norm = np.linalg.norm(mp.dev_stress, axis=(1, 2))
-    # For s < 2 the legacy expression is singular at zero stress. Its product
-    # with the zero work/stress is defined here by its zero-increment limit.
-    factor = np.zeros_like(norm)
-    active = norm > 0
-    factor[active] = (
-        work[active] / (2 * material.k**2) * (norm[active] / (np.sqrt(2) * material.k)) ** (material.s - 2)
-    )
-    mp.dev_dstress = 2 * material.G * (dev - factor[:, None, None] * mp.dev_stress)
-    mp.sigma_kk += 3 * material.K * trace
-    mp.dev_stress += mp.dev_dstress
-    mp.dstress = mp.dev_stress + mp.sigma_kk[:, None, None] * EYE / 3 - mp.stress
-    mp.yieldfunction = norm / (np.sqrt(2) * material.k) - 1
-    mp.gammadot = np.linalg.norm(dev, axis=(1, 2)) / params.dt
-    mp.pressure = np.trace(mp.stress, axis1=1, axis2=2) / 3
-
-
-def pouliquen(mp, material, params):
-    trace, dev = invariants(mp.dstrain)
-    mp.de_kk = trace / 3
-    mp.de_ij = dev
-    mp.gammadot = np.linalg.norm(2 * dev / params.dt, axis=(1, 2))
-    size = mp.phi @ params.G.s
-    pressure = np.abs(mp.pressure)
-    mp.I = np.zeros_like(pressure)
-    positive = pressure > 0
-    mp.I[positive] = mp.gammadot[positive] * size[positive] * np.sqrt(material.rho_s / pressure[positive])
-    # I is undefined at zero pressure: store zero for that diagnostic and
-    # evaluate friction using its infinite-I limit without a huge sentinel.
-    ratio = np.divide(mp.I, material.I_0 + mp.I, out=np.zeros_like(mp.I), where=mp.I > 0)
-    ratio[(~positive) & (mp.gammadot > 0)] = 1
-    mp.mu = material.mu_0 + material.delta_mu * ratio
-    numerator = 2 * np.sqrt(2) * mp.mu * pressure
-    mp.eta = np.divide(numerator, mp.gammadot, out=np.zeros_like(pressure), where=mp.gammadot > 0)
-    mp.eta[(mp.gammadot == 0) & (numerator > 0)] = np.finfo(float).max
-    mp.eta_limited = np.minimum(mp.eta, material.eta_max)
-    mp.dev_stress = mp.eta_limited[:, None, None] * dev / params.dt
-    mp.dp = material.K * mp.de_kk
-    mp.pressure += mp.dp
-    cutoff = (mp.pressure > 0) | (mp.rho < mp.initial_rho * 0.8)
-    mp.dp[cutoff] -= mp.pressure[cutoff]
-    mp.pressure[cutoff] = 0
-    mp.dstress = mp.pressure[:, None, None] * EYE + mp.dev_stress - mp.stress
 
 
 def _flow_increment(mp, params):
@@ -282,41 +214,6 @@ def _half_rotation(mp, dt):
     return EYE + a[:, None, None] * spin + b[:, None, None] * (spin @ spin)
 
 
-def update_stress(mp, material, params):
-    """Integrate restored laws consistently with their stress/rate definition.
-
-    Keep the original five models' legacy integration for compatibility. New
-    fluids prescribe current stress directly. New solids use a symmetric spin
-    split for a corotational hypoelastic/plastic update (exact for pure spin).
-    """
-    if material.law not in ALGEBRAIC + COROTATIONAL:
-        mp.law(mp, material, params)
-        mp.stress += mp.dstress - (mp.L @ mp.stress + mp.stress @ mp.L_T) * params.dt
-        return
-    old = mp.stress.copy()
-    old_dev = old - np.trace(old, axis1=1, axis2=2)[:, None, None] * EYE / 3
-    if material.law in COROTATIONAL:
-        rotation = _half_rotation(mp, params.dt)
-        mp.stress = rotation @ old @ rotation.swapaxes(1, 2)
-        mp.law(mp, material, params)
-        mp.stress = rotation @ (mp.stress + mp.dstress) @ rotation.swapaxes(1, 2)
-    elif material.law in ALGEBRAIC:
-        mp.law(mp, material, params)
-        mp.stress += mp.dstress
-    mp.dstress = mp.stress - old
-    # Fluid pressure is the elastic mean part: bulk viscosity is not history.
-    if material.law in COROTATIONAL:
-        mp.pressure = np.trace(mp.stress, axis1=1, axis2=2) / 3
-    mean = np.trace(mp.stress, axis1=1, axis2=2) / 3
-    mp.sigma_kk = 3 * mean
-    mp.dev_stress = mp.stress - mean[:, None, None] * EYE
-    mp.dev_dstress = mp.dev_stress - old_dev
-
-
-LEGACY_REGISTRY = {name: globals()[name] for name in SUPPORTED}
-_legacy_update_stress = update_stress
-
-
 def elastic(mp, material, params):
     """Compressible neo-Hookean Cauchy stress, with reference prestress.
 
@@ -412,10 +309,7 @@ def _compliance(stress, material):
 
 
 def update_stress(mp, material, params):
-    """Objective updated mechanics; historical integration is opt-in legacy mode."""
-    if params.mechanics == "legacy":
-        _legacy_update_stress(mp, material, params)
-        return
+    """Objective integration of each law's stress increment."""
     old = mp.stress.copy()
     old_bulk_pressure = mp.pressure.copy()
     _, old_dev = invariants(old)
@@ -480,9 +374,9 @@ def update_stress(mp, material, params):
 REGISTRY = {name: globals()[name] for name in SUPPORTED}
 
 
-def get_law(name, mechanics="updated"):
+def get_law(name):
     try:
-        return (LEGACY_REGISTRY if mechanics == "legacy" else REGISTRY)[name]
+        return REGISTRY[name]
     except KeyError:
         reason = RETIRED.get(name, "No implemented and tested constitutive law with this name.")
         raise ValueError(

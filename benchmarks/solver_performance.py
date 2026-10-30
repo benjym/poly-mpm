@@ -62,7 +62,6 @@ def make_case(name):
         initial_v=np.column_stack((0.01 + 0.1 * x + 0.2 * y, -0.02 - 0.1 * y, np.zeros(count))),
     )
     params = NS(
-        mechanics="updated",
         interpolation="quadratic",
         transfer="apic",
         diagnostics=True,

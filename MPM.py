@@ -29,13 +29,12 @@ def step(P, G, L, *, _limit_cache=None):
         raise ValueError("dt must be finite and positive")
     from stability import limits
 
-    if P.mechanics == "updated":
-        P.timestep_limits = limits(P, G, L, cache=_limit_cache)
-        safe = min(P.timestep_limits.values(), default=P.dt)
-        if P.timestep_policy == "enforce" and P.dt > safe * (1 + 1e-12):
-            raise ValueError(
-                f"dt={P.dt:g} exceeds estimated stable dt={safe:g}; use dynamic stepping or reduce dt"
-            )
+    P.timestep_limits = limits(P, G, L, cache=_limit_cache)
+    safe = min(P.timestep_limits.values(), default=P.dt)
+    if P.timestep_policy == "enforce" and P.dt > safe * (1 + 1e-12):
+        raise ValueError(
+            f"dt={P.dt:g} exceeds estimated stable dt={safe:g}; use dynamic stepping or reduce dt"
+        )
     if _limit_cache is not None:
         # No cached estimates may survive a state update or output callback.
         _limit_cache.clear()
@@ -107,7 +106,7 @@ def run(P, G, L, *, max_steps=None, output=True, progress=False):
                 P.t = P.t_f
                 break
             P.dt = min(P.dt, remaining)
-            if P.time_stepping == "dynamic" and P.mechanics == "updated":
+            if P.time_stepping == "dynamic":
                 from stability import limits
 
                 restrictions = engine.limits(P) if engine else limits(P, G, L, cache=limit_cache)

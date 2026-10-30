@@ -6,7 +6,6 @@ from inputs.ball import Params as BallParams
 class Params(BallParams):
     def __init__(self, args):
         super().__init__(args)
-        self.mechanics = "updated"
         self.interpolation = "quadratic"
         self.transfer = "apic"
         self.time_stepping = "dynamic"

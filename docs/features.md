@@ -17,8 +17,7 @@ rigid-grain solver on the GPU. "Rejected" means `prepare` raises an error.
 | --- | --- | --- | --- |
 | `solver` | `"explicit"` | `"explicit"`, `"granular"` | `granular` is the rigid-grain contact solver; it requires one `granular` material. See [granular-prototype](granular-prototype.md). |
 | `backend` | `"cpu"` | `"cpu"`, `"metal"` | `metal` runs the granular step on Apple silicon in FP32; see [Metal backend](#metal-backend) and [gpu](gpu.md). |
-| `fbar` | `False` | bool | F-bar volumetric averaging against locking of nearly incompressible materials; explicit solver with updated mechanics only. See [numerical-foundations](numerical-foundations.md). |
-| `mechanics` | `"updated"` | `"updated"`, `"legacy"` | `updated` evolves deformation, volume and density; `legacy` keeps fixed-volume incremental mechanics. Granular and Metal require `updated`. See [numerical-foundations](numerical-foundations.md). |
+| `fbar` | `False` | bool | F-bar volumetric averaging against locking of nearly incompressible materials; explicit solver only. See [numerical-foundations](numerical-foundations.md). |
 
 ## Time and loading
 
@@ -27,7 +26,7 @@ rigid-grain solver on the GPU. "Rejected" means `prepare` raises an error.
 | `dt` | required | > 0 s | Initial or fixed timestep. |
 | `t_f` | required | ≥ `t` | End time (s). |
 | `savetime` | required | > 0 s | Interval between saved outputs. |
-| `time_stepping` | `"static"` | `"static"`, `"dynamic"` | `dynamic` sets `dt = CFL × min(limits)` from advection, segregation and each material's `critical_time(P)`, plus the elastic and viscous estimates of updated mechanics. |
+| `time_stepping` | `"static"` | `"static"`, `"dynamic"` | `dynamic` sets `dt = CFL × min(limits)` from advection, segregation and each material's `critical_time(P)`, plus the elastic and viscous estimates. |
 | `CFL` | `0.1` | > 0 | Scales the dynamic limits. |
 | `timestep_policy` | `"report"` | `"report"`, `"enforce"` | `enforce` rejects a static `dt` above the estimated limits. |
 | `max_g` | `0.0` | m/s² | Gravity magnitude; negative is downward at `theta = 0`. |
@@ -58,7 +57,7 @@ rigid-grain solver on the GPU. "Rejected" means `prepare` raises an error.
 | `interpolation` | `"linear"` | `"linear"`, `"quadratic"` | both | `linear` | `linear` |
 | `transfer` | `"flip"` | `"flip"`, `"pic"`, `"apic"`, `"apic_gradient"` | `flip`, `pic`, `apic` (quadratic only) | `flip`, `pic`, `apic_gradient` | `flip`, `pic`, `apic_gradient` |
 | `pic_fraction` | `0.0` | 0 to 1 | with `flip` | with `flip` | with `flip` |
-| `quadrature` | `"point"` | `"point"`, `"domain"` | both (`domain` needs updated mechanics and `domain_size` per material) | `point` | `point` |
+| `quadrature` | `"point"` | `"point"`, `"domain"` | both (`domain` needs `domain_size` per material) | `point` | `point` |
 | `domain_max_support` | `256` | integer ≥ 4 | `domain` only | — | — |
 | `domain_polygon` | `"batched"` | `"batched"`, `"reference"` | `domain` only | — | — |
 
@@ -232,7 +231,7 @@ times.
 
 `P.backend = "metal"` requires the `gpu` extra, Apple silicon and macOS 26 or
 newer. It runs the complete granular step on the device in FP32. It requires
-`solver = "granular"`, `mechanics = "updated"`, `granular_solver = "velocity"` or `"cidr"`,
+`solver = "granular"`, `granular_solver = "velocity"` or `"cidr"`,
 `granular_stress = "intrinsic"`, `granular_stress_basis = "nodal"`, linear
 interpolation, point quadrature and one `granular` material. Supported:
 `flip`, `pic` and `apic_gradient` transfers; static or dynamic time stepping;

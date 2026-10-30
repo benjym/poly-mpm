@@ -138,7 +138,6 @@ class Diagnostics:
         row = dict(
             time=float(P.t + P.dt),
             timestep=int(P.tstep + 1),
-            mechanics=P.mechanics,
             interpolation=P.interpolation,
             quadrature=P.quadrature,
             transfer=P.transfer,
@@ -191,7 +190,7 @@ class Diagnostics:
             - self.boundary_angular
         ).tolist()
         row["angular_budget_has_unwrapped_coordinates"] = not P.B.cyclic_lr
-        row["stored_energy_exact"] = P.mechanics == "updated" and all(
+        row["stored_energy_exact"] = all(
             b.material.law in ("elastic", "viscous", "bingham", "pouliquen", "linear_mu") for b in L.materials
         )
         row["energy_residual"] = float(

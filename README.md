@@ -127,8 +127,7 @@ uv run --locked --extra dev python -m pytest -q -W error::RuntimeWarning --cov -
 uv run --locked python -m benchmarks.audit_examples --output /tmp/poly-mpm-examples.json
 ```
 
-Run `uv run --locked --extra dev black .` to format active Python code.
-The `legacy/` source archive is excluded to preserve its provenance. Coverage
+Run `uv run --locked --extra dev black .` to format the Python code. Coverage
 includes installed solver modules and inputs, including plotting and diagnostics;
 HTML coverage is available with `--cov-report=html`.
 

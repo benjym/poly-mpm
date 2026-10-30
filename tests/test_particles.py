@@ -8,7 +8,6 @@ from constit import get_law
 from particles import Particles
 from transfers import gather, divide
 from MPM import run, step
-from reference import ScalarParticles
 
 
 def mapping(P, G, L):
@@ -84,50 +83,6 @@ def test_force_direction_and_total_body_force(basic):
     assert_allclose(G.fi, expected, atol=1e-12)
     assert_allclose(G.fi.sum(axis=0), 0, atol=1e-12)
     assert_allclose(G.fe.sum(axis=0), [0, P.g * b.m.sum(), 0])
-
-
-@pytest.mark.parametrize("law", ["rigid", "elastic", "viscous", "von_mises", "pouliquen"])
-def test_short_trajectory_against_scalar(law):
-    S = material(law, initial_v=[0.01, -0.02, 0])
-    args = dict(mechanics="legacy", materials=S, pressure="compression", initial_pressure=1.0)
-    vector = state(**deepcopy(args))
-    scalar = state(**deepcopy(args))
-    P, G, L = scalar
-    L.materials = [ScalarParticles(P, G, S, i) for i, S in enumerate(P.S)]
-    run(*vector, max_steps=30, output=False)
-    run(*scalar, max_steps=30, output=False)
-    for name in ("x", "v", "stress", "strain", "rho", "phi", "pressure"):
-        assert_allclose(
-            getattr(vector[2].materials[0], name), getattr(L.materials[0], name), rtol=1e-8, atol=1e-12
-        )
-    for name in ("m", "q", "fi", "fe", "pressure"):
-        assert_allclose(getattr(vector[1], name), getattr(G, name), rtol=1e-8, atol=1e-12)
-
-
-@pytest.mark.parametrize("law", ["elastic", "viscous", "von_mises", "pouliquen"])
-def test_constitutive_mixed_batch_against_scalar(law):
-    P, G, L = state(law, ns=2, mechanics="legacy")
-    b = L.materials[0]
-    rng = np.random.default_rng(5)
-    b.dstrain[:] = rng.normal(size=b.dstrain.shape) * 1e-7
-    b.stress[:] = rng.normal(size=b.stress.shape)
-    b.dev_stress[:] = rng.normal(size=b.stress.shape)
-    b.pressure[:] = [-1, 0, 1, -3]
-    b.sigma_kk[:] = np.trace(b.stress, axis1=1, axis2=2)
-    b.rho[-1] *= 0.5
-    from reference import law as scalar_law
-
-    expected = []
-    for i in range(len(b)):
-        history = {key: getattr(b, key)[i].copy() for key in b.scalar_fields + b.tensor_fields}
-        expected.append(
-            scalar_law(
-                b.dstrain[i], b.stress[i], history, b.material, P, b.rho[i], b.phi[i], b.initial_rho[i]
-            )
-        )
-    b.law(b, b.material, P)
-    for key in ("dstress", "pressure", "gammadot", "dev_stress", "I", "mu", "eta_limited"):
-        assert_allclose(getattr(b, key), [h[key] for h in expected], rtol=1e-10, atol=1e-12)
 
 
 def test_pouliquen_zero_rate_and_viscosity_cap():

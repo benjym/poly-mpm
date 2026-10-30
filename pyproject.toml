@@ -30,7 +30,6 @@ build-backend = "setuptools.build_meta"
 line-length = 110
 target-version = ['py314']
 required-version = '26.10.1'
-extend-exclude = '^/legacy/'
 
 [project.optional-dependencies]
 gpu = ["slangpy>=0.43.1; sys_platform == 'darwin' and platform_machine == 'arm64'"]

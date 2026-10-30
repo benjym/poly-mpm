@@ -34,8 +34,7 @@ dimensional. Constitutive tensor traces and norms reduce tensor axes only.
 `law(particles, material_parameters, simulation_parameters)` and update history and
 `dstress`. Updated mechanics uses neo-Hookean elastic stress, objective rate-form
 plasticity, and algebraic fluid stress; it evolves `F`, `J`, `V`, and `rho`.
-The optional `mechanics='legacy'` compatibility configuration uses fixed volume
-and incremental constitutive integration. Rigid materials
+Rigid materials
 bypass deformation/stress evolution and follow prescribed velocity. See the
 [numerical methods](numerical-foundations.md) and [constitutive models](constitutive-models.md).
 The registry in `constit.py` is the only material dispatch mechanism.

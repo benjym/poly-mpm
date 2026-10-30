@@ -70,7 +70,6 @@ def test_total_volume_rate_is_kept_and_only_the_trace_changes():
     np.testing.assert_allclose(deviator(averaged), deviator(plain), atol=1e-12)
 
 
-@pytest.mark.parametrize("setting", [dict(mechanics="legacy"), dict(solver="granular")])
-def test_fbar_requires_explicit_updated_mechanics(setting):
+def test_fbar_requires_the_explicit_solver():
     with pytest.raises(ValueError, match="fbar"):
-        block(**setting)
+        block(solver="granular")

@@ -77,7 +77,6 @@ def prepare(P, mode="simulation"):
         smooth_gamma_dot=False,
         diagnostics_stride=1,
         timestep_policy="report",
-        mechanics="updated",
         solver="explicit",
         granular_tolerance=1e-9,
         granular_solver="hybrid",
@@ -115,16 +114,12 @@ def prepare(P, mode="simulation"):
         raise ValueError("time_stepping must be static or dynamic")
     if P.timestep_policy not in ("report", "enforce"):
         raise ValueError("timestep_policy must be report or enforce")
-    if P.mechanics not in ("updated", "legacy"):
-        raise ValueError("mechanics must be updated or legacy")
     if P.solver not in ("explicit", "granular"):
         raise ValueError("solver must be explicit or granular")
     if P.interpolation not in ("linear", "quadratic"):
         raise ValueError("interpolation must be linear or quadratic")
     if P.quadrature not in ("point", "domain"):
         raise ValueError("quadrature must be point or domain")
-    if P.quadrature == "domain" and P.mechanics != "updated":
-        raise ValueError("domain quadrature requires updated mechanics")
     if P.domain_polygon not in ("batched", "reference"):
         raise ValueError("domain_polygon must be batched or reference")
     if int(P.domain_max_support) != P.domain_max_support or P.domain_max_support < 4:
@@ -137,8 +132,8 @@ def prepare(P, mode="simulation"):
         raise ValueError("pic_fraction must be between zero and one")
     if P.transfer != "flip" and P.pic_fraction:
         raise ValueError("pic_fraction is only used with flip")
-    if P.fbar and (P.solver != "explicit" or P.mechanics != "updated"):
-        raise ValueError("fbar requires the explicit solver and updated mechanics")
+    if P.fbar and P.solver != "explicit":
+        raise ValueError("fbar requires the explicit solver")
     if P.transfer == "apic" and P.interpolation != "quadratic":
         raise ValueError(
             "APIC requires quadratic interpolation; linear APIC has degenerate-support instabilities"
@@ -170,8 +165,8 @@ def prepare(P, mode="simulation"):
             raise ValueError("granular_solver must be block, hybrid, velocity or cidr")
         if P.granular_solver == "cidr":
             validate_cidr(P)
-        if P.mechanics != "updated" or P.quadrature != "point":
-            raise ValueError("granular prototype requires updated mechanics and point quadrature")
+        if P.quadrature != "point":
+            raise ValueError("granular prototype requires point quadrature")
         if P.interpolation != "linear":
             raise ValueError("granular prototype currently requires linear interpolation")
         if len(P.S) != 1 or P.S[0].law != "granular":
@@ -275,7 +270,7 @@ def prepare(P, mode="simulation"):
     G = Grid(P)
     L = ParticleSystem(P, G)
     defaults(P, update_timestep=update_timestep)
-    if P.time_stepping == "dynamic" and P.mechanics == "updated":
+    if P.time_stepping == "dynamic":
         from stability import limits
 
         original_controller = P.update_timestep
