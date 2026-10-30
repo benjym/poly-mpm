@@ -25,7 +25,7 @@ class Params:
         #         if self.t > 3*t_c:
         #             self.q = self.max_q*(1.-exp(-3.*(self.t-3*t_c)**2/t_c**2))
         #         else:
-        self.q = 0
+        self.q_v = self.q_h = 0
 
 
 class Grid_Params:

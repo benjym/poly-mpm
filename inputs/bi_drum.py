@@ -26,7 +26,6 @@ class Params:
         self.supername = "im/drum/ny_" + str(self.G.ny) + "/"
         self.pressure = "lithostatic"
         self.smooth_gamma_dot = False  # smooth calculation of gamma_dot
-        self.smooth_grad2 = True  # smooth the gradient of the shear strain rate
         self.intruder_v = array([0.0, 0.0, 0.0])
         print(self.supername)
 

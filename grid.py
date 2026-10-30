@@ -106,7 +106,7 @@ class Grid:
 
     def wipe(self, P):
         count = P.G.nx * P.G.ny
-        for name in ("fi", "fe", "q", "q_dot", "ext_f", "grad_gammadot", "grad_pk"):
+        for name in ("fi", "fe", "q", "q_dot", "ext_f", "grad_pk"):
             setattr(self, name, np.zeros((count, 3)))
         for name in ("m", "s_bar", "pk", "pkm", "dpk") + self.diagnostic_fields:
             setattr(self, name, np.zeros(count))
@@ -191,30 +191,29 @@ class Grid:
         self.contact_h, self.contact_v = self.wall_contact(
             P, divide(self.q + self.q_dot * P.dt, self.m[:, None])
         )
-        if P.B.roughness:
-            if P.B.wall_mu and P.solver != "granular":
-                # Friction acts only where the normal force points into a wall.
-                outward_h = np.zeros_like(self.m, dtype=np.bool_)
-                outward_v = np.zeros_like(self.m, dtype=np.bool_)
-                outward_h[: P.G.nx] = self.q_dot[: P.G.nx, 1] < 0
-                outward_h[-P.G.nx :] = self.q_dot[-P.G.nx :, 1] > 0
-                outward_v[:: P.G.nx] = self.q_dot[:: P.G.nx, 0] < 0
-                outward_v[P.G.nx - 1 :: P.G.nx] = self.q_dot[P.G.nx - 1 :: P.G.nx, 0] > 0
-                fh = (
-                    self.boundary_h
-                    * outward_h
-                    * np.minimum(np.abs(self.q_dot[:, 0]), P.B.wall_mu * np.abs(self.q_dot[:, 1]))
-                )
-                fv = (
-                    self.boundary_v
-                    * outward_v
-                    * np.minimum(np.abs(self.q_dot[:, 1]), P.B.wall_mu * np.abs(self.q_dot[:, 0]))
-                )
-                self.q_dot[:, 0] -= np.sign(self.q_dot[:, 0]) * fh
-                self.q_dot[:, 1] -= np.sign(self.q_dot[:, 1]) * fv
-            else:
-                self.q_dot[self.contact_h, 0] = 0
-                self.q_dot[self.contact_v, 1] = 0
+        if P.B.wall_mu and P.solver != "granular":
+            # Friction acts only where the normal force points into a wall.
+            outward_h = np.zeros_like(self.m, dtype=np.bool_)
+            outward_v = np.zeros_like(self.m, dtype=np.bool_)
+            outward_h[: P.G.nx] = self.q_dot[: P.G.nx, 1] < 0
+            outward_h[-P.G.nx :] = self.q_dot[-P.G.nx :, 1] > 0
+            outward_v[:: P.G.nx] = self.q_dot[:: P.G.nx, 0] < 0
+            outward_v[P.G.nx - 1 :: P.G.nx] = self.q_dot[P.G.nx - 1 :: P.G.nx, 0] > 0
+            fh = (
+                self.boundary_h
+                * outward_h
+                * np.minimum(np.abs(self.q_dot[:, 0]), P.B.wall_mu * np.abs(self.q_dot[:, 1]))
+            )
+            fv = (
+                self.boundary_v
+                * outward_v
+                * np.minimum(np.abs(self.q_dot[:, 1]), P.B.wall_mu * np.abs(self.q_dot[:, 0]))
+            )
+            self.q_dot[:, 0] -= np.sign(self.q_dot[:, 0]) * fh
+            self.q_dot[:, 1] -= np.sign(self.q_dot[:, 1]) * fv
+        elif P.B.roughness:
+            self.q_dot[self.contact_h, 0] = 0
+            self.q_dot[self.contact_v, 1] = 0
         self.q_dot[self.contact_v, 0] = 0
         self.q_dot[self.contact_h, 1] = 0
         self.q += self.q_dot * P.dt
@@ -280,9 +279,6 @@ class Grid:
         gv = self.calculate_gradient(P, G, velocity[:, 1], smooth)
         # Physical field, distinct from the deposited mass-weighted diagnostic.
         self.shear_rate = gu[:, 1] + gv[:, 0]
-
-    def calculate_grad_gammadot(self, P, G):
-        self.grad_gammadot = self.calculate_gradient(P, G, np.abs(self.shear_rate), P.smooth_grad2)
 
     def calculate_phi_increment(self, P, L=None):
         self.dphi, self.segregation_particle_dphi = segregation_update(

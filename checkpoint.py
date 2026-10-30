@@ -1,9 +1,12 @@
 """Checkpoint and restart of a prepared run.
 
-A checkpoint holds the evolving state of P, G, every particle batch and the
-diagnostics: arrays, numbers, strings and plain containers of them. Inputs,
-materials, callbacks and controllers are not stored; restart rebuilds them
-from the same input with initialise.get_parameters and then loads the state:
+A checkpoint holds the evolving state of P (time, step, output schedule and
+counters, and dt under dynamic time stepping), G, every particle batch and the
+diagnostics: arrays, numbers, strings and plain containers of them. Settings,
+inputs, materials, callbacks and controllers are not stored; restart rebuilds
+them from the same input and arguments with initialise.get_parameters, so a
+setting changed in the input applies to the continued run, and then loads the
+state:
 
     P, G, L = get_parameters(args)
     checkpoint.load(path, P, G, L)
@@ -19,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-VERSION = 1
+VERSION = 2
 # Configuration objects and functions held by the evolving objects.
 SKIP = {"material", "law", "templates", "materials", "diagnostics"}
 
@@ -42,6 +45,15 @@ def _state(obj):
     }
 
 
+def _run_state(P):
+    """The evolving part of P; everything else on P is a setting from the input."""
+    names = {"t", "tstep", "next_save", "timestep_limits"}
+    names |= {name for name in vars(P) if name.endswith("_save") and isinstance(getattr(P, name), int)}
+    if P.time_stepping == "dynamic":
+        names.add("dt")
+    return {name: value for name, value in _state(P).items() if name in names}
+
+
 def _restore(obj, state):
     for name, value in state.items():
         setattr(obj, name, value.copy() if isinstance(value, np.ndarray) else value)
@@ -52,7 +64,7 @@ def save(path, P, G, L):
     state = dict(
         version=VERSION,
         args=getattr(P, "args", None),
-        P=_state(P),
+        P=_run_state(P),
         G=_state(G),
         materials=[_state(batch) for batch in L.materials],
         diagnostics=None if L.diagnostics is None else _state(L.diagnostics),
@@ -74,6 +86,8 @@ def load(path, P, G, L):
         state = pickle.load(handle)
     if state.get("version") != VERSION:
         raise ValueError(f"checkpoint version {state.get('version')} is not {VERSION}")
+    if state.get("args") != getattr(P, "args", None):
+        raise ValueError(f"checkpoint was written from {state.get('args')}, not {getattr(P, 'args', None)}")
     if len(state["materials"]) != len(L.materials):
         raise ValueError("checkpoint and prepared run have different material counts")
     if (state["diagnostics"] is None) != (L.diagnostics is None):

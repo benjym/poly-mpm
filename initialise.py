@@ -75,7 +75,6 @@ def prepare(P, mode="simulation"):
         pressure=None,
         initial_flow=False,
         smooth_gamma_dot=False,
-        smooth_grad2=False,
         diagnostics_stride=1,
         timestep_policy="report",
         mechanics="updated",
@@ -112,6 +111,8 @@ def prepare(P, mode="simulation"):
         raise ValueError("legacy segregate_mp is unsupported; use grid segregation")
     if int(P.diagnostics_stride) != P.diagnostics_stride or P.diagnostics_stride < 1:
         raise ValueError("diagnostics_stride must be a positive integer")
+    if P.time_stepping not in ("static", "dynamic"):
+        raise ValueError("time_stepping must be static or dynamic")
     if P.timestep_policy not in ("report", "enforce"):
         raise ValueError("timestep_policy must be report or enforce")
     if P.mechanics not in ("updated", "legacy"):
@@ -300,4 +301,6 @@ def prepare(P, mode="simulation"):
 def get_parameters(params):
     validate_arguments(params)
     module = import_module("inputs." + params[0])
-    return prepare(module.Params(params), params[0])
+    P = module.Params(params)
+    P.args = list(params)
+    return prepare(P, params[0])

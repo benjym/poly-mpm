@@ -33,7 +33,7 @@ class Params:
         t_c = 0.1
         self.g = self.max_g * (1.0 - exp(-3.0 * self.t**2 / t_c**2))
         #        self.g=self.max_g
-        self.q = self.max_q * (1.0 - exp(-3.0 * self.t**2 / t_c**2))
+        self.q_v = self.q_h = self.max_q * (1.0 - exp(-3.0 * self.t**2 / t_c**2))
 
 
 class Grid_Params:

@@ -122,8 +122,8 @@ contact between separate bodies or along curved surfaces.
 | `has_bottom`, `has_top`, `has_left`, `has_right` | Wall on that domain edge: fixes the normal velocity of its nodes | yes | yes | yes |
 | `no_slip_bottom` | Also fixes horizontal velocity on the bottom edge | yes | yes | yes |
 | `roughness` | No-slip walls: fixes both velocity components on every wall node | yes | yes | yes |
-| `separable` | One-sided domain walls: a wall node moving away from its wall is released (see [wall conditions](#wall-conditions)) | accepted, checked only with granular | yes | yes |
-| `wall_mu` | Frictional walls with coefficient `wall_mu` (see [wall conditions](#wall-conditions)) | with `roughness`: explicit friction force | contact rows in the solve; needs `granular_solver = "velocity"` | yes |
+| `separable` | One-sided domain walls: a wall node moving away from its wall is released (see [wall conditions](#wall-conditions)) | a wall node moving away from its wall is released | yes | yes |
+| `wall_mu` | Frictional walls with coefficient `wall_mu` (see [wall conditions](#wall-conditions)) | explicit friction force | contact rows in the solve; needs `granular_solver = "velocity"` | yes |
 | `cyclic_lr` | Periodic left and right edges | yes | yes | yes |
 | `wall` | Interior vertical wall in the lower half at mid-width | yes | yes | accepted |
 | `two_walls` | Two staggered interior vertical walls | yes | yes | accepted |
@@ -151,8 +151,8 @@ so a row of grains within one cell of a wall can stay there when gravity turns
 away from it. One-sided and frictional walls release it. A one-sided step
 re-solves when the solve pushes a released node back into its wall (about 2.5
 solves per step in the square drum); frictional walls need no re-solve. In the
-explicit solver, `wall_mu` instead limits the tangential wall force explicitly
-and applies only together with `roughness`. Interior walls (`wall`, `two_walls`,
+explicit solver, `wall_mu` instead limits the tangential wall force explicitly,
+in place of the no-slip condition of `roughness`. Interior walls (`wall`, `two_walls`,
 `box`, silos) stay two-sided. Details and checks are in
 [granular-prototype](granular-prototype.md).
 
@@ -204,7 +204,6 @@ problem; see [gpu-handoff](gpu-handoff.md).
 | `c` | `0.0` | ≥ 0 | Segregation coefficient multiplying the gradient of the segregation potential. |
 | `normalise_phi` | `False` | bool | Clip each particle's fractions to [0, 1] and rescale them to sum to one after each transport step. |
 | `smooth_gamma_dot` | `False` | bool | Smooth the shear rate before use; Metal requires `False`. |
-| `smooth_grad2` | `False` | bool | Smooth the shear-rate gradient. |
 | `G.ns`, `G.s`, material `phi` | see [Grid](#grid) | | Size classes and initial composition. |
 
 Metal supports up to eight size classes. Rigid materials do not segregate.

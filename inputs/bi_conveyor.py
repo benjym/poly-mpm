@@ -23,7 +23,6 @@ class Params:
         self.supername = "im/conveyor/"
         self.v_0 = 0.2  # m/s velocity at belt
         self.pressure = "lithostatic"
-        self.smooth_grad2 = True
 
     def update_forces(self):
         t_c = 0.05
