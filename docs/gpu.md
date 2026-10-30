@@ -557,9 +557,21 @@ steps from rest, so the comparison is indicative only: there, the collapse of
 
 The remaining cost is in slow, nearly jammed flow on fine grids, where Newton
 needs tens of iterations and each needs hundreds to thousands of CG iterations.
-A multigrid preconditioner would address the second; the first is the
-globalisation question of
+The first is the globalisation question of
 [granular-cidr-design](granular-cidr-design.md#frozen-step-results).
+
+A geometric multigrid preconditioner for the second was tried and not adopted
+(local branch `multigrid-experiment`). It assembles the Newton matrix as a 5x5
+node stencil of 2x2 blocks, builds Galerkin coarse levels with bilinear
+prolongation and smooths with l1 block Jacobi. Host PCG preconditioned by the
+device V-cycle converges in 23 and 6 iterations on random and smooth right-hand
+sides of a Newton matrix of the connected collapse, against 46 and 79 with l1
+Jacobi. On the Newton systems of the run it only halves the CG iterations
+(40,283 against 82,094 on the cold step at 102,400 particles). A V-cycle costs
+about 1.8 ms, against 0.24 ms for a block-preconditioned CG iteration, so the
+run took 94 s against 26 s for two steps. The hard components of the Newton
+right-hand sides are not represented well by the bilinear coarse space;
+whether an aggregation-based coarse space would represent them is not tested.
 
 ## Sources
 

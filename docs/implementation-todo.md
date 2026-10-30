@@ -109,13 +109,22 @@ experimental validation and application calibration remain separate tasks.
       (`benchmarks/cidr_incline.py`): held to within 8.9% per layer for 0.4 s;
       see the open item below for what follows.
 
+- [x] Multigrid preconditioner for the Metal CIDR conjugate-gradient solves:
+      tried and not adopted (`gpu.md`, local branch `multigrid-experiment`).
+      Geometric multigrid halves the CG iterations at 102,400 particles but
+      costs 7.5 times a CG iteration per V-cycle, and the run is 3.6 times
+      slower.
+
 ### Actionable without further input
 
-- [ ] Multigrid preconditioner for the Metal CIDR conjugate-gradient solves
-      (`gpu.md`): CG iterations per Newton system rise from 109–162 at 10,000
-      particles to 309–341 at 102,400.
+None remaining.
 
 ### Needs your input (CIDR)
+
+- [ ] Metal CIDR solver cost on fine connected grids: CG iterations per Newton
+      system rise from 109–162 at 10,000 particles to 309–341 at 102,400.
+      *Question:* worth an aggregation-based (algebraic) coarse space, or
+      accept the present cost?
 
 - [ ] Particle packing under sustained shear: on the inclined plane particles
       cluster below the stress-node resolution and a node passes `phi_max`
