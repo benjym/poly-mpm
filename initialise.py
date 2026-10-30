@@ -51,7 +51,8 @@ def validate_cidr(P):
     if not values["phi_min"] < values["packing_max"] - values["cidr_deficit"]:
         raise ValueError("cidr requires phi_min < packing_max - cidr_deficit")
     for name in ("granular_cidr_gamma", "granular_cidr_tolerance"):
-        if not np.isfinite(getattr(P, name)) or getattr(P, name) <= 0:
+        value = getattr(P, name)
+        if (value is not None or name != "granular_cidr_gamma") and (not np.isfinite(value) or value <= 0):
             raise ValueError(f"{name} must be positive and finite")
 
 
@@ -87,7 +88,7 @@ def prepare(P, mode="simulation"):
         granular_max_iterations=200,
         granular_stopping="residual",
         granular_increment=1e-3,
-        granular_cidr_gamma=0.075,
+        granular_cidr_gamma=None,
         granular_cidr_tolerance=1e-5,
         granular_max_nodes=256,
         interpolation="linear",

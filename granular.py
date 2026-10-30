@@ -616,6 +616,8 @@ def assemble(P, G, batch, *, compact=False):
 
 
 _CIDR_MODELS = {}
+# Default envelope smoothing in units of dt / rho on the CPU (Metal: mpm_gpu.cidr.GAMMA).
+CIDR_GAMMA = 0.075
 
 
 def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
@@ -654,7 +656,7 @@ def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
     )
     lam = -initial * phi[:, None]
     rho = float(np.sum(batch.m) / np.sum(batch.V))
-    gamma = P.granular_cidr_gamma * P.dt / rho
+    gamma = (P.granular_cidr_gamma or CIDR_GAMMA) * P.dt / rho
     cold = None if np.any(lam) else P.dt / rho
     # A warm start begins from the transferred velocity before this step's body force: where
     # material was jammed it is already compatible, while the trial velocity is not at walls.

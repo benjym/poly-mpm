@@ -17,6 +17,7 @@ import numpy as np
 
 from . import GPUError
 from . import mechanics
+from .cidr import GAMMA
 from .primitives import MAX, MIN, SUM, ColumnReduction
 from .solver import Solver
 from .topology import join_positions, split_positions
@@ -161,7 +162,7 @@ class MetalRunner:
                 grid,
                 S,
                 dt=P.dt,
-                gamma=P.granular_cidr_gamma * P.dt / self.rho,
+                gamma=(P.granular_cidr_gamma or GAMMA) * P.dt / self.rho,
                 tolerance=P.granular_cidr_tolerance,
             )
         else:
@@ -476,7 +477,7 @@ class MetalRunner:
         solver = self.solver
         solver.dt = dt
         if self.cidr:
-            solver.gamma = P.granular_cidr_gamma * dt / self.rho
+            solver.gamma = (P.granular_cidr_gamma or GAMMA) * dt / self.rho
             result = solver.solve(
                 operator, nodal, self.initial, self.volume, encoder, cold_gamma=dt / self.rho, body=body
             )

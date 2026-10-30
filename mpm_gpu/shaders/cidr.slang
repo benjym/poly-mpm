@@ -297,6 +297,19 @@ float3 row_strain(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<flo
     return w;
 }
 
+float3 row_strain_rw(uint a, StructuredBuffer<uint> neighbors, StructuredBuffer<float> gradients,
+                     RWStructuredBuffer<float> velocity)
+{
+    float3 w = float3(0.0, 0.0, 0.0);
+    for (uint s = 0; s < 9; s++)
+    {
+        uint j = neighbors[9 * a + s];
+        if (j == INVALID) continue;
+        w += mul(row_block(a, row_slot(a, s, neighbors), gradients), float2(velocity[2 * j], velocity[2 * j + 1]));
+    }
+    return w;
+}
+
 // ---- set-up -------------------------------------------------------------------------------
 
 [shader("compute")]
@@ -458,44 +471,105 @@ float mass_dt(StructuredBuffer<float> inverse_mass, uint i, float dt)
     return w > 0.0 ? 1.0 / (w * dt) : 0.0;
 }
 
-// ---- Newton gradient, diagonal and products ------------------------------------------------
+// ---- Newton gradient, preconditioner and products -----------------------------------------
+
+groupshared float sum_a[256];
+groupshared float sum_b[256];
+
+// Group sums of two values; thread 0 of each group writes them to partials[2 g], [2 g + 1].
+void group_sums(uint lane, uint group, float a, float b, RWStructuredBuffer<float> partials)
+{
+    sum_a[lane] = a;
+    sum_b[lane] = b;
+    GroupMemoryBarrierWithGroupSync();
+    for (uint offset = 128; offset > 0; offset /= 2)
+    {
+        if (lane < offset)
+        {
+            sum_a[lane] += sum_a[lane + offset];
+            sum_b[lane] += sum_b[lane + offset];
+        }
+        GroupMemoryBarrierWithGroupSync();
+    }
+    if (lane == 0)
+    {
+        partials[2 * group] = sum_a[0];
+        partials[2 * group + 1] = sum_b[0];
+    }
+}
+
+// The 2x2 block preconditioner of node j: (d00, d01, d11), identity on fixed components.
+float2 precondition(RWStructuredBuffer<float> block, uint j, float2 r)
+{
+    float a = block[3 * j], b = block[3 * j + 1], c = block[3 * j + 2];
+    float det = a * c - b * b;
+    return float2(c * r.x - b * r.y, a * r.y - b * r.x) / det;
+}
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void cidr_gradient(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uniform float dt,
+void cidr_gradient(uint3 tid : SV_DispatchThreadID, uint3 lane : SV_GroupThreadID, uint3 group : SV_GroupID,
+                   uniform uint node_count, uniform float dt,
                    StructuredBuffer<uint> transpose_rows, StructuredBuffer<uint> transpose_slots,
                    StructuredBuffer<float> gradients, StructuredBuffer<float> inverse_mass,
                    StructuredBuffer<float> velocity, StructuredBuffer<float> trial,
                    RWStructuredBuffer<float> force, RWStructuredBuffer<float> hessian,
-                   RWStructuredBuffer<float> gradient, RWStructuredBuffer<float> diagonal,
-                   RWStructuredBuffer<float> work)
+                   RWStructuredBuffer<float> gradient, RWStructuredBuffer<float> block,
+                   RWStructuredBuffer<float> partials)
 {
-    // G = M/dt (u - u*) + B^T force on free components; Jacobi diagonal of K; work = G^2.
+    // G = M/dt (u - u*) + B^T force on free components, the 2x2 block of K per node, and the
+    // CG start: x = 0, r = -G, z = P^-1 r, p = z; partials of (r . z, G . G).
+    uint j = tid.x;
+    float rz = 0.0, gg = 0.0;
+    if (j < node_count)
+    {
+        float2 f = node_force(j, transpose_rows, transpose_slots, gradients, force);
+        float d00 = 0.0, d01 = 0.0, d11 = 0.0;
+        for (uint i = 0; i < 9; i++)
+        {
+            uint a = transpose_rows[9 * j + i];
+            if (a == INVALID) break;
+            float3x2 Bs = row_block(a, transpose_slots[9 * j + i], gradients);
+            float3x3 H = row_hessian(hessian, a);
+            float3 c0 = float3(Bs[0][0], Bs[1][0], Bs[2][0]);
+            float3 c1 = float3(Bs[0][1], Bs[1][1], Bs[2][1]);
+            float3 h0 = mul(H, c0), h1 = mul(H, c1);
+            d00 += dot(c0, h0);
+            d01 += dot(c0, h1);
+            d11 += dot(c1, h1);
+        }
+        bool free0 = inverse_mass[2 * j] > 0.0, free1 = inverse_mass[2 * j + 1] > 0.0;
+        float2 g = float2(free0 ? mass_dt(inverse_mass, 2 * j, dt) * (velocity[2 * j] - trial[2 * j]) + f.x : 0.0,
+                          free1 ? mass_dt(inverse_mass, 2 * j + 1, dt) * (velocity[2 * j + 1] - trial[2 * j + 1]) + f.y : 0.0);
+        block[3 * j] = free0 ? mass_dt(inverse_mass, 2 * j, dt) + d00 : 1.0;
+        block[3 * j + 1] = free0 && free1 ? d01 : 0.0;
+        block[3 * j + 2] = free1 ? mass_dt(inverse_mass, 2 * j + 1, dt) + d11 : 1.0;
+        gradient[2 * j] = g.x;
+        gradient[2 * j + 1] = g.y;
+        float2 r = -g;
+        float2 z = precondition(block, j, r);
+        rz = dot(r, z);
+        gg = dot(g, g);
+    }
+    group_sums(lane.x, group.x, rz, gg, partials);
+}
+
+[shader("compute")]
+[numthreads(256, 1, 1)]
+void cidr_cg_start(uint3 tid : SV_DispatchThreadID, uniform uint node_count, StructuredBuffer<float> gradient,
+                   RWStructuredBuffer<float> block, RWStructuredBuffer<float> x, RWStructuredBuffer<float> r,
+                   RWStructuredBuffer<float> z, RWStructuredBuffer<float> p)
+{
     uint j = tid.x;
     if (j >= node_count) return;
-    float2 f = node_force(j, transpose_rows, transpose_slots, gradients, force);
-    float2 d = float2(0.0, 0.0);
-    for (uint i = 0; i < 9; i++)
-    {
-        uint a = transpose_rows[9 * j + i];
-        if (a == INVALID) break;
-        float3x2 Bs = row_block(a, transpose_slots[9 * j + i], gradients);
-        float3x3 H = row_hessian(hessian, a);
-        for (uint c = 0; c < 2; c++)
-        {
-            float3 col = float3(Bs[0][c], Bs[1][c], Bs[2][c]);
-            d[c] += dot(col, mul(H, col));
-        }
-    }
+    float2 rj = -float2(gradient[2 * j], gradient[2 * j + 1]);
+    float2 zj = precondition(block, j, rj);
     for (uint c = 0; c < 2; c++)
     {
-        uint i = 2 * j + c;
-        float m = mass_dt(inverse_mass, i, dt);
-        bool free = inverse_mass[i] > 0.0;
-        float g = free ? m * (velocity[i] - trial[i]) + f[c] : 0.0;
-        gradient[i] = g;
-        diagonal[i] = free ? m + d[c] : 1.0;
-        work[i] = g * g;
+        x[2 * j + c] = 0;
+        r[2 * j + c] = rj[c];
+        z[2 * j + c] = zj[c];
+        p[2 * j + c] = zj[c];
     }
 }
 
@@ -515,63 +589,58 @@ void cidr_rows_product(uint3 tid : SV_DispatchThreadID, uniform uint row_count, 
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void cidr_nodes_product(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uniform float dt,
+void cidr_nodes_product(uint3 tid : SV_DispatchThreadID, uint3 lane : SV_GroupThreadID, uint3 group : SV_GroupID,
+                        uniform uint node_count, uniform float dt,
                         StructuredBuffer<uint> transpose_rows, StructuredBuffer<uint> transpose_slots,
                         StructuredBuffer<float> gradients, StructuredBuffer<float> inverse_mass,
                         StructuredBuffer<float> source, RWStructuredBuffer<float> rows,
-                        RWStructuredBuffer<float> output, RWStructuredBuffer<float> work,
+                        RWStructuredBuffer<float> output, RWStructuredBuffer<float> partials,
                         RWStructuredBuffer<uint> flags)
 {
-    // output = K source = M/dt source + B^T rows on free components; work = source . output.
+    // output = K source = M/dt source + B^T rows on free components; partials of source . output.
+    if (flags[CG_DONE] != 0) return;
     uint j = tid.x;
-    if (j >= node_count || flags[CG_DONE] != 0) return;
-    float2 f = node_force(j, transpose_rows, transpose_slots, gradients, rows);
-    for (uint c = 0; c < 2; c++)
+    float pq = 0.0;
+    if (j < node_count)
     {
-        uint i = 2 * j + c;
-        bool free = inverse_mass[i] > 0.0;
-        float v = free ? mass_dt(inverse_mass, i, dt) * source[i] + f[c] : 0.0;
-        output[i] = v;
-        work[i] = source[i] * v;
+        float2 f = node_force(j, transpose_rows, transpose_slots, gradients, rows);
+        for (uint c = 0; c < 2; c++)
+        {
+            uint i = 2 * j + c;
+            bool free = inverse_mass[i] > 0.0;
+            float v = free ? mass_dt(inverse_mass, i, dt) * source[i] + f[c] : 0.0;
+            output[i] = v;
+            pq += source[i] * v;
+        }
     }
+    group_sums(lane.x, group.x, pq, 0.0, partials);
 }
 
 // ---- conjugate gradients -------------------------------------------------------------------
 
 [shader("compute")]
-[numthreads(256, 1, 1)]
-void cidr_cg_start(uint3 tid : SV_DispatchThreadID, uniform uint count, StructuredBuffer<float> gradient,
-                   StructuredBuffer<float> diagonal, RWStructuredBuffer<float> x, RWStructuredBuffer<float> r,
-                   RWStructuredBuffer<float> z, RWStructuredBuffer<float> p, RWStructuredBuffer<float> work)
+[numthreads(1, 1, 1)]
+void cidr_cg_init(uint3 tid : SV_DispatchThreadID, uniform float rtol, uniform uint groups,
+                  RWStructuredBuffer<float> partials, RWStructuredBuffer<float> scalars,
+                  RWStructuredBuffer<uint> flags, RWStructuredBuffer<uint> iterations)
 {
-    uint i = tid.x;
-    if (i >= count) return;
-    x[i] = 0;
-    float ri = -gradient[i];
-    r[i] = ri;
-    z[i] = ri / diagonal[i];
-    p[i] = z[i];
-    work[i] = ri * z[i];
+    float rz = 0.0, bb = 0.0;
+    for (uint g = 0; g < groups; g++) { rz += partials[2 * g]; bb += partials[2 * g + 1]; }
+    scalars[RZ] = rz;
+    scalars[BB] = bb;
+    scalars[TOL2] = rtol * rtol * bb;
+    flags[CG_DONE] = bb > 0.0 ? 0 : 1;
+    iterations[0] = 0;
 }
 
 [shader("compute")]
 [numthreads(1, 1, 1)]
-void cidr_cg_init(uint3 tid : SV_DispatchThreadID, uniform float rtol, StructuredBuffer<float> rz,
-                  StructuredBuffer<float> bb, RWStructuredBuffer<float> scalars, RWStructuredBuffer<uint> flags)
-{
-    scalars[RZ] = rz[0];
-    scalars[BB] = bb[0];
-    scalars[TOL2] = rtol * rtol * bb[0];
-    flags[CG_DONE] = bb[0] > 0.0 ? 0 : 1;
-}
-
-[shader("compute")]
-[numthreads(1, 1, 1)]
-void cidr_cg_alpha(uint3 tid : SV_DispatchThreadID, StructuredBuffer<float> pq,
+void cidr_cg_alpha(uint3 tid : SV_DispatchThreadID, uniform uint groups, RWStructuredBuffer<float> partials,
                    RWStructuredBuffer<float> scalars, RWStructuredBuffer<uint> flags)
 {
     if (flags[CG_DONE] != 0) return;
-    float d = pq[0];
+    float d = 0.0;
+    for (uint g = 0; g < groups; g++) d += partials[2 * g];
     if (!(d > 0.0))
     {
         flags[CG_DONE] = 1;
@@ -585,37 +654,53 @@ void cidr_cg_alpha(uint3 tid : SV_DispatchThreadID, StructuredBuffer<float> pq,
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void cidr_cg_update(uint3 tid : SV_DispatchThreadID, uniform uint count, StructuredBuffer<float> diagonal,
+void cidr_cg_update(uint3 tid : SV_DispatchThreadID, uint3 lane : SV_GroupThreadID, uint3 group : SV_GroupID,
+                    uniform uint node_count, RWStructuredBuffer<float> block,
                     StructuredBuffer<float> q, RWStructuredBuffer<float> x, RWStructuredBuffer<float> r,
                     RWStructuredBuffer<float> z, StructuredBuffer<float> p, RWStructuredBuffer<float> scalars,
-                    RWStructuredBuffer<float> work, RWStructuredBuffer<float> work2, RWStructuredBuffer<uint> flags)
+                    RWStructuredBuffer<float> partials, RWStructuredBuffer<uint> flags)
 {
-    // x += alpha p, r -= alpha q, z = r / diag; work = r . z, work2 = r . r.
-    uint i = tid.x;
-    if (i >= count || flags[CG_DONE] != 0) return;
-    float alpha = scalars[ALPHA];
-    x[i] += alpha * p[i];
-    r[i] -= alpha * q[i];
-    z[i] = r[i] / diagonal[i];
-    work[i] = r[i] * z[i];
-    work2[i] = r[i] * r[i];
+    // x += alpha p, r -= alpha q, z = P^-1 r; partials of (r . z, r . r).
+    if (flags[CG_DONE] != 0) return;
+    uint j = tid.x;
+    float rz = 0.0, rr = 0.0;
+    if (j < node_count)
+    {
+        float alpha = scalars[ALPHA];
+        float2 rj;
+        for (uint c = 0; c < 2; c++)
+        {
+            uint i = 2 * j + c;
+            x[i] += alpha * p[i];
+            r[i] -= alpha * q[i];
+            rj[c] = r[i];
+        }
+        float2 zj = precondition(block, j, rj);
+        z[2 * j] = zj.x;
+        z[2 * j + 1] = zj.y;
+        rz = dot(rj, zj);
+        rr = dot(rj, rj);
+    }
+    group_sums(lane.x, group.x, rz, rr, partials);
 }
 
 [shader("compute")]
 [numthreads(1, 1, 1)]
-void cidr_cg_beta(uint3 tid : SV_DispatchThreadID, uniform uint limit, StructuredBuffer<float> rz,
-                  StructuredBuffer<float> rr, RWStructuredBuffer<float> scalars, RWStructuredBuffer<uint> flags,
-                  RWStructuredBuffer<uint> iterations)
+void cidr_cg_beta(uint3 tid : SV_DispatchThreadID, uniform uint limit, uniform uint groups,
+                  RWStructuredBuffer<float> partials, RWStructuredBuffer<float> scalars,
+                  RWStructuredBuffer<uint> flags, RWStructuredBuffer<uint> iterations)
 {
     if (flags[CG_DONE] != 0) return;
+    float rz = 0.0, rr = 0.0;
+    for (uint g = 0; g < groups; g++) { rz += partials[2 * g]; rr += partials[2 * g + 1]; }
     iterations[0] += 1;
-    if (rr[0] <= scalars[TOL2] || iterations[0] >= limit)
+    if (rr <= scalars[TOL2] || iterations[0] >= limit)
     {
         flags[CG_DONE] = 1;
         return;
     }
-    scalars[BETA] = rz[0] / scalars[RZ];
-    scalars[RZ] = rz[0];
+    scalars[BETA] = rz / scalars[RZ];
+    scalars[RZ] = rz;
 }
 
 [shader("compute")]
@@ -627,6 +712,115 @@ void cidr_cg_direction(uint3 tid : SV_DispatchThreadID, uniform uint count, Stru
     uint i = tid.x;
     if (i >= count || flags[CG_DONE] != 0) return;
     p[i] = z[i] + scalars[BETA] * p[i];
+}
+
+// ---- conjugate gradients in one workgroup ---------------------------------------------------
+
+static const uint BLOCK = 1024;
+groupshared float block_a[1024];
+groupshared float block_b[1024];
+
+float2 block_sums(uint lane, float a, float b)
+{
+    block_a[lane] = a;
+    block_b[lane] = b;
+    GroupMemoryBarrierWithGroupSync();
+    for (uint offset = BLOCK / 2; offset > 0; offset /= 2)
+    {
+        if (lane < offset)
+        {
+            block_a[lane] += block_a[lane + offset];
+            block_b[lane] += block_b[lane + offset];
+        }
+        GroupMemoryBarrierWithGroupSync();
+    }
+    float2 total = float2(block_a[0], block_b[0]);
+    GroupMemoryBarrierWithGroupSync();
+    return total;
+}
+
+[shader("compute")]
+[numthreads(1024, 1, 1)]
+void cidr_cg_block(uint3 lane3 : SV_GroupThreadID, uniform uint row_count, uniform uint node_count,
+                   uniform float dt, uniform uint steps, uniform uint limit,
+                   StructuredBuffer<uint> neighbors, StructuredBuffer<uint> transpose_rows,
+                   StructuredBuffer<uint> transpose_slots, StructuredBuffer<float> gradients,
+                   StructuredBuffer<float> inverse_mass, RWStructuredBuffer<float> hessian,
+                   RWStructuredBuffer<float> block, RWStructuredBuffer<float> rows,
+                   RWStructuredBuffer<float> x, RWStructuredBuffer<float> r, RWStructuredBuffer<float> z,
+                   RWStructuredBuffer<float> p, RWStructuredBuffer<float> q,
+                   RWStructuredBuffer<float> scalars, RWStructuredBuffer<uint> flags,
+                   RWStructuredBuffer<uint> iterations)
+{
+    // `steps` CG iterations in one workgroup: barriers replace dispatch boundaries. The same
+    // arithmetic as cidr_rows_product, cidr_nodes_product, cidr_cg_update and cidr_cg_direction.
+    uint lane = lane3.x;
+    for (uint step = 0; step < steps; step++)
+    {
+        AllMemoryBarrierWithGroupSync();
+        if (flags[CG_DONE] != 0) return;
+        for (uint a = lane; a < row_count; a += BLOCK)
+        {
+            float3 w = mul(row_hessian(hessian, a), row_strain_rw(a, neighbors, gradients, p));
+            for (uint k = 0; k < 3; k++) rows[3 * a + k] = w[k];
+        }
+        AllMemoryBarrierWithGroupSync();
+        float pq = 0.0;
+        for (uint j = lane; j < node_count; j += BLOCK)
+        {
+            float2 f = node_force(j, transpose_rows, transpose_slots, gradients, rows);
+            for (uint c = 0; c < 2; c++)
+            {
+                uint i = 2 * j + c;
+                float v = inverse_mass[i] > 0.0 ? mass_dt(inverse_mass, i, dt) * p[i] + f[c] : 0.0;
+                q[i] = v;
+                pq += p[i] * v;
+            }
+        }
+        float d = block_sums(lane, pq, 0.0).x;
+        if (!(d > 0.0))
+        {
+            if (lane == 0)
+            {
+                flags[CG_DONE] = 1;
+                uint ignored;
+                InterlockedOr(flags[STATUS], 4, ignored);
+            }
+            return;
+        }
+        float alpha = scalars[RZ] / d;
+        AllMemoryBarrierWithGroupSync();
+        float rz = 0.0, rr = 0.0;
+        for (uint j = lane; j < node_count; j += BLOCK)
+        {
+            float2 rj;
+            for (uint c = 0; c < 2; c++)
+            {
+                uint i = 2 * j + c;
+                x[i] += alpha * p[i];
+                r[i] -= alpha * q[i];
+                rj[c] = r[i];
+            }
+            float2 zj = precondition(block, j, rj);
+            z[2 * j] = zj.x;
+            z[2 * j + 1] = zj.y;
+            rz += dot(rj, zj);
+            rr += dot(rj, rj);
+        }
+        float2 sums = block_sums(lane, rz, rr);
+        uint count = iterations[0] + 1;
+        bool done = sums.y <= scalars[TOL2] || count >= limit;
+        float beta = sums.x / scalars[RZ];
+        AllMemoryBarrierWithGroupSync();
+        if (lane == 0)
+        {
+            iterations[0] = count;
+            scalars[RZ] = sums.x;
+            if (done) flags[CG_DONE] = 1;
+        }
+        if (done) return;
+        for (uint i = lane; i < 2 * node_count; i += BLOCK) p[i] = z[i] + beta * p[i];
+    }
 }
 
 // ---- line search and outer step ------------------------------------------------------------
@@ -719,6 +913,16 @@ void cidr_unforced(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uni
     if (j >= node_count) return;
     if (inverse_mass[2 * j] > 0.0) velocity[2 * j] -= dt * body_x;
     if (inverse_mass[2 * j + 1] > 0.0) velocity[2 * j + 1] -= dt * body_y;
+}
+
+[shader("compute")]
+[numthreads(1, 1, 1)]
+void cidr_pack(uint3 tid : SV_DispatchThreadID, StructuredBuffer<float> a, StructuredBuffer<float> b,
+               RWStructuredBuffer<float> output)
+{
+    // Two reduction results into one buffer, so the host reads them with one synchronisation.
+    output[0] = a[0];
+    output[1] = b[0];
 }
 
 [shader("compute")]

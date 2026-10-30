@@ -568,9 +568,9 @@ flow starts, then 3 to 7 (`tests/test_cidr.py`).
 same method, with Jacobi-preconditioned conjugate gradients for each Newton
 system and line searches on the sign of the directional derivative, which FP32
 resolves where it cannot resolve the objective's decrease. On the benchmark
-collapses it is 3.4 to 9.6 times faster than the CPU solver and agrees with it
-to 4e-6 grid spacings; the connected collapse of 10,000 particles, on which the
-Coulomb solver does not converge, runs at 2.2 s per step. Details and timings
+collapses it is 8.5 to 44 times faster than the CPU solver and agrees with it to
+6e-5 grid spacings; the connected collapse of 10,000 particles, on which the
+Coulomb solver does not converge, runs at 0.54 s per step. Details and timings
 are in [gpu](gpu.md#critical-state-cidr).
 
 ## References

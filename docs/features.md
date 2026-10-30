@@ -175,7 +175,7 @@ defaults: `granular_tolerance = 1e-4`, `granular_solver = "velocity"` and
 | `granular_viscosity` | `0.0` | ≥ 0 Pa s | `0` | Optional viscous regularisation. |
 | `granular_max_nodes` | `256` | integer ≥ 1 | ignored | CPU guard on active stress nodes. |
 | `granular_cidr_tolerance` | `1e-5` | > 0 | ≥ `1e-5` | `cidr`: velocity change between outer steps, relative to the larger of the velocity and the trial velocity. |
-| `granular_cidr_gamma` | `0.075` | > 0 | yes | `cidr`: smoothing of the Moreau envelope in units of `dt / rho`; the converged step does not depend on it. |
+| `granular_cidr_gamma` | `None` | > 0 or `None` | yes | `cidr`: smoothing of the Moreau envelope in units of `dt / rho`; `None` is 0.075 on the CPU and 1.0 on Metal, whose iterative linear solves favour a smoother envelope. The converged step does not depend on it. |
 
 The `cidr` solver needs `granular_stress = "intrinsic"` on the `"nodal"` basis and
 does not support `wall_mu`; on Metal it does not support one-sided walls

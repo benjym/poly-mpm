@@ -23,12 +23,21 @@ import numpy as np
 from .primitives import Reduction
 
 MODULE = "cidr.slang"
-CG_CHUNK = 8
+CG_CHUNK = 16
+# Grids up to this many nodes run CG in one 1024-thread workgroup, `steps` iterations per
+# dispatch; larger ones dispatch per operation.
+BLOCK_NODES = 1 << 11
 CG_RTOL = 1e-3
 CG_LIMIT = 4000
 TABLE = 1024
 # A decrement this small relative to the kinetic scale is FP32 roundoff of the gradient.
-DECREMENT = 1e-9
+DECREMENT = 1e-12
+# A Newton step smaller than this, relative to the trial velocity in the mass norm, ends Newton.
+STEP = 1e-6
+# Default envelope smoothing in units of dt / rho: iterative linear solves favour a smoother
+# envelope (fewer, longer Newton steps) than the CPU's 0.075; the converged step does not
+# depend on it.
+GAMMA = 1.0
 DEBUG = False
 
 
@@ -95,12 +104,18 @@ class CidrSolver:
         self.jammed = vector(R, np.uint32)
         self.pressure = vector(R)
         self.u, self.u_trial, self.u_previous = vector(N), vector(N), vector(N)
-        self.gradient, self.diagonal = vector(N), vector(N)
+        self.gradient, self.block = vector(N), vector(3 * grid.nodes)
+        self.groups = (grid.nodes + 255) // 256
+        self.partials = vector(2 * self.groups)
         self.x, self.r, self.z, self.p, self.q = vector(N), vector(N), vector(N), vector(N), vector(N)
         self.work, self.work2, self.work3, self.row_work = vector(N), vector(N), vector(N), vector(R)
         self.scalars = vector(8)
+        self.packed = vector(2)
+        self.zero = rt.buffer(np.zeros(N), dtype=f32)
         self.flags = vector(2, np.uint32)
         self.cg_iterations = vector(1, np.uint32)
+        self.cg_estimate = CG_CHUNK  # iterations of the previous CG solve: when to first check
+        self.fresh = False  # whether the envelope buffers hold the envelope at self.u
         self.status = vector(1, np.uint32)
         self.node_sums = [Reduction(rt, N, operation="sum") for _ in range(3)]
         self.row_sum = Reduction(rt, R, operation="sum")
@@ -243,7 +258,9 @@ class CidrSolver:
                 cg_total += cgs
                 # Multiplier update lam = grad psi_gamma(D(u) + gamma lam), and the velocity change.
                 encoder = rt.device.create_command_encoder()
-                self._envelope(encoder, operator, self.u, gamma)
+                if not self.fresh:
+                    self._envelope(encoder, operator, self.u, gamma)
+                self.fresh = False  # lam changes, so the envelope at u does too
                 self._dispatch(encoder, "cidr_copy", 3 * R, count=3 * R, source=self.grad, output=self.lam)
                 self._dispatch(
                     encoder,
@@ -299,7 +316,10 @@ class CidrSolver:
         )
 
     def _newton(self, operator, nodal, gamma, scale):
-        """Semismooth Newton on the envelope objective at fixed gamma, from self.u."""
+        """Semismooth Newton on the envelope objective at fixed gamma, from self.u.
+
+        On return the envelope buffers hold the envelope at self.u when self.fresh is set.
+        """
         rt, g = self.rt, self.grid
         R, N = g.rows, 2 * g.nodes
         common = dict(
@@ -311,7 +331,9 @@ class CidrSolver:
         cg_total = 0
         for iteration in range(1, self.max_newton + 1):
             encoder = rt.device.create_command_encoder()
-            self._envelope(encoder, operator, self.u, gamma)
+            if not self.fresh:
+                self._envelope(encoder, operator, self.u, gamma)
+            self.fresh = True
             self._dispatch(
                 encoder,
                 "cidr_gradient",
@@ -324,137 +346,223 @@ class CidrSolver:
                 force=self.force,
                 hessian=self.hessian,
                 gradient=self.gradient,
-                diagonal=self.diagonal,
-                work=self.work,
+                block=self.block,
+                partials=self.partials,
             )
-            bb = self._sum(encoder, 1, self.work)
+            self._dispatch(
+                encoder,
+                "cidr_cg_init",
+                1,
+                rtol=CG_RTOL,
+                groups=self.groups,
+                partials=self.partials,
+                scalars=self.scalars,
+                flags=self.flags,
+                iterations=self.cg_iterations,
+            )
             self._dispatch(
                 encoder,
                 "cidr_cg_start",
-                N,
-                count=N,
+                g.nodes,
+                node_count=g.nodes,
                 gradient=self.gradient,
-                diagonal=self.diagonal,
+                block=self.block,
                 x=self.x,
                 r=self.r,
                 z=self.z,
                 p=self.p,
-                work=self.work,
             )
-            rz = self._sum(encoder, 0, self.work)
-            self._dispatch(
-                encoder, "cidr_cg_init", 1, rtol=CG_RTOL, rz=rz, bb=bb, scalars=self.scalars, flags=self.flags
-            )
-            rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.cg_iterations)
-            done = False
+            done, encoded = False, 0
             while not done:
-                for _ in range(CG_CHUNK):
+                # Encode up to the expected count before the first check, then in chunks.
+                chunk = max(CG_CHUNK, self.cg_estimate - encoded) if encoded == 0 else CG_CHUNK
+                if g.nodes <= BLOCK_NODES:
                     self._dispatch(
                         encoder,
-                        "cidr_rows_product",
-                        R,
+                        "cidr_cg_block",
+                        1024,
                         row_count=R,
-                        gate=1,
-                        neighbors=g.neighbors,
-                        gradients=operator.gradients,
-                        source=self.p,
-                        hessian=self.hessian,
-                        output=self.rows,
-                        flags=self.flags,
-                    )
-                    self._dispatch(
-                        encoder,
-                        "cidr_nodes_product",
-                        g.nodes,
                         node_count=g.nodes,
                         dt=self.dt,
-                        **{k: v for k, v in common.items()},
-                        source=self.p,
+                        steps=chunk,
+                        limit=CG_LIMIT,
+                        neighbors=g.neighbors,
+                        **common,
+                        hessian=self.hessian,
+                        block=self.block,
                         rows=self.rows,
-                        output=self.q,
-                        work=self.work,
-                        flags=self.flags,
-                    )
-                    pq = self._sum(encoder, 0, self.work)
-                    self._dispatch(encoder, "cidr_cg_alpha", 1, pq=pq, scalars=self.scalars, flags=self.flags)
-                    self._dispatch(
-                        encoder,
-                        "cidr_cg_update",
-                        N,
-                        count=N,
-                        diagonal=self.diagonal,
-                        q=self.q,
                         x=self.x,
                         r=self.r,
                         z=self.z,
                         p=self.p,
-                        scalars=self.scalars,
-                        work=self.work,
-                        work2=self.work2,
-                        flags=self.flags,
-                    )
-                    rz_new = self._sum(encoder, 1, self.work)
-                    rr = self._sum(encoder, 2, self.work2)
-                    self._dispatch(
-                        encoder,
-                        "cidr_cg_beta",
-                        1,
-                        limit=CG_LIMIT,
-                        rz=rz_new,
-                        rr=rr,
+                        q=self.q,
                         scalars=self.scalars,
                         flags=self.flags,
                         iterations=self.cg_iterations,
                     )
-                    self._dispatch(
-                        encoder,
-                        "cidr_cg_direction",
-                        N,
-                        count=N,
-                        z=self.z,
-                        p=self.p,
-                        scalars=self.scalars,
-                        flags=self.flags,
-                    )
+                else:
+                    for _ in range(chunk):
+                        self._cg_iteration(encoder, operator, common)
+                encoded += chunk
                 self._submit(encoder)
                 done = bool(self._read(self.flags, np.uint32)[0])
                 encoder = rt.device.create_command_encoder()
-            cg_total += int(self._read(self.cg_iterations, np.uint32)[0])
-            # Decrement -G . delta.
+            count = int(self._read(self.cg_iterations, np.uint32)[0])
+            self.cg_estimate = max(CG_CHUNK, int(0.9 * count))
+            cg_total += count
+            # Decrement -G . delta and the step's size |delta|^2_(M/dt), read together.
             self._dispatch(encoder, "cidr_products", N, count=N, a=self.gradient, b=self.x, work=self.work)
             slope_sum = self._sum(encoder, 0, self.work)
+            self._dispatch(
+                encoder,
+                "cidr_change",
+                N,
+                count=N,
+                dt=self.dt,
+                inverse_mass=nodal.inverse_mass,
+                velocity=self.x,
+                previous=self.zero,
+                trial=self.zero,
+                work=self.work2,
+                work2=self.work3,
+                work3=self.work3,
+            )
+            size_sum = self._sum(encoder, 1, self.work2)
+            self._dispatch(encoder, "cidr_pack", 1, a=slope_sum, b=size_sum, output=self.packed)
             self._submit(encoder)
-            slope = float(self._read(slope_sum)[0])
-            if not -slope > DECREMENT * scale:
+            slope, size = (float(v) for v in self._read(self.packed))
+            # Stop on the step's size, which does not depend on the stiffness 1 / gamma of
+            # jammed rows; the decrement test is a backstop at FP32 roundoff.
+            if size <= STEP**2 * scale or not -slope > DECREMENT * scale:
                 return iteration - 1, cg_total
-            encoder = rt.device.create_command_encoder()
-            # Line search on the sign of the derivative along delta: t = 1, else the secant
-            # step between phi'(0) = slope and phi'(1), else bisection.
-            step = 1.0
-            at_one = self._derivative(operator, nodal, gamma, 1.0)
-            if at_one > 0:
-                secant = slope / (slope - at_one)
-                if self._derivative(operator, nodal, gamma, secant) <= 0:
-                    step = secant
-                else:
-                    lo, hi = 0.0, secant
-                    for _ in range(8):
-                        mid = 0.5 * (lo + hi)
-                        if self._derivative(operator, nodal, gamma, mid) <= 0:
-                            lo = mid
-                        else:
-                            hi = mid
-                    step = lo
+            step, at_step = self._line_search(operator, nodal, gamma, slope)
             if DEBUG:
                 print(f"    newton {iteration}: decrement/scale {-slope / scale:.2e} step {step:.4f}")
             if step == 0.0:
+                self.fresh = False
                 return iteration - 1, cg_total  # no representable decrease
-            self._dispatch(
-                encoder, "cidr_axpy", N, count=N, t=step, base=self.u, direction=self.x, output=self.u_trial
-            )
+            encoder = rt.device.create_command_encoder()
+            if step != at_step:
+                self._dispatch(
+                    encoder,
+                    "cidr_axpy",
+                    N,
+                    count=N,
+                    t=step,
+                    base=self.u,
+                    direction=self.x,
+                    output=self.u_trial,
+                )
             self._dispatch(encoder, "cidr_copy", N, count=N, source=self.u_trial, output=self.u)
             self._submit(encoder)
+            # The envelope was last evaluated at u + at_step delta.
+            self.fresh = step == at_step
         raise RuntimeError(f"Metal CIDR Newton did not converge at gamma {gamma:.2e}: decrement {-slope:.2e}")
+
+    def _cg_iteration(self, encoder, operator, common):
+        g = self.grid
+        self._dispatch(
+            encoder,
+            "cidr_rows_product",
+            g.rows,
+            row_count=g.rows,
+            gate=1,
+            neighbors=g.neighbors,
+            gradients=operator.gradients,
+            source=self.p,
+            hessian=self.hessian,
+            output=self.rows,
+            flags=self.flags,
+        )
+        self._dispatch(
+            encoder,
+            "cidr_nodes_product",
+            g.nodes,
+            node_count=g.nodes,
+            dt=self.dt,
+            **common,
+            source=self.p,
+            rows=self.rows,
+            output=self.q,
+            partials=self.partials,
+            flags=self.flags,
+        )
+        self._dispatch(
+            encoder,
+            "cidr_cg_alpha",
+            1,
+            groups=self.groups,
+            partials=self.partials,
+            scalars=self.scalars,
+            flags=self.flags,
+        )
+        self._dispatch(
+            encoder,
+            "cidr_cg_update",
+            g.nodes,
+            node_count=g.nodes,
+            block=self.block,
+            q=self.q,
+            x=self.x,
+            r=self.r,
+            z=self.z,
+            p=self.p,
+            scalars=self.scalars,
+            partials=self.partials,
+            flags=self.flags,
+        )
+        self._dispatch(
+            encoder,
+            "cidr_cg_beta",
+            1,
+            limit=CG_LIMIT,
+            groups=self.groups,
+            partials=self.partials,
+            scalars=self.scalars,
+            flags=self.flags,
+            iterations=self.cg_iterations,
+        )
+        self._dispatch(
+            encoder,
+            "cidr_cg_direction",
+            2 * g.nodes,
+            count=2 * g.nodes,
+            z=self.z,
+            p=self.p,
+            scalars=self.scalars,
+            flags=self.flags,
+        )
+
+    def _line_search(self, operator, nodal, gamma, slope):
+        """Step along delta with a nonpositive derivative: t = 1, else regula falsi (Illinois).
+
+        phi'(0) = slope < 0; the objective is convex along delta, so phi' increases. Returns
+        the step and the last step at which the envelope was evaluated.
+        """
+        at_one = self._derivative(operator, nodal, gamma, 1.0)
+        # A full step that overshoots the minimiser along delta only slightly (CG is inexact)
+        # still decreases a near-quadratic objective by about half the predicted decrease.
+        if at_one <= -0.1 * slope:
+            return 1.0, 1.0
+        lo, f_lo, hi, f_hi = 0.0, slope, 1.0, at_one
+        last, side = 1.0, 0
+        for _ in range(8):
+            t = (lo * f_hi - hi * f_lo) / (f_hi - f_lo)
+            f = self._derivative(operator, nodal, gamma, t)
+            last = t
+            if f <= 0:
+                if f > 0.1 * slope:  # close enough to the minimiser along delta
+                    return t, last
+                lo, f_lo = t, f
+                if side == -1:
+                    f_hi *= 0.5
+                side = -1
+            else:
+                hi, f_hi = t, f
+                if side == 1:
+                    f_lo *= 0.5
+                side = 1
+        return lo, last
 
     def _derivative(self, operator, nodal, gamma, t):
         """d/dt of the envelope objective at u + t delta; leaves u + t delta in u_trial."""
@@ -490,5 +598,6 @@ class CidrSolver:
             work=self.row_work,
         )
         rows = self.row_sum.encode(encoder, self.row_work, self.status)
+        self._dispatch(encoder, "cidr_pack", 1, a=nodes, b=rows, output=self.packed)
         self._submit(encoder)
-        return float(self._read(nodes)[0]) + float(self._read(rows)[0])
+        return float(self._read(self.packed).astype(np.float64).sum())

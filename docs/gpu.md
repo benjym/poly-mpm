@@ -463,17 +463,34 @@ No separate package or GPU-specific input/output format is needed.
 `shaders/cidr.slang`) with the algorithm of the CPU solver (`cidr.py`): the
 method of multipliers with semismooth Newton subproblems on the Moreau envelope
 of the dissipation potential, whose gradient comes from an exact proximal step
-at each stress row. The device version differs in three ways:
+at each stress row. The device version differs as follows:
 
-- Each Newton system is solved matrix-free by Jacobi-preconditioned conjugate
-  gradients to a relative residual of 1e-3, with the CG scalars on the device
-  and the host reading a flag every 8 iterations.
+- Each Newton system is solved matrix-free by conjugate gradients to a relative
+  residual of 1e-3, preconditioned by the 2x2 block of the Newton matrix at each
+  node. Dot products are summed in shared memory within the kernels that form
+  them, so an iteration is six dispatches. On grids of up to 2,048 nodes the
+  iterations run in one 1,024-thread workgroup, many per dispatch, with group
+  barriers in place of dispatch boundaries (three times faster at 651 nodes,
+  twice as slow at 7,676). The host reads a flag after the number of iterations
+  the previous solve took, then every 16.
 - Line searches use the sign of the directional derivative, which FP32
   resolves, rather than objective values, whose decrease near convergence it
   does not. The objective is convex along the direction, so a step with a
-  nonpositive derivative decreases it; an overshooting full step is replaced by
-  the secant step. The local Newton in the proximal step accepts a step that
-  reduces the objective or its gradient, and stops on the gradient.
+  nonpositive derivative decreases it. A full step is accepted if its derivative
+  is below a tenth of the initial slope's magnitude, otherwise regula falsi
+  (Illinois) brackets the minimiser. When the accepted step is the last one
+  evaluated, its envelope is reused by the next Newton iteration. The local
+  Newton in the proximal step accepts a step that reduces the objective or its
+  gradient, and stops on the gradient.
+- Newton stops when its step is below 1e-6 of the trial velocity in the mass
+  norm. A test on the decrement, as on the CPU, depends on the stiffness 1/gamma
+  of jammed rows: at the larger smoothing below it let a column at rest drift at
+  9e-6 m/s; with the step test it moves by less than 6e-7 m/s.
+- `granular_cidr_gamma` defaults to 1.0 (in units of `dt / rho`) rather than the
+  CPU's 0.075. With iterative linear solves the smoother envelope needs fewer
+  Newton iterations and CG iterations per Newton system: on the connected
+  collapse, 8 steps took 1.8 s against 5.9 s at 0.075, with positions within
+  4.4e-7 m.
 - `alpha(I)` is a cubic Hermite table in `ln I` with slopes from its ODE.
 
 The envelope kernel agrees with the CPU envelope on 400 random rows: the same
@@ -481,37 +498,36 @@ jammed rows, gradients to 5e-5 of the stress scale, Hessians to 1e-5 (median);
 rows within roundoff of the cap or of zero pressure can take either side of the
 Hessian's jump (`tests/test_gpu_cidr.py`).
 
-Two findings apply to both backends. A warm step starts from the transferred
-velocity before the step's body force: the trial velocity includes one step of
-gravity, which is incompatible with jammed material at walls and made the first
-warm step fail on the CPU. And `granular_cidr_gamma = 0.075` (in units of
-`dt / rho`) halves the Newton iterations of the earlier 0.0075 without changing
-the result (positions within 7e-7 m after 20 steps).
+On both backends a warm step starts from the transferred velocity before the
+step's body force: the trial velocity includes one step of gravity, which is
+incompatible with jammed material at walls and made the first warm step fail on
+the CPU.
 
 Benchmark (`benchmarks/metal_benchmark_cidr_m4.json`; `python -m
 mpm_gpu.benchmark --solver cidr --steps 20 --pairs 1`), Apple M4, 20 steps of
-the benchmark columns, one pair, host wall time:
+the benchmark columns, one pair, host wall time, each backend with its defaults
+(tolerance 1e-5 on the CPU, 1e-4 on Metal):
 
 | Case | Particles | CPU s/step | Metal s/step | CPU / Metal | Newton per warm step (Metal, mean) | CG per step (Metal) |
 | --- | --- | --- | --- | --- | --- | --- |
-| static column | 6,400 | 0.15 | 0.04 | 3.4 | 0.6 | 53 |
-| collapse | 3,200 | 0.64 | 0.19 | 3.4 | 8.5 | 777 |
-| three collapses | 9,600 | 3.5 | 0.36 | 9.6 | 19.5 | 1,759 |
-| connected collapse | 10,000 | 20.7 | 2.2 | 9.4 | 40 | 11,228 |
+| static column | 6,400 | 0.15 | 0.018 | 8.5 | 0.8 | 43 |
+| collapse | 3,200 | 0.65 | 0.049 | 13 | 13 | 731 |
+| three collapses | 9,600 | 3.5 | 0.079 | 44 | 14 | 783 |
+| connected collapse | 10,000 | 20.7 | 0.54 | 38 | 22 | 3,212 |
 
-CPU and Metal positions agree to 4e-6 grid spacings after 20 steps. The
-Coulomb solver in [Performance](#performance) is a different material law and
-was timed over 3 steps from rest, so the comparison is indicative only: there,
-the collapse of 3,200 particles took 1.7 s per step on Metal and the connected
-collapse of 10,000 did not converge on either backend. A column at rest stays
-put on Metal to 5e-8 m over ten steps of 0.02 s.
+Before the changes above, Metal took 0.044, 0.186, 0.362 and 2.2 s per step on
+these cases. CPU and Metal positions agree to 6e-5 grid spacings after 20 steps,
+the difference of their tolerances. The Coulomb solver in
+[Performance](#performance) is a different material law and was timed over 3
+steps from rest, so the comparison is indicative only: there, the collapse of
+3,200 particles took 1.7 s per step on Metal and the connected collapse of
+10,000 did not converge on either backend.
 
-The cost is in slow, nearly jammed flow on fine grids, where Newton needs tens
-of iterations and each needs hundreds to thousands of Jacobi-CG iterations. A
-multigrid preconditioner would address the second; the first is the
+The remaining cost is in slow, nearly jammed flow on fine grids, where Newton
+needs tens of iterations and each needs hundreds to thousands of CG iterations.
+A multigrid preconditioner would address the second; the first is the
 globalisation question of
-[granular-cidr-design](granular-cidr-design.md#frozen-step-results). Each Newton
-iteration also reads a few scalars back to the host.
+[granular-cidr-design](granular-cidr-design.md#frozen-step-results).
 
 ## Sources
 
