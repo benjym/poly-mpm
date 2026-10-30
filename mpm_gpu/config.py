@@ -64,5 +64,3 @@ def validate(P):
             raise ValueError(f"Metal does not support {name}")
     if getattr(P.O, "check_positions", False):
         raise ValueError("Metal does not support O.check_positions")
-    if getattr(P, "mode", None) == "anisotropy":
-        raise ValueError("Metal does not support the anisotropy mode")

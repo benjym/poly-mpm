@@ -160,8 +160,6 @@ class Grid:
             self.ext_f[:: P.G.nx, 0] += P.q_h
             self.ext_f[P.G.nx - 1 :: P.G.nx, 0] -= P.q_h
             self.fe[:, 0] += 2 * self.ext_f[:, 0] * self.m / density / self.dx
-        if P.mode == "anisotropy" and P.t == 0:
-            self.fe[P.G.nx * P.G.ny // 2, 2] = 1
 
     def wall_contact(self, P, velocity):
         """Wall nodes whose velocity does not move them away from their wall.

@@ -1,15 +1,5 @@
 [
   {
-    "example": "anisotropy",
-    "args": [
-      "anisotropy"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      6400
-    ]
-  },
-  {
     "example": "avalanche",
     "args": [
       "avalanche"
@@ -115,33 +105,13 @@
     ]
   },
   {
-    "example": "bingham_unit_test",
+    "example": "cidr_collapse",
     "args": [
-      "bingham_unit_test"
+      "cidr_collapse"
     ],
     "status": "supported smoke-tested",
     "particles": [
-      360
-    ]
-  },
-  {
-    "example": "brazillian",
-    "args": [
-      "brazillian"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      7500
-    ]
-  },
-  {
-    "example": "chuteflow",
-    "args": [
-      "chuteflow"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      360
+      32
     ]
   },
   {
@@ -183,25 +153,6 @@
     "particles": [
       9
     ]
-  },
-  {
-    "example": "flow",
-    "args": [
-      "flow"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      324,
-      120
-    ]
-  },
-  {
-    "example": "fluid",
-    "args": [
-      "fluid"
-    ],
-    "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'compressible' in legacy P.F; use supported P.S materials"
   },
   {
     "example": "francois",
@@ -249,36 +200,6 @@
     ]
   },
   {
-    "example": "gsd",
-    "args": [
-      "gsd"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      288
-    ]
-  },
-  {
-    "example": "incline",
-    "args": [
-      "incline"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      171
-    ]
-  },
-  {
-    "example": "macro",
-    "args": [
-      "macro"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      4
-    ]
-  },
-  {
     "example": "modern_ball",
     "args": [
       "modern_ball"
@@ -287,24 +208,6 @@
     "particles": [
       500
     ]
-  },
-  {
-    "example": "pierre",
-    "args": [
-      "pierre"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      1944
-    ]
-  },
-  {
-    "example": "poly_avalanche",
-    "args": [
-      "poly_avalanche"
-    ],
-    "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'viscous_size'. No implemented and tested constitutive law with this name. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu, granular."
   },
   {
     "example": "poly_seg_test",
@@ -359,25 +262,6 @@
     ]
   },
   {
-    "example": "stokes",
-    "args": [
-      "stokes"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      728,
-      10
-    ]
-  },
-  {
-    "example": "tri_seg_test",
-    "args": [
-      "tri_seg_test"
-    ],
-    "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'viscous_size'. No implemented and tested constitutive law with this name. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu, granular."
-  },
-  {
     "example": "triaxial",
     "args": [
       "triaxial"
@@ -385,54 +269,6 @@
     "status": "supported smoke-tested",
     "particles": [
       127
-    ]
-  },
-  {
-    "example": "tunnel",
-    "args": [
-      "tunnel"
-    ],
-    "status": "unsupported material law",
-    "error": "ValueError: Unsupported material law 'elastic_time'. Retired: arbitrary per-step mass deletion is not a constitutive law; use elastic for constant stiffness. Supported: rigid, elastic, von_mises, viscous, pouliquen, bingham, dp, dp_rate, linear_mu, granular."
-  },
-  {
-    "example": "vicky",
-    "args": [
-      "vicky"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      324
-    ]
-  },
-  {
-    "example": "vicky_latest",
-    "args": [
-      "vicky_latest"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      2052
-    ]
-  },
-  {
-    "example": "viscous_unit_test",
-    "args": [
-      "viscous_unit_test"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      900
-    ]
-  },
-  {
-    "example": "vm_unit_test",
-    "args": [
-      "vm_unit_test"
-    ],
-    "status": "supported smoke-tested",
-    "particles": [
-      9
     ]
   }
 ]

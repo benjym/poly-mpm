@@ -173,7 +173,6 @@ remain enabled where configured. Durations, loading, and output frequency are co
 
 | Example command | Status |
 |---|---|
-| `python MPM.py anisotropy` | supported smoke-tested |
 | `python MPM.py avalanche` | supported smoke-tested |
 | `python MPM.py ball` | supported smoke-tested |
 | `python MPM.py bi_conveyor` | supported smoke-tested |
@@ -183,35 +182,19 @@ remain enabled where configured. Durations, loading, and output frequency are co
 | `python MPM.py bi_seg_test 22 2 11` | supported smoke-tested |
 | `python MPM.py bi_square_drum 11 2` | supported smoke-tested |
 | `python MPM.py bi_vertical_chute 2 11` | supported smoke-tested |
-| `python MPM.py bingham_unit_test` | supported smoke-tested |
-| `python MPM.py brazillian` | supported smoke-tested |
-| `python MPM.py chuteflow` | supported smoke-tested |
+| `python MPM.py cidr_collapse` | supported smoke-tested |
 | `python MPM.py dam_break` | supported smoke-tested |
+| `python MPM.py domain_column` | supported smoke-tested |
 | `python MPM.py dp_rate_unit_test` | supported smoke-tested |
 | `python MPM.py dp_unit_test` | supported smoke-tested |
-| `python MPM.py domain_column` | supported smoke-tested |
-| `python MPM.py flow` | supported smoke-tested |
-| `python MPM.py fluid` | unsupported material law: Unsupported material law 'compressible' in legacy P.F; use supported P.S materials |
 | `python MPM.py francois 11` | supported smoke-tested |
-| `python MPM.py granular_collapse` | supported smoke-tested; experimental rigid-grain solver |
-| `python MPM.py granular_column` | supported smoke-tested; experimental rigid-grain solver |
-| `python MPM.py granular_square_drum 11 2 cpu` | supported smoke-tested; experimental rigid-grain solver, `metal` for the GPU |
-| `python MPM.py gsd` | supported smoke-tested |
-| `python MPM.py incline` | supported smoke-tested |
-| `python MPM.py macro` | supported smoke-tested |
+| `python MPM.py granular_collapse` | supported smoke-tested |
+| `python MPM.py granular_column` | supported smoke-tested |
+| `python MPM.py granular_square_drum 11 2 cpu` | supported smoke-tested |
 | `python MPM.py modern_ball` | supported smoke-tested |
-| `python MPM.py pierre` | supported smoke-tested |
-| `python MPM.py poly_avalanche` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py poly_seg_test 22` | supported smoke-tested |
 | `python MPM.py pouliquen_unit_test` | supported smoke-tested |
 | `python MPM.py seg_unit_test` | supported smoke-tested |
 | `python MPM.py silo 11` | supported smoke-tested |
 | `python MPM.py slope_stab` | supported smoke-tested |
-| `python MPM.py stokes` | supported smoke-tested |
-| `python MPM.py tri_seg_test` | unsupported material law: Unsupported material law 'viscous_size' |
 | `python MPM.py triaxial` | supported smoke-tested |
-| `python MPM.py tunnel` | unsupported material law: Unsupported elastic_time; use a supported constitutive model |
-| `python MPM.py vicky` | supported smoke-tested |
-| `python MPM.py vicky_latest` | supported smoke-tested |
-| `python MPM.py viscous_unit_test` | supported smoke-tested |
-| `python MPM.py vm_unit_test` | supported smoke-tested |

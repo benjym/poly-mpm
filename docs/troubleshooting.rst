@@ -40,9 +40,8 @@ An example reports a usage error
 ``Unsupported material law``
     Check the exact registry name and :doc:`constitutive-models`. The retired
     ``elastic_time``, ``ken_kamrin``, and ``ken_simple`` implementations are not
-    available. ``viscous_size`` and the separate legacy ``P.F`` compressible-fluid
-    path are unimplemented. Four inputs remain deliberately unsupported:
-    ``tunnel``, ``poly_avalanche``, ``tri_seg_test``, and ``fluid``.
+    available. ``viscous_size`` and a separate compressible-fluid phase are
+    unimplemented.
 
 Output and runtime
 ------------------

@@ -288,7 +288,7 @@ independent and avoid a CPU solver fallback.
      step forms them. They do not feed back into the mechanics.
    - Rejected for Metal: custom `after_every_timestep` callbacks (they would see
      stale arrays), `O.measure_energy`, custom timestep controllers, damping,
-     `O.check_positions` and the anisotropy mode. Save-time, start and end
+     and `O.check_positions`. Save-time, start and end
      callbacks are supported and receive snapshots.
    - FP32 thresholds: packing clearances within `64 eps_32` of the capacity are
      set to zero (the CPU uses `64 eps_64`, for the same purpose of not turning
