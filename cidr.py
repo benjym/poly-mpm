@@ -396,6 +396,10 @@ def newton(problem, u, gamma, shift, *, max_iterations=200):
     raise RuntimeError(f"Newton did not converge at gamma {gamma:.2e}: decrement {-slope:.2e}")
 
 
+# Outer steps at the final gamma that update the wall friction threshold (Friction).
+FRICTION_UPDATES = 50
+
+
 def solve(problem, u, lam, gamma, *, cold=None, reduction=np.sqrt(10), tol=1e-5, max_outer=200):
     """Method of multipliers from (u, lam): returns u, lam (the stress), jammed nodes and statistics.
 
@@ -410,6 +414,7 @@ def solve(problem, u, lam, gamma, *, cold=None, reduction=np.sqrt(10), tol=1e-5,
     current = gamma if cold is None else max(cold, gamma)
     newton_total = 0
     friction = problem.friction
+    lagged = 0  # the last outer step above the final gamma
     if friction is not None:
         friction.threshold = friction.reaction(u, lam)
     for outer in range(1, max_outer + 1):
@@ -417,7 +422,11 @@ def solve(problem, u, lam, gamma, *, cold=None, reduction=np.sqrt(10), tol=1e-5,
         u, jam, lam, iterations = newton(problem, u, current, lam)
         newton_total += iterations
         settled = True
-        if friction is not None:
+        if friction is not None and outer - lagged > FRICTION_UPDATES:
+            # A threshold flipping a node between stick and slip can cycle; held fixed, the
+            # friction is Tresca and the multipliers converge.
+            friction.multiplier = friction.envelope(u)[1]
+        elif friction is not None:
             friction.multiplier = friction.envelope(u)[1]
             threshold = friction.reaction(u, lam)
             settled = np.all(
@@ -431,6 +440,8 @@ def solve(problem, u, lam, gamma, *, cold=None, reduction=np.sqrt(10), tol=1e-5,
             and norm(u - previous) <= tol * max(norm(u), norm(problem.trial), 1e-300)
         ):
             break
+        if current > gamma:
+            lagged = outer
         current = max(current / reduction, gamma)
     else:
         raise RuntimeError(f"CIDR step did not settle in {max_outer} outer steps")
