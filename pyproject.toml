@@ -41,7 +41,7 @@ docs = ["sphinx>=8.2", "myst-parser>=4"]
 poly-mpm = "MPM:main"
 
 [tool.setuptools]
-py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed", "cidr", "checkpoint"]
+py-modules = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed", "cidr", "settings", "checkpoint"]
 
 [tool.setuptools.packages.find]
 include = ["inputs", "mpm_gpu", "mpm_gpu.*"]
@@ -60,7 +60,7 @@ Issues = "https://github.com/benjym/poly-mpm/issues"
 [tool.coverage.run]
 branch = true
 relative_files = true
-source = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed", "cidr", "inputs"]
+source = ["MPM", "initialise", "grid", "particles", "constit", "transfers", "integrators", "plotting", "interpolation", "kinematics", "diagnostics", "stability", "quadrature", "granular", "granular_mixed", "cidr", "settings", "inputs"]
 
 [tool.coverage.report]
 show_missing = true
