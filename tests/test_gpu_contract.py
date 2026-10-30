@@ -43,18 +43,23 @@ def test_cpu_backend_and_numerical_defaults_are_preserved():
     P, _, _ = prepare(Params([]))
     assert P.backend == "cpu"
     assert P.granular_tolerance == 1e-9
-    assert P.granular_solver == "hybrid"
+    # The example names its Coulomb solver; without it the default is CIDR, whose
+    # material fields this Coulomb column lacks.
+    P = Params([])
+    del P.granular_solver
+    with pytest.raises(ValueError, match="cidr"):
+        prepare(P)
 
 
 def test_metal_defaults_and_explicit_values():
     P = SimpleNamespace(backend="metal")
     defaults(P)
     assert P.granular_tolerance == 1e-4
-    assert P.granular_solver == "velocity"
-    P = SimpleNamespace(backend="metal", granular_tolerance=2e-5, granular_solver="hybrid")
+    assert P.granular_cidr_tolerance == 1e-4
+    P = SimpleNamespace(backend="metal", granular_tolerance=2e-5, granular_cidr_tolerance=3e-5)
     defaults(P)
     assert P.granular_tolerance == 2e-5
-    assert P.granular_solver == "hybrid"
+    assert P.granular_cidr_tolerance == 3e-5
 
 
 @pytest.mark.parametrize("backend", ["cuda", "auto", None, "Metal"])

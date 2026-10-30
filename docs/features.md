@@ -157,13 +157,12 @@ in place of the no-slip condition of `roughness`. Interior walls (`wall`, `two_w
 
 ## Rigid-grain solver
 
-These settings apply when `solver = "granular"`. The Metal backend changes three
-defaults: `granular_tolerance = 1e-4`, `granular_solver = "velocity"` and
-`granular_cidr_tolerance = 1e-4`.
+These settings apply when `solver = "granular"`. The Metal backend changes two
+defaults: `granular_tolerance = 1e-4` and `granular_cidr_tolerance = 1e-4`.
 
 | Setting | Default | Values | Metal | Notes |
 | --- | --- | --- | --- | --- |
-| `granular_solver` | `"hybrid"` | `"hybrid"`, `"block"`, `"velocity"`, `"cidr"` | `velocity`, `cidr` | `velocity` is the compact iteration of [granular-mixed](granular-mixed.md); `wall_mu` and `increment` stopping need it. `cidr` replaces Coulomb friction and the hard packing limit by critical-state CIDR (below). |
+| `granular_solver` | `"cidr"` | `"cidr"`, `"velocity"`, `"hybrid"`, `"block"` | `cidr`, `velocity` | `cidr` is critical-state CIDR (below), which needs its material fields. The others solve Coulomb friction with a hard packing limit: `velocity` is the compact iteration of [granular-mixed](granular-mixed.md), which `wall_mu` and `increment` stopping need; `hybrid` and `block` are small-problem reference solvers. |
 | `granular_tolerance` | `1e-9` | > 0 | ≥ `1e-5` (`velocity`) | Natural-residual tolerance. |
 | `granular_max_iterations` | `200` | integer ≥ 1 | yes | The velocity solver allows ten times this many sweeps. |
 | `granular_stopping` | `"residual"` | `"residual"`, `"increment"` | `residual` | `increment` stops on the strain-rate change per sweep, without certifying the residual. |

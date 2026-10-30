@@ -1,9 +1,10 @@
 # Compact velocity-based granular solve
 
-Set `P.granular_solver = "velocity"` before `prepare(P)` to select the opt-in
-CPU implementation. `P.solver = "granular"` still selects the rigid-grain
-equations; `granular_solver` selects the numerical algorithm. The default
-remains `"hybrid"`, which is the small-problem reference solver.
+Set `P.granular_solver = "velocity"` before `prepare(P)` to select this
+implementation. `P.solver = "granular"` selects the rigid-grain equations;
+`granular_solver` selects the model and algorithm. The default is `"cidr"`
+(critical-state CIDR, [granular-cidr-design](granular-cidr-design.md)); `"hybrid"`
+is the small-problem Coulomb reference solver.
 
 This pass adapts the stress iteration and nonassociated local flow-rule solver
 from [Daviet (2026), sections 5.2–5.3](https://research.nvidia.com/labs/prl/mixed_mpm/files/mixed_mpm.pdf).

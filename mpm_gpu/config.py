@@ -11,8 +11,6 @@ def defaults(P):
     if backend == "metal":
         if not hasattr(P, "granular_tolerance"):
             P.granular_tolerance = 1e-4
-        if not hasattr(P, "granular_solver"):
-            P.granular_solver = "velocity"
         if not hasattr(P, "granular_cidr_tolerance"):
             P.granular_cidr_tolerance = 1e-4
 

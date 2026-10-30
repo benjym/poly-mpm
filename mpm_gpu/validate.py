@@ -72,10 +72,12 @@ def cpu_checks():
 
     P = SimpleNamespace(backend="metal")
     defaults(P)
-    require(P.granular_solver == "velocity" and P.granular_tolerance == 1e-4, "Metal defaults")
-    P = SimpleNamespace(backend="metal", granular_tolerance=3e-5, granular_solver="hybrid")
+    require(P.granular_tolerance == 1e-4 and P.granular_cidr_tolerance == 1e-4, "Metal defaults")
+    P = SimpleNamespace(backend="metal", granular_tolerance=3e-5, granular_cidr_tolerance=4e-5)
     defaults(P)
-    require(P.granular_tolerance == 3e-5 and P.granular_solver == "hybrid", "explicit input was overridden")
+    require(
+        P.granular_tolerance == 3e-5 and P.granular_cidr_tolerance == 4e-5, "explicit input was overridden"
+    )
     cases = []
     for nx, ny, periodic in ((2, 2, False), (2, 4, True), (3, 5, True), (9, 7, True), (9, 7, False)):
         T = q1_topology(nx, ny, periodic=periodic)

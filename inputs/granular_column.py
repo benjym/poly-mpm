@@ -7,6 +7,8 @@ import numpy as np
 class Params:
     def __init__(self, args):
         self.solver = "granular"
+        # Coulomb friction with a hard packing limit; granular_solver defaults to "cidr".
+        self.granular_solver = "velocity"
         self.interpolation = "linear"
         self.transfer = "flip"
         self.dt = 0.005

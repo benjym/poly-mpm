@@ -125,8 +125,8 @@ A runtime result cannot certify mechanics or solver convergence.
 
 ## Backend contract
 
-CPU remains the default, with contact tolerance `1e-9`. The proposed Metal
-mechanics defaults are the compact velocity solver and tolerance `1e-4`.
+CPU remains the default, with contact tolerance `1e-9`. On Metal the default
+tolerances are `1e-4` for both the Coulomb and the CIDR solvers.
 Explicit settings are preserved; GPU tolerances below `1e-5` are rejected.
 No supplied tolerance is silently loosened.
 

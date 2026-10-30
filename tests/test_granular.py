@@ -215,7 +215,7 @@ def test_rigid_grain_response_independent_of_elastic_and_viscosity_parameters(mo
         return original(W, q, mu, **options)
 
     monkeypatch.setattr(granular, "solve_coulomb", record)
-    P, G, L = column()
+    P, G, L = column(granular_solver="hybrid")
     reference = deepcopy((P, G, L))
     P.S[0].K = 1e18
     P.S[0].G = 1e17
