@@ -50,7 +50,7 @@ def measure(kind, dt, **options):
         seconds=elapsed,
         particles=len(b),
         grid=dict(nx=P.G.nx, ny=P.G.ny, dx=G.dx, dy=G.dy),
-        material=dict(rho_s=b.material.rho_s, packing_max=b.material.packing_max, mu=b.material.mu),
+        material=dict(rho_s=b.material.rho_s, phi_max=b.material.phi_max, mu_s=b.material.mu_s),
         final_time=P.t,
         output=False,
         diagnostics=True,

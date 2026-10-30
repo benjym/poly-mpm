@@ -55,23 +55,22 @@ class Solid_Params:
 
         #         self.law = 'pouliquen'
         #         self.mu_s = 0.32
-        #         self.mu_2 = 0.6
+        #         self.mu_d = 0.6
         #         self.I_0 = 0.4
         #         self.K = 1e6
-        #         self.mu_v = 0.
 
         self.law = "viscous"
-        self.mu_s = 1e3
+        self.eta = 1e3
         self.K = 1e6
-        self.mu_v = 0
+        self.eta_v = 0
 
         #         self.law = 'bingham'
-        #         self.mu_s = 1e2 # shear viscosity
-        #         self.tau_0 = 100. # yield stress
-        #         self.mu_0 = 1e3*self.mu_s # much steeper viscosity to mimic very rigid part
-        #         self.gamma_c = self.tau_0/(self.mu_0 - self.mu_s)
+        #         self.eta = 1e2 # plastic viscosity
+        #         self.yield_stress = 100. # yield stress
+        #         self.eta_0 = 1e3*self.eta # much steeper viscosity to mimic very rigid part
+        #         self.gamma_c = self.yield_stress/(self.eta_0 - self.eta)
         #         self.K = 1e7 # bulk modulus
-        #         self.mu_v = 0. #1e3
+        #         self.eta_v = 0. #1e3
 
         self.inlet_rate = 0.1
         filling_fraction = 0.5

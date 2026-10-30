@@ -77,14 +77,14 @@ mixtures, `phi` are optional. See [tutorial](tutorial.rst) for geometry and
 | --- | --- | --- |
 | `rigid` | explicit | optional `initial_v` |
 | `elastic` | explicit | `K`, `G` |
-| `viscous` | explicit | `K`, `mu_s`, `mu_v` |
-| `von_mises` | explicit | `K`, `G`, `yield_stress` (or `k`) |
-| `pouliquen` | explicit | `K`, `rho_s`, `mu_0`, `delta_mu`, `I_0`, `eta_max` |
-| `bingham` | explicit | `K`, `mu_s`, `mu_0`, `tau_0`; optional `mu_v` |
-| `dp` | explicit | `K`, `G`, `mu`, `beta` |
+| `viscous` | explicit | `K`, `eta`, `eta_v` |
+| `von_mises` | explicit | `K`, `G`, `yield_stress` |
+| `pouliquen` | explicit | `K`, `rho_s`, `mu_s`, `mu_d`, `I_0`, `eta_max` |
+| `bingham` | explicit | `K`, `eta`, `eta_0`, `yield_stress`; optional `eta_v` |
+| `dp` | explicit | `K`, `G`, `mu_s`, `beta` |
 | `dp_rate` | explicit | as `dp`, plus `t_star` |
-| `linear_mu` | explicit | `K`, `rho_s`, `mu_0`, `b`, `eta_max` |
-| `granular` | granular, Metal | `rho_s`, `mu`, `packing_max` (≤ 1); optional `critical_time(P)` |
+| `linear_mu` | explicit | `K`, `rho_s`, `mu_s`, `b`, `eta_max` |
+| `granular` | granular, Metal | `rho_s`, `mu_s`, `phi_max` (≤ 1); optional `critical_time(P)` |
 
 Only one `granular` material is allowed, and it cannot be combined with other
 laws. A `critical_time(P)` method on any material bounds the dynamic timestep.
@@ -95,10 +95,10 @@ well:
 
 | Field | Meaning |
 | --- | --- |
-| `mu`, `mu_d`, `I0` | `mu(I) = mu + (mu_d - mu) I / (I0 + I)`, with `mu < mu_d` |
+| `mu_s`, `mu_d`, `I_0` | `mu(I) = mu_s + (mu_d - mu_s) I / (I_0 + I)`, with `mu_s < mu_d` |
 | `grain_diameter` | Grain diameter `d` (m); `I = 2 d |D| / sqrt(p / rho_s)` |
-| `phi_min`, `packing_max` | Packing range of `C(phi)`, which diverges at `packing_max` |
-| `cidr_deficit`, `cidr_p_ref` | Material on the cap at rest at pressure `cidr_p_ref` sits `cidr_deficit` below `packing_max`; this sets the pressure scale of `C` |
+| `phi_min`, `phi_max` | Packing range of `C(phi)`, which diverges at `phi_max` |
+| `cidr_deficit`, `cidr_p_ref` | Material on the cap at rest at pressure `cidr_p_ref` sits `cidr_deficit` below `phi_max`; this sets the pressure scale of `C` |
 
 ## Initial state
 

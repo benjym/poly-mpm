@@ -63,9 +63,9 @@ def _state_limits(P, G, L):
         eta = (
             getattr(S, "eta_max", 0.0)
             if S.law in ("pouliquen", "linear_mu")
-            else (S.mu_0 if S.law == "bingham" else getattr(S, "mu_s", 0.0) if S.law == "viscous" else 0.0)
+            else (S.eta_0 if S.law == "bingham" else getattr(S, "eta", 0.0) if S.law == "viscous" else 0.0)
         )
-        bulk = getattr(S, "mu_v", 0.0) if S.law in ("viscous", "bingham") else 0.0
+        bulk = getattr(S, "eta_v", 0.0) if S.law in ("viscous", "bingham") else 0.0
         viscosity = max(viscosity, (2 * eta + 3 * bulk) / rho)
     if wave:
         result["elastic_wave"] = h / wave

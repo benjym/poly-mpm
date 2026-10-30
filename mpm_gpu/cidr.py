@@ -64,16 +64,16 @@ class CidrSolver:
         S = material
         self.dt, self.gamma, self.tolerance = float(dt), float(gamma), float(tolerance)
         self.max_outer, self.max_newton = max_outer, max_newton
-        model = CriticalStateCIDR(S.mu, S.mu_d, S.I0, 2 * S.grain_diameter * np.sqrt(S.rho_s))
+        model = CriticalStateCIDR(S.mu_s, S.mu_d, S.I_0, 2 * S.grain_diameter * np.sqrt(S.rho_s))
         lo, hi = np.log(1e-12), np.log(1e3)
         x = np.linspace(lo, hi, TABLE)
         I = np.exp(x)
         alpha = model.alpha(I)
         slope = (2 * model.mu(I) + 2 * I * model.dmu(I) - alpha) / 2.5  # d alpha / d ln I
         self.law = dict(
-            mu_s=float(S.mu),
+            mu_s=float(S.mu_s),
             mu_d=float(S.mu_d),
-            i0=float(S.I0),
+            i0=float(S.I_0),
             k=float(model.k),
             a0=float(model.alpha0),
             table_lo=float(lo),
@@ -82,11 +82,11 @@ class CidrSolver:
         )
         f32 = np.float32
         self.table = rt.buffer(np.column_stack((alpha, slope)), dtype=f32)
-        Delta = S.packing_max - S.phi_min
+        Delta = S.phi_max - S.phi_min
         self.modulus = dict(
             phi_min=float(S.phi_min),
-            phi_max=float(S.packing_max),
-            modulus_scale=float(S.cidr_p_ref / (2 * S.mu * (Delta / S.cidr_deficit - 1))),
+            phi_max=float(S.phi_max),
+            modulus_scale=float(S.cidr_p_ref / (2 * S.mu_s * (Delta / S.cidr_deficit - 1))),
         )
         R, N = grid.rows, 2 * grid.nodes
 

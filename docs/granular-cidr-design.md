@@ -198,23 +198,23 @@ g(s, p) = 2 p s [ (5 alpha(I) - 4 mu(I)) / 3 - p / C(phi) ],
 checked symbolically against `g_s = 2 Y` and `g_p = 2 f s` for general
 `mu(I)`, and by finite differences with the `mu(I)` of Jop et al. for glass beads
 (relative errors 5e-8 and 8e-8). At zero shear its slope is
-`2 p (2 mu_1 - p / C)` (`alpha(0) = 2 mu(0)`, checked numerically), so `g` has a
-corner at `s = 0`: the static yield condition `|tau| <= 2 mu_1 p - p^2 / C`. On
+`2 p (2 mu_s - p / C)` (`alpha(0) = 2 mu(0) = 2 mu_s`, checked numerically), so `g` has a
+corner at `s = 0`: the static yield condition `|tau| <= 2 mu_s p - p^2 / C`. On
 `1e-6 <= I <= 10`, `alpha' > 0` and `beta' > 0`, so `Y_I = alpha' p > 0` and
 `f_p - (I / 2p) f_I = -2 / C - (I / 2p) beta' < 0`, as Barker et al. prove.
 
 ### The cap
 
 `Y = alpha(I) p - p^2 / C` vanishes at `p = alpha(I) C`, which increases with
-shear rate from `alpha(0) C = 2 mu_1 C` at rest. Without a bound on `p`, `psi`
+shear rate from `alpha(0) C = 2 mu_s C` at rest. Without a bound on `p`, `psi`
 is not convex in `D` (it decreases with shear rate where `Y < 0`), and pure
 compaction has unbounded dissipation: Barker et al.'s flow rule
 `div u = 2 f |D|` allows no compaction without shear, so an unsheared column
 could not consolidate under its own weight. The flow rule therefore has to be
 completed by a bound on `p`, and the bound has to keep `psi` convex.
 
-The bound used is the fixed cap `p <= alpha(0) C = 2 mu_1 C`. Then
-`psi(s, delta) = sup_{0 <= p <= 2 mu_1 C} [g(s, p) - p delta]` is a supremum
+The bound used is the fixed cap `p <= alpha(0) C = 2 mu_s C`. Then
+`psi(s, delta) = sup_{0 <= p <= 2 mu_s C} [g(s, p) - p delta]` is a supremum
 over a fixed set of functions convex in `(s, delta)` (`g_ss = 2 Y_I I / s >= 0`),
 so it is convex; and `psi_s = g_s = 2 Y >= 0` because `p <= alpha(0) C <=
 alpha(I) C`, so it is nondecreasing in `s` and convex as a function of `D`.
@@ -231,10 +231,10 @@ tolerance) for the fixed cap. The shear cell exposed it
 
 With the fixed cap, compaction at zero shear proceeds at the cap pressure, as
 normality gives at the cap in critical-state soil mechanics, and compaction while
-shearing does too, with shear stress `Y(2 mu_1 C, I) = 2 mu_1 C (alpha(I) -
+shearing does too, with shear stress `Y(2 mu_s C, I) = 2 mu_s C (alpha(I) -
 alpha(0))`. Completing the flow rule this way is an addition to the published
 model and has to be stated as such; it differs from the shear-dependent bound
-only for states with `p > 2 mu_1 C`, which are reached only while shearing and
+only for states with `p > 2 mu_s C`, which are reached only while shearing and
 compacting at once.
 
 ### States at fixed packing
@@ -244,8 +244,8 @@ With `phi`, hence `C`, fixed (checked numerically with the glass-bead `mu(I)`):
 | State | Condition | `C` needed to carry pressure `p` |
 | --- | --- | --- |
 | Steady isochoric flow | `f = 0`, then `|tau| = mu(I) p` (to 1e-16) | `2 p / beta(I)` |
-| Critical state (`I -> 0`) | `f = 0`, `I = 0` | `p / mu_1` |
-| Loosest state at rest | on the cap at `s = 0` | `p / (2 mu_1)` |
+| Critical state (`I -> 0`) | `f = 0`, `I = 0` | `p / mu_s` |
+| Loosest state at rest | on the cap at `s = 0` | `p / (2 mu_s)` |
 
 The critical pressure is half the cap pressure at the same packing, as in
 modified Cam-clay. Material on the cap (loose for its load) compacts when
@@ -258,7 +258,7 @@ With the form of Fannon et al., `C = (P / b) x`, `x = psi / (1 - psi)` and
 the cap at pressure `p` falls short of `phi_max` by
 
 ```text
-e(p) = Delta / (1 + x),   x = b p / (2 mu_1 P),
+e(p) = Delta / (1 + x),   x = b p / (2 mu_s P),
 ```
 
 and the effective bulk stiffness there is `K = phi dp/dphi ~ phi p / e`
@@ -268,7 +268,7 @@ stiffness follows. A rule for choosing it is a packing deficit `e_ref` at a
 reference pressure `p_ref`:
 
 ```text
-P / b = p_ref / (2 mu_1 (Delta / e_ref - 1)).
+P / b = p_ref / (2 mu_s (Delta / e_ref - 1)).
 ```
 
 For `e_ref = 0.005` at the pressure under 0.1 m of grains (1,470 Pa,
@@ -284,14 +284,14 @@ of real grains, or as a small, stated compressibility added to rigid grains.
 
 ### Stress at zero shear
 
-At `D = 0` the potential is `psi(0, delta) = sup_{0 <= p <= 2 mu_1 C} (-p delta)`,
+At `D = 0` the potential is `psi(0, delta) = sup_{0 <= p <= 2 mu_s C} (-p delta)`,
 and its subdifferential gives the stress:
 
 - `delta > 0` (separating): `p = 0` and `tau = 0`, stress-free, as in the present
   model's opening;
-- `delta < 0` (compacting): `p = 2 mu_1 C` (the cap) and `tau = 0`;
-- `delta = 0` (static): any `p` in `[0, 2 mu_1 C]` and any `tau` with
-  `|tau| <= 2 mu_1 p - p^2 / C`.
+- `delta < 0` (compacting): `p = 2 mu_s C` (the cap) and `tau = 0`;
+- `delta = 0` (static): any `p` in `[0, 2 mu_s C]` and any `tau` with
+  `|tau| <= 2 mu_s p - p^2 / C`.
 
 In static zones the stress is set-valued; equilibrium selects it globally and
 may not select it uniquely. The velocity is unique regardless. The stress used
@@ -310,7 +310,7 @@ with three branches:
 | Branch | Condition | `p*` | `psi_s` (= `2 |tau|`) | `psi_delta` (= `-p`) |
 | --- | --- | --- | --- | --- |
 | Interior | `g_p(s, 0) > delta > g_p(s, p_cap)` | root of `g_p = delta` | `2 Y(p*, I*)` | `-p*` |
-| Cap | `g_p(s, p_cap) >= delta` | `p_cap = 2 mu_1 C` | `2 Y(p_cap, I)` | `-p_cap` |
+| Cap | `g_p(s, p_cap) >= delta` | `p_cap = 2 mu_s C` | `2 Y(p_cap, I)` | `-p_cap` |
 | Zero pressure | `g_p(s, 0) <= delta` | `0` | `0` | `0` |
 
 On the interior branch the Hessian in `(s, delta)` is
@@ -335,7 +335,7 @@ The stress tensor follows from `s = |D|`: `tau_ij = psi_s D_ij / (2 s)`, so that
 - The step is the convex minimisation of the [Time step](#time-step) section with
   `psi` from the capped potential; `phi`, and hence `C`, is held at its value from
   the start of the step.
-- With the fixed cap the saddle form `min_u max_{0 <= p <= 2 mu_1 C}` has a
+- With the fixed cap the saddle form `min_u max_{0 <= p <= 2 mu_s C}` has a
   product domain, so primal–dual methods apply. The primal form in `u` alone,
   with `psi` evaluated at each quadrature point by a one-dimensional concave
   maximisation in `p` (no closed form was found), is the one used in the shear
@@ -385,7 +385,7 @@ unknowns makes the kink separable, with the walls as the linear constraint
 - An exact block Gauss–Seidel pass over slow and jammed cells. Each cell is moved
   together with the fastest cell, which keeps the constraint. A cell is jammed
   if and only if the stress across it lies in the static set: the union over
-  `0 <= p <= 2 mu_1 C` of the discs of radius `Y_0(p) = 2 mu_1 p - p^2 / C`
+  `0 <= p <= 2 mu_s C` of the discs of radius `Y_0(p) = 2 mu_s p - p^2 / C`
   centred at `(0, -p)`, tested through the support function
   `h(e) = sup_p [Y_0(p) - p e_delta]`, which agrees with `psi(t e) / t` to order
   `t`. Cells that are not jammed are minimised locally, starting from just
@@ -458,7 +458,7 @@ Results are in `benchmarks/cidr_frozen_step_alg2.json` and
 `benchmarks/cidr_frozen_step_newton.json`.
 
 `C` sets how far the column is from the cap. With the base on the cap at rest
-(`2 mu_1 C = rho g H`), the base compacts at the cap pressure, which only balances
+(`2 mu_s C = rho g H`), the base compacts at the cap pressure, which only balances
 the column's weight, and the column falls through the step as if unsupported (probe
 speeds of `g dt`). The results below use a cap pressure of twice the base
 pressure, which puts the base at the critical pressure and the whole column

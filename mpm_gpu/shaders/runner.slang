@@ -6,7 +6,7 @@ import mechanics;
 [shader("compute")]
 [numthreads(256, 1, 1)]
 void packing_gap(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform uint stress_rows,
-                 uniform float packing_max, uniform float dt, StructuredBuffer<float> occupied, StructuredBuffer<float> volumes,
+                 uniform float phi_max, uniform float dt, StructuredBuffer<float> occupied, StructuredBuffer<float> volumes,
                  StructuredBuffer<float> previous, RWStructuredBuffer<float> gap,
                  RWStructuredBuffer<float> initial)
 {
@@ -17,7 +17,7 @@ void packing_gap(uint3 tid : SV_DispatchThreadID, uniform uint row_count, unifor
     uint a = tid.x;
     if (a >= row_count) return;
     float occupancy = occupied[a];
-    float capacity = packing_max * volumes[a];
+    float capacity = phi_max * volumes[a];
     float clearance = capacity - occupancy;
     if (abs(clearance) <= 64.0 * FLT_EPSILON * max(capacity, occupancy)) clearance = 0.0;
     bool active = occupancy > 0.0;
@@ -115,7 +115,7 @@ void contact_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count,
 
 [shader("compute")]
 [numthreads(256, 1, 1)]
-void packing_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float packing_max,
+void packing_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count, uniform float phi_max,
                   StructuredBuffer<float> occupied, StructuredBuffer<float> volumes,
                   RWStructuredBuffer<float> columns)
 {
@@ -125,7 +125,7 @@ void packing_rows(uint3 tid : SV_DispatchThreadID, uniform uint row_count, unifo
     float volume = volumes[a];
     float packing = volume > 0.0 ? occupied[a] / volume : 0.0;
     columns[a] = packing;
-    columns[row_count + a] = max(packing - packing_max, 0.0) * volume;
+    columns[row_count + a] = max(packing - phi_max, 0.0) * volume;
 }
 
 void kahan(RWStructuredBuffer<float> sum, RWStructuredBuffer<float> compensation, uint p, float value)

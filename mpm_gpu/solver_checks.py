@@ -42,7 +42,7 @@ class Case:
         _, trial = _cpu_grid_step(state)
         self.P, self.B, self.active, self.gap = P, state["operator"], state["active"], state["gap"]
         self.trial, self.inverse_mass = trial, _inverse_mass(state)
-        self.mu = b.material.mu  # sqrt(2 / dimension) = 1 in 2D
+        self.mu = b.material.mu_s  # sqrt(2 / dimension) = 1 in 2D
         self.dt = P.dt
         self.rt = rt
         self.grid, particles = _upload(rt, state)

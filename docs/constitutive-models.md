@@ -17,54 +17,56 @@ elastic mean part, excluding instantaneous bulk-viscous stress.
 |---|---|---|
 | `rigid` | Optional `initial_v` | Prescribed planar motion; no constitutive integration. |
 | `elastic` | `K, G > 0` (Pa) | Compressible neo-Hookean elasticity with reference prestress; see [deformation and stress](numerical-foundations.md#stress-and-work-conventions). |
-| `von_mises` | `K, G > 0`, `yield_stress > 0` (Pa), or `k` with `yield_stress=sqrt(3)*k` | Perfect J2 plasticity with objective spin integration. |
-| `viscous` | `K, mu_s, mu_v >= 0` | Newtonian deviatoric stress `2 mu_s D'`, bulk viscous stress `mu_v tr(D) I`, elastic mean-stress increment `K tr(dstrain)`. |
-| `pouliquen` | `K >= 0`, `rho_s, I_0, eta_max > 0`, `mu_0, delta_mu >= 0` | Bounded friction `mu(I)=mu_0+delta_mu I/(I_0+I)` and capped viscosity `mu p/gamma`; mean grain diameter sets `I`. |
-| `bingham` | `K >= 0` (Pa), `mu_s >= 0`, `mu_0 > mu_s`, optional `mu_v >= 0` (Pa s), `tau_0 >= 0` (Pa) | Continuous bi-viscosity regularisation with engineering shear invariant and dissipative bulk viscosity. |
-| `dp` | `K, G > 0` (Pa), `mu > 0`, `0 <= beta <= mu` | Cohesionless, perfectly plastic Drucker–Prager solid with nonassociated dilation and a zero mean-tensile-strength cutoff. Uses a cone/apex return map. |
+| `von_mises` | `K, G > 0`, `yield_stress > 0` (Pa) | Perfect J2 plasticity with objective spin integration. |
+| `viscous` | `K >= 0` (Pa), `eta, eta_v >= 0` (Pa s) | Newtonian deviatoric stress `2 eta D'`, bulk viscous stress `eta_v tr(D) I`, elastic mean-stress increment `K tr(dstrain)`. |
+| `pouliquen` | `K >= 0`, `rho_s, I_0, eta_max > 0`, `mu_s >= 0`, `mu_d >= mu_s` | Bounded friction `mu(I)=mu_s+(mu_d-mu_s) I/(I_0+I)` and capped viscosity `mu p/gamma`; mean grain diameter sets `I`. |
+| `bingham` | `K >= 0` (Pa), `eta >= 0`, `eta_0 > eta`, optional `eta_v >= 0` (Pa s), `yield_stress >= 0` (Pa) | Continuous bi-viscosity regularisation with engineering shear invariant and dissipative bulk viscosity. |
+| `dp` | `K, G > 0` (Pa), `mu_s > 0`, `0 <= beta <= mu_s` | Cohesionless, perfectly plastic Drucker–Prager solid with nonassociated dilation and a zero mean-tensile-strength cutoff. Uses a cone/apex return map. |
 | `dp_rate` | Same as `dp`, plus `t_star >= 0` (s) | Linear Perzyna overstress regularisation, integrated by backward Euler. |
-| `linear_mu` | `K >= 0` (Pa), `mu_0, b >= 0`, `rho_s > 0` (kg/m³), `eta_max > 0` (Pa s), grain sizes and particle compositions | Dense flowing `mu(I) = mu_0 + b I`, finite viscosity cap, updated compression-positive confinement, explicit zero-pressure/rate limits. |
+| `linear_mu` | `K >= 0` (Pa), `mu_s, b >= 0`, `rho_s > 0` (kg/m³), `eta_max > 0` (Pa s), grain sizes and particle compositions | Dense flowing `mu(I) = mu_s + b I`, finite viscosity cap, updated compression-positive confinement, explicit zero-pressure/rate limits. |
 
 Initialization rejects missing, nonfinite, nonscalar, and inadmissible parameters
-for these laws. `beta` is a plastic-potential slope, not an angle. `mu` in DP is
+for these laws. `beta` is a plastic-potential slope, not an angle. `mu_s` in DP is
 the **q/p slope**, not `tan(friction angle)` or the `tau/p` friction coefficient
 used by granular flow laws. No Mohr–Coulomb fitting convention is assumed.
 
 ### Bingham
 
-The shear stress is `s = 2 eta D'`, where
+The shear stress is `s = 2 eta_eff D'`, where
 
 ```
-eta = min(mu_0, mu_s + tau_0/gamma)
-gamma_c = tau_0/(mu_0-mu_s)
+eta_eff = min(eta_0, eta + yield_stress/gamma)
+gamma_c = yield_stress/(eta_0-eta)
 ```
 
-At zero rate, `eta = mu_0`. At `tau_0 = 0`, the law reduces to a Newtonian fluid
-with viscosity `mu_s`, including at zero rate; `mu_0 >= mu_s` then suffices.
+`eta` is the plastic viscosity and `eta_0` the unyielded viscosity; the particle
+diagnostic `eta` records `eta_eff`. At zero rate, `eta_eff = eta_0`. At
+`yield_stress = 0`, the law reduces to a Newtonian fluid with viscosity `eta`,
+including at zero rate; `eta_0 >= eta` then suffices.
 An optional `gamma_c` input must agree with the derived transition.
 For simple shear the stress is continuous and becomes
-`abs(stress_xy) = tau_0 + mu_s*abs(du/dy)` above that transition.
+`abs(stress_xy) = yield_stress + eta*abs(du/dy)` above that transition.
 This finite-viscosity approximation permits small creep below yield; it does not
 represent an exactly rigid plug. The engineering shear invariant and the
 underlying Bingham relation are also described in the
 [FEBio fluid material documentation](https://febiosoftware.github.io/febio-docs/features/features/fluid_materialprop_bingham/).
 
 The elastic mean stress increment is `K tr(dstrain)`, and the instantaneous bulk
-viscous stress is `mu_v tr(D) I`. The bulk-viscous contribution dissipates `mu_v tr(D)^2` per unit current volume.
+viscous stress is `eta_v tr(D) I`. The bulk-viscous contribution dissipates `eta_v tr(D)^2` per unit current volume.
 
 ### Drucker–Prager and its rate regularisation
 
 The yield function and plastic potential are
 
 ```
-f = q - mu*p
+f = q - mu_s*p
 g = q - beta*p
 ```
 
 For the elastic trial state, the plastic multiplier on the cone is
 
 ```
-dlambda = max(f_trial, 0)/(3*G + K*mu*beta + eta_p/dt)
+dlambda = max(f_trial, 0)/(3*G + K*mu_s*beta + eta_p/dt)
 q_new = q_trial - 3*G*dlambda
 p_new = p_trial + K*beta*dlambda
 ```
@@ -102,15 +104,15 @@ It is not a finite-strain hyperelastic or multiplicative plasticity model.
 
 ```
 I = gamma * (phi @ grain_sizes) * sqrt(rho_s/p)
-eta = min(eta_max, mu_0*p/gamma + b*(phi @ grain_sizes)*sqrt(rho_s*p))
+eta = min(eta_max, mu_s*p/gamma + b*(phi @ grain_sizes)*sqrt(rho_s*p))
 s = 2 eta D'
 ```
 
 The sum for `eta` is evaluated directly so `p=0` and `gamma=0` do not cause
 singular arithmetic. At `p=0`, stress and effective viscosity are zero and the
-undefined `I` diagnostic is recorded as zero (`mu` then records `mu_0`).
+undefined `I` diagnostic is recorded as zero (`mu` then records `mu_s`).
 At zero rate and positive confinement the effective viscosity is capped, unless
-`mu_0=0`, where the finite Newtonian limit of the second term is retained.
+`mu_s=0`, where the finite Newtonian limit of the second term is retained.
 `eta` and `eta_limited` both report the actual effective viscosity.
 Pressure evolves by `K tr(dstrain)` and is clamped to compression before computing
 friction. There is no arbitrary density threshold. Setting `b=0` gives a capped

@@ -10,10 +10,10 @@ from MPM import run
 # Glass beads (Jop et al.), 3 mm grains; phi = 0.6 sits on the cap at twice the base pressure
 # of a 1 m column, so the column at rest is denser than the cap for its load.
 CIDR = dict(
-    packing_max=0.605,
-    mu=np.tan(np.radians(20.9)),
+    phi_max=0.605,
+    mu_s=np.tan(np.radians(20.9)),
     mu_d=np.tan(np.radians(32.76)),
-    I0=0.279,
+    I_0=0.279,
     grain_diameter=0.003,
     phi_min=0.05,
     cidr_deficit=0.005,
@@ -33,7 +33,7 @@ def cidr_case(module, **options):
 
 
 def test_proximal_step_is_stationary_or_jammed():
-    model = CriticalStateCIDR(CIDR["mu"], CIDR["mu_d"], CIDR["I0"], 2 * 0.003 * np.sqrt(2500))
+    model = CriticalStateCIDR(CIDR["mu_s"], CIDR["mu_d"], CIDR["I_0"], 2 * 0.003 * np.sqrt(2500))
     rng = np.random.default_rng(0)
     q = rng.standard_normal((120, 3)) * 10 ** rng.uniform(-4, 0, (120, 1))
     C = np.full(len(q), 4e4) * 10 ** rng.uniform(-0.5, 0.5, len(q))

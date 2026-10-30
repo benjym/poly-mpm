@@ -42,7 +42,7 @@ The registry in `constit.py` is the only material dispatch mechanism.
 Uniform mass/volume properties, velocities, and grain fractions are copied into
 independent writable arrays. Initial velocity must be `(3,)` or `(n, 3)`;
 composition must be `(ns,)` or `(n, ns)`. Initial fractions must be nonnegative and
-sum to one. `PHI`, when provided, takes precedence over `phi`. Coordinates must
+sum to one. Coordinates must
 have exactly `n` entries. Density, volume, and grain sizes must be positive and
 finite. A zero-particle material is valid.
 

@@ -84,14 +84,13 @@ class Solid_Params:
         self.Y = []
         self.n = 0
         self.rho = 2700.0  # density (kg/m^3)
-        self.packing = 0.6  # packing fraction
-        self.rho_s = self.rho / self.packing  # solid density
+        self.phi_flow = 0.6  # packing fraction
+        self.rho_s = self.rho / self.phi_flow  # solid density
 
         self.law = "pouliquen"
         # # self.law = 'ken_simple'
-        self.mu_0 = tan(deg2rad(20.9))  # 0.3
-        self.mu_1 = tan(deg2rad(32.76))
-        self.delta_mu = self.mu_1 - self.mu_0
+        self.mu_s = tan(deg2rad(20.9))  # 0.3
+        self.mu_d = tan(deg2rad(32.76))
         self.I_0 = 0.279
         self.eta_max = 100.0 * self.rho * sqrt(-P.max_g * (G.y_M - G.y_m) ** 3) / 1e2  # 10x WORKS BETTER
 

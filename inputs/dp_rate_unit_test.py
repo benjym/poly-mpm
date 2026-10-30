@@ -93,8 +93,8 @@ class Solid_Params:
         self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
         self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
 
-        self.mu = 1.0
-        self.beta = 1.0 * self.mu
+        self.mu_s = 1.0
+        self.beta = 1.0 * self.mu_s
         self.t_star = 1e-2
 
         self.pts_per_cell = 3

@@ -86,14 +86,13 @@ class Solid_Params:
         self.n = 0
         # NOTE: DEFINITION OF DENSITY DIFFERS FROM OTHER EXAMPLES
         # self.rho = 270.#0. # density (kg/m^3)
-        self.packing = 0.6  # packing fraction
+        self.phi_flow = 0.6  # packing fraction
         self.rho_s = 270.0  # solid density - REDUCED BY FACTOR OF 10 AS IN FAN AND HILL PAPER!!!!!
-        self.rho = self.rho_s * self.packing
+        self.rho = self.rho_s * self.phi_flow
 
         self.law = "pouliquen"
-        self.mu_0 = tan(deg2rad(20.9))  # 0.3
-        self.mu_1 = tan(deg2rad(32.76))
-        self.delta_mu = self.mu_1 - self.mu_0
+        self.mu_s = tan(deg2rad(20.9))  # 0.3
+        self.mu_d = tan(deg2rad(32.76))
         self.I_0 = 0.279
         self.eta_max = 100.0 * self.rho * sqrt(-P.max_g * (G.y_M - G.y_m) ** 3)
 
@@ -102,10 +101,10 @@ class Solid_Params:
         self.K = self.E / (3 * (1 - 2 * self.nu))
         self.G = self.E / (2 * (1 + self.nu))
 
-        # self.law = constit.pouliquen(E,nu,mu_0,mu_1,I_0,eta_max) # DO I WANT TO MAKE A GENERIC LAW CLASS AND HAVE EACH CONSTITUTIVE MODEL INHERIT THOSE PROPERTIES?!??
+        # self.law = constit.pouliquen(E,nu,mu_s,mu_d,I_0,eta_max) # DO I WANT TO MAKE A GENERIC LAW CLASS AND HAVE EACH CONSTITUTIVE MODEL INHERIT THOSE PROPERTIES?!??
         # self.v_max = constit.pouliquen.get_analytical_vmax(P,G)
-        # self.v_max = ( sqrt(abs(P.max_g)*G.s_bar_0)*(2./3.)*self.I_0*(tan(abs(P.theta))-self.mu_0)/(self.mu_1-tan(abs(P.theta)))*
-        # sqrt(self.packing*cos(abs(P.theta)))*G.y_M**1.5/G.s_bar_0**1.5 ) # Andreotti, Pouliquen and Forterre, page 233, equation (6.17)
+        # self.v_max = ( sqrt(abs(P.max_g)*G.s_bar_0)*(2./3.)*self.I_0*(tan(abs(P.theta))-self.mu_s)/(self.mu_d-tan(abs(P.theta)))*
+        # sqrt(self.phi_flow*cos(abs(P.theta)))*G.y_M**1.5/G.s_bar_0**1.5 ) # Andreotti, Pouliquen and Forterre, page 233, equation (6.17)
 
         self.pts_per_cell = 3
         self.x = (G.nx - 1) * self.pts_per_cell  # particles in x direction

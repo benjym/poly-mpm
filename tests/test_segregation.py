@@ -173,7 +173,7 @@ def test_coupled_particle_species_mass_with_unequal_masses_and_rigid_wall(period
         Y=rng.uniform(0.05, 0.95, count),
         rho=rng.uniform(1000, 2000, count),
         A=rng.uniform(0.001, 0.003, count),
-        PHI=phi,
+        phi=phi,
     )
     rigid = material("rigid", n=10, X=np.linspace(0.1, 0.9, 10), Y=np.full(10, 0.5), phi=[0.9, 0.05, 0.05])
     P, G, L = state(ns=3, materials=[mobile, rigid], segregate=True, c=0.001, B=NS(cyclic_lr=periodic))
@@ -230,7 +230,7 @@ def test_particle_capacity_limits_joint_xy_flux_without_clipping(ns, periodic):
         Y=rng.uniform(0.01, 0.99, count),
         rho=rng.uniform(1000, 2000, count),
         A=rng.uniform(0.001, 0.003, count),
-        PHI=phi,
+        phi=phi,
     )
     P, G, L = state(ns=ns, materials=mobile, segregate=True, c=1.0, B=NS(cyclic_lr=periodic))
     P.dt = 100.0  # Deliberately exceed the unbounded explicit transport step.
@@ -259,7 +259,7 @@ def test_pure_layers_mix_conservatively_without_negative_fractions():
     count = 40
     y = np.linspace(0.01, 0.99, count)
     phi = np.column_stack((y < 0.5, y >= 0.5)).astype(float)
-    mobile = material(n=count, X=np.full(count, 0.5), Y=y, PHI=phi)
+    mobile = material(n=count, X=np.full(count, 0.5), Y=y, phi=phi)
     P, G, L = state(ns=2, materials=mobile, segregate=True, c=0.0)
     P.dt = 1000.0
     L.get_reference_nodes(P, G)
@@ -302,7 +302,7 @@ def test_diffusion_exchange_matches_discrete_heat_equation(monkeypatch):
 
     x = np.arange(8) / 8
     phi0 = 0.5 + 0.2 * np.sin(2 * np.pi * x)
-    material0 = material(n=8, X=x, Y=np.full(8, 0.5), PHI=np.column_stack((phi0, 1 - phi0)))
+    material0 = material(n=8, X=x, Y=np.full(8, 0.5), phi=np.column_stack((phi0, 1 - phi0)))
     grid = NS(nx=9, ny=3, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0, ns=2, s=[0.001, 0.003])
     P, G, L = state(ns=2, materials=material0, G=grid, segregate=True, c=0.0, B=NS(cyclic_lr=True))
     diffusivity = 0.01

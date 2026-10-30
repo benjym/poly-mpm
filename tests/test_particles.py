@@ -31,7 +31,7 @@ def test_repeated_indices_unequal_mass_and_composition():
             n=3,
             rho=[1000, 1200, 1500],
             A=[0.01, 0.02, 0.03],
-            PHI=np.eye(3),
+            phi=np.eye(3),
             initial_v=[[1, 2, 3], [2, 1, 0], [-1, 3, 2]],
         ),
     )

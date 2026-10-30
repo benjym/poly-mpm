@@ -48,50 +48,49 @@ def validate_material(material):
 
     if name == "granular":
         scalar("rho_s", strict=True)
-        scalar("mu")
-        if scalar("packing_max", strict=True) > 1:
-            raise ValueError("granular: packing_max must be <= 1")
+        scalar("mu_s")
+        if scalar("phi_max", strict=True) > 1:
+            raise ValueError("granular: phi_max must be <= 1")
         return
     scalar("K", strict=name in COROTATIONAL + ("elastic", "von_mises"))
     if name in ("elastic", "von_mises"):
         scalar("G", strict=True)
         if name == "von_mises":
-            if hasattr(material, "yield_stress"):
-                scalar("yield_stress", strict=True)
-            else:
-                scalar("k", strict=True)
+            scalar("yield_stress", strict=True)
         return
     if name == "viscous":
-        scalar("mu_s")
-        scalar("mu_v")
+        scalar("eta")
+        scalar("eta_v")
         return
     if name == "pouliquen":
         scalar("rho_s", strict=True)
-        scalar("mu_0")
-        scalar("delta_mu")
+        mu_s = scalar("mu_s")
+        scalar("mu_d", lower=mu_s)
         scalar("I_0", strict=True)
         scalar("eta_max", strict=True)
         return
     if name in COROTATIONAL:
         scalar("G", strict=True)
-        mu = scalar("mu", strict=True)
-        if scalar("beta") > mu:
-            raise ValueError(f"{name}: beta must satisfy 0 <= beta <= mu for nonnegative plastic dissipation")
+        mu_s = scalar("mu_s", strict=True)
+        if scalar("beta") > mu_s:
+            raise ValueError(
+                f"{name}: beta must satisfy 0 <= beta <= mu_s for nonnegative plastic dissipation"
+            )
         if name == "dp_rate":
             scalar("t_star")
     elif name == "bingham":
-        mu_s = scalar("mu_s")
-        tau = scalar("tau_0")
-        mu_0 = scalar("mu_0", lower=mu_s, strict=tau > 0)
-        scalar("mu_v", default=0.0)
+        eta = scalar("eta")
+        tau = scalar("yield_stress")
+        eta_0 = scalar("eta_0", lower=eta, strict=tau > 0)
+        scalar("eta_v", default=0.0)
         if hasattr(material, "gamma_c"):
-            expected = tau / (mu_0 - mu_s) if tau else 0.0
+            expected = tau / (eta_0 - eta) if tau else 0.0
             if not np.isclose(scalar("gamma_c"), expected, rtol=1e-10, atol=1e-14):
                 raise ValueError(
-                    "bingham: gamma_c must equal tau_0/(mu_0-mu_s); omit it to derive the transition"
+                    "bingham: gamma_c must equal yield_stress/(eta_0-eta); omit it to derive the transition"
                 )
     else:
-        scalar("mu_0")
+        scalar("mu_s")
         scalar("b")
         scalar("rho_s", strict=True)
         scalar("eta_max", strict=True)
@@ -123,14 +122,14 @@ def bingham(mp, material, params):
     trace, rate = _flow_increment(mp, params)
     mp.dp = material.K * trace
     mp.pressure += mp.dp
-    mp.eta = np.full_like(mp.gammadot, material.mu_s)
-    if material.tau_0:
-        mp.eta.fill(material.mu_0)
-        flowing = mp.gammadot > material.tau_0 / (material.mu_0 - material.mu_s)
-        mp.eta[flowing] = material.mu_s + material.tau_0 / mp.gammadot[flowing]
+    mp.eta = np.full_like(mp.gammadot, material.eta)
+    if material.yield_stress:
+        mp.eta.fill(material.eta_0)
+        flowing = mp.gammadot > material.yield_stress / (material.eta_0 - material.eta)
+        mp.eta[flowing] = material.eta + material.yield_stress / mp.gammadot[flowing]
     mp.eta_limited = mp.eta.copy()
     mp.dev_stress = 2 * mp.eta[:, None, None] * rate
-    bulk = getattr(material, "mu_v", 0.0) * trace / params.dt
+    bulk = getattr(material, "eta_v", 0.0) * trace / params.dt
     mp.dstress = (mp.pressure + bulk)[:, None, None] * EYE + mp.dev_stress - mp.stress
 
 
@@ -145,12 +144,12 @@ def linear_mu(mp, material, params):
     mp.I = np.zeros_like(p)
     positive = p > 0
     mp.I[positive] = mp.gammadot[positive] * size[positive] * np.sqrt(material.rho_s) / np.sqrt(p[positive])
-    mp.mu = material.mu_0 + material.b * mp.I
+    mp.mu = material.mu_s + material.b * mp.I
     # Evaluate mu*p/gamma as a sum to avoid zero-pressure and zero-rate singularities.
     mp.eta = np.divide(
-        material.mu_0 * p,
+        material.mu_s * p,
         mp.gammadot,
-        out=np.where(material.mu_0 * p > 0, material.eta_max, 0.0),
+        out=np.where(material.mu_s * p > 0, material.eta_max, 0.0),
         where=mp.gammadot > 0,
     )
     mp.eta += material.b * size * np.sqrt(material.rho_s) * np.sqrt(p)
@@ -176,8 +175,8 @@ def _drucker_prager(mp, material, params, t_star):
     p_trial = -tr / 3
     q_trial = np.sqrt(1.5) * np.linalg.norm(shear, axis=(1, 2))
     viscous = 3 * material.G * t_star / params.dt
-    multiplier = np.maximum(q_trial - material.mu * p_trial, 0.0) / (
-        3 * material.G + material.K * material.mu * material.beta + viscous
+    multiplier = np.maximum(q_trial - material.mu_s * p_trial, 0.0) / (
+        3 * material.G + material.K * material.mu_s * material.beta + viscous
     )
     p = p_trial + material.K * material.beta * multiplier
     tension = p < 0
@@ -189,9 +188,9 @@ def _drucker_prager(mp, material, params, t_star):
     mp.pressure = -p
     mp.dp = mp.pressure - np.trace(mp.stress, axis1=1, axis2=2) / 3
     mp.sigma_kk = -3 * p
-    mp.mu.fill(material.mu)
+    mp.mu.fill(material.mu_s)
     mp.gammadot = np.sqrt(2.0) * np.linalg.norm(dev, axis=(1, 2)) / params.dt
-    mp.yieldfunction = q - material.mu * p
+    mp.yieldfunction = q - material.mu_s * p
     mp.dstress = -p[:, None, None] * EYE + mp.dev_stress - mp.stress
 
 
@@ -253,10 +252,10 @@ def viscous(mp, material, params):
     trace, rate = _flow_increment(mp, params)
     mp.dp = material.K * trace
     mp.pressure += mp.dp
-    mp.eta.fill(material.mu_s)
+    mp.eta.fill(material.eta)
     mp.eta_limited = mp.eta.copy()
-    mp.dev_stress = 2 * material.mu_s * rate
-    bulk = material.mu_v * trace / params.dt
+    mp.dev_stress = 2 * material.eta * rate
+    bulk = material.eta_v * trace / params.dt
     mp.dstress = (mp.pressure + bulk)[:, None, None] * EYE + mp.dev_stress - mp.stress
 
 
@@ -278,7 +277,7 @@ def pouliquen(mp, material, params):
     mp.I[positive] = mp.gammadot[positive] * size[positive] * np.sqrt(material.rho_s) / np.sqrt(p[positive])
     ratio = np.divide(mp.I, material.I_0 + mp.I, out=np.zeros_like(p), where=mp.I > 0)
     ratio[(~positive) & (mp.gammadot > 0)] = 1.0
-    mp.mu = material.mu_0 + material.delta_mu * ratio
+    mp.mu = material.mu_s + (material.mu_d - material.mu_s) * ratio
     mp.eta = np.divide(
         mp.mu * p, mp.gammadot, out=np.where(mp.mu * p > 0, material.eta_max, 0.0), where=mp.gammadot > 0
     )
@@ -289,12 +288,12 @@ def pouliquen(mp, material, params):
 
 
 def von_mises(mp, material, params):
-    """Perfect J2 plasticity; yield_stress (Pa), or sqrt(3)*legacy k."""
+    """Perfect J2 plasticity; yield_stress (Pa) is the von Mises equivalent stress at yield."""
     trace, dev = invariants(mp.dstrain)
     trial = mp.stress + material.K * trace[:, None, None] * EYE + 2 * material.G * dev
     tr, shear = invariants(trial)
     q = np.sqrt(1.5) * np.linalg.norm(shear, axis=(1, 2))
-    strength = getattr(material, "yield_stress", np.sqrt(3) * getattr(material, "k", 0.0))
+    strength = material.yield_stress
     multiplier = np.maximum(q - strength, 0) / (3 * material.G)
     scale = np.divide(np.minimum(q, strength), q, out=np.zeros_like(q), where=q > 0)
     stress = tr[:, None, None] * EYE / 3 + scale[:, None, None] * shear
@@ -336,7 +335,7 @@ def update_stress(mp, material, params):
     elif material.law != "elastic":
         trace, dev = invariants(mp.dstrain)
         _, shear = invariants(result)
-        bulk_viscosity = getattr(material, "mu_v", 0.0) if material.law in ("viscous", "bingham") else 0.0
+        bulk_viscosity = getattr(material, "eta_v", 0.0) if material.law in ("viscous", "bingham") else 0.0
         mp.viscous_work += mp.V * (np.sum(shear * dev, axis=(1, 2)) + bulk_viscosity * trace**2 / params.dt)
         # Integrate elastic bulk work p(J) dV exactly along this exponential
         # volume increment. No-tension flow laws have a clipped pressure path.

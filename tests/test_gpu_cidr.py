@@ -26,7 +26,7 @@ def test_envelope_kernel_matches_the_cpu_envelope():
     solver = CidrSolver(
         rt, mechanics.device_grid(rt, 5, 5, 0.25, 0.25), S, dt=0.002, gamma=1e-8, tolerance=1e-4
     )
-    model = cidr.CriticalStateCIDR(S.mu, S.mu_d, S.I0, 2 * S.grain_diameter * np.sqrt(S.rho_s))
+    model = cidr.CriticalStateCIDR(S.mu_s, S.mu_d, S.I_0, 2 * S.grain_diameter * np.sqrt(S.rho_s))
     rng = np.random.default_rng(0)
     n = 400
     for gamma in (1.3e-6, 1e-8):

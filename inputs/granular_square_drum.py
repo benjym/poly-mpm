@@ -3,7 +3,7 @@
 The geometry, rotation, grain sizes and grid segregation follow bi_square_drum.
 The Pouliquen elastoplastic material is replaced by rigid grains with a
 constant friction coefficient mu = tan(20.9 deg), the quasi-static friction
-mu_0 of bi_square_drum, because the Metal backend runs only the rigid-grain
+mu_s of bi_square_drum, because the Metal backend runs only the rigid-grain
 step. The rate dependence of mu(I) and the elasticity are therefore absent.
 
     python MPM.py granular_square_drum 11 2 metal
@@ -43,8 +43,8 @@ class Params(SquareDrumParams):
             A=legacy.A,
             rho=legacy.rho,
             rho_s=legacy.rho_s,
-            packing_max=legacy.packing,
-            mu=legacy.mu_0,
+            phi_max=legacy.phi_flow,
+            mu_s=legacy.mu_s,
             critical_time=self.critical_time,
         )
 

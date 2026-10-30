@@ -206,7 +206,7 @@ class Preconditioner:
         self.status = None
 
 
-def wall_blocks(rt, encoder, grid, operator, blocks, node_row, volumes, mass, m_tol, packing_max):
+def wall_blocks(rt, encoder, grid, operator, blocks, node_row, volumes, mass, m_tol, phi_max):
     """Write each wall row's scaled block where its node has resolved mass, else zero."""
     walls = grid.rows - grid.stress_rows
     if walls == 0:
@@ -219,7 +219,7 @@ def wall_blocks(rt, encoder, grid, operator, blocks, node_row, volumes, mass, m_
         stress_rows=grid.stress_rows,
         wall_count=walls,
         m_tol=float(m_tol),
-        packing_max=float(packing_max),
+        phi_max=float(phi_max),
         neighbors=grid.neighbors,
         node_row=node_row,
         volumes=volumes,

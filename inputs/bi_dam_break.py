@@ -90,20 +90,19 @@ class Solid_Params:
         self.Y = []
         self.n = 0
         self.rho = 2700.0  # density (kg/m^3)
-        self.packing = 0.6  # packing fraction
-        self.rho_s = self.rho / self.packing  # solid density
+        self.phi_flow = 0.6  # packing fraction
+        self.rho_s = self.rho / self.phi_flow  # solid density
         self.heterogeneous = True  # non-uniform gsd in space
-        self.PHI = []
+        self.phi = []
 
         self.law = "pouliquen"
-        self.mu_0 = 2.0 * tan(deg2rad(20.90))  # double glass beads - about 37.5 deg
-        self.mu_1 = 2.0 * tan(deg2rad(32.76))  # double glass beads
-        self.delta_mu = self.mu_1 - self.mu_0
+        self.mu_s = 2.0 * tan(deg2rad(20.90))  # double glass beads - about 37.5 deg
+        self.mu_d = 2.0 * tan(deg2rad(32.76))  # double glass beads
         self.I_0 = 0.279
         self.eta_max = 1e2 * self.rho * sqrt(-P.max_g * (G.y_M - G.y_m) ** 3) / 1e2
         # print(self.eta_max)
         # self.law = 'linear_mu'
-        # self.mu_0 = 0.5
+        # self.mu_s = 0.5
         # self.b = 0.5
 
         self.E = 1e7
@@ -129,23 +128,23 @@ class Solid_Params:
             self.X.append(X[i])
             self.Y.append(Y[i])
             if args[2] == "top":  # small on top
-                # if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([1.,0.])
-                # else:                        self.PHI.append([0.,1.])
+                # if Y[i] > (G.y_M - G.y_m)/2: self.phi.append([1.,0.])
+                # else:                        self.phi.append([0.,1.])
                 this_phi = zeros([G.ns])
                 H = G.y_M - G.y_m
                 this_phi_arg = int(floor((H - Y[i]) / H * G.ns))
                 this_phi[this_phi_arg] = 1.0
-                self.PHI.append(this_phi)
+                self.phi.append(this_phi)
             elif args[2] == "bot":  # large on top
-                # if Y[i] > (G.y_M - G.y_m)/2: self.PHI.append([0.,1.])
-                # else:                        self.PHI.append([1.,0.])
+                # if Y[i] > (G.y_M - G.y_m)/2: self.phi.append([0.,1.])
+                # else:                        self.phi.append([1.,0.])
                 this_phi = zeros([G.ns])
                 H = G.y_M - G.y_m
                 this_phi_arg = int(floor(Y[i] / H * G.ns))
                 this_phi[this_phi_arg] = 1.0
-                self.PHI.append(this_phi)
+                self.phi.append(this_phi)
             elif args[2] == "mix":  # mixed
-                self.PHI.append(ones([G.ns]) / float(G.ns))
+                self.phi.append(ones([G.ns]) / float(G.ns))
             self.n += 1
         self.A = G.dx * G.dy / self.pts_per_cell**2
 

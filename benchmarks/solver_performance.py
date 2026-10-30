@@ -50,15 +50,11 @@ def make_case(name):
         law="pouliquen" if segregation else "elastic",
         K=1e4,
         G=4e3,
-        mu_s=10.0,
-        mu_v=5.0,
         rho_s=1666.0,
-        mu_0=0.3,
-        mu_1=0.7,
-        delta_mu=0.4,
+        mu_s=0.3,
+        mu_d=0.7,
         I_0=0.279,
         eta_max=100.0,
-        packing=0.6,
         initial_v=np.column_stack((0.01 + 0.1 * x + 0.2 * y, -0.02 - 0.1 * y, np.zeros(count))),
     )
     params = NS(

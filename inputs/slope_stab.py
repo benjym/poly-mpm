@@ -73,15 +73,15 @@ class Solid_Params:
         #         self.K = self.E/(3.*(1.-2.*self.nu)) # bulk modulus (Pa)
         #         self.G = self.E/(2.*(1.+self.nu)) # shear modulus (Pa)
         #         self.s = 2.
-        #         self.k = 1e3
+        #         self.yield_stress = sqrt(3) * 1e3
 
         self.law = "dp"
         self.E = 1e6  # elastic modulus (Pa)
         self.nu = 0.2  # poisson's ratio
         self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
         self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
-        self.mu = 1.0
-        self.beta = 1.0 * self.mu
+        self.mu_s = 1.0
+        self.beta = 1.0 * self.mu_s
         self.s = 1.0
 
         self.slope_angle = 90.0

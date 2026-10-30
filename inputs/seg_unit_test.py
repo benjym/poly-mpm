@@ -78,8 +78,8 @@ class Solid_Params:
         self.law = "viscous"
         self.rho = 1000.0  # density (kg/m^3)
 
-        self.mu_s = 1e5  # shear viscosity
-        self.mu_v = 1e5
+        self.eta = 1e5  # shear viscosity
+        self.eta_v = 1e5  # bulk viscosity
         self.K = 0.0  # pressure viscosity
 
         self.pts_per_cell = 3

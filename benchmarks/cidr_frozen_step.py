@@ -13,7 +13,7 @@ solver), D_a = (B u)_a / Vs_a is the solid-volume-weighted strain rate there, in
 the orthonormal basis of granular.BASIS (component 0 volumetric, so
 delta = sqrt(2) D_0; components 1 and 2 deviatoric, so s = |D_dev| / sqrt(2)),
 and V_a = Vs_a / phi is the bulk volume. The packing is uniform and frozen. C is
-set by the consolidation ratio 2 mu_1 C / (rho g H), the cap pressure over the
+set by the consolidation ratio 2 mu_s C / (rho g H), the cap pressure over the
 pressure at the base of the column: at 1 the base sits on the cap and compacts
 under the column's weight, which then falls freely through the first step; the
 default 2 puts the base at the critical pressure, so the whole column is denser
@@ -252,7 +252,7 @@ def main(argv=None):
         "--consolidation",
         type=float,
         default=2.0,
-        help="cap pressure 2 mu_1 C over the base pressure rho g H",
+        help="cap pressure 2 mu_s C over the base pressure rho g H",
     )
     args = parser.parse_args(argv)
     jop = Jop()
@@ -264,7 +264,7 @@ def main(argv=None):
         p = frozen(spacing)
         rho_s = p["rho"] / p["phi"]
         C = args.consolidation * p["rho"] * p["g"] * 1.0 / (2 * jop.mu1)
-        model = CriticalState(mu_s=jop.mu1, mu_d=jop.mu2, i0=jop.I0, k=2 * GRAIN * np.sqrt(rho_s))
+        model = CriticalState(mu_s=jop.mu1, mu_d=jop.mu2, i0=jop.I_0, k=2 * GRAIN * np.sqrt(rho_s))
         if args.solver == "alg2":
             u, _, info = solve(p, model, C, tol=args.tol)
         else:

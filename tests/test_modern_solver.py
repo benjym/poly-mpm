@@ -144,7 +144,7 @@ def test_elastic_energy_derivative_matches_first_piola_stress():
 def test_viscous_and_zero_yield_bingham_agree_and_dissipate():
     outcomes = []
     for name in ("viscous", "bingham"):
-        P, G, L, b = mapped(materials=material(name, tau_0=0.0, mu_0=100.0))
+        P, G, L, b = mapped(materials=material(name, yield_stress=0.0, eta_0=100.0))
         b.L[:] = [[-0.2, 1.0, 0], [0.2, -0.1, 0], [0, 0, 0]]
         b.dstrain = 0.5 * (b.L + b.L_T) * P.dt
         advance(b, P)
@@ -267,7 +267,7 @@ def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic, qu
             n=20,
             X=xy[:, 0],
             Y=xy[:, 1],
-            PHI=phi,
+            phi=phi,
             domain_size=[0.1, 0.1],
             initial_v=np.column_stack((0.1 * xy[:, 1], np.zeros((20, 2)))),
             initial_C=[[0, 0.1, 0], [0, 0, 0], [0, 0, 0]],
@@ -299,7 +299,7 @@ def test_uniform_acceleration_diagnostics_account_for_work_and_impulse():
 
 
 def test_stability_reports_and_enforcement_are_separate_from_static_control():
-    P, G, L, b = mapped(materials=material("viscous", mu_s=1000.0, mu_v=20.0))
+    P, G, L, b = mapped(materials=material("viscous", eta=1000.0, eta_v=20.0))
     restriction = limits(P, G, L)
     assert restriction["viscosity"] < restriction["elastic_wave"]
     P.dt = restriction["viscosity"] * 2
@@ -309,7 +309,7 @@ def test_stability_reports_and_enforcement_are_separate_from_static_control():
 
 
 def test_dynamic_first_step_obeys_viscous_limit():
-    P, G, L, b = mapped(materials=material("viscous", mu_s=1000.0), time_stepping="dynamic", dt=1.0)
+    P, G, L, b = mapped(materials=material("viscous", eta=1000.0), time_stepping="dynamic", dt=1.0)
     safe = min(limits(P, G, L).values())
     run(P, G, L, max_steps=1, output=False)
     assert P.t <= safe * (1 + 1e-14)
@@ -398,7 +398,7 @@ def test_torque_free_apic_body_preserves_angular_momentum_through_full_steps():
 
 
 def test_bulk_fluid_energy_integrates_volume_work():
-    P, G, L, b = mapped(materials=material("viscous", K=100.0, mu_s=0.0, mu_v=0.0), dt=0.1)
+    P, G, L, b = mapped(materials=material("viscous", K=100.0, eta=0.0, eta_v=0.0), dt=0.1)
     b.L[:] = -0.1 * EYE
     b.dstrain[:] = -0.01 * EYE
     advance(b, P)

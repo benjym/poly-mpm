@@ -39,17 +39,17 @@ def validate_cidr(P):
     if P.granular_stress != "intrinsic" or P.granular_stress_basis != "nodal":
         raise ValueError("granular_solver='cidr' requires intrinsic stress on the nodal basis")
     S = P.S[0]
-    fields = ("mu", "mu_d", "I0", "grain_diameter", "phi_min", "packing_max", "cidr_deficit", "cidr_p_ref")
+    fields = ("mu_s", "mu_d", "I_0", "grain_diameter", "phi_min", "phi_max", "cidr_deficit", "cidr_p_ref")
     missing = [name for name in fields if not hasattr(S, name)]
     if missing:
         raise ValueError(f"granular_solver='cidr' requires material fields {', '.join(missing)}")
     values = {name: float(getattr(S, name)) for name in fields}
     if not all(np.isfinite(v) and v > 0 for v in values.values()):
         raise ValueError("cidr material fields must be positive and finite")
-    if not values["mu"] < values["mu_d"]:
-        raise ValueError("cidr requires mu < mu_d")
-    if not values["phi_min"] < values["packing_max"] - values["cidr_deficit"]:
-        raise ValueError("cidr requires phi_min < packing_max - cidr_deficit")
+    if not values["mu_s"] < values["mu_d"]:
+        raise ValueError("cidr requires mu_s < mu_d")
+    if not values["phi_min"] < values["phi_max"] - values["cidr_deficit"]:
+        raise ValueError("cidr requires phi_min < phi_max - cidr_deficit")
     for name in ("granular_cidr_gamma", "granular_cidr_tolerance"):
         value = getattr(P, name)
         if (value is not None or name != "granular_cidr_gamma") and (not np.isfinite(value) or value <= 0):

@@ -108,7 +108,7 @@ def frozen_residual_check(rt, kind):
     z = contact / (magnitude / norm)
     w = ((B @ u.ravel()).reshape(z.shape) + gap) / magnitude
     argument = z - w
-    radius = b.material.mu * np.maximum(z[:, 0], 0)
+    radius = b.material.mu_s * np.maximum(z[:, 0], 0)
     length = np.linalg.norm(argument[:, 1:], axis=1)
     projected = argument.copy()
     projected[:, 0] = np.maximum(argument[:, 0], 0)
@@ -295,8 +295,8 @@ def _silo(inlet):
         A=spacing**2,
         rho=1500.0,
         rho_s=2500.0,
-        packing_max=0.6,
-        mu=0.5,
+        phi_max=0.6,
+        mu_s=0.5,
     )
     if inlet:
         P.S.inlet_rate, P.S.gap = 0.02, (0.025, 0.025)
@@ -334,13 +334,13 @@ def incline_check(rt, slope):
     b = L.materials[0]
     speed = -b.v[:, 0]
     result = dict(slope=slope, steps=P.tstep)
-    if slope < b.material.mu:
+    if slope < b.material.mu_s:
         _require(
             np.abs(b.v).max() <= 1e-3 * _spacing(G) / P.t_f, f"static incline moved {np.abs(b.v).max():.3g}"
         )
         result["max_speed"] = float(np.abs(b.v).max())
     else:
-        expected = -P.g * (np.sin(P.theta) - b.material.mu * np.cos(P.theta)) * P.t
+        expected = -P.g * (np.sin(P.theta) - b.material.mu_s * np.cos(P.theta)) * P.t
         error = abs(speed.max() - expected) / expected
         cpu_error = abs((-cpu[2].materials[0].v[:, 0]).max() - expected) / expected
         _require(error <= INCLINE_SPEED, f"incline speed error {error:.3g}")
@@ -482,7 +482,7 @@ def segregation_check(rt, kind, sizes=(0.001, 0.003), normalise=False):
         P.dt, P.t_f, c = 0.005, 0.15, 1e-1
     P.granular_solver, P.granular_tolerance, P.diagnostics = "velocity", TOLERANCE, True
     P.G.ns, P.G.s = ns, list(sizes)
-    P.S.PHI = np.tile(np.full(ns, 1.0 / ns), (P.S.n, 1))
+    P.S.phi = np.tile(np.full(ns, 1.0 / ns), (P.S.n, 1))
     P.segregate, P.c, P.normalise_phi = True, c, normalise
     state = prepare(P)
     P, G, L = state

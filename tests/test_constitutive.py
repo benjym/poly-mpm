@@ -13,9 +13,11 @@ NEW = ("bingham", "linear_mu", "dp", "dp_rate")
 
 
 def sample(name, n=4, **overrides):
-    data = dict(mu=0.6, beta=0.2, t_star=0.2, tau_0=2.0, mu_0=100.0, mu_s=10.0, mu_v=5.0, b=0.4, eta_max=1e6)
+    data = dict(
+        mu_s=0.6, beta=0.2, t_star=0.2, yield_stress=2.0, eta_0=100.0, eta=10.0, eta_v=5.0, b=0.4, eta_max=1e6
+    )
     if name == "linear_mu":
-        data["mu_0"] = 0.3
+        data["mu_s"] = 0.3
     data.update(overrides)
     P, G, L = state(materials=material(name, n=n, **data), dt=0.1)
     return P, G, L, L.materials[0]
@@ -46,11 +48,11 @@ def test_empty_zero_and_multiple_particles(name, n):
 
 def test_bingham_shear_curve_transition_and_reversal():
     P, _, _, b = sample("bingham", n=7)
-    gamma_c = b.material.tau_0 / (b.material.mu_0 - b.material.mu_s)
+    gamma_c = b.material.yield_stress / (b.material.eta_0 - b.material.eta)
     rates = np.array([0, gamma_c * 0.5, gamma_c, gamma_c * (1 + 1e-8), 1.0, -1.0, -gamma_c])
     apply(b, P, np.array([shear(rate * P.dt) for rate in rates]))
     stress = np.sign(rates) * np.minimum(
-        b.material.mu_0 * abs(rates), b.material.tau_0 + b.material.mu_s * abs(rates)
+        b.material.eta_0 * abs(rates), b.material.yield_stress + b.material.eta * abs(rates)
     )
     assert_allclose(b.stress[:, 0, 1], stress)
     assert_allclose(b.gammadot, abs(rates))
@@ -59,11 +61,11 @@ def test_bingham_shear_curve_transition_and_reversal():
 
 
 def test_bingham_newtonian_limit_and_bulk_dissipation():
-    P, _, _, b = sample("bingham", tau_0=0.0, K=0.0)
+    P, _, _, b = sample("bingham", yield_stress=0.0, K=0.0)
     rate = np.array([[2.0, 1.0, 0], [1.0, -1.0, 0], [0, 0, 2.0]])
     trace = np.trace(rate)
     apply(b, P, rate * P.dt)
-    expected = 2 * b.material.mu_s * (rate - trace * EYE / 3) + b.material.mu_v * trace * EYE
+    expected = 2 * b.material.eta * (rate - trace * EYE / 3) + b.material.eta_v * trace * EYE
     assert_allclose(b.stress, np.broadcast_to(expected, b.stress.shape))
     assert np.all(np.sum(b.stress * rate, axis=(1, 2)) >= 0)
     # Stopping removes viscous stress rather than retaining a stale increment.
@@ -72,7 +74,7 @@ def test_bingham_newtonian_limit_and_bulk_dissipation():
 
 
 def test_bingham_bulk_modulus_and_viscous_pressure_are_separate():
-    P, _, _, b = sample("bingham", mu_v=7.0)
+    P, _, _, b = sample("bingham", eta_v=7.0)
     strain = -0.01 * EYE
     apply(b, P, strain)
     assert_allclose(b.pressure, b.material.K * np.trace(strain))
@@ -135,11 +137,11 @@ def test_dp_yield_flow_and_nonnegative_plastic_work(name, beta):
     assert_allclose(
         plastic_dev, multiplier[:, None, None] * 1.5 * b.dev_stress / b.q[:, None, None], atol=1e-15
     )
-    f = b.q - b.material.mu * b.p
+    f = b.q - b.material.mu_s * b.p
     viscous = 3 * b.material.G * b.material.t_star if name == "dp_rate" else 0
     assert_allclose(f, viscous * multiplier / P.dt, atol=2e-14)
     assert_allclose(b.yieldfunction, f, atol=2e-14)
-    assert_allclose(b.mu, b.material.mu)
+    assert_allclose(b.mu, b.material.mu_s)
     assert_allclose(b.dp, -b.p + 10.0)
     work = np.sum(b.stress * plastic, axis=(1, 2))
     assert_allclose(work, (b.q - beta * b.p) * multiplier, atol=1e-13)
@@ -197,7 +199,7 @@ def test_dp_rate_relaxation_and_timestep_convergence():
         P, _, _, b = sample("dp_rate", n=1, beta=0.0)
         duration, rate = 0.4, 0.1
         P.dt = duration / steps
-        b.stress[:] = -100 * EYE + shear(2 * b.material.mu * 100 / np.sqrt(3))
+        b.stress[:] = -100 * EYE + shear(2 * b.material.mu_s * 100 / np.sqrt(3))
         for _ in range(steps):
             apply(b, P, shear(rate * P.dt))
         exact = (
@@ -206,7 +208,7 @@ def test_dp_rate_relaxation_and_timestep_convergence():
         errors.append(abs(b.yieldfunction[0] - exact))
         before = b.q.copy()
         apply(b, P, np.zeros((3, 3)))
-        assert_allclose(b.yieldfunction, (before - b.material.mu * 100) / (1 + P.dt / b.material.t_star))
+        assert_allclose(b.yieldfunction, (before - b.material.mu_s * 100) / (1 + P.dt / b.material.t_star))
     assert errors[1] < errors[0] * 0.55
     assert errors[2] < errors[1] * 0.55
 
@@ -267,16 +269,16 @@ def test_grid_fluid_stress_does_not_receive_legacy_lie_increment(name):
 @pytest.mark.parametrize(
     "name,overrides,match",
     [
-        ("dp", {"mu": -1}, "mu"),
+        ("dp", {"mu_s": -1}, "mu_s"),
         ("dp", {"beta": -0.1}, "beta"),
         ("dp", {"beta": 1}, "beta"),
         ("dp", {"G": 0}, "G"),
         ("dp", {"K": np.nan}, "K"),
         ("dp_rate", {"t_star": -0.1}, "t_star"),
-        ("bingham", {"mu_s": -1}, "mu_s"),
-        ("bingham", {"mu_0": 10}, "mu_0"),
-        ("bingham", {"tau_0": -1}, "tau_0"),
-        ("bingham", {"mu_v": -1}, "mu_v"),
+        ("bingham", {"eta": -1}, "eta"),
+        ("bingham", {"eta_0": 10}, "eta_0"),
+        ("bingham", {"yield_stress": -1}, "yield_stress"),
+        ("bingham", {"eta_v": -1}, "eta_v"),
         ("bingham", {"gamma_c": 10}, "gamma_c"),
         ("linear_mu", {"b": -1}, "b"),
         ("linear_mu", {"eta_max": 0}, "eta_max"),
@@ -327,7 +329,7 @@ def test_fluid_initialisation_needs_no_elastic_shear_modulus(name, mode):
 
 
 def test_linear_mu_zero_friction_newtonian_limit():
-    P, _, _, b = sample("linear_mu", mu_0=0.0, b=0.4)
+    P, _, _, b = sample("linear_mu", mu_s=0.0, b=0.4)
     b.pressure.fill(-10.0)
     apply(b, P, np.zeros((3, 3)))
     expected = 0.4 * (b.phi @ P.G.s) * np.sqrt(b.material.rho_s * 10)

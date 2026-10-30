@@ -138,7 +138,7 @@ def test_unsupported_metal_features_fail_before_native_initialization(name, valu
 def test_metal_segregation_is_accepted_with_supported_settings():
     P = metal_params()
     P.G.ns, P.G.s = 2, [0.001, 0.003]
-    P.S.PHI = np.tile([0.5, 0.5], (P.S.n, 1))
+    P.S.phi = np.tile([0.5, 0.5], (P.S.n, 1))
     P.segregate, P.c = True, 1e-2
     prepare(P)
     P = metal_params()

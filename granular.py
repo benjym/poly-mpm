@@ -479,7 +479,7 @@ def wall_candidates(P, G, components):
     normal n and tangent t: r_n >= 0 pushes the node into the domain,
     r_n w_n = 0 lets it leave, and |r_t| <= wall_mu r_n opposes slip. The
     scale s = V/h, with h half the spacing normal to the wall and V the
-    smaller of the node's basis volume and its grain volume over packing_max
+    smaller of the node's basis volume and its grain volume over phi_max
     (wall_rows), does not change the solution. At full packing s is the wall
     length times thickness, so r is the wall traction; like the stress rows'
     V_grain grad N it vanishes with the node's mass, whereas a fixed scale
@@ -510,7 +510,7 @@ def wall_candidates(P, G, components):
 def wall_rows(P, G, components, volume):
     """Wall contact rows at nodes with resolved mass (wall_candidates).
 
-    volume is the nodal grain volume over packing_max.
+    volume is the nodal grain volume over phi_max.
     """
     nodes, sides, blocks = wall_candidates(P, G, components)
     nodes, sides, blocks = (part[G.valid_nodes[nodes]] for part in (nodes, sides, blocks))
@@ -576,7 +576,7 @@ def assemble(P, G, batch, *, compact=False):
                 nodes.ravel(), weights=(solid_volume[:, None] * batch.N).ravel(), minlength=len(G.m)
             )
             wall_nodes, wall_sides, wall_blocks = wall_rows(
-                P, G, components, nodal_volume / batch.material.packing_max
+                P, G, components, nodal_volume / batch.material.phi_max
             )
             walls = wall_nodes, wall_blocks
         B = GradientOperator(
@@ -603,7 +603,7 @@ def assemble(P, G, batch, *, compact=False):
         free[2 * np.flatnonzero(contact_h)] = False
         free[2 * np.flatnonzero(contact_v) + 1] = False
     gap = np.zeros((len(active), components))
-    capacity = batch.material.packing_max * volumes[active]
+    capacity = batch.material.phi_max * volumes[active]
     # Positive-part gap follows the paper's dissipative packing linearisation.
     # It does not geometrically repair pre-existing overpacking.
     clearance = capacity - occupied[active]
@@ -633,9 +633,9 @@ def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
 
     S = batch.material
     rho_s = S.rho_s
-    key = (float(S.mu), float(S.mu_d), float(S.I0), float(S.grain_diameter), float(rho_s))
+    key = (float(S.mu_s), float(S.mu_d), float(S.I_0), float(S.grain_diameter), float(rho_s))
     if key not in _CIDR_MODELS:
-        _CIDR_MODELS[key] = CriticalStateCIDR(S.mu, S.mu_d, S.I0, 2 * S.grain_diameter * np.sqrt(rho_s))
+        _CIDR_MODELS[key] = CriticalStateCIDR(S.mu_s, S.mu_d, S.I_0, 2 * S.grain_diameter * np.sqrt(rho_s))
     model = _CIDR_MODELS[key]
     canonical = canonical_nodes(P, len(G.m))
     bulk = np.bincount(
@@ -643,7 +643,7 @@ def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
     )[active]
     solid = occupied[active]
     phi = solid / bulk
-    C = packing_modulus(phi, S.phi_min, S.packing_max, S.cidr_deficit, S.cidr_p_ref, S.mu)
+    C = packing_modulus(phi, S.phi_min, S.phi_max, S.cidr_deficit, S.cidr_p_ref, S.mu_s)
     inverse = sparse.diags(np.repeat(1 / solid, 3))
     problem = Problem(
         (inverse @ B[:, free]).tocsr(),
@@ -730,7 +730,7 @@ def step(P, G, L):
         old = getattr(G, "granular_contact", np.zeros((len(occupied), components)))
         # A re-solve starts from the attempt it replaces (same active rows).
         initial = old[active] if attempt == 0 else contact
-        mu = b.material.mu * np.sqrt(2 / dimension)
+        mu = b.material.mu_s * np.sqrt(2 / dimension)
         walls = len(getattr(B, "wall_nodes", ()))
         if walls:
             # Wall rows follow the stress rows: no gap, wall friction, and a
@@ -853,8 +853,8 @@ def step(P, G, L):
         out=np.zeros_like(phase_pressure),
         where=phase_pressure > 0,
     )
-    b.mu.fill(b.material.mu)
-    b.yieldfunction = np.linalg.norm(b.dev_stress, axis=(1, 2)) / np.sqrt(2) + b.material.mu * b.pressure
+    b.mu.fill(b.material.mu_s)
+    b.yieldfunction = np.linalg.norm(b.dev_stress, axis=(1, 2)) / np.sqrt(2) + b.material.mu_s * b.pressure
     b.material_work += b.V * np.sum(b.stress * b.dstrain, axis=(1, 2))
     b.plastic_work += b.V * np.sum(b.stress * b.dstrain, axis=(1, 2))
     if P.granular_viscosity:
@@ -915,7 +915,7 @@ def step(P, G, L):
         stats["maximum_packing_after"] = float(np.max(packing, initial=0))
         solid_volume = float(np.sum(b.m / b.material.rho_s))
         stats["integrated_overpacking_fraction"] = (
-            float(np.maximum(packing - b.material.packing_max, 0) @ basis_volumes(P, G)) / solid_volume
+            float(np.maximum(packing - b.material.phi_max, 0) @ basis_volumes(P, G)) / solid_volume
             if solid_volume
             else 0.0
         )
@@ -924,9 +924,7 @@ def step(P, G, L):
             cell_packing = cell_packing_fraction(P, G, b)
             stats["maximum_stress_packing_after"] = float(np.max(cell_packing, initial=0))
             stats["integrated_stress_overpacking_fraction"] = (
-                float(
-                    np.maximum(cell_packing - b.material.packing_max, 0).sum() * G.dx * G.dy * P.G.thickness
-                )
+                float(np.maximum(cell_packing - b.material.phi_max, 0).sum() * G.dx * G.dy * P.G.thickness)
                 / solid_volume
                 if solid_volume
                 else 0.0

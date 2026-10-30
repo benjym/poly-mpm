@@ -65,16 +65,13 @@ class Solid_Params:
         self.Y = []
         self.n = 0
         self.rho = 2700.0  # density (kg/m^3)
-        self.packing = 0.6  # packing fraction
-        self.rho_s = self.rho / self.packing  # solid density
+        self.phi_flow = 0.6  # packing fraction
+        self.rho_s = self.rho / self.phi_flow  # solid density
         self.phi = ones([G.ns]) / float(G.ns)
         self.law = "pouliquen"
-        self.mu_0 = tan(deg2rad(20.9))  # 0.3
-        self.mu_1 = tan(deg2rad(32.76))
-        self.delta_mu = self.mu_1 - self.mu_0
+        self.mu_s = tan(deg2rad(20.9))  # 0.3
+        self.mu_d = tan(deg2rad(32.76))
         self.I_0 = 0.279
-
-        self.mu_v = 0
         self.E = 1e4
         self.nu = 0.4  # poissons ratio
         self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))

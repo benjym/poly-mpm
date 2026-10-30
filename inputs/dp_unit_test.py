@@ -97,7 +97,7 @@ class Solid_Params:
         self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
         self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
 
-        self.mu = 0.5  # slope q/p, with q = sqrt(3 J2)
+        self.mu_s = 0.5  # slope q/p, with q = sqrt(3 J2)
         self.beta = 0.0  # dilation slope in g = q-beta*p
 
         self.pts_per_cell = 3

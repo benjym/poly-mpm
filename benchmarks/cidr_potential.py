@@ -96,10 +96,10 @@ def critical_state():
 class Jop:
     """mu(I) of Jop et al. with the glass-bead values used by Fannon et al. (2019)."""
 
-    mu1, mu2, I0 = np.tan(np.radians(20.9)), np.tan(np.radians(32.76)), 0.279
+    mu1, mu2, I_0 = np.tan(np.radians(20.9)), np.tan(np.radians(32.76)), 0.279
 
     def mu(self, I):
-        return self.mu1 + (self.mu2 - self.mu1) * I / (self.I0 + I)
+        return self.mu1 + (self.mu2 - self.mu1) * I / (self.I_0 + I)
 
     def alpha(self, I):
         # Barker et al. (2017), eq. (25), reparametrised: alpha = 4 mu / 5 + 12/25 int_0^1 s^-3/5 mu(s I) ds.

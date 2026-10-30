@@ -21,40 +21,42 @@ components use SI units and tension-positive Cauchy stress.
      - Compressible neo-Hookean elasticity, with bulk/shear moduli in Pa. Legacy mode
        retains incremental isotropic elasticity.
    * - ``viscous``
-     - ``K``, ``mu_s``, ``mu_v``
+     - ``K``, ``eta``, ``eta_v``
      - Newtonian fluid; viscosities in Pa s. The zero-yield Bingham limit gives the same stress law.
    * - ``von_mises``
-     - ``K``, ``G``, ``yield_stress`` (or ``k``)
-     - Perfect J2 return map, yield stress in Pa. ``sqrt(3)*k`` is an
-       alternative yield stress. ``s`` only controls the legacy H² law.
+     - ``K``, ``G``, ``yield_stress``
+     - Perfect J2 return map; ``yield_stress`` is the von Mises equivalent stress at
+       yield, in Pa. ``s`` only controls the legacy H² law.
    * - ``pouliquen``
-     - ``K``, ``rho_s``, ``mu_0``, ``delta_mu``, ``I_0``, ``eta_max``
-     - Local granular friction law with a viscosity cap. Uses engineering shear rate and current physical density. Also supply ``mu_1`` and ``packing``
-       for the example's steady-flow initialisation; ``mu_1=mu_0+delta_mu``.
+     - ``K``, ``rho_s``, ``mu_s``, ``mu_d``, ``I_0``, ``eta_max``
+     - Local granular friction law ``mu(I)=mu_s+(mu_d-mu_s) I/(I_0+I)`` with a viscosity cap.
+       Uses engineering shear rate and current physical density. Also supply the
+       packing fraction ``phi_flow`` for the example's steady-flow initialisation.
    * - ``bingham``
-     - ``K``, ``mu_s``, ``mu_0``, ``tau_0``; optional ``mu_v``
-     - Bi-viscosity approximation to Bingham flow. Small creep below
+     - ``K``, ``eta``, ``eta_0``, ``yield_stress``; optional ``eta_v``
+     - Bi-viscosity approximation to Bingham flow: plastic viscosity ``eta``,
+       unyielded viscosity ``eta_0``. Small creep below
        yield is permitted; ``gamma_c`` is derived and need not be supplied.
    * - ``dp``
-     - ``K``, ``G``, ``mu``, ``beta``
-     - Cohesionless Drucker-Prager plasticity. ``mu`` is the ``q/p`` yield slope,
+     - ``K``, ``G``, ``mu_s``, ``beta``
+     - Cohesionless Drucker-Prager plasticity. ``mu_s`` is the ``q/p`` yield slope,
        not a friction angle; ``beta`` controls dilation.
    * - ``dp_rate``
      - As ``dp``, plus ``t_star``
      - Linear Perzyna regularisation. ``t_star`` is the shear-overstress relaxation
        time in seconds for zero dilation; zero gives the ``dp`` update.
    * - ``linear_mu``
-     - ``K``, ``rho_s``, ``mu_0``, ``b``, ``eta_max``
-     - Dense flowing ``mu(I)=mu_0+b I`` law with a viscosity cap. ``b=0`` gives
+     - ``K``, ``rho_s``, ``mu_s``, ``b``, ``eta_max``
+     - Dense flowing ``mu(I)=mu_s+b I`` law with a viscosity cap. ``b=0`` gives
        constant friction. It is not a dilute/collisional granular model.
    * - ``granular``
-     - ``rho_s``, ``mu``, ``packing_max`` (at most 1); optional ``critical_time(P)``
+     - ``rho_s``, ``mu_s``, ``phi_max`` (at most 1); optional ``critical_time(P)``
      - Rigid grains with constant Coulomb friction and a maximum packing
        fraction, solved as a contact problem. Requires ``solver='granular'`` and
        is the only material in the run. See :doc:`granular-prototype`.
 
 ``K`` and ``G`` are Pa; ``rho_s`` is solid-grain density in kg/m³; grain diameters
-``P.G.s`` are metres; ``eta_max`` and viscosities are Pa s; ``tau_0`` is Pa.
+``P.G.s`` are metres; ``eta_max`` and viscosities are Pa s; ``yield_stress`` is Pa.
 Friction coefficients, ``I_0``, ``b``, and ``beta`` are dimensionless. For flow laws,
 ``phi @ P.G.s`` supplies the local mean diameter where used.
 

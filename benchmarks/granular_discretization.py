@@ -78,7 +78,7 @@ def measure(name, basis):
         stress_basis=basis,
         solver=P.granular_solver,
         transfer=P.transfer,
-        material=dict(rho_s=b.material.rho_s, packing_max=b.material.packing_max, mu=b.material.mu),
+        material=dict(rho_s=b.material.rho_s, phi_max=b.material.phi_max, mu_s=b.material.mu_s),
         extent=[P.G.x_m, P.G.x_M, P.G.y_m, P.G.y_M],
         output=False,
         diagnostics=True,
@@ -86,7 +86,7 @@ def measure(name, basis):
         rightmost_particle=float(b.x[:, 0].max()),
         final_cell_packing_maximum=float(phi.max()),
         final_cell_overpacking=float(
-            np.maximum(phi - b.material.packing_max, 0).sum()
+            np.maximum(phi - b.material.phi_max, 0).sum()
             * G.dx
             * G.dy
             * P.G.thickness

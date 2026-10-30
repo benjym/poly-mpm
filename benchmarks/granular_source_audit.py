@@ -48,7 +48,7 @@ def measure(transfer, stress, viscosity, *, final_time=0.3, particles_per_cell=2
             rightmost_particle=float(b.x[:, 0].max()),
             centre_of_mass=(np.sum(b.m[:, None] * b.x, axis=0) / b.m.sum()).tolist(),
             peak_packing_ratio=max(r["granular_solver"]["maximum_packing_after"] for r in rows)
-            / b.material.packing_max,
+            / b.material.phi_max,
             max_integrated_overpacking_fraction=max(
                 r["granular_solver"]["integrated_overpacking_fraction"] for r in rows
             ),

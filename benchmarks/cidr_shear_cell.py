@@ -34,16 +34,16 @@ from scipy.linalg import solve_banded
 from cidr import CriticalStateCIDR, packing_modulus
 
 # Schaeffer et al. (2019), table 1: DEM fit of mu(I) and Phi(I).
-MU_S, MU_D, I0, PHI_C, A_PHI = 0.248, 0.588, 0.145, 0.817, 0.314
+MU_S, MU_D, I_0, PHI_C, A_PHI = 0.248, 0.588, 0.145, 0.817, 0.314
 K = 2.0  # I = K s / sqrt(p) with d = rho_s = 1
 
 
 def mu(I):
-    return MU_S + (MU_D - MU_S) * I / (I0 + I)
+    return MU_S + (MU_D - MU_S) * I / (I_0 + I)
 
 
 def dmu(I):
-    return (MU_D - MU_S) * I0 / (I0 + I) ** 2
+    return (MU_D - MU_S) * I_0 / (I_0 + I) ** 2
 
 
 class Inertial:
@@ -77,7 +77,7 @@ class CriticalState(CriticalStateCIDR):
     name = "critical_state"
 
     def __init__(
-        self, deficit=0.005, p_ref=0.08, phi_min=0.05, phi_max=PHI_C, mu_s=MU_S, mu_d=MU_D, i0=I0, k=K
+        self, deficit=0.005, p_ref=0.08, phi_min=0.05, phi_max=PHI_C, mu_s=MU_S, mu_d=MU_D, i0=I_0, k=K
     ):
         """mu(I) = mu_s + (mu_d - mu_s) I / (i0 + I) and I = k s / sqrt(p), k = 2 d sqrt(rho_s)."""
         super().__init__(mu_s, mu_d, i0, k)

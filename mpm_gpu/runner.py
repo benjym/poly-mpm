@@ -169,7 +169,7 @@ class MetalRunner:
             self.solver = Solver(
                 rt,
                 grid,
-                mu=S.mu,  # sqrt(2 / dimension) = 1 for the intrinsic 2D stress space
+                mu=S.mu_s,  # sqrt(2 / dimension) = 1 for the intrinsic 2D stress space
                 dt=P.dt,
                 tolerance=P.granular_tolerance,
                 max_iterations=P.granular_max_iterations,
@@ -316,8 +316,8 @@ class MetalRunner:
             out=np.zeros(n),
             where=phase_pressure > 0,
         )
-        b.mu.fill(S.mu)
-        b.yieldfunction = np.linalg.norm(b.dev_stress, axis=(1, 2)) / ROOT2 + S.mu * b.pressure
+        b.mu.fill(S.mu_s)
+        b.yieldfunction = np.linalg.norm(b.dev_stress, axis=(1, 2)) / ROOT2 + S.mu_s * b.pressure
         # Start-of-step stencil of the last step, as the CPU leaves it.
         operator = self.operators[1 - self.current]
         keys = read(operator.keys, dtype=np.uint32).astype(np.int64)
@@ -457,7 +457,7 @@ class MetalRunner:
             self.volumes,
             nodal.mass,
             P.M_tol,
-            S.packing_max,
+            S.phi_max,
         )
         rt.dispatch(
             encoder,
@@ -466,7 +466,7 @@ class MetalRunner:
             module=MODULE,
             row_count=grid.rows,
             stress_rows=grid.stress_rows,
-            packing_max=float(S.packing_max),
+            phi_max=float(S.phi_max),
             dt=dt,
             occupied=operator.occupied,
             volumes=self.volumes,
@@ -767,7 +767,7 @@ class MetalRunner:
             grid.rows,
             module=MODULE,
             row_count=grid.rows,
-            packing_max=float(S.packing_max),
+            phi_max=float(S.phi_max),
             occupied=after.occupied,
             volumes=self.volumes,
             columns=self.packing_columns,

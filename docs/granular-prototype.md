@@ -23,13 +23,13 @@ P.solver = "granular"
 P.S.law = "granular"
 P.S.rho_s = 2500.0       # intrinsic grain density, kg/m^3
 P.S.rho = 1500.0        # initial bulk density, kg/m^3
-P.S.packing_max = 0.6
-P.S.mu = 0.5            # intrinsic 2D shear/pressure yield ratio
+P.S.phi_max = 0.6
+P.S.mu_s = 0.5          # intrinsic 2D shear/pressure yield ratio
 ```
 
 These attributes can also be supplied in an input's parameter constructor, as
 the examples do. No bulk modulus, shear modulus or viscosity cap is required.
-Initial bulk density must not exceed `rho_s * packing_max`.
+Initial bulk density must not exceed `rho_s * phi_max`.
 
 ## Discrete model
 
@@ -64,7 +64,7 @@ possible without a viscosity cap; open regions carry no contact stress.
 The baseline uses constant friction, without a mu(I) or nonlocal closure.
 
 The volumetric gap is
-`k_n = max(packing_max * integral(N) - sum(V_grain*N), 0) / (sqrt(2)*dt)`.
+`k_n = max(phi_max * integral(N) - sum(V_grain*N), 0) / (sqrt(2)*dt)`.
 Basis volumes are integrated over the computational domain. Differences within
 64 machine epsilons of the local capacity/occupation scale are treated as zero
 before division by `dt`, to avoid amplifying summation roundoff. This
@@ -116,7 +116,7 @@ as a constraint impulse, not an internal force.
 
 The scale `s = V/h` does not change the solution. `h` is half the spacing
 normal to the wall and `V` the smaller of the node's basis volume and its
-grain volume over `packing_max`, so at full packing `s` is the wall length
+grain volume over `phi_max`, so at full packing `s` is the wall length
 times thickness and `r` the wall traction. With a fixed geometric `s`, a
 wall node carrying little mass had a local metric `dt s^2 / m` that set the
 solver's norm bound (0.54 against 6e-6 for the stress rows in one collapse

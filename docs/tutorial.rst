@@ -87,7 +87,7 @@ Materials and particle geometry
   mass is ``rho*A*thickness``. Density and area can be scalar or length ``n``.
 * Optional ``initial_v``: velocity in m/s, shape ``(3,)`` or ``(n, 3)``.
 * For mixtures, ``phi`` of shape ``(ns,)`` or ``(n, ns)``; rows must be
-  nonnegative and sum to one. ``PHI`` is an accepted higher-priority alias.
+  nonnegative and sum to one.
 
 Two-by-two particles per grid cell is a convenient starting arrangement, not an
 accuracy guarantee. Choose represented areas consistently with the occupied

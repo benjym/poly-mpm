@@ -301,7 +301,7 @@ integrals that make the model isochoric at `|tau| = mu(I) p`, and
 It is proved linearly well-posed in 2D and has a static yield stress, which
 Schaeffer et al. (2019) name as the route outside the inertial regime. Fannon et
 al. use it with the `mu(I)` parameters of Jop et al. for glass beads
-(`mu_1 = tan 20.9 deg`, `mu_2 = tan 32.76 deg`, `I_0 = 0.279`, the values in
+(`mu_s = tan 20.9 deg`, `mu_d = tan 32.76 deg`, `I_0 = 0.279`, the values in
 `bi_square_drum`) and find that its linear stability agrees with chute
 experiments better than the incompressible model. Its packing function `C` is
 described by those authors as speculative: `b` and the pressure scale `P` are

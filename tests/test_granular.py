@@ -241,7 +241,7 @@ def test_periodic_column_preserves_mass_and_species(method):
     P.B = NS(cyclic_lr=True, has_bottom=True, roughness=True)
     P.G.ns = 2
     P.G.s = [0.001, 0.003]
-    P.S.PHI = np.tile([0.25, 0.75], (P.S.n, 1))
+    P.S.phi = np.tile([0.25, 0.75], (P.S.n, 1))
     P.segregate = True
     P.c = 1e-4
     P, G, L = prepare(P)
@@ -358,10 +358,10 @@ def test_periodic_inclined_layer_static_and_yielding(slope):
     G.boundary_v[:] = False
     run(P, G, L, output=False)
     speed = -L.materials[0].v[:, 0]
-    if slope < P.S[0].mu:
+    if slope < P.S[0].mu_s:
         assert np.max(np.abs(L.materials[0].v)) < 1e-8
     else:
-        expected = 9.81 * (np.sin(P.theta) - P.S[0].mu * np.cos(P.theta)) * P.t
+        expected = 9.81 * (np.sin(P.theta) - P.S[0].mu_s * np.cos(P.theta)) * P.t
         assert_allclose(speed.max(), expected, rtol=1e-3)
         assert speed.mean() > 0.05
 
@@ -410,7 +410,7 @@ def test_source_equation_affine_integrals_and_2d_friction_normalization():
     vy = np.full(P.G.ny, G.dy)
     vx[[0, -1]] /= 2
     vy[[0, -1]] /= 2
-    capacity = P.S[0].packing_max * np.outer(vy, vx).ravel()[active]
+    capacity = P.S[0].phi_max * np.outer(vy, vx).ravel()[active]
     assert_allclose(gap[:, 0] * np.sqrt(2) * P.dt, np.maximum(capacity - occupied[active], 0), atol=2e-17)
     # A cone-boundary coefficient must represent tau_eq/p = mu in 2D.
     pressure, mu = 17.0, 0.5

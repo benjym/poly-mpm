@@ -68,7 +68,7 @@ def test_p0_integrates_affine_velocity_gradient_and_preserves_grain_volume():
     assert_allclose(gap, 0, atol=1e-14)
     phi = cell_packing_fraction(P, G, b)
     assert_allclose(phi.sum() * G.dx * G.dy * P.G.thickness, np.sum(b.m / b.material.rho_s), atol=1e-15)
-    assert_allclose(phi[active], b.material.packing_max, atol=1e-15)
+    assert_allclose(phi[active], b.material.phi_max, atol=1e-15)
     assert len(B.colors(np.ones((len(G.m), 2)))) == 4
 
 
@@ -117,7 +117,7 @@ def test_p0_periodic_segregation_conserves_species():
     P = parameters("incline_static", "velocity")
     P.granular_stress_basis = "P0"
     P.G.ns, P.G.s = 2, [0.001, 0.003]
-    P.S.PHI = np.tile([0.25, 0.75], (P.S.n, 1))
+    P.S.phi = np.tile([0.25, 0.75], (P.S.n, 1))
     P.segregate, P.c = True, 1e-4
     P, G, L = prepare(P)
     b = L.materials[0]

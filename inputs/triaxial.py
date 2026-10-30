@@ -1,5 +1,5 @@
 import os
-from numpy import pi, array, dot, tan, zeros, eye, cumsum, outer, sum, trace, exp, linspace
+from numpy import pi, sqrt, array, dot, tan, zeros, eye, cumsum, outer, sum, trace, exp, linspace
 from numpy import random, tile, repeat
 import matplotlib.pyplot as plt
 
@@ -67,10 +67,9 @@ class Solid_Params:
         self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
 
         self.s = 20.0
-        self.k = 100.0
+        self.yield_stress = sqrt(3) * 100.0  # von Mises equivalent stress at yield (Pa)
 
         self.beta = 0.5  # dilatancy coefficient
-        self.mu = 1.0  # ?
 
         gap = G.dx / 4.0
         xp = linspace(G.x_m + gap, G.x_M - gap, self.x)

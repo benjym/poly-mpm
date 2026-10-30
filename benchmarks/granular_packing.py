@@ -46,10 +46,10 @@ def sampling(particles_per_cell):
         particles_per_cell_axis=particles_per_cell,
         particles=len(b),
         affine_determinant=float(np.prod(stretch)),
-        exact_packing=b.material.packing_max,
+        exact_packing=b.material.phi_max,
         initial_peak=float(before.max()),
         interior_peak=float(after[interior].max()),
-        interior_max_error=float(np.max(np.abs(after[interior] - b.material.packing_max))),
+        interior_max_error=float(np.max(np.abs(after[interior] - b.material.phi_max))),
         total_solid_volume_error=float(after @ volumes - b.m.sum() / b.material.rho_s),
     )
 
@@ -75,7 +75,7 @@ def incline(slope, method):
         )
     b = L.materials[0]
     speed = -b.v[:, 0]
-    expected = max(0.0, 9.81 * (np.sin(P.theta) - b.material.mu * np.cos(P.theta))) * P.t
+    expected = max(0.0, 9.81 * (np.sin(P.theta) - b.material.mu_s * np.cos(P.theta))) * P.t
     return dict(
         slope=slope,
         method=method,

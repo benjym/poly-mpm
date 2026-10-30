@@ -60,13 +60,9 @@ class Solid_Params:
         self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
         self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
 
-        # for von_mises
-        self.k = self.E / 100.0
-
         # for dp
         self.s = 5.0
         self.beta = 10.0
-        self.mu = 0.5
 
         nr = 20  # particles in radial direction
         nphi = 50  # particles around circumference

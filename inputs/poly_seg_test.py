@@ -77,9 +77,9 @@ class Solid_Params:
         #         self.law = 'viscous_size'
         #         self.law = 'shear_maxwell'
 
-        self.mu_s = 1e3
-        #         self.mu_s = self.phi[0]*self.mu[0] + self.phi[1]*self.mu[1]
-        self.mu_v = 0
+        self.eta = 1e3
+        #         self.eta = self.phi[0]*self.mu[0] + self.phi[1]*self.mu[1]
+        self.eta_v = 0
         self.E = 1e6
         self.nu = 0.499  # poissons ratio
         self.K = self.E / (3 * (1 - 2 * self.nu))

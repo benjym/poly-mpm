@@ -91,7 +91,7 @@ def main(argv=None):
         p = frozen(spacing)
         C = 2.0 * p["rho"] * p["g"] / (2 * jop.mu1)
         model = CriticalState(
-            mu_s=jop.mu1, mu_d=jop.mu2, i0=jop.I0, k=2 * GRAIN * np.sqrt(p["rho"] / p["phi"])
+            mu_s=jop.mu1, mu_d=jop.mu2, i0=jop.I_0, k=2 * GRAIN * np.sqrt(p["rho"] / p["phi"])
         )
         for solver in args.solvers:
             records = march(p, model, C, args.steps, solver, tol=args.tol, floor=args.gamma)

@@ -48,7 +48,7 @@ def problem(spacing, basis="nodal", coarsening=2, mu=None):
         trial=trial,
         inverse=inverse,
         gap=gap,
-        mu=b.material.mu if mu is None else mu,
+        mu=b.material.mu_s if mu is None else mu,
         dt=P.dt,
         particles=len(b),
         free_velocity=int(free.sum()),

@@ -225,7 +225,7 @@ class PQHistory:
         plt.plot(p, q, alpha=0.5)
         limit = max(float(p.max(initial=0)), 1e-12)
         for S in P.S:
-            plt.plot([0, limit], [0, S.mu * limit], "--", label=f"q = {S.mu:g} p")
+            plt.plot([0, limit], [0, S.mu_s * limit], "--", label=f"q = {S.mu_s:g} p")
         plt.xlabel("p = -tr(stress)/3 (Pa)")
         plt.ylabel("q = sqrt(3 J2) (Pa)")
         plt.legend()

@@ -28,6 +28,6 @@ class Params:
             A=spacing**2,
             rho=1500.0,
             rho_s=2500.0,
-            packing_max=0.6,
-            mu=0.5,
+            phi_max=0.6,
+            mu_s=0.5,
         )

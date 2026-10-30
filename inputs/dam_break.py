@@ -69,8 +69,8 @@ class Solid_Params:
         self.nu = 0.2  # poisson's ratio
         self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
         self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
-        self.mu = 1.0
-        self.beta = 1.0 * self.mu
+        self.mu_s = 1.0
+        self.beta = 1.0 * self.mu_s
         self.s = 1.0
         self.t_star = 0.01
 

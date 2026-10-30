@@ -67,7 +67,7 @@ def frozen(spacing):
         trial=trial,
         gap=gap,
         volume=basis_volumes(P, G)[active],
-        mu=b.material.mu,
+        mu=b.material.mu_s,
         dt=P.dt,
         g=abs(P.g),
         grid=(P.G.x_m, P.G.y_m, G.dx, G.dy, P.G.nx, P.G.ny),

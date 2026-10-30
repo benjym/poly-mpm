@@ -26,10 +26,10 @@ TOLERANCE = 1e-4
 
 # Glass beads (Jop et al.), 3 mm grains; tests/test_cidr.py.
 CIDR = dict(
-    packing_max=0.605,
-    mu=float(np.tan(np.radians(20.9))),
+    phi_max=0.605,
+    mu_s=float(np.tan(np.radians(20.9))),
     mu_d=float(np.tan(np.radians(32.76))),
-    I0=0.279,
+    I_0=0.279,
     grain_diameter=0.003,
     phi_min=0.05,
     cidr_deficit=0.005,

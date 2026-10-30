@@ -16,10 +16,10 @@ class Params(CollapseParams):
         super().__init__(args)
         del self.granular_solver  # the default, "cidr"
         S = self.S
-        S.packing_max = 0.605
-        S.mu = np.tan(np.radians(20.9))
+        S.phi_max = 0.605
+        S.mu_s = np.tan(np.radians(20.9))
         S.mu_d = np.tan(np.radians(32.76))
-        S.I0 = 0.279
+        S.I_0 = 0.279
         S.grain_diameter = 0.003
         S.phi_min = 0.05
         S.cidr_deficit = 0.005

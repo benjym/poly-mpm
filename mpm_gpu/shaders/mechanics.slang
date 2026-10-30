@@ -205,20 +205,20 @@ uint row_slot(uint a, uint s, StructuredBuffer<uint> neighbors)
 [shader("compute")]
 [numthreads(64, 1, 1)]
 void wall_blocks(uint3 tid : SV_DispatchThreadID, uniform uint stress_rows, uniform uint wall_count,
-                 uniform float m_tol, uniform float packing_max, StructuredBuffer<uint> neighbors,
+                 uniform float m_tol, uniform float phi_max, StructuredBuffer<uint> neighbors,
                  StructuredBuffer<uint> node_row, StructuredBuffer<float> volumes,
                  StructuredBuffer<float> blocks, StructuredBuffer<float> mass,
                  RWStructuredBuffer<float> gradients, RWStructuredBuffer<float> occupied)
 {
     // granular.wall_rows: a wall row carries its block, scaled by the smaller
-    // of its node's basis volume and grain volume over packing_max, only while
+    // of its node's basis volume and grain volume over phi_max, only while
     // the node has resolved mass. It holds no grain volume itself.
     uint w = tid.x;
     if (w >= wall_count) return;
     uint a = stress_rows + w;
     uint node = neighbors[9 * a];
     uint row = node_row[node];
-    float scale = mass[node] > m_tol ? min(volumes[row], occupied[row] / packing_max) : 0.0;
+    float scale = mass[node] > m_tol ? min(volumes[row], occupied[row] / phi_max) : 0.0;
     for (uint i = 0; i < 18; i++) gradients[18 * a + i] = i < 6 ? scale * blocks[6 * w + i] : 0.0;
     occupied[a] = 0.0;
 }

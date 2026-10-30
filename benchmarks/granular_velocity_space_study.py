@@ -56,7 +56,7 @@ def frozen(spacing, basis="nodal", mu=None):
         mass=mass,
         trial=trial,
         gap=gap,
-        mu=b.material.mu if mu is None else mu,
+        mu=b.material.mu_s if mu is None else mu,
         dt=P.dt,
         particles=len(b),
     )

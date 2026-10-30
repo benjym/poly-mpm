@@ -117,7 +117,7 @@ prestress work can make its change negative. The Cauchy stress matches the
 energy derivative, which is checked by finite differences.
 
 **Von Mises** uses a standard perfectly plastic J2 return map. Supply
-`yield_stress` in Pa, or retain `k` with `yield_stress=sqrt(3)*k`. `s` only applies in compatibility mode. **DP/DP-rate** use cone/apex return
+`yield_stress` in Pa. `s` only applies in compatibility mode. **DP/DP-rate** use cone/apex return
 maps. These rate-form plastic solids use the symmetric spin split and accumulate
 plastic strain and nonnegative plastic work. Their elasticity remains
 hypoelastic, not a multiplicative finite-strain plasticity formulation. Their

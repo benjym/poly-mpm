@@ -17,17 +17,16 @@ def material(law="elastic", n=4, **overrides):
         A=0.01,
         K=100.0,
         G=40.0,
-        k=500.0,
+        yield_stress=np.sqrt(3) * 500.0,
         s=2.5,
-        mu_s=10.0,
-        mu_v=5.0,
+        eta=10.0,
+        eta_v=5.0,
         rho_s=1666.0,
-        mu_0=0.3,
-        mu_1=0.7,
-        delta_mu=0.4,
+        mu_s=0.3,
+        mu_d=0.7,
         I_0=0.279,
         eta_max=100.0,
-        packing=0.6,
+        phi_flow=0.6,
     )
     data.update(overrides)
     return NS(**data)

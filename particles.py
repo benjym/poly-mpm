@@ -80,7 +80,7 @@ class Particles:
         initial_v = getattr(S, "initial_v", [0, 0, 0])
         if np.shape(initial_v) not in ((3,), (count, 3)):
             raise ValueError(f"initial_v must have shape (3,) or ({count}, 3)")
-        composition = getattr(S, "PHI", getattr(S, "phi", np.ones(P.G.ns) / P.G.ns))
+        composition = getattr(S, "phi", np.ones(P.G.ns) / P.G.ns)
         if np.shape(composition) not in ((P.G.ns,), (count, P.G.ns)):
             raise ValueError(f"phi must have shape ({P.G.ns},) or ({count}, {P.G.ns})")
         self.x = np.zeros((count, 3))
@@ -98,8 +98,8 @@ class Particles:
         self.V = field(S.A, (count,), "A") * P.G.thickness
         self.m = self.rho * self.V
         if S.law == "granular":
-            if np.any(self.rho > S.rho_s * S.packing_max * (1 + 1e-12)):
-                raise ValueError("granular initial density exceeds rho_s * packing_max")
+            if np.any(self.rho > S.rho_s * S.phi_max * (1 + 1e-12)):
+                raise ValueError("granular initial density exceeds rho_s * phi_max")
             if np.any(self.v[:, 2] != 0):
                 raise ValueError("granular prototype requires planar initial velocities")
         self.V0 = self.V.copy()
@@ -213,7 +213,7 @@ class Particles:
         y = self.x[:, 1]
         if P.initial_flow == "steady":
             if S.law == "viscous":
-                self.v[:, 0] = self.rho * P.max_g * np.sin(P.theta) * (P.G.y_M * y - y * y / 2) / S.mu_s
+                self.v[:, 0] = self.rho * P.max_g * np.sin(P.theta) * (P.G.y_M * y - y * y / 2) / S.eta
             elif S.law == "pouliquen":
                 size = P.G.s_bar_0
                 a = (
@@ -221,9 +221,9 @@ class Particles:
                     * 2
                     / 3
                     * S.I_0
-                    * (np.tan(abs(P.theta)) - S.mu_0)
-                    / (S.mu_1 - np.tan(abs(P.theta)))
-                    * np.sqrt(S.packing * np.cos(abs(P.theta)))
+                    * (np.tan(abs(P.theta)) - S.mu_s)
+                    / (S.mu_d - np.tan(abs(P.theta)))
+                    * np.sqrt(S.phi_flow * np.cos(abs(P.theta)))
                 )
                 self.v[:, 0] = a * (P.G.y_M**1.5 - (P.G.y_M - y) ** 1.5) / size**1.5
                 self.gammadot = 1.5 * a * np.sqrt(P.G.y_M - y) / size**1.5
@@ -236,9 +236,9 @@ class Particles:
             ys = np.minimum(ys, 1 - ys)
             k = abs(float(np.asarray(S.rho).flat[0]) * P.max_g)
             beta = np.sqrt(abs(k * height / P.initial_pressure))
-            if beta >= np.sqrt(2 * S.mu_1):
+            if beta >= np.sqrt(2 * S.mu_d):
                 raise ValueError("Poiseuille initialisation is outside its steady regime")
-            yc = 0.5 - S.mu_0 / beta**2
+            yc = 0.5 - S.mu_s / beta**2
             yp = np.minimum(ys, yc)
             u = (
                 height
@@ -247,8 +247,8 @@ class Particles:
                 / beta**3
                 * (
                     beta**2 * yp
-                    + (S.mu_0 - S.mu_1)
-                    * np.log(-(2 * beta**2 * yp + 2 * S.mu_1 - beta**2) / (beta**2 - 2 * S.mu_1))
+                    + (S.mu_s - S.mu_d)
+                    * np.log(-(2 * beta**2 * yp + 2 * S.mu_d - beta**2) / (beta**2 - 2 * S.mu_d))
                 )
             )
             self.v[:, 0] = -u * np.sqrt(k * height / S.rho_s)
@@ -573,12 +573,11 @@ class ParticleSystem:
                     S.X = np.array([(P.G.x_M - P.G.x_m) / 2])
                     S.Y = np.array([P.G.y_M - template.gap[1]])
                 S.n = len(S.X)
-                for name in ("rho", "A", "initial_v", "PHI", "phi", "domain_size"):
+                for name in ("rho", "A", "initial_v", "phi", "domain_size"):
                     value = getattr(S, name, None)
                     uniform_shape = {
                         "initial_v": (3,),
                         "phi": (P.G.ns,),
-                        "PHI": (P.G.ns,),
                         "domain_size": (2,),
                     }.get(name, ())
                     if value is not None and np.asarray(value).shape != uniform_shape:
