@@ -514,6 +514,14 @@ solved velocity drives it into the wall. With them, CPU and Metal positions
 agree to 2e-5 m after 10 steps of the collapse and of a column lifted by
 upward gravity (`tests/test_gpu_cidr.py`).
 
+Coulomb walls (`wall_contact = "coulomb"`) are one-sided edges with the
+friction term of [features](features.md#rigid-grain-solver) on the tangent of
+each pressing node (`cidr_wall`). Its gradient and curvature enter the Newton
+gradient and the line search, and the curvature enters CG through an effective
+inverse mass. After each outer step one kernel moves the friction multiplier
+and recomputes the threshold from the updated stress. The collapse with
+`wall_friction = 0.3` agrees with the CPU to 2e-5 m after 10 steps.
+
 On both backends a warm step starts from the transferred velocity before the
 step's body force: the trial velocity includes one step of gravity, which is
 incompatible with jammed material at walls and made the first warm step fail on

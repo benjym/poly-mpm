@@ -261,6 +261,7 @@ class Problem:
         self.model, self.C = model, np.asarray(C, dtype=float)
         self.n = len(self.C)
         self._prox = Prox(model)
+        self.friction = None  # Friction on wall components, if any
 
     def prox(self, x, r):
         return self._prox(x, r, self.C)
@@ -321,7 +322,34 @@ class Problem:
     def objective(self, u, gamma, shift):
         e = u - self.trial
         x = self.D(u) + gamma * shift
-        return 0.5 * e @ (self.mass * e) + np.sum(self.W[::3] * self.envelope(x, gamma, derivatives=False))
+        value = 0.5 * e @ (self.mass * e) + np.sum(self.W[::3] * self.envelope(x, gamma, derivatives=False))
+        if self.friction is not None:
+            value += np.sum(self.friction.envelope(u, derivatives=False))
+        return value
+
+
+class Friction:
+    """Tresca friction tau |u_k| on velocity components k (walls), by its Moreau envelope.
+
+    The threshold tau = mu N is lagged: `reaction(u, lam)` returns it from the wall's
+    normal reaction, and solve updates it between outer steps with the multiplier, so
+    a converged step satisfies Coulomb friction. Each component has its own smoothing
+    gamma (velocity per force).
+    """
+
+    def __init__(self, index, gamma, reaction):
+        self.index, self.gamma, self.reaction = index, gamma, reaction
+        self.threshold = np.zeros(len(index))
+        self.multiplier = np.zeros(len(index))
+
+    def envelope(self, u, derivatives=True):
+        x = u[self.index] + self.gamma * self.multiplier
+        tau, g = self.threshold, self.gamma
+        inside = np.abs(x) <= g * tau
+        value = np.where(inside, x**2 / (2 * g), tau * np.abs(x) - 0.5 * g * tau**2)
+        if not derivatives:
+            return value
+        return value, np.clip(x / g, -tau, tau), np.where(inside, 1 / g, 0.0)
 
 
 def newton(problem, u, gamma, shift, *, max_iterations=200):
@@ -334,11 +362,17 @@ def newton(problem, u, gamma, shift, *, max_iterations=200):
     for iteration in range(1, max_iterations + 1):
         value, gradient, H, jam = problem.envelope(problem.D(u) + gamma * shift, gamma)
         G = mass * (u - problem.trial) + A.T @ (W * gradient.ravel())
+        diagonal = mass.copy()
+        friction = problem.friction
+        if friction is not None:
+            wall_value, wall_gradient, wall_hessian = friction.envelope(u)
+            G[friction.index] += wall_gradient
+            diagonal[friction.index] += wall_hessian
         n = len(H)
         blocks = sparse.bsr_matrix(
             (W[::3, None, None] * H, np.arange(n), np.arange(n + 1)), shape=(3 * n, 3 * n)
         )
-        K = (sparse.diags(mass) + A.T @ blocks @ A).tocsc()
+        K = (sparse.diags(diagonal) + A.T @ blocks @ A).tocsc()
         delta = -splu(K).solve(G)
         slope = G @ delta
         # A decrement of 1e-11 of the kinetic scale is a velocity error of about 3e-6; below
@@ -346,6 +380,8 @@ def newton(problem, u, gamma, shift, *, max_iterations=200):
         if -slope <= 1e-11 * scale or (iteration > 20 and -slope <= 1e-9 * scale):
             return u, jam, gradient, iteration - 1
         f = 0.5 * (u - problem.trial) @ (mass * (u - problem.trial)) + np.sum(W[::3] * value)
+        if friction is not None:
+            f += np.sum(wall_value)
         t = 1.0
         while t > 1e-12:
             trial = u + t * delta
@@ -373,12 +409,27 @@ def solve(problem, u, lam, gamma, *, cold=None, reduction=np.sqrt(10), tol=1e-5,
     norm = lambda v: np.sqrt(v @ (problem.mass * v))  # noqa: E731
     current = gamma if cold is None else max(cold, gamma)
     newton_total = 0
+    friction = problem.friction
+    if friction is not None:
+        friction.threshold = friction.reaction(u, lam)
     for outer in range(1, max_outer + 1):
         previous = u
         u, jam, lam, iterations = newton(problem, u, current, lam)
         newton_total += iterations
+        settled = True
+        if friction is not None:
+            friction.multiplier = friction.envelope(u)[1]
+            threshold = friction.reaction(u, lam)
+            settled = np.all(
+                np.abs(threshold - friction.threshold) <= tol * max(threshold.max(initial=0), 1e-300)
+            )
+            friction.threshold = threshold
         # Relative to the larger of the velocity and the trial velocity: a jammed body has u = 0.
-        if current <= gamma and norm(u - previous) <= tol * max(norm(u), norm(problem.trial), 1e-300):
+        if (
+            settled
+            and current <= gamma
+            and norm(u - previous) <= tol * max(norm(u), norm(problem.trial), 1e-300)
+        ):
             break
         current = max(current / reduction, gamma)
     else:

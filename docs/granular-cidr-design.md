@@ -135,7 +135,7 @@ of the fixed cap are not yet tested.
 | --- | --- |
 | MPM core (updated `F`, `J` and density; linear and quadratic splines; APIC; finite-domain quadrature; budgets; checkpoints) | Available |
 | Per-particle packing fraction evolving through `J` | Available; currently used only as a hard cap |
-| Walls as convex constraints (one-sided, frictional), periodic edges | Available in the stress-space solver; velocity form not yet |
+| Walls (one-sided, frictional), periodic edges | One-sided walls by re-solving; Coulomb friction as a Tresca term whose threshold follows the normal reaction between outer steps (`cidr.Friction`, `granular.wall_friction`), on both backends |
 | Velocity-space convex step with a cone yield | Prototype (study script, frozen first step) |
 | Velocity-space convex step with critical-state CIDR in 2D | Prototype (`benchmarks/cidr_frozen_step.py`, frozen first step): converges under refinement; solvers converge but not in a number of iterations independent of the grid ([Frozen-step results](#frozen-step-results)) |
 | Nested coarse-to-fine warm start | Prototype (study) |

@@ -84,7 +84,9 @@ class MetalRunner:
         # Frictional walls: one static contact row per wall node (granular.wall_rows).
         empty = np.zeros(0, dtype=int)
         self.wall_nodes, self.wall_sides, blocks = (
-            wall_candidates(P, G, 3) if P.B.wall_mu else (empty, empty, np.zeros((0, 3, 2)))
+            wall_candidates(P, G, 3)
+            if P.B.wall_mu and P.granular_solver != "cidr"
+            else (empty, empty, np.zeros((0, 3, 2)))
         )
         self.grid = grid = mechanics.device_grid(
             rt, P.G.nx, P.G.ny, G.dx, G.dy, periodic=P.B.cyclic_lr, wall_nodes=self.wall_nodes
@@ -214,7 +216,15 @@ class MetalRunner:
         rt.write(self.stress_change, _planar(b.dstress), f32)
         for buffer in (self.strain, self.work, self.work_compensation):
             rt.write(buffer, np.zeros(buffer.size // 4), f32)
-        fixed = fixed_components(G.boundary_v, G.boundary_h, P.G.nx, P.B.separable, bool(P.B.wall_mu))
+        # With CIDR, Coulomb walls are one-sided edges with friction in the solve (cidr_wall).
+        cidr_walls = P.granular_solver == "cidr" and bool(P.B.wall_mu)
+        fixed = fixed_components(
+            G.boundary_v,
+            G.boundary_h,
+            P.G.nx,
+            P.B.separable or cidr_walls,
+            bool(P.B.wall_mu) and not cidr_walls,
+        )
         rt.write(self.fixed, fixed, np.uint32)
         previous = getattr(G, "granular_contact", None)
         rows = self.grid.topology.nodes
@@ -480,12 +490,14 @@ class MetalRunner:
         solver.dt = dt
         if self.cidr:
             solver.gamma = (P.granular_cidr_gamma or GAMMA) * dt / self.rho
-            # One-sided walls as for the Coulomb solver below.
-            for _ in range(grid.nodes if P.B.separable else 1):
+            solver.wall_mu = float(P.B.wall_mu or 0.0)
+            # One-sided walls as for the Coulomb solver below; Coulomb walls are one-sided.
+            one_sided = P.B.separable or bool(P.B.wall_mu)
+            for _ in range(grid.nodes if one_sided else 1):
                 result = solver.solve(
                     operator, nodal, self.initial, self.volume, encoder, cold_gamma=dt / self.rho, body=body
                 )
-                if not P.B.separable or not result.converged:
+                if not one_sided or not result.converged:
                     break
                 encoder = rt.device.create_command_encoder()
                 rt.dispatch(encoder, "fill_u32", 1, count=1, value=0, output=self.wall_changed)

@@ -133,3 +133,34 @@ def test_one_sided_walls_agree_with_the_cpu(module, gravity):
     assert np.max(np.abs(finals["cpu"] - finals["metal"])) < 2e-5
     if gravity is not None:
         assert np.min(finals["metal"][:, 1] - start[:, 1]) > 0.5 * gravity * 0.1**2 * 0.9
+
+
+@pytest.mark.parametrize("degrees", [15.0, 10.0])
+def test_coulomb_floor_on_metal(degrees):
+    from test_cidr import sliding_layer
+
+    P, b = sliding_layer(degrees, backend="metal")
+    theta = np.radians(degrees)
+    expected = max(9.81 * (np.sin(theta) - 0.2 * np.cos(theta)), 0.0)
+    assert np.allclose(-b.v[:, 0] / P.t, expected, atol=1e-4)
+    assert np.max(np.abs(b.v[:, 1])) < 1e-6
+
+
+def test_collapse_with_coulomb_walls_agrees_with_the_cpu():
+    from initialise import prepare
+    from MPM import run
+    from test_cidr import CIDR
+
+    finals = {}
+    for backend in ("cpu", "metal"):
+        from inputs.granular_collapse import Params
+
+        P = Params([])
+        P.granular_solver, P.dt, P.t_f, P.backend = "cidr", 0.01, 0.1, backend
+        P.B.wall_contact, P.B.wall_friction = "coulomb", 0.3
+        for key, value in CIDR.items():
+            setattr(P.S, key, value)
+        P, G, L = prepare(P)
+        run(P, G, L, output=False)
+        finals[backend] = L.materials[0].x.copy()
+    assert np.max(np.abs(finals["cpu"] - finals["metal"])) < 2e-5

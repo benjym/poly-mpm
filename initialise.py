@@ -101,8 +101,10 @@ def prepare(P, mode="simulation"):
             raise ValueError("granular_stopping='increment' requires granular_solver='velocity'")
         if P.B.conveyor:
             raise ValueError("granular prototype does not support conveyors")
-        if P.B.wall_mu and P.granular_solver != "velocity":
-            raise ValueError("Coulomb walls (wall_contact = 'coulomb') require granular_solver='velocity'")
+        if P.B.wall_mu and P.granular_solver not in ("velocity", "cidr"):
+            raise ValueError(
+                "Coulomb walls (wall_contact = 'coulomb') require granular_solver='velocity' or 'cidr'"
+            )
         if P.B.vertical_force or P.B.horizontal_force:
             raise ValueError("granular prototype does not support boundary tractions")
     elif any(S.law == "granular" for S in P.S):

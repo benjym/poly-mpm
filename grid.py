@@ -167,14 +167,16 @@ class Grid:
         With P.B.separable the domain edges are one-sided: a node moving away
         from its wall is left free. With wall_mu in the granular solver the
         domain edges are frictional contact rows in the solve and never fixed
-        here. Interior walls stay two-sided.
+        here; with granular_solver='cidr' they are one-sided, and friction acts on the
+        tangent in the solve. Interior walls stay two-sided.
         """
         h, v = self.boundary_h.copy(), self.boundary_v.copy()
         row, column = np.divmod(np.arange(len(self.m)), P.G.nx)
-        if P.solver == "granular" and P.B.wall_mu:
+        cidr = P.solver == "granular" and P.granular_solver == "cidr"
+        if P.solver == "granular" and P.B.wall_mu and not cidr:
             h &= (row != 0) & (row != P.G.ny - 1)
             v &= (column != 0) & (column != P.G.nx - 1)
-        elif P.B.separable:
+        elif P.B.separable or (cidr and P.B.wall_mu):
             h &= ~(((row == 0) & (velocity[:, 1] > 0)) | ((row == P.G.ny - 1) & (velocity[:, 1] < 0)))
             v &= ~(((column == 0) & (velocity[:, 0] > 0)) | ((column == P.G.nx - 1) & (velocity[:, 0] < 0)))
         return h, v

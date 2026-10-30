@@ -634,6 +634,51 @@ def closing_rate(delta, phi, phi_max):
 CIDR_GAMMA = 0.075
 
 
+def wall_friction(P, G, problem, free, gamma):
+    """Coulomb friction on the domain edges for CIDR (cidr.Friction), or None.
+
+    At each pressing wall node with a free tangent, the threshold is wall_mu times the
+    normal reaction R_n = -(q_n / dt + f_n) + A_n^T (W lam), from the momentum balance of
+    the fixed normal component before the wall's mask (start-of-step momentum q and
+    external force f). Each component's smoothing is gamma over the diagonal of A^T W A
+    there, the stiffness of the stress rows at the node: with the node's mass instead, a
+    jammed body held by friction took one outer step per few per cent of its sliding.
+    """
+    from cidr import Friction
+
+    if not P.B.wall_mu:
+        return None
+    row, column = np.divmod(np.arange(len(G.m)), P.G.nx)
+    unique = G.valid_nodes & (canonical_nodes(P, len(G.m)) == np.arange(len(G.m)))
+    sides = (  # pressing nodes, normal component, outward normal sign
+        (G.contact_h & (row == 0), 1, -1.0),
+        (G.contact_h & (row == P.G.ny - 1), 1, 1.0),
+        (G.contact_v & (column == 0), 0, -1.0),
+        (G.contact_v & (column == P.G.nx - 1), 0, 1.0),
+    )
+    normal, tangent, outward = [], [], []
+    for mask, component, sign in sides:
+        nodes = np.flatnonzero(mask & unique)
+        nodes = nodes[free[2 * nodes + 1 - component]]
+        normal.append(2 * nodes + component)
+        tangent.append(2 * nodes + 1 - component)
+        outward.append(np.full(len(nodes), sign))
+    normal, tangent, outward = (np.concatenate(part) for part in (normal, tangent, outward))
+    if len(normal) == 0:
+        return None
+    position = np.cumsum(free) - 1
+    operator = problem.A_full[:, normal]
+    weight = G.q_reference[:, :2].ravel()[normal] / P.dt + P.force_scale * G.fe[:, :2].ravel()[normal]
+    stiffness = problem.A.multiply(problem.A).T @ problem.W
+
+    def reaction(u, lam):
+        R = -weight + operator.T @ (problem.W * np.asarray(lam).ravel())
+        return float(P.B.wall_mu) * np.maximum(-outward * R, 0.0)
+
+    index = position[tangent]
+    return Friction(index, gamma / np.maximum(stiffness[index], 1e-300), reaction)
+
+
 def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
     """Critical-state CIDR step (cidr.py) on the assembled operator; returns contact and statistics.
 
@@ -671,6 +716,9 @@ def cidr_contact(P, G, batch, B, free, active, occupied, trial, initial, body):
     lam = -initial * phi[:, None]
     rho = float(np.sum(batch.m) / np.sum(batch.V))
     gamma = (P.granular_cidr_gamma or CIDR_GAMMA) * P.dt / rho
+    if P.B.wall_mu:
+        problem.A_full = (inverse @ B).tocsc()
+        problem.friction = wall_friction(P, G, problem, free, gamma)
     cold = None if np.any(lam) else P.dt / rho
     # A warm start begins from the transferred velocity before this step's body force: where
     # material was jammed it is already compatible, while the trial velocity is not at walls.
@@ -731,7 +779,9 @@ def step(P, G, L):
     # One-sided walls: a node released because its predicted velocity leaves
     # its wall is clamped again, and the step re-solved, if the contact
     # stresses drive it into the wall.
-    for attempt in range(len(G.m) if P.B.separable else 1):
+    # Coulomb walls are one-sided with CIDR (grid.wall_contact).
+    one_sided = P.B.separable or (P.granular_solver == "cidr" and bool(P.B.wall_mu))
+    for attempt in range(len(G.m) if one_sided else 1):
         trial = predicted.copy()
         trial[G.contact_v, 0] = 0
         trial[G.contact_h, 1] = 0

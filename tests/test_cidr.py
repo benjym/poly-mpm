@@ -156,3 +156,33 @@ def test_incline_holds_the_bagnold_profile():
     result = profile(P, G, L, 18)
     ratio = np.array(result["shear_rate"]) / np.array(result["bagnold_shear_rate"])
     assert np.all(np.abs(ratio[2:15] - 1) < 0.03)
+
+
+def sliding_layer(degrees, backend="cpu", t_f=0.02):
+    """The incline's layer at rest and uniform packing 0.6 on a Coulomb floor (friction 0.2)."""
+    import inputs.cidr_incline as incline
+
+    angle = incline.ANGLE
+    incline.ANGLE = np.radians(degrees)
+    try:
+        P = incline.Params(["cidr_incline"])
+    finally:
+        incline.ANGLE = angle
+    P.backend, P.t_f = backend, t_f
+    P.B.wall_contact, P.B.wall_friction = "coulomb", 0.2
+    P.S.initial_v[:] = 0.0
+    P.S.rho = np.full(P.S.n, 0.6 * P.S.rho_s)
+    P, G, L = prepare(P)
+    run(P, G, L, output=False)
+    return P, L.materials[0]
+
+
+@pytest.mark.parametrize("degrees", [15.0, 10.0])
+def test_coulomb_floor_holds_or_slides_a_jammed_layer(degrees):
+    # The layer is jammed (tan theta < mu_s); on the floor it slides rigidly at
+    # g (sin theta - 0.2 cos theta) when tan theta > 0.2 and otherwise stays at rest.
+    P, b = sliding_layer(degrees)
+    theta = np.radians(degrees)
+    expected = max(9.81 * (np.sin(theta) - 0.2 * np.cos(theta)), 0.0)
+    assert np.allclose(-b.v[:, 0] / P.t, expected, atol=1e-4)
+    assert np.max(np.abs(b.v[:, 1])) < 1e-6

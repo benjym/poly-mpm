@@ -115,6 +115,11 @@ class CidrSolver:
         self.scalars = vector(8)
         self.packed = vector(2)
         self.zero = rt.buffer(np.zeros(N), dtype=f32)
+        # Coulomb friction on the domain edges (cidr_wall): wall_mu > 0 enables it.
+        self.wall_mu = 0.0
+        self.wall = rt.buffer(np.zeros(3 * N), dtype=f32)
+        self.cg_inverse = vector(N)
+        self.wall_work, self.wall_work2 = vector(N), vector(N)
         self.flags = vector(2, np.uint32)
         self.cg_iterations = vector(1, np.uint32)
         self.cg_estimate = CG_CHUNK  # iterations of the previous CG solve: when to first check
@@ -249,6 +254,10 @@ class CidrSolver:
                 velocity=self.u,
             )
             self._submit(encoder)
+        if self.wall_mu:
+            encoder = rt.device.create_command_encoder()
+            self._wall(encoder, operator, nodal, body, update=0)
+            self._submit(encoder)
         newton_total = cg_total = 0
         converged = False
         outer = 0
@@ -283,7 +292,16 @@ class CidrSolver:
                 sums = [self._sum(encoder, i, w) for i, w in enumerate((self.work, self.work2, self.work3))]
                 self._submit(encoder)
                 change, size, trial = (float(self._read(s)[0]) for s in sums)
-                if gamma <= self.gamma and change <= self.tolerance**2 * max(size, trial):
+                settled = True
+                if self.wall_mu:
+                    # Friction multiplier and threshold from the updated stress (cidr.solve).
+                    encoder = rt.device.create_command_encoder()
+                    self._wall(encoder, operator, nodal, body, update=1)
+                    sums = [self._sum(encoder, i, w) for i, w in enumerate((self.wall_work, self.wall_work2))]
+                    self._submit(encoder)
+                    moved, total = (float(self._read(s)[0]) for s in sums)
+                    settled = moved <= self.tolerance * max(total, 1e-30)
+                if settled and gamma <= self.gamma and change <= self.tolerance**2 * max(size, trial):
                     converged = True
                     break
                 gamma = max(gamma / np.sqrt(10), self.gamma)
@@ -350,6 +368,8 @@ class CidrSolver:
             gradients=operator.gradients,
             inverse_mass=nodal.inverse_mass,
         )
+        # CG products use the mass plus the friction's curvature (cidr_gradient).
+        products = dict(common, inverse_mass=self.cg_inverse)
         cg_total = 0
         for iteration in range(1, self.max_newton + 1):
             encoder = rt.device.create_command_encoder()
@@ -370,6 +390,8 @@ class CidrSolver:
                 gradient=self.gradient,
                 block=self.block,
                 partials=self.partials,
+                wall=self.wall,
+                cg_inverse_mass=self.cg_inverse,
             )
             self._dispatch(
                 encoder,
@@ -409,7 +431,7 @@ class CidrSolver:
                         steps=chunk,
                         limit=CG_LIMIT,
                         neighbors=g.neighbors,
-                        **common,
+                        **products,
                         hessian=self.hessian,
                         block=self.block,
                         rows=self.rows,
@@ -424,7 +446,7 @@ class CidrSolver:
                     )
                 else:
                     for _ in range(chunk):
-                        self._cg_iteration(encoder, operator, common)
+                        self._cg_iteration(encoder, operator, products)
                 encoded += chunk
                 self._submit(encoder)
                 done = bool(self._read(self.flags, np.uint32)[0])
@@ -485,6 +507,37 @@ class CidrSolver:
             # The envelope was last evaluated at u + at_step delta.
             self.fresh = step == at_step
         raise RuntimeError(f"Metal CIDR Newton did not converge at gamma {gamma:.2e}: decrement {-slope:.2e}")
+
+    def _wall(self, encoder, operator, nodal, body, *, update):
+        g = self.grid
+        self._dispatch(
+            encoder,
+            "cidr_wall",
+            g.nodes,
+            node_count=g.nodes,
+            nx=g.nx,
+            ny=g.ny,
+            dt=self.dt,
+            mu=float(self.wall_mu),
+            gamma=float(self.gamma),
+            body_x=float(body[0]),
+            body_y=float(body[1]),
+            update=int(update),
+            contact=nodal.contact,
+            inverse_mass=nodal.inverse_mass,
+            mass=nodal.mass,
+            reference=nodal.reference,
+            transpose_rows=g.transpose_rows,
+            transpose_slots=g.transpose_slots,
+            gradients=operator.gradients,
+            occupied=operator.occupied,
+            bulk=self.bulk,
+            lam=self.lam,
+            velocity=self.u,
+            wall=self.wall,
+            work=self.wall_work,
+            work2=self.wall_work2,
+        )
 
     def _cg_iteration(self, encoder, operator, common):
         g = self.grid
@@ -611,6 +664,7 @@ class CidrSolver:
             trial=nodal.trial,
             direction=self.x,
             work=self.work,
+            wall=self.wall,
         )
         nodes = self._sum(encoder, 0, self.work)
         self._dispatch(

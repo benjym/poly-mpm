@@ -463,6 +463,18 @@ float mass_dt(StructuredBuffer<float> inverse_mass, uint i, float dt)
     return w > 0.0 ? 1.0 / (w * dt) : 0.0;
 }
 
+// Wall friction tau |u_i| by its envelope (cidr.Friction): wall[3i] = gamma (zero without
+// friction), wall[3i + 1] = tau, wall[3i + 2] = the multiplier. Returns the gradient and
+// curvature at velocity v.
+float2 wall_terms(StructuredBuffer<float> wall, uint i, float v)
+{
+    float g = wall[3 * i];
+    if (!(g > 0.0)) return float2(0.0, 0.0);
+    float tau = wall[3 * i + 1];
+    float x = v + g * wall[3 * i + 2];
+    return float2(clamp(x / g, -tau, tau), abs(x) <= g * tau ? 1.0 / g : 0.0);
+}
+
 // ---- Newton gradient, preconditioner and products -----------------------------------------
 
 groupshared float sum_a[256];
@@ -507,10 +519,13 @@ void cidr_gradient(uint3 tid : SV_DispatchThreadID, uint3 lane : SV_GroupThreadI
                    StructuredBuffer<float> velocity, StructuredBuffer<float> trial,
                    RWStructuredBuffer<float> force, RWStructuredBuffer<float> hessian,
                    RWStructuredBuffer<float> gradient, RWStructuredBuffer<float> block,
-                   RWStructuredBuffer<float> partials)
+                   RWStructuredBuffer<float> partials, StructuredBuffer<float> wall,
+                   RWStructuredBuffer<float> cg_inverse_mass)
 {
-    // G = M/dt (u - u*) + B^T force on free components, the 2x2 block of K per node, and the
-    // CG start: x = 0, r = -G, z = P^-1 r, p = z; partials of (r . z, G . G).
+    // G = M/dt (u - u*) + B^T force + wall friction on free components, the 2x2 block of K per
+    // node, and the CG start: x = 0, r = -G, z = P^-1 r, p = z; partials of (r . z, G . G).
+    // cg_inverse_mass holds 1 / ((M/dt + friction curvature) dt), so the CG products include
+    // the friction's diagonal.
     uint j = tid.x;
     float rz = 0.0, gg = 0.0;
     if (j < node_count)
@@ -531,11 +546,15 @@ void cidr_gradient(uint3 tid : SV_DispatchThreadID, uint3 lane : SV_GroupThreadI
             d11 += dot(c1, h1);
         }
         bool free0 = inverse_mass[2 * j] > 0.0, free1 = inverse_mass[2 * j + 1] > 0.0;
-        float2 g = float2(free0 ? mass_dt(inverse_mass, 2 * j, dt) * (velocity[2 * j] - trial[2 * j]) + f.x : 0.0,
-                          free1 ? mass_dt(inverse_mass, 2 * j + 1, dt) * (velocity[2 * j + 1] - trial[2 * j + 1]) + f.y : 0.0);
-        block[3 * j] = free0 ? mass_dt(inverse_mass, 2 * j, dt) + d00 : 1.0;
+        float2 w0 = wall_terms(wall, 2 * j, velocity[2 * j]), w1 = wall_terms(wall, 2 * j + 1, velocity[2 * j + 1]);
+        float m0 = mass_dt(inverse_mass, 2 * j, dt) + w0.y, m1 = mass_dt(inverse_mass, 2 * j + 1, dt) + w1.y;
+        float2 g = float2(free0 ? mass_dt(inverse_mass, 2 * j, dt) * (velocity[2 * j] - trial[2 * j]) + f.x + w0.x : 0.0,
+                          free1 ? mass_dt(inverse_mass, 2 * j + 1, dt) * (velocity[2 * j + 1] - trial[2 * j + 1]) + f.y + w1.x : 0.0);
+        block[3 * j] = free0 ? m0 + d00 : 1.0;
         block[3 * j + 1] = free0 && free1 ? d01 : 0.0;
-        block[3 * j + 2] = free1 ? mass_dt(inverse_mass, 2 * j + 1, dt) + d11 : 1.0;
+        block[3 * j + 2] = free1 ? m1 + d11 : 1.0;
+        cg_inverse_mass[2 * j] = free0 ? 1.0 / (m0 * dt) : 0.0;
+        cg_inverse_mass[2 * j + 1] = free1 ? 1.0 / (m1 * dt) : 0.0;
         gradient[2 * j] = g.x;
         gradient[2 * j + 1] = g.y;
         float2 r = -g;
@@ -842,12 +861,79 @@ void cidr_products(uint3 tid : SV_DispatchThreadID, uniform uint count, Structur
 void cidr_slope_nodes(uint3 tid : SV_DispatchThreadID, uniform uint count, uniform float dt,
                       StructuredBuffer<float> inverse_mass, StructuredBuffer<float> velocity,
                       StructuredBuffer<float> trial, StructuredBuffer<float> direction,
-                      RWStructuredBuffer<float> work)
+                      RWStructuredBuffer<float> work, StructuredBuffer<float> wall)
 {
-    // M/dt (u - u*) . delta per component, for the line-search derivative.
+    // (M/dt (u - u*) + wall friction) . delta per component, for the line-search derivative.
     uint i = tid.x;
     if (i >= count) return;
-    work[i] = mass_dt(inverse_mass, i, dt) * (velocity[i] - trial[i]) * direction[i];
+    float friction = wall_terms(wall, i, velocity[i]).x;
+    work[i] = (mass_dt(inverse_mass, i, dt) * (velocity[i] - trial[i]) + friction) * direction[i];
+}
+
+[shader("compute")]
+[numthreads(256, 1, 1)]
+void cidr_wall(uint3 tid : SV_DispatchThreadID, uniform uint node_count, uniform uint nx, uniform uint ny,
+               uniform float dt, uniform float mu, uniform float gamma, uniform float body_x,
+               uniform float body_y, uniform uint update, StructuredBuffer<uint> contact,
+               StructuredBuffer<float> inverse_mass, StructuredBuffer<float> mass,
+               StructuredBuffer<float> reference, StructuredBuffer<uint> transpose_rows,
+               StructuredBuffer<uint> transpose_slots, StructuredBuffer<float> gradients,
+               StructuredBuffer<float> occupied, StructuredBuffer<float> bulk, StructuredBuffer<float> lam,
+               StructuredBuffer<float> velocity, RWStructuredBuffer<float> wall,
+               RWStructuredBuffer<float> work, RWStructuredBuffer<float> work2)
+{
+    // Coulomb friction on the domain edges (granular.wall_friction). At a node pressing an edge
+    // wall with a free tangent: tau = mu max(-n . R, 0), R_n = -(q_n / dt + m g_n) + A_n^T (W lam)
+    // with the start-of-step momentum q before the wall's mask; gamma over the diagonal of
+    // A^T W A on the tangent. update = 0 sets gamma and tau with a zero multiplier; update = 1
+    // first moves the multiplier (method of multipliers, at the previous tau), then tau, and
+    // leaves |tau change| and tau in work and work2 at the tangent component.
+    uint j = tid.x;
+    if (j >= node_count) return;
+    work[2 * j] = work[2 * j + 1] = 0.0;
+    work2[2 * j] = work2[2 * j + 1] = 0.0;
+    uint row = j / nx, column = j % nx;
+    uint c = 2;  // normal component
+    float outward = 0.0;
+    if ((contact[j] & FIXED_Y) != 0 && (row == 0 || row == ny - 1)) { c = 1; outward = row == 0 ? -1.0 : 1.0; }
+    else if ((contact[j] & FIXED_X) != 0 && (column == 0 || column == nx - 1)) { c = 0; outward = column == 0 ? -1.0 : 1.0; }
+    uint t = 2 * j + 1 - c;
+    if (c == 2 || !(inverse_mass[t] > 0.0))
+    {
+        wall[3 * (2 * j)] = wall[3 * (2 * j + 1)] = 0.0;
+        return;
+    }
+    float stiffness = 0.0, force = 0.0;
+    for (uint i = 0; i < 9; i++)
+    {
+        uint a = transpose_rows[9 * j + i];
+        if (a == INVALID) break;
+        float solid = occupied[a];
+        if (!(solid > 0.0)) continue;
+        float3x2 Bs = row_block(a, transpose_slots[9 * j + i], gradients);
+        float3 ct = float3(Bs[0][1 - c], Bs[1][1 - c], Bs[2][1 - c]);
+        float3 cn = float3(Bs[0][c], Bs[1][c], Bs[2][c]);
+        stiffness += bulk[a] / (solid * solid) * dot(ct, ct);
+        force += bulk[a] / solid * dot(cn, float3(lam[3 * a], lam[3 * a + 1], lam[3 * a + 2]));
+    }
+    float load = reference[2 * j + c] / dt + mass[j] * (c == 0 ? body_x : body_y);
+    float tau = mu * max(-outward * (force - load), 0.0);
+    if (update == 0)
+    {
+        wall[3 * t] = stiffness > 0.0 ? gamma / stiffness : 0.0;
+        wall[3 * t + 2] = 0.0;
+    }
+    else
+    {
+        float g = wall[3 * t];
+        float old = wall[3 * t + 1];
+        if (g > 0.0) wall[3 * t + 2] = clamp((velocity[t] + g * wall[3 * t + 2]) / g, -old, old);
+        work[t] = abs(tau - old);
+        work2[t] = tau;
+    }
+    wall[3 * t + 1] = tau;
+    uint other = 2 * j + c;
+    wall[3 * other] = 0.0;
 }
 
 [shader("compute")]

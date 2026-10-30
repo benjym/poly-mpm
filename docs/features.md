@@ -189,8 +189,8 @@ one cell of the left edge and a bottom outlet those below the bottom edge.
 | --- | --- | --- | --- |
 | `walls` | yes | yes | yes |
 | `wall_contact = "no_slip"`, `"no_slip_bottom"` | yes | yes | yes |
-| `wall_contact = "coulomb"` | explicit friction force | contact rows in the solve; needs `granular_solver = "velocity"` | yes |
-| `one_sided` | yes | yes | yes, except with `cidr` |
+| `wall_contact = "coulomb"` | explicit friction force | `velocity`: contact rows in the solve; `cidr`: one-sided walls with friction in the solve | yes |
+| `one_sided` | yes | yes | yes |
 | `periodic` | yes | yes | yes |
 | `obstacles`: `centre_wall`, `two_walls`, `box`, `silo_left` | yes | yes | accepted |
 | `obstacles`: `silo_bottom` | yes | yes | checked |
@@ -213,7 +213,7 @@ at `conveyor_speed`, away from the corners.
 | No-slip, two-sided | `wall_contact = "no_slip"` | fixed both ways | fixed |
 | No-slip bottom only | `wall_contact = "no_slip_bottom"` | fixed both ways | fixed on the bottom, free elsewhere |
 | Frictionless or no-slip, one-sided | `one_sided = True` (with `slip` or `no_slip`) | fixed only while not moving away | as above, only while not moving away |
-| Coulomb friction | `wall_contact = "coulomb"`, `wall_friction = μ_w` | unilateral contact (granular, velocity solver) | sticks below `μ_w` times the normal traction, otherwise slides |
+| Coulomb friction | `wall_contact = "coulomb"`, `wall_friction = μ_w` | unilateral contact (granular) | sticks below `μ_w` times the normal traction, otherwise slides |
 
 With two-sided walls, mass mapped to wall nodes cannot move away from the wall,
 so a row of grains within one cell of a wall can stay there when gravity turns
@@ -271,8 +271,7 @@ backend changes two defaults: `granular_tolerance = 1e-4` and
 | `granular_cidr_tolerance` | ≥ `1e-5` | `cidr`: velocity change between outer steps, relative to the larger of the velocity and the trial velocity. |
 | `granular_cidr_gamma` | yes | `cidr`: Metal's iterative linear solves favour a smoother envelope, hence its default of 1.0. The converged step does not depend on it. |
 
-The `cidr` solver needs `granular_stress = "intrinsic"` on the `"nodal"` basis and
-does not support Coulomb walls. It minimises the kinetic energy of the step plus the CIDR
+The `cidr` solver needs `granular_stress = "intrinsic"` on the `"nodal"` basis. It minimises the kinetic energy of the step plus the CIDR
 dissipation potential over the nodal velocities, by the method of multipliers
 with semismooth Newton subproblems (`cidr.py`; on Metal `mpm_gpu/cidr.py`, with
 conjugate gradients for each Newton system). Jammed nodes are decided exactly,
@@ -287,7 +286,20 @@ largest relative packing gap at the last step's compaction rate is a timestep
 limit (`packing`, scaled by `cfl`, used by dynamic stepping), and a step that
 would close a gap stops the run with an error. Nodes already at `phi_max` are
 left out: `C` is clipped there and holds them, and they get there by advection of
-the particles, which a shorter step does not prevent. The model, its derivation and the verification are in
+the particles, which a shorter step does not prevent.
+
+With `wall_contact = "coulomb"` the domain edges are one-sided walls, and the
+tangential velocity of each node pressing a wall carries a friction term
+`μ_w N |u_t|` in the minimisation. `N`, the wall's normal reaction from the
+momentum balance of the fixed normal component, is updated between outer steps
+of the method of multipliers, so a converged step satisfies Coulomb friction. A
+jammed layer on a floor with `μ_w = 0.2` stays at rest at 10 degrees and slides
+rigidly at `g (sin θ - μ_w cos θ)` to 1e-4 m/s² at 15 degrees on both backends
+(`tests/test_cidr.py`, `tests/test_gpu_cidr.py`).
+
+Particle packing does not stay uniform under sustained shear: on the inclined
+plane, a node passes `phi_max` after about 0.4 s. The model, its derivation, the
+verification and this open problem are in
 [granular-cidr-design](granular-cidr-design.md).
 
 Elastic and viscous timestep estimates do not apply; set `critical_time(P)` on
