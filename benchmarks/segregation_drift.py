@@ -18,7 +18,7 @@ def measure(ns, steps=100):
         grain_classes=ns,
         steps=P.tstep,
         time=P.t,
-        normalise_phi=P.normalise_phi,
+        normalise_phi=P.segregation_normalise,
         minimum_fraction=float(b.phi.min()),
         maximum_fraction=float(b.phi.max()),
         maximum_fraction_sum_error=float(np.max(np.abs(b.phi.sum(axis=1) - 1))),

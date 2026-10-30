@@ -39,7 +39,7 @@ x boundaries. Figures and `data/diagnostics.json` are saved under
 `im/domain_column/elastic/`. The column measures hydrostatic drift; it does not
 impose exact discrete equilibrium.
 
-Domain integration requires updated mechanics, planar motion and fixed thickness.
+Domain integration requires planar motion and fixed thickness.
 Inlets require uniform domain sizes and initialise fresh reference geometry and
 `F=I`. Outlets remove geometry with the rest of each particle row. The stored
 `domain_halfsize` is half the reference width in each direction, shape `(n,2)`.
@@ -84,7 +84,7 @@ wall/domain geometry. Very wide domains are bounded by `domain_max_support`
 (default 256 stored stencil entries) and a 128-node-per-axis integration limit.
 These limits raise an error rather than truncating the stencil.
 
-Diagnostics record `quadrature`, `interpolation`, `transfer`, `mechanics`, and
+Diagnostics record `quadrature`, `interpolation`, `transfer` and
 `maximum_stencil_entries`, so saved results identify the selected configuration.
 
 ## Verification results

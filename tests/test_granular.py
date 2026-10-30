@@ -14,12 +14,15 @@ from MPM import run, step
 from stability import limits
 
 
-def column(**options):
+def column(B=(), **options):
+    """The granular_column example with run settings options and boundary settings B."""
     from inputs.granular_column import Params
 
     P = Params([])
     for key, value in options.items():
         setattr(P, key, value)
+    for key, value in dict(B).items():
+        setattr(P.B, key, value)
     return prepare(P)
 
 
@@ -78,10 +81,7 @@ def test_cone_projection_derivative_matches_finite_difference():
 @pytest.mark.parametrize("basis", ["linear"])
 @pytest.mark.parametrize("periodic", [False, True])
 def test_integrated_basis_volume_and_adjoint_operator(basis, periodic):
-    P, G, L = column(interpolation=basis)
-    P.B.cyclic_lr = periodic
-    if periodic:
-        G.boundary_v[:] = False
+    P, G, L = column(interpolation=basis, B=dict(periodic=True, walls={"bottom"}) if periodic else ())
     volume = basis_volumes(P, G)
     assert_allclose(volume.sum(), 1.5, atol=1e-14)
     G.wipe(P)
@@ -120,11 +120,7 @@ def test_static_column_at_large_timestep_without_viscosity_creep(method):
 
 @pytest.mark.parametrize("method", ["hybrid", "velocity"])
 def test_low_packing_free_fall_and_recompaction_are_stress_free(method):
-    P, G, L = column(dt=0.005, t_f=0.01, max_g=-2.0, granular_solver=method)
-    P.B.has_bottom = False
-    G.boundary_h[:] = False
-    P.B.has_left = P.B.has_right = False
-    G.boundary_v[:] = False
+    P, G, L = column(dt=0.005, t_f=0.01, gravity=-2.0, granular_solver=method, B=dict(walls=()))
     b = L.materials[0]
     b.m *= 0.2
     b.rho *= 0.2
@@ -143,8 +139,7 @@ def test_low_packing_free_fall_and_recompaction_are_stress_free(method):
 def test_upward_gravity_lifts_column_off_floor_only_with_one_sided_walls(separable):
     # Two-sided walls hold the mass mapped to wall nodes, so the cell next to
     # the floor lags; one-sided walls release it and the column is ballistic.
-    P, G, L = column(dt=0.005, t_f=0.05, max_g=2.0, granular_solver="velocity")
-    P.B.separable = separable
+    P, G, L = column(dt=0.005, t_f=0.05, gravity=2.0, granular_solver="velocity", B=dict(one_sided=separable))
     b = L.materials[0]
     before = b.v[:, 1].copy()
     run(P, G, L, output=False)
@@ -157,8 +152,7 @@ def test_upward_gravity_lifts_column_off_floor_only_with_one_sided_walls(separab
 
 
 def test_one_sided_walls_still_support_a_static_column():
-    P, G, L = column(dt=0.02, t_f=0.2, granular_solver="velocity")
-    P.B.separable = True
+    P, G, L = column(dt=0.02, t_f=0.2, granular_solver="velocity", B=dict(one_sided=True))
     b = L.materials[0]
     initial = b.x.copy()
     run(P, G, L, output=False)
@@ -167,8 +161,13 @@ def test_one_sided_walls_still_support_a_static_column():
 
 
 def test_frictional_walls_release_a_column_under_upward_gravity():
-    P, G, L = column(dt=0.005, t_f=0.05, max_g=2.0, granular_solver="velocity")
-    P.B.wall_mu = 0.3
+    P, G, L = column(
+        dt=0.005,
+        t_f=0.05,
+        gravity=2.0,
+        granular_solver="velocity",
+        B=dict(wall_contact="coulomb", wall_friction=0.3),
+    )
     b = L.materials[0]
     before = b.v[:, 1].copy()
     run(P, G, L, output=False)
@@ -181,12 +180,13 @@ def test_layer_on_frictional_floor_slides_at_the_coulomb_rate(wall_mu):
     # Periodic layer on a slope tan(theta) = 0.4 with internal mu = 0.5: it
     # slides as a block at g (sin - wall_mu cos) t when wall_mu < 0.4, else rests.
     P, G, L = column(
-        dt=0.005, t_f=0.05, theta=np.arctan(0.4), granular_solver="velocity", granular_tolerance=1e-9
+        dt=0.005,
+        t_f=0.05,
+        gravity_angle=np.arctan(0.4),
+        granular_solver="velocity",
+        granular_tolerance=1e-9,
+        B=dict(walls={"bottom"}, periodic=True, wall_contact="coulomb", wall_friction=wall_mu),
     )
-    P.B.wall_mu = wall_mu
-    P.B.cyclic_lr = True
-    P.B.has_left = P.B.has_right = False
-    G.boundary_v[:] = False
     b = L.materials[0]
     run(P, G, L, output=False)
     expected = max(-P.g * (np.sin(P.theta) - wall_mu * np.cos(P.theta)) * P.t, 0)
@@ -198,7 +198,7 @@ def test_wall_friction_requires_the_velocity_solver():
     from inputs.granular_column import Params
 
     P = Params([])
-    P.B.wall_mu = 0.3
+    P.B.wall_contact, P.B.wall_friction = "coulomb", 0.3
     P.granular_solver = "hybrid"
     with pytest.raises(ValueError, match="velocity"):
         prepare(P)
@@ -238,12 +238,11 @@ def test_periodic_column_preserves_mass_and_species(method):
     P.granular_solver = method
     P.interpolation = "linear"
     P.transfer = "flip"
-    P.B = NS(cyclic_lr=True, has_bottom=True, roughness=True)
-    P.G.ns = 2
-    P.G.s = [0.001, 0.003]
+    P.B = NS(periodic=True, walls={"bottom"}, wall_contact="no_slip")
+    P.G.grain_sizes = [0.001, 0.003]
     P.S.phi = np.tile([0.25, 0.75], (P.S.n, 1))
     P.segregate = True
-    P.c = 1e-4
+    P.segregation_rate = 1e-4
     P, G, L = prepare(P)
     initial = (L.materials[0].m[:, None] * L.materials[0].phi).sum(axis=0)
     run(P, G, L, max_steps=3, output=False)
@@ -274,7 +273,7 @@ def test_nonconvergence_is_not_silently_accepted():
     [
         dict(quadrature="domain"),
         dict(interpolation="quadratic"),
-        dict(damping=True),
+        dict(force_scale=0.7),
         dict(solver="invalid"),
         dict(granular_solver="unknown"),
         dict(granular_stress_basis="unknown"),
@@ -353,9 +352,11 @@ def test_block_and_hybrid_agree_on_collapse_velocities():
 
 @pytest.mark.parametrize("slope", [0.25, 0.75])
 def test_periodic_inclined_layer_static_and_yielding(slope):
-    P, G, L = column(theta=np.arctan(slope), t_f=0.05)
-    P.B.cyclic_lr = P.B.roughness = True
-    G.boundary_v[:] = False
+    P, G, L = column(
+        gravity_angle=np.arctan(slope),
+        t_f=0.05,
+        B=dict(periodic=True, walls={"bottom"}, wall_contact="no_slip"),
+    )
     run(P, G, L, output=False)
     speed = -L.materials[0].v[:, 0]
     if slope < P.S[0].mu_s:

@@ -19,7 +19,7 @@ def setup(basis="quadratic", periodic=False, F=None, xy=None):
         materials=material(n=len(xy), X=xy[:, 0], Y=xy[:, 1], A=np.prod(sizes, axis=1), domain_size=sizes),
         quadrature="domain",
         interpolation=basis,
-        B=NS(cyclic_lr=periodic),
+        B=NS(periodic=periodic),
         transfer="apic" if basis == "quadratic" else "flip",
     )
     b = L.materials[0]
@@ -207,8 +207,8 @@ def test_domain_geometry_travels_with_particle_rows_and_fresh_inlets():
     template.domain_size = [0.08, 0.06]
     template.A = 0.08 * 0.06
     template.inlet_rate = 0.1
-    template.gap = [0.1, 0.1]
-    template.yp = [0.3]
+    template.inlet_gap = [0.1, 0.1]
+    template.inlet_y = [0.3]
     template.rho = 1000.0
     P.B.inlet_right = True
     P.t = 0.1

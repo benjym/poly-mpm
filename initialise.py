@@ -2,6 +2,7 @@
 
 from importlib import import_module
 from inputs import validate_arguments
+from settings import normalise
 import numpy as np
 from constit import get_law
 from grid import Grid
@@ -50,10 +51,6 @@ def validate_cidr(P):
         raise ValueError("cidr requires mu_s < mu_d")
     if not values["phi_min"] < values["phi_max"] - values["cidr_deficit"]:
         raise ValueError("cidr requires phi_min < phi_max - cidr_deficit")
-    for name in ("granular_cidr_gamma", "granular_cidr_tolerance"):
-        value = getattr(P, name)
-        if (value is not None or name != "granular_cidr_gamma") and (not np.isfinite(value) or value <= 0):
-            raise ValueError(f"{name} must be positive and finite")
 
 
 def prepare(P, mode="simulation"):
@@ -61,74 +58,11 @@ def prepare(P, mode="simulation"):
     from mpm_gpu.config import defaults as backend_defaults
 
     backend_defaults(P)
-    defaults(
-        P,
-        t=0.0,
-        tstep=0,
-        grid_save=0,
-        mp_save=0,
-        M_tol=1e-10,
-        max_g=0.0,
-        max_q=0.0,
-        damping=False,
-        theta=0.0,
-        pressure=None,
-        initial_flow=False,
-        smooth_gamma_dot=False,
-        diagnostics_stride=1,
-        timestep_policy="report",
-        solver="explicit",
-        granular_tolerance=1e-9,
-        granular_solver="cidr",
-        granular_stress="intrinsic",
-        granular_stress_basis="nodal",
-        granular_viscosity=0.0,
-        granular_max_iterations=200,
-        granular_stopping="residual",
-        granular_increment=1e-3,
-        granular_cidr_gamma=None,
-        granular_cidr_tolerance=1e-5,
-        granular_max_nodes=256,
-        interpolation="linear",
-        quadrature="point",
-        domain_max_support=256,
-        domain_polygon="batched",
-        transfer="flip",
-        pic_fraction=0.0,
-        diagnostics=True,
-        normalise_phi=False,
-        fbar=False,
-        time_stepping="static",
-        CFL=0.1,
-        c=0.0,
-        l=10.0,
-    )
-    if hasattr(P, "segregate") and hasattr(P, "segregate_grid") and P.segregate != P.segregate_grid:
-        raise ValueError("segregate and segregate_grid disagree")
-    defaults(P, segregate=getattr(P, "segregate_grid", False))
-    if getattr(P, "segregate_mp", False):
-        raise ValueError("legacy segregate_mp is unsupported; use grid segregation")
-    if int(P.diagnostics_stride) != P.diagnostics_stride or P.diagnostics_stride < 1:
-        raise ValueError("diagnostics_stride must be a positive integer")
-    if P.time_stepping not in ("static", "dynamic"):
-        raise ValueError("time_stepping must be static or dynamic")
-    if P.timestep_policy not in ("report", "enforce"):
-        raise ValueError("timestep_policy must be report or enforce")
-    if P.solver not in ("explicit", "granular"):
-        raise ValueError("solver must be explicit or granular")
-    if P.interpolation not in ("linear", "quadratic"):
-        raise ValueError("interpolation must be linear or quadratic")
-    if P.quadrature not in ("point", "domain"):
-        raise ValueError("quadrature must be point or domain")
-    if P.domain_polygon not in ("batched", "reference"):
-        raise ValueError("domain_polygon must be batched or reference")
-    if int(P.domain_max_support) != P.domain_max_support or P.domain_max_support < 4:
-        raise ValueError("domain_max_support must be an integer >= 4")
-    if P.transfer not in ("flip", "pic", "apic", "apic_gradient"):
-        raise ValueError("transfer must be flip, pic, apic, or apic_gradient")
+    normalise(P)
+    defaults(P, t=0.0, tstep=0, grid_save=0, mp_save=0)
     if P.transfer == "apic_gradient" and P.solver != "granular":
         raise ValueError("apic_gradient is restricted to the granular source audit")
-    if not np.isfinite(P.pic_fraction) or not 0 <= P.pic_fraction <= 1:
+    if P.pic_fraction > 1:
         raise ValueError("pic_fraction must be between zero and one")
     if P.transfer != "flip" and P.pic_fraction:
         raise ValueError("pic_fraction is only used with flip")
@@ -138,31 +72,21 @@ def prepare(P, mode="simulation"):
         raise ValueError(
             "APIC requires quadratic interpolation; linear APIC has degenerate-support instabilities"
         )
+    if P.t_f < P.t:
+        raise ValueError("t_f must not precede the start time")
     P.mode = mode
     P.S = P.S if isinstance(P.S, list) else [P.S]
     if not P.S:
         raise ValueError("at least one material is required")
-    P.phases = len(P.S)
     for S in P.S:
         get_law(S.law)
     if P.solver == "granular":
-        if P.granular_stress_basis not in ("nodal", "P0", "coarse"):
-            raise ValueError("granular_stress_basis must be nodal, P0 or coarse")
         if P.granular_stress_basis == "coarse":
             from granular import coarse_shape
 
-            k = getattr(P, "granular_stress_coarsening", 2)
-            if isinstance(k, bool) or int(k) != k or k < 2:
-                raise ValueError("granular_stress_coarsening must be an integer >= 2")
             coarse_shape(P)
-        if P.granular_stress not in ("intrinsic", "plane_strain"):
-            raise ValueError("granular_stress must be intrinsic or plane_strain")
         if P.granular_stress == "plane_strain" and P.granular_solver == "block":
             raise ValueError("plane_strain requires the hybrid or velocity contact solver")
-        if not np.isfinite(P.granular_viscosity) or P.granular_viscosity < 0:
-            raise ValueError("granular_viscosity must be finite and nonnegative")
-        if P.granular_solver not in ("block", "hybrid", "velocity", "cidr"):
-            raise ValueError("granular_solver must be block, hybrid, velocity or cidr")
         if P.granular_solver == "cidr":
             validate_cidr(P)
         if P.quadrature != "point":
@@ -171,101 +95,25 @@ def prepare(P, mode="simulation"):
             raise ValueError("granular prototype currently requires linear interpolation")
         if len(P.S) != 1 or P.S[0].law != "granular":
             raise ValueError("granular prototype requires one granular material")
-        if P.pressure is not None or P.damping:
-            raise ValueError("granular prototype solves pressure directly and requires damping=False")
-        if not np.isfinite(P.granular_tolerance) or P.granular_tolerance <= 0:
-            raise ValueError("granular_tolerance must be positive and finite")
-        if P.granular_stopping not in ("residual", "increment"):
-            raise ValueError("granular_stopping must be residual or increment")
+        if P.initial_stress is not None or P.force_scale != 1:
+            raise ValueError("granular prototype solves stress directly and requires force_scale = 1")
         if P.granular_stopping == "increment" and P.granular_solver != "velocity":
             raise ValueError("granular_stopping='increment' requires granular_solver='velocity'")
-        if not np.isfinite(P.granular_increment) or P.granular_increment <= 0:
-            raise ValueError("granular_increment must be positive and finite")
-        for name in ("granular_max_iterations", "granular_max_nodes"):
-            if (
-                not np.isfinite(getattr(P, name))
-                or int(getattr(P, name)) != getattr(P, name)
-                or getattr(P, name) < 1
-            ):
-                raise ValueError(f"{name} must be a positive integer")
+        if P.B.conveyor:
+            raise ValueError("granular prototype does not support conveyors")
+        if P.B.wall_mu and P.granular_solver != "velocity":
+            raise ValueError("Coulomb walls (wall_contact = 'coulomb') require granular_solver='velocity'")
+        if P.B.vertical_force or P.B.horizontal_force:
+            raise ValueError("granular prototype does not support boundary tractions")
     elif any(S.law == "granular" for S in P.S):
         raise ValueError("granular material requires solver='granular'")
-    if getattr(getattr(P, "F", None), "n", 0):
-        raise ValueError(
-            f"Unsupported material law {getattr(P.F, 'law', 'legacy fluid')!r} in legacy P.F; use supported P.S materials"
-        )
-    if (
-        not np.isfinite([P.dt, P.t, P.t_f, P.savetime, P.CFL, P.M_tol]).all()
-        or P.dt <= 0
-        or P.t_f < P.t
-        or P.savetime <= 0
-        or P.CFL <= 0
-        or P.M_tol < 0
-    ):
-        raise ValueError("dt and savetime must be positive, with t_f >= t")
-    defaults(P, nt=int(np.ceil(P.t_f / P.dt)), g=P.max_g, q_v=P.max_q, q_h=P.max_q)
-    for name in (
-        "wall",
-        "two_walls",
-        "roughness",
-        "separable",
-        "wall_mu",
-        "no_slip_bottom",
-        "cyclic_lr",
-        "has_top",
-        "has_bottom",
-        "has_right",
-        "has_left",
-        "box",
-        "outlet_left",
-        "outlet_bottom",
-        "inlet_right",
-        "inlet_top",
-        "force_boundaries",
-        "vertical_force",
-        "horizontal_force",
-        "conveyor",
-        "silo_left",
-        "silo_bottom",
-    ):
-        defaults(P.B, **{name: False})
-    defaults(P.G, thickness=1.0, ns=1, s=[0.001])
-    if P.solver == "granular" and P.B.conveyor:
-        raise ValueError("granular prototype does not support conveyors")
-    if P.solver == "granular" and P.B.wall_mu:
-        if not np.isfinite(P.B.wall_mu) or P.B.wall_mu <= 0:
-            raise ValueError("wall_mu must be finite and positive")
-        if P.granular_solver != "velocity":
-            raise ValueError("granular wall_mu requires granular_solver='velocity'")
-    if P.solver == "granular" and (P.B.vertical_force or P.B.horizontal_force):
-        raise ValueError("granular prototype does not support traction boundary flags")
     from mpm_gpu.config import validate as validate_backend
 
     validate_backend(P)
-    P.G.s = np.asarray(P.G.s, dtype=float)
-    if P.G.s.shape != (P.G.ns,) or not np.isfinite(P.G.s).all() or np.any(P.G.s <= 0):
-        raise ValueError("s must contain ns positive finite grain sizes")
-    defaults(P.G, s_m=P.G.s.min(), s_M=P.G.s.max())
-    defaults(P.G, s_bar_0=P.G.s.mean())
-    defaults(P, save_dir=str(getattr(P, "supername", f"im/{mode}/{P.S[0].law}")) + "/")
-    for name in (
-        "check_positions",
-        "measure_stiffness",
-        "measure_energy",
-        "plot_gsd_mp",
-        "plot_gsd_grid",
-        "plot_gsd_debug",
-        "plot_material_points",
-        "plot_continuum",
-        "save_s_bar",
-        "save_density",
-        "save_u",
-        "save_phi_MP",
-        "save_checkpoint",
-    ):
-        defaults(P.O, **{name: False})
-    defaults(P.O, save_diagnostics=True)
-    defaults(P, update_forces=lambda: None)
+    if not np.isfinite(P.G.s).all() or np.any(P.G.s <= 0):
+        raise ValueError("G.grain_sizes must be positive and finite")
+    P.G.s_m, P.G.s_M, P.G.s_bar_0 = P.G.s.min(), P.G.s.max(), P.G.s.mean()
+    defaults(P, save_dir=f"im/{mode}/{P.S[0].law}/")
     P.update_forces()
     G = Grid(P)
     L = ParticleSystem(P, G)

@@ -45,9 +45,8 @@ def parameters(name, basis):
     if refined or name == "collapse_coarse_short":
         P.t_f = 0.05
     if name.startswith("incline"):
-        P.B.has_left = P.B.has_right = False
-        P.B.cyclic_lr = P.B.roughness = True
-        P.theta = np.arctan(0.75)
+        P.B.walls, P.B.periodic, P.B.wall_contact = {"bottom"}, True, "no_slip"
+        P.gravity_angle = np.arctan(0.75)
         P.t_f = 0.05
     return P
 

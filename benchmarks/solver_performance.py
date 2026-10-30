@@ -47,16 +47,13 @@ def make_case(name):
         Y=y,
         A=0.81 / count,
         rho=1000.0,
-        law="pouliquen" if segregation else "elastic",
         K=1e4,
-        G=4e3,
-        rho_s=1666.0,
-        mu_s=0.3,
-        mu_d=0.7,
-        I_0=0.279,
-        eta_max=100.0,
         initial_v=np.column_stack((0.01 + 0.1 * x + 0.2 * y, -0.02 - 0.1 * y, np.zeros(count))),
     )
+    if segregation:
+        material.__dict__.update(law="pouliquen", rho_s=1666.0, mu_s=0.3, mu_d=0.7, I_0=0.279, eta_max=100.0)
+    else:
+        material.__dict__.update(law="elastic", G=4e3)
     params = NS(
         interpolation="quadratic",
         transfer="apic",
@@ -64,15 +61,23 @@ def make_case(name):
         dt=1e-6,
         t_f=1.0,
         savetime=1.0,
-        max_g=-1.0,
-        pressure="compression",
+        gravity=-1.0,
+        initial_stress="compression",
         initial_pressure=1.0,
-        G=NS(nx=41, ny=41, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0, ns=ns, s=np.linspace(0.001, 0.003, ns)),
+        G=NS(
+            nx=41,
+            ny=41,
+            x_min=0.0,
+            x_max=1.0,
+            y_min=0.0,
+            y_max=1.0,
+            grain_sizes=np.linspace(0.001, 0.003, ns),
+        ),
         B=NS(),
         O=NS(),
         S=material,
         segregate=segregation,
-        c=1e-4,
+        segregation_rate=1e-4,
     )
     return prepare(params)
 

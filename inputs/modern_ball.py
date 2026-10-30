@@ -9,6 +9,6 @@ class Params(BallParams):
         self.interpolation = "quadratic"
         self.transfer = "apic"
         self.time_stepping = "dynamic"
-        self.CFL = 0.15
+        self.cfl = 0.15
         # The inherited controller supplies a timestep; central wave/viscous
         # restrictions additionally constrain it before the first and later steps.

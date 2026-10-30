@@ -35,14 +35,13 @@ def wave(cells, interpolation="quadratic", transfer="apic", dt_factor=0.08, fixe
         law="elastic", n=len(X), X=X, Y=Y, A=0.2 / len(X), rho=rho, K=K, G=G, initial_v=velocity, initial_C=C
     )
     P = NS(
-        CFL=0.5,
+        cfl=0.5,
         dt=(0.2 / speed / fixed_steps if fixed_steps else dt_factor / (cells * speed)),
         t_f=0.2 / speed,
         savetime=1.0,
-        max_g=0.0,
         S=S,
-        G=NS(nx=cells + 1, ny=3, x_m=0.0, x_M=1.0, y_m=0.0, y_M=0.2),
-        B=NS(cyclic_lr=True, has_bottom=True, has_top=True),
+        G=NS(nx=cells + 1, ny=3, x_min=0.0, x_max=1.0, y_min=0.0, y_max=0.2),
+        B=NS(periodic=True, walls={"bottom", "top"}),
         O=NS(),
         interpolation=interpolation,
         transfer=transfer,

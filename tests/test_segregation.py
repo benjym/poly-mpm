@@ -2,7 +2,7 @@ from types import SimpleNamespace as NS
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
-from conftest import state, material
+from conftest import grid, state, material
 from integrators import increment_grainsize, KT
 from MPM import run
 
@@ -10,7 +10,7 @@ from MPM import run
 @pytest.mark.parametrize("ns", [1, 2, 3, 8])
 @pytest.mark.parametrize("periodic", [False, True])
 def test_uniform_zero_forcing(ns, periodic):
-    P, G, L = state(ns=ns, segregate=True, B=NS(cyclic_lr=periodic))
+    P, G, L = state(ns=ns, segregate=True, B=NS(periodic=periodic))
     G.m[:] = 1
     G.get_valid_nodes(P)
     G.phi[:] = 1 / ns
@@ -27,7 +27,7 @@ def test_uniform_zero_forcing(ns, periodic):
 @pytest.mark.parametrize("ax", [0, 1])
 @pytest.mark.parametrize("periodic", [False, True])
 def test_conservative_closed_flux(ns, ax, periodic):
-    P, G, L = state(ns=ns, segregate=True, c=0.001, B=NS(cyclic_lr=periodic))
+    P, G, L = state(ns=ns, segregate=True, segregation_rate=0.001, B=NS(periodic=periodic))
     G.m[:] = 1
     G.get_valid_nodes(P)
     rng = np.random.default_rng(42)
@@ -85,7 +85,7 @@ def test_normalisation_is_opt_in():
 
 
 def test_periodic_two_node_direction():
-    P, G, L = state(ns=3, segregate=True, B=NS(cyclic_lr=True))
+    P, G, L = state(ns=3, segregate=True, B=NS(periodic=True))
     P.G.nx = 2
     from grid import Grid
 
@@ -104,7 +104,7 @@ def test_segregating_example_conserves_particle_state(ns, steps):
     from initialise import get_parameters
 
     P, G, L = get_parameters(["bi_seg_test", "22", str(ns), "11"])
-    assert not P.normalise_phi
+    assert not P.segregation_normalise
     initial_mass = (L.materials[0].m[:, None] * L.materials[0].phi).sum(axis=0)
     run(P, G, L, max_steps=steps, output=False)
     b = L.materials[0]
@@ -119,7 +119,7 @@ def test_segregating_example_conserves_particle_state(ns, steps):
 @pytest.mark.parametrize("ax", [0, 1])
 @pytest.mark.parametrize("periodic", [False, True])
 def test_nonuniform_mass_and_local_class_closure(ns, ax, periodic):
-    P, G, L = state(ns=ns, segregate=True, c=0.001, B=NS(cyclic_lr=periodic))
+    P, G, L = state(ns=ns, segregate=True, segregation_rate=0.001, B=NS(periodic=periodic))
     rng = np.random.default_rng(12)
     G.m[:] = rng.uniform(0.2, 5, len(G.m))
     G.get_valid_nodes(P)
@@ -144,7 +144,7 @@ def test_nonuniform_mass_and_local_class_closure(ns, ax, periodic):
 def test_physical_diffusion_flux_has_no_extra_concentration_factor(ns):
     from integrators import KT2_flux, pad_KT
 
-    P, G, L = state(ns=ns, segregate=True, c=0.0)
+    P, G, L = state(ns=ns, segregate=True, segregation_rate=0.0)
     G.m[:] = 1
     G.get_valid_nodes(P)
     rng = np.random.default_rng(33)
@@ -176,7 +176,9 @@ def test_coupled_particle_species_mass_with_unequal_masses_and_rigid_wall(period
         phi=phi,
     )
     rigid = material("rigid", n=10, X=np.linspace(0.1, 0.9, 10), Y=np.full(10, 0.5), phi=[0.9, 0.05, 0.05])
-    P, G, L = state(ns=3, materials=[mobile, rigid], segregate=True, c=0.001, B=NS(cyclic_lr=periodic))
+    P, G, L = state(
+        ns=3, materials=[mobile, rigid], segregate=True, segregation_rate=0.001, B=NS(periodic=periodic)
+    )
     L.get_reference_nodes(P, G)
     L.get_basis_functions(P, G)
     L.get_nodal_mass_momentum(P, G)
@@ -201,7 +203,7 @@ def test_coupled_particle_species_mass_with_unequal_masses_and_rigid_wall(period
 
 
 def test_unequal_mass_update_conserves_across_a_free_surface():
-    P, G, L = state(ns=2, segregate=True, c=0.001)
+    P, G, L = state(ns=2, segregate=True, segregation_rate=0.001)
     G.m[:] = np.linspace(0.5, 3.0, len(G.m))
     empty = np.arange(P.G.nx * 3, len(G.m))
     G.m[empty] = 0
@@ -232,7 +234,7 @@ def test_particle_capacity_limits_joint_xy_flux_without_clipping(ns, periodic):
         A=rng.uniform(0.001, 0.003, count),
         phi=phi,
     )
-    P, G, L = state(ns=ns, materials=mobile, segregate=True, c=1.0, B=NS(cyclic_lr=periodic))
+    P, G, L = state(ns=ns, materials=mobile, segregate=True, segregation_rate=1.0, B=NS(periodic=periodic))
     P.dt = 100.0  # Deliberately exceed the unbounded explicit transport step.
     L.get_reference_nodes(P, G)
     L.get_basis_functions(P, G)
@@ -249,7 +251,7 @@ def test_particle_capacity_limits_joint_xy_flux_without_clipping(ns, periodic):
     assert np.max(np.abs(G.dphi)) < np.max(np.abs(unlimited))
     assert np.max(np.abs(G.dphi)) > 0
     L.move_grainsize_on_grid(P, G)
-    assert not P.normalise_phi
+    assert not P.segregation_normalise
     assert np.all((b.phi >= -1e-14) & (b.phi <= 1 + 1e-14))
     assert_allclose(b.phi.sum(axis=1), 1, atol=1e-13)
     assert_allclose((b.m[:, None] * b.phi).sum(axis=0), initial, rtol=1e-13, atol=1e-12)
@@ -260,7 +262,7 @@ def test_pure_layers_mix_conservatively_without_negative_fractions():
     y = np.linspace(0.01, 0.99, count)
     phi = np.column_stack((y < 0.5, y >= 0.5)).astype(float)
     mobile = material(n=count, X=np.full(count, 0.5), Y=y, phi=phi)
-    P, G, L = state(ns=2, materials=mobile, segregate=True, c=0.0)
+    P, G, L = state(ns=2, materials=mobile, segregate=True, segregation_rate=0.0)
     P.dt = 1000.0
     L.get_reference_nodes(P, G)
     L.get_basis_functions(P, G)
@@ -279,7 +281,7 @@ def test_pure_layers_mix_conservatively_without_negative_fractions():
 
 @pytest.mark.parametrize("ns", [3, 8])
 def test_flux_does_not_depend_on_grain_class_order(ns):
-    P, G, L = state(ns=ns, segregate=True, c=0.01, B=NS(cyclic_lr=True))
+    P, G, L = state(ns=ns, segregate=True, segregation_rate=0.01, B=NS(periodic=True))
     rng = np.random.default_rng(71)
     G.m[:] = rng.uniform(0.2, 2, len(G.m))
     G.phi[:] = rng.uniform(0.1, 1, G.phi.shape)
@@ -303,8 +305,13 @@ def test_diffusion_exchange_matches_discrete_heat_equation(monkeypatch):
     x = np.arange(8) / 8
     phi0 = 0.5 + 0.2 * np.sin(2 * np.pi * x)
     material0 = material(n=8, X=x, Y=np.full(8, 0.5), phi=np.column_stack((phi0, 1 - phi0)))
-    grid = NS(nx=9, ny=3, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0, ns=2, s=[0.001, 0.003])
-    P, G, L = state(ns=2, materials=material0, G=grid, segregate=True, c=0.0, B=NS(cyclic_lr=True))
+    P, G, L = state(
+        materials=material0,
+        G=grid(nx=9, ny=3, grain_sizes=[0.001, 0.003]),
+        segregate=True,
+        segregation_rate=0.0,
+        B=NS(periodic=True),
+    )
     diffusivity = 0.01
     monkeypatch.setattr(integrators, "_diffusivity", lambda G, P, phi: np.full(len(G.m), diffusivity))
     L.get_reference_nodes(P, G)

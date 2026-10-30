@@ -28,12 +28,12 @@ class Params(SquareDrumParams):
         # over the first second at ny = 11.
         self.granular_max_iterations = 2000
         self.dt = 1e-3
-        self.pressure = None
+        self.initial_stress = None
         # One-sided walls: grains next to a wall leave it when gravity turns
         # away. Two-sided walls hold the mass mapped to wall nodes, which leaves
         # a row of grains stuck inside the first cell along each wall.
-        self.B.separable = True
-        self.supername = f"im/granular_drum/ny_{self.G.ny}/Fr_{self.Fr}/"
+        self.B.one_sided = True
+        self.output_dir = f"im/granular_drum/ny_{self.G.ny}/Fr_{self._Fr}/"
         legacy = self.S[0]
         self.S = NS(
             law="granular",
@@ -55,4 +55,4 @@ class Params(SquareDrumParams):
         dynamic controller (CFL * this time, alongside the advection limit) has
         no limit while the bed is at rest.
         """
-        return float(np.sqrt(min(P.G.dx, P.G.dy) / abs(P.max_g)))
+        return float(np.sqrt(min(P.G.dx, P.G.dy) / abs(P.gravity)))

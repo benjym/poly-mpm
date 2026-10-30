@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from conftest import material, state
+from conftest import grid, material, state
 from diagnostics import inventory
 from interpolation import moment
 from MPM import run, step
@@ -15,7 +15,7 @@ import stability
 
 
 def masked_gradient(P, G, values, smooth=False):
-    values = np.ma.masked_where(G.m <= P.M_tol, values).reshape(P.G.ny, P.G.nx)
+    values = np.ma.masked_where(G.m <= P.mass_tolerance, values).reshape(P.G.ny, P.G.nx)
     dy, dx = np.gradient(values, G.dy, G.dx)
     if smooth:
         from astropy.convolution import Gaussian2DKernel, convolve
@@ -36,7 +36,7 @@ def masked_gradient(P, G, values, smooth=False):
 @pytest.mark.parametrize("smooth", [False, True])
 def test_gradient_matches_masked_reference(shape, smooth):
     ny, nx = shape
-    P, G, L = state(G=NS(nx=nx, ny=ny, x_m=-1.0, x_M=2.0, y_m=0.0, y_M=2.0))
+    P, G, L = state(G=grid(nx, ny, x_min=-1.0, x_max=2.0, y_max=2.0))
     rng = np.random.default_rng(10)
     for fraction in (0.0, 0.3, 1.0):
         G.m[:] = rng.random(len(G.m)) >= fraction
@@ -61,7 +61,7 @@ def test_gradient_nonfinite_values_match_masked_reference():
 
 @pytest.mark.parametrize("periodic", [False, True])
 def test_apic_reuses_inverse_and_invalidates_changed_geometry(periodic, monkeypatch):
-    P, G, L = state(interpolation="quadratic", transfer="apic", B=NS(cyclic_lr=periodic))
+    P, G, L = state(interpolation="quadratic", transfer="apic", B=NS(periodic=periodic))
     b = L.materials[0]
     b.get_basis_functions(P, G)
     original = np.linalg.pinv

@@ -32,7 +32,7 @@ dimensional. Constitutive tensor traces and norms reduce tensor axes only.
 `Particles(P, G, material, material_id)` constructs one batch.
 `ParticleSystem(P, G)` coordinates the material list. Supported laws implement
 `law(particles, material_parameters, simulation_parameters)` and update history and
-`dstress`. Updated mechanics uses neo-Hookean elastic stress, objective rate-form
+`dstress`. The solver uses neo-Hookean elastic stress, objective rate-form
 plasticity, and algebraic fluid stress; it evolves `F`, `J`, `V`, and `rho`.
 Rigid materials
 bypass deformation/stress evolution and follow prescribed velocity. See the
@@ -68,27 +68,31 @@ The timestep uses a strain-before-force order:
 2. Deposit mass, momentum, composition, and kinetic pressure across all materials.
 3. Merge periodic sums, calculate valid nodes, and impose momentum constraints.
 4. Gather velocity, update deformation/volume/density and strain/history/stress,
-   and deposit diagnostics. Legacy mode omits deformation/volume evolution.
+   and deposit diagnostics.
 5. Deposit forces, impose force boundaries, and update grid momentum.
 6. Calculate bulk shear rate and, if enabled, conservative segregation exchanges.
 7. Return species-aware composition exchanges, then update particle position and
    velocity and handle particle boundaries.
 
 Particle mass remains fixed during deformable motion; updated volume is `J*V0`
-and physical density is `m/V`. Legacy mode alone fixes volume and reconstructs
-particle density from nodal occupancy.
+and physical density is `m/V`.
 
 Input conventions:
 
+- Every name set on `P`, `P.G`, `P.B`, `P.O` or a material must be a setting
+  listed in the [feature reference](features.md); `settings.normalise` rejects
+  any other name before the run and fills in defaults.
 - A single material object or list in `P.S`.
-- `segregate_grid` as an alias for `segregate`; contradictory explicit values fail.
 - Uniform `initial_v`, or per-particle initial velocities.
-- Pressure initialisation modes, steady viscous/Pouliquen flow, and the
-  steady Poiseuille formula within its steady regime.
-- Boundary flags, default output flags, output filenames, and particle-data column
-  order (`x`, `y`, grain fractions).
-- Inlet placement and cadence use material geometry. Only materials declaring `inlet_rate` enter
-  through an enabled inlet. Injection properties must be uniform per material;
+- `initial_stress` modes (`lithostatic`, `compression`), steady viscous and
+  Pouliquen flow (`initial_flow = "steady"`), and the steady Poiseuille formula
+  (`initial_flow = "steady_poiseuille"`) within its steady regime.
+- `B.walls`, `B.wall_contact` and the other boundary settings, `O.figures` and
+  `O.fields`, output filenames and particle-data column order (`x`, `y`, grain
+  fractions).
+- Inlet placement and cadence use the material's `inlet_rate`, `inlet_gap` and
+  `inlet_y`. Only materials declaring `inlet_rate` enter through an inlet listed
+  in `B.inlets`. Injection properties must be uniform per material;
   each new batch gets freshly initialised constitutive history.
 
 Outlets remove all persistent fields together. Inlets append full batches. Scratch
@@ -97,7 +101,7 @@ actual array lengths. Prescribed per-particle rigid velocities travel with their
 rows through removal.
 
 Callbacks are `at_start(L, P, G)`, `after_every_timestep(L, P, G)`,
-`after_every_savetime(L, P, G)`, and `at_end(L, P, G)`. `after_ever_timestep` is a compatibility alias. A custom callback replaces the
+`after_every_savetime(L, P, G)` and `at_end(L, P, G)`. A custom callback replaces the
 corresponding default stage; it is responsible for any desired plotting, energy
 recording, or saving at that stage. Default energy histories grow with actual
 steps, so dynamic timesteps do not overflow preallocated buffers.
@@ -152,7 +156,7 @@ Kernel reference comparisons use `rtol=1e-10`, `atol=1e-12`; short trajectories 
 Segregation checks measure species masses, local fraction sums, bounds, and pure-
 layer mixing without clipping or normalisation. Run `python -m
 benchmarks.segregation_drift` to reproduce the conservation report. The
-`normalise_phi` compatibility option is unnecessary for the conservative operator
+`segregation_normalise` option is unnecessary for the conservative operator
 and can conceal an invalid configuration.
 
 Materials share a momentum grid: this does not provide separate-body contact or

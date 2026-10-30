@@ -230,7 +230,7 @@ class Particles:
                 self.pk = P.l * size * np.sqrt(np.abs(self.pressure * self.rho)) * np.abs(self.gammadot)
             else:
                 raise ValueError(f"steady initial flow is unsupported for {S.law}")
-        elif P.initial_flow == "steady_poiseulle":
+        elif P.initial_flow == "steady_poiseuille":
             height = P.G.y_M - P.G.y_m
             ys = y / height
             ys = np.minimum(ys, 1 - ys)
@@ -258,7 +258,7 @@ class Particles:
             self.v[:] = self.prescribed_velocity(P)
 
     def prescribed_velocity(self, P):
-        velocity = getattr(self.material, "initial_v", getattr(P, "intruder_v", [0, 0, 0]))
+        velocity = getattr(self.material, "initial_v", [0, 0, 0])
         # Per-particle prescriptions travel with their rows through removals.
         if np.ndim(velocity) == 2:
             return self.v.copy()
@@ -567,11 +567,11 @@ class ParticleSystem:
                     continue
                 S = copy(template)
                 if inlet == "right":
-                    S.Y = np.asarray(template.yp)
-                    S.X = np.full(len(S.Y), P.G.x_M - template.gap[0])
+                    S.Y = np.asarray(template.inlet_y)
+                    S.X = np.full(len(S.Y), P.G.x_M - template.inlet_gap[0])
                 else:
                     S.X = np.array([(P.G.x_M - P.G.x_m) / 2])
-                    S.Y = np.array([P.G.y_M - template.gap[1]])
+                    S.Y = np.array([P.G.y_M - template.inlet_gap[1]])
                 S.n = len(S.X)
                 for name in ("rho", "A", "initial_v", "phi", "domain_size"):
                     value = getattr(S, name, None)

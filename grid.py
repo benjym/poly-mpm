@@ -184,8 +184,8 @@ class Grid:
         initial_momentum = self.q.copy()
         physical_force = self.fe - self.fi
         self.q_dot = physical_force.copy()
-        if P.damping:
-            self.q_dot *= 0.7
+        if P.force_scale != 1:
+            self.q_dot *= P.force_scale
         self.contact_h, self.contact_v = self.wall_contact(
             P, divide(self.q + self.q_dot * P.dt, self.m[:, None])
         )
@@ -223,7 +223,7 @@ class Grid:
         if P.B.cyclic_lr:
             unique[P.G.nx - 1 :: P.G.nx] = False
         midpoint = 0.5 * (initial_velocity + divide(self.q, self.m[:, None]))
-        scaling = (-0.3 * physical_force * P.dt) if P.damping else np.zeros_like(self.q)
+        scaling = (P.force_scale - 1) * physical_force * P.dt
         reaction = self.q - initial_momentum - P.dt * physical_force - scaling
         coordinates = np.column_stack((self.X, self.Y, np.zeros_like(self.X)))
         self.external_angular_impulse = P.dt * np.cross(coordinates[unique], self.fe[unique]).sum(axis=0)

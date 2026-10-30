@@ -35,18 +35,27 @@ block to reach the floor; this checks setup and output rather than impact physic
 Simulation parameters
 ---------------------
 
-``dt``, ``t_f``, and ``savetime`` are seconds. ``max_g`` is acceleration in m/s²;
-negative values give downward gravity at ``theta=0``. Internal ``theta`` is in
-radians. Body acceleration is ``g * [sin(theta), cos(theta), 0]``. ``g`` defaults
-to ``max_g``; an optional zero-argument ``update_forces`` method may update it
-using ``self.t``. Ramped loads and example-specific arguments belong in the input.
+Every name an input sets must be a setting listed in :doc:`features`;
+``initialise.prepare`` rejects any other name and suggests the nearest setting
+for a misspelling. Helpers an input keeps on its objects must start with an
+underscore; otherwise make them local variables.
 
-``save_dir`` sets the output folder directly. If absent, ``supername`` is used;
-otherwise the default is ``im/<example>/<first-material-law>/``. ``nt`` need not
-be supplied: the run loop uses physical time and stops at ``t_f``. A bounded run
-with ``max_steps`` stops earlier and still calls its end-of-run output callback.
+``dt``, ``t_f`` and ``savetime`` are seconds. ``gravity`` is acceleration in
+m/s²; negative values give downward gravity at ``gravity_angle=0``.
+``gravity_angle`` is in radians, and the body acceleration is
+``g * [sin(angle), cos(angle), 0]`` with ``g`` the gravity times
+``gravity_ramp(t)``. ``gravity_ramp`` and ``gravity_angle`` may be functions of
+time, evaluated at the start of each step; for example
+``self.gravity_ramp = lambda t: 1 - np.exp(-3 * t**2 / 0.5**2)`` raises gravity
+over about 0.5 s, and ``self.gravity_angle = lambda t: omega * t`` rotates it.
+Example-specific arguments belong in the input.
 
-``time_stepping='dynamic'`` enables the existing timestep controller, with ``CFL``
+``output_dir`` sets the output folder; the default is
+``im/<example>/<first-material-law>/``. The run loop uses physical time and
+stops at ``t_f``. A bounded run with ``max_steps`` stops earlier and still calls
+its end-of-run output callback.
+
+``time_stepping='dynamic'`` enables the timestep controller, with ``cfl``
 and optional material ``critical_time(P)`` functions. It is not a universal
 stability guarantee: the central controller estimates elastic, viscous,
 advection, and segregation restrictions, but nonlinear and model-specific
@@ -58,19 +67,21 @@ Grid and boundaries
 
 ``P.G`` describes a regular rectangular Cartesian grid. ``nx`` and ``ny`` count
 **nodes**, not cells; spacing is computed from the extents and node counts.
-``thickness`` defaults to 1 m. Coordinates are metres. Grain-size segregation
-also needs ``ns`` and ``s``: the number of size classes and their representative
-positive diameters in metres. The default is one class of diameter 0.001 m.
+The extents are ``x_min``, ``x_max``, ``y_min`` and ``y_max``. ``thickness``
+defaults to 1 m. Coordinates are metres. Grain-size segregation also needs
+``grain_sizes``: the representative positive diameter of each size class in
+metres. The default is one class of diameter 0.001 m.
 
-``P.B`` contains boundary flags. Missing flags default to false. ``has_bottom``
-restrains normal motion at the bottom; add ``no_slip_bottom`` to restrain
-horizontal motion there. ``has_top``, ``has_left``, and ``has_right`` similarly
-restrain normal grid velocity. ``cyclic_lr`` makes the left/right boundary
-periodic. Particle positions must lie within the domain before cell lookup,
+``P.B`` describes the boundaries. ``walls`` lists the domain edges with walls,
+for example ``{"bottom", "left", "right"}``; each restrains the normal grid
+velocity on its edge. ``wall_contact = "no_slip"`` also restrains the
+tangential velocity on every wall and ``"no_slip_bottom"`` only on the bottom.
+``periodic = True`` makes the left and right boundaries periodic. Particle positions must lie within the domain before cell lookup,
 except for permitted periodic wrapping and the explicit inlet/outlet paths.
 
-These flags impose grid constraints. They do not define curved contact surfaces
-or independent contact between material bodies. Traction flags retain the
+These settings impose grid constraints. They do not define curved contact surfaces
+or independent contact between material bodies. Boundary tractions
+(``traction_vertical``, ``traction_horizontal``) retain the
 legacy reference-density scaling; see :doc:`array-conversion` before using them
 for quantitative loading.
 
@@ -86,8 +97,11 @@ Materials and particle geometry
 * ``A``: represented area **per particle**, in m². Volume is ``A*thickness`` and
   mass is ``rho*A*thickness``. Density and area can be scalar or length ``n``.
 * Optional ``initial_v``: velocity in m/s, shape ``(3,)`` or ``(n, 3)``.
-* For mixtures, ``phi`` of shape ``(ns,)`` or ``(n, ns)``; rows must be
-  nonnegative and sum to one.
+* For mixtures, ``phi`` of shape ``(ns,)`` or ``(n, ns)``, with ``ns`` the
+  number of grain sizes; rows must be nonnegative and sum to one.
+
+A material may set only the fields its law reads (listed in :doc:`features`);
+any other field is rejected.
 
 Two-by-two particles per grid cell is a convenient starting arrangement, not an
 accuracy guarantee. Choose represented areas consistently with the occupied
@@ -96,23 +110,23 @@ checks. The physical grains represented by size classes are distinct from the
 numerical material points.
 
 For elastic material, supply bulk modulus ``K`` and shear modulus ``G`` in Pa;
-``E`` and ``nu`` are convenient input variables, but the loader does not derive
-``K`` or ``G`` from them. The :doc:`materials` page lists parameters. Updated ``elastic`` uses neo-Hookean
-elasticity, while ``von_mises`` uses a J2 return map. Historical conventions are
-only selected with ``mechanics='legacy'``; see :doc:`numerical-foundations`.
+``E`` and ``nu`` are convenient local variables in the input, from which it
+computes ``K`` and ``G``. The :doc:`materials` page lists parameters. ``elastic``
+uses neo-Hookean elasticity, while ``von_mises`` uses a J2 return map; see
+:doc:`numerical-foundations`.
 
-To initialise confined stress, set ``pressure='compression'`` and a positive
+To initialise confined stress, set ``initial_stress='compression'`` and a positive
 ``initial_pressure`` in Pa. This produces negative normal Cauchy stress. The
-``lithostatic`` mode uses gravity, depth, and slope. Do not confuse these input
-mode strings with the particle ``pressure`` array, which is tension positive.
+``lithostatic`` mode uses gravity, depth and slope. The particle ``pressure``
+array is tension positive.
 
 Grain-size segregation
 ----------------------
 
 Start with ``inputs/bi_seg_test.py`` for a working configuration. Set
-``segregate=True`` (or the compatible alias ``segregate_grid=True``), grain sizes,
-composition, and the model's segregation coefficients ``c`` and ``l``.
-``segregate_mp`` is unsupported. The current implementation transports conservative
+``segregate=True``, ``G.grain_sizes``, the composition ``phi`` and the
+segregation coefficients ``segregation_rate`` and ``kinetic_pressure_scale``.
+The current implementation transports conservative
 species-mass exchanges; arbitrary clipping/renormalisation is not needed for the
 validated cases. See :doc:`segregation-conservation` for equations, coefficient
 roles, diagnostics, and limitations.
@@ -128,7 +142,7 @@ Use ``MPM.run(P, G, L, max_steps=..., output=...)`` to advance the simulation an
 clock. ``MPM.step`` is a lower-level single-step operator: it does not advance
 ``P.t`` or ``P.tstep`` and does not invoke output callbacks.
 
-See :doc:`outputs` for flags, file formats, and the callback interface.
+See :doc:`outputs` for figures, fields, file formats, and the callback interface.
 For finite-domain integration, set ``quadrature='domain'`` and supply each
 material's reference ``domain_size=(width_x,width_y)`` during construction. Its
 product must match ``A``. The :doc:`quadrature` guide and ``domain_column`` input

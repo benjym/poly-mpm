@@ -53,8 +53,8 @@ def test_compact_assembly_and_transpose_match_original(stress, periodic):
     P = configuration("static", 0.005)
     P.granular_stress = stress
     if periodic:
-        P.B.has_left = P.B.has_right = False
-        P.B.cyclic_lr = True
+        P.B.walls = set(P.B.walls) - {"left", "right"}
+        P.B.periodic = True
     P, G, L = prepare(P)
     b = L.materials[0]
     # Break tensor-product symmetry and exercise particles crossing cells.
@@ -145,9 +145,9 @@ def test_evolving_collapse_agrees_with_hybrid(stress):
 @pytest.mark.parametrize("slope", [0.25, 0.75])
 def test_inclined_layer_remains_static_or_slides_at_coulomb_rate(slope):
     P = configuration("static", 0.005, solver="velocity")
-    P.theta = np.arctan(slope)
-    P.B.has_left = P.B.has_right = False
-    P.B.cyclic_lr = P.B.roughness = True
+    P.gravity_angle = np.arctan(slope)
+    P.B.walls = set(P.B.walls) - {"left", "right"}
+    P.B.periodic, P.B.wall_contact = True, "no_slip"
     P.t_f = 0.05
     P, G, L = prepare(P)
     run(P, G, L, output=False)

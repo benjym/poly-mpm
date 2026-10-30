@@ -137,7 +137,7 @@ they do not impose an exactly rigid plug or prove continuum well-posedness.
 Use `elastic` for constant stiffness, `pouliquen` for the supported bounded local
 friction law, or `linear_mu` with `b=0` for capped constant friction. These are
 model choices requiring appropriate parameters, not automatic substitutions.
-`viscous_size` and the separate `P.F` compressible-fluid path are unimplemented.
+`viscous_size` and a separate compressible-fluid phase are not implemented.
 
 ## Checks and outputs
 

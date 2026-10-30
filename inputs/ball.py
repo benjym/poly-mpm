@@ -1,87 +1,58 @@
-import os
+"""An elastic ball dropped onto a floor."""
+
 import numpy as np
-import matplotlib.pyplot as plt
 from plotting import Plotting
 
 plot = Plotting()
 
 
 class Params:
-    def __init__(self, mode):
-        self.dt = 1e-3  # timestep (s)
-        self.savetime = 0.1
-        self.t_f = 1.0  # self.dt
-        self.nt = int(self.t_f / self.dt)  # number of timesteps
-        self.max_g = -10.0  # gravity (ms^-2)
-        self.theta = 0.0 * np.pi / 180.0  # slope angle (degrees)
+    def __init__(self, args):
+        self.dt = 1e-3  # (s)
+        self.savetime = 0.1  # (s)
+        self.t_f = 1.0  # (s)
+        self.gravity = -10.0  # (m/s^2)
         self.G = Grid_Params()
         self.B = Boundary_Params()
         self.O = Output_Params()
         self.S = Solid_Params()
-        # self.time_stepping = 'dynamic'
-
-    def update_forces(self):
-        self.g = self.max_g
 
 
 class Grid_Params:
     def __init__(self):
-        self.x_m = -1.0  # (m)
-        self.x_M = 1.0  # (m)
-        self.y_m = 0.0  # (m)
-        self.y_M = 2.0  # (m)
-        self.nx = 6  # number of grid edges in x direction
-        self.ny = 6  # number of grid edges in y direction
-        self.x = np.linspace(self.x_m, self.x_M, self.nx)
-        self.y = np.linspace(self.y_m, self.y_M, self.ny)
-        self.dx = self.x[1] - self.x[0]  # grid spacing (m)
-        self.dy = self.y[1] - self.y[0]  # grid spacing (m)
+        self.x_min, self.x_max = -1.0, 1.0  # (m)
+        self.y_min, self.y_max = 0.0, 2.0  # (m)
+        self.nx = 6
+        self.ny = 6
 
 
 class Boundary_Params:
     def __init__(self):
-        self.has_bottom = True
+        self.walls = {"bottom"}
 
 
 class Solid_Params:
     def __init__(self):
-        self.X = []
-        self.Y = []
-        self.n = 0
-
-        self.rho = 1000.0  # density (kg/m^3)
-
         self.law = "elastic"
-        # self.law = 'von_mises'
-        #         self.law = 'dp'
+        self.rho = 1000.0  # (kg/m^3)
+        E, nu = 1.0e5, 0.3  # elastic modulus (Pa) and Poisson's ratio
+        self.K = E / (3.0 * (1.0 - 2.0 * nu))  # bulk modulus (Pa)
+        self.G = E / (2.0 * (1.0 + nu))  # shear modulus (Pa)
 
-        self.E = 1.0e5  # elastic modulus (Pa)
-        self.nu = 0.3  # poisson's ratio
-        self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
-        self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
-
-        # for dp
-        self.s = 5.0
-        self.beta = 10.0
-
-        nr = 20  # particles in radial direction
-        nphi = 50  # particles around circumference
-        r = 0.3  # radius
-        c = [0.0, 1.0]  # centre
-
-        for i in np.linspace(0, r, nr):
-            dnphi = int(np.around(nphi * i / r))  # number in this ring
-            if dnphi > 0:
-                for j in np.linspace(0, (1.0 - 1.0 / (dnphi)) * 2 * np.pi, dnphi):
-                    self.X.append(c[0] + i * np.sin(j))
-                    self.Y.append(c[1] + i * np.cos(j))
-                    self.n += 1
-        self.A = np.pi * r**2 / self.n  # area (m^2)
+        # Rings of particles in a disc of radius r centred at (0, 1).
+        rings, around, r, centre = 20, 50, 0.3, (0.0, 1.0)
+        X, Y = [], []
+        for radius in np.linspace(0, r, rings):
+            count = int(np.around(around * radius / r))
+            for angle in np.linspace(0, (1.0 - 1.0 / max(count, 1)) * 2 * np.pi, count):
+                X.append(centre[0] + radius * np.sin(angle))
+                Y.append(centre[1] + radius * np.cos(angle))
+        self.X, self.Y, self.n = np.array(X), np.array(Y), len(X)
+        self.A = np.pi * r**2 / self.n  # (m^2)
 
     def critical_time(self, P):
-        distance = np.minimum(P.G.dx, P.G.dy)
-        t_ela = distance / np.sqrt(self.K / self.rho)  # elasticity
-        return t_ela
+        """Time for an elastic wave to cross one grid spacing."""
+        return min(P.G.dx, P.G.dy) / np.sqrt(self.K / self.rho)
 
 
 class Output_Params:

@@ -21,8 +21,8 @@ from inputs.granular_collapse import Params as Collapse
 
 def configuration(kind, dt, *, grid_spacing=0.25, particles_per_cell=2, solver="hybrid"):
     P = (Column if kind == "static" else Collapse)([])
-    P.G.nx = round((P.G.x_M - P.G.x_m) / grid_spacing) + 1
-    P.G.ny = round((P.G.y_M - P.G.y_m) / grid_spacing) + 1
+    P.G.nx = round((P.G.x_max - P.G.x_min) / grid_spacing) + 1
+    P.G.ny = round((P.G.y_max - P.G.y_min) / grid_spacing) + 1
     spacing = grid_spacing / particles_per_cell
     width = 1.0 if kind == "static" else 0.5
     x, y = np.meshgrid(np.arange(spacing / 2, width, spacing), np.arange(spacing / 2, 1.0, spacing))

@@ -33,11 +33,11 @@ uv run python MPM.py granular_square_drum 11 2 metal
 
 Time stepping is dynamic. The material time sqrt(h/|g|), the time for a grain
 at rest to fall one grid spacing, bounds the step while the bed is at rest;
-otherwise the advection and segregation limits apply, each scaled by `CFL`.
+otherwise the advection and segregation limits apply, each scaled by `cfl`.
 Once the bed avalanches (near 32 deg of tilt at ny = 11) the solve needs more
 than the default 2,000 sweeps, so the example allows 20,000.
 
-The example uses one-sided walls (`B.separable`, described in
+The example uses one-sided walls (`B.one_sided`, described in
 [granular-prototype.md](granular-prototype.md)). With two-sided walls a row of
 grains stays inside the first cell along each wall as the drum turns: at
 t = 1 s, ny = 11, Fr = 2 (450 particles), 32 particles remain in the bottom
@@ -133,10 +133,10 @@ No supplied tolerance is silently loosened.
 The runner supports one intrinsic 2D granular material, nodal stress, linear
 interpolation, point quadrature, FLIP (including PIC
 blend), PIC, `apic_gradient`, fixed frictionless/no-slip walls (two-sided or
-one-sided), frictional walls (`B.wall_mu`), interior and silo walls, periodic
-x, inlets and outlets, built-in static/transport-CFL time stepping and grid
-segregation (up to eight grain sizes, `smooth_gamma_dot=False`, optional
-`normalise_phi`). P0 and coarse stresses, plane strain, viscosity, density
+one-sided), frictional walls (`B.wall_contact = "coulomb"`), interior and silo walls, periodic
+x, inlets and outlets, built-in static or dynamic time stepping and grid
+segregation (up to eight grain sizes, `smooth_shear_rate=False`, optional
+`segregation_normalise`). P0 and coarse stresses, plane strain, viscosity, density
 correction, increment stopping and callbacks that require live NumPy arrays
 are rejected. These restrictions do not change CPU support.
 
@@ -287,7 +287,7 @@ independent and avoid a CPU solver fallback.
      snapshot and the last step's start-of-step stencil, which is how the CPU
      step forms them. They do not feed back into the mechanics.
    - Rejected for Metal: custom `after_every_timestep` callbacks (they would see
-     stale arrays), `O.measure_energy`, custom timestep controllers, damping,
+     stale arrays), `O.measure_energy`, custom timestep controllers, `force_scale` other than 1,
      and `O.check_positions`. Save-time, start and end
      callbacks are supported and receive snapshots.
    - FP32 thresholds: packing clearances within `64 eps_32` of the capacity are
@@ -308,9 +308,9 @@ independent and avoid a CPU solver fallback.
      | Free fall at low packing | stress free; velocity change within 1e-6 of `g dt` | — |
      | Upward gravity, one-sided or frictional walls: velocity change against `g t` | 1.3e-8 m/s; positions 2.2e-8 grid spacings from the CPU | ≤ 1e-5 relative |
      | Collapse positions/runout, one-sided walls (re-solves when a released wall node is pushed back) | 1.3e-5 grid spacings | ≤ 1% |
-     | Collapse positions/runout, frictional walls `wall_mu = 0.3` | 7.5e-5 grid spacings | ≤ 1% |
-     | Periodic layer on a frictional floor, `tan θ = 0.4`, `μ = 0.5`, `wall_mu = 0.2`: speed against `g (sin θ - wall_mu cos θ) t` | 0.34% (CPU 0.32%) | ≤ 1% |
-     | Same layer, `wall_mu = 0.6` | at rest (2.8e-4 m/s; CPU 1.9e-4) | — |
+     | Collapse positions/runout, frictional walls `wall_friction = 0.3` | 7.5e-5 grid spacings | ≤ 1% |
+     | Periodic layer on a frictional floor, `tan θ = 0.4`, `μ = 0.5`, `wall_friction = 0.2`: speed against `g (sin θ - wall_friction cos θ) t` | 0.34% (CPU 0.32%) | ≤ 1% |
+     | Same layer, `wall_friction = 0.6` | at rest (2.8e-4 m/s; CPU 1.9e-4) | — |
      | Silo draining through `silo_bottom` into `outlet_bottom`, with and without `inlet_top` (0.3 s) | same particle counts (155, 170 of 240); positions 4.8e-5 grid spacings; mass budget exact | ≤ 1% |
    - Budgets: momentum residuals relative to the external impulse are at most
      1.9e-7 on Metal (CPU 1e-15, FP32 sums). Energy residuals relative to the
@@ -445,9 +445,9 @@ the same state at tolerance `1e-4`:
 
 | Case | Steps | CPU fraction change | Metal minus CPU | Species error |
 | --- | ---: | ---: | ---: | ---: |
-| Periodic incline, two sizes, `c = 1e-2` | 40 | 0.037 | 1.0e-5 | 4.2e-8 |
-| Walled collapse, two sizes, `c = 0.1` | 30 | 0.23 | 7.0e-6 | 3.5e-8 |
-| Periodic incline, three sizes, `normalise_phi` | 40 | 0.041 | 1.1e-5 | 4.0e-8 |
+| Periodic incline, two sizes, `segregation_rate = 1e-2` | 40 | 0.037 | 1.0e-5 | 4.2e-8 |
+| Walled collapse, two sizes, `segregation_rate = 0.1` | 30 | 0.23 | 7.0e-6 | 3.5e-8 |
+| Periodic incline, three sizes, `segregation_normalise` | 40 | 0.041 | 1.1e-5 | 4.0e-8 |
 
 Grid fields (`phi`, `dphi`, `pk`, shear rate) agree to at most 4.5e-4
 relative and the segregation timestep limits to 5e-4. Species errors are

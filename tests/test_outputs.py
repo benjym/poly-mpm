@@ -11,14 +11,11 @@ from initialise import get_parameters
 
 @pytest.mark.parametrize("regular_plots", [False, True])
 def test_grain_and_strain_rate_frames_increment_independently(tmp_path, regular_plots):
-    O = NS(
-        plot_material_points=regular_plots,
-        plot_continuum=regular_plots,
-        plot_gsd_mp=True,
-        plot_gsd_grid=True,
-        plot_gamma_dot=True,
-    )
-    P, G, L = state(ns=2, O=O, save_dir=str(tmp_path), savetime=1e-5)
+    figures = {"gsd_material_points", "gsd_grid", "shear_rate"}
+    if regular_plots:
+        figures |= {"material_points", "continuum"}
+    O = NS(figures=figures)
+    P, G, L = state(ns=2, O=O, output_dir=str(tmp_path), savetime=1e-5)
     # One save-time output and the final output must produce separate frames.
     run(P, G, L, max_steps=1)
     assert sorted(p.name for p in (tmp_path / "GSD").glob("MP_*.png")) == [
@@ -37,18 +34,12 @@ def test_grain_and_strain_rate_frames_increment_independently(tmp_path, regular_
 
 def test_output_flags_and_saved_shapes(tmp_path):
     O = NS(
-        plot_continuum=True,
-        plot_material_points=True,
-        plot_gsd_mp=True,
-        plot_gsd_grid=True,
-        save_u=True,
-        save_s_bar=True,
-        save_density=True,
-        save_phi_MP=True,
+        figures=("continuum", "material_points", "gsd_material_points", "gsd_grid"),
+        fields=("u", "s_bar", "density", "phi_material_points"),
         measure_energy=True,
         measure_stiffness=True,
     )
-    P, G, L = state(ns=3, O=O, save_dir=str(tmp_path), savetime=1e-5)
+    P, G, L = state(ns=3, O=O, output_dir=str(tmp_path), savetime=1e-5)
     run(P, G, L, max_steps=2)
     for name in ("u_00000.npy", "v_00000.npy", "density_00000.npy", "s_bar_00000.npy"):
         assert np.load(tmp_path / "data" / name).shape == (5, 5)
@@ -64,16 +55,16 @@ def test_output_flags_and_saved_shapes(tmp_path):
             assert np.asarray(image).std() > 0
 
 
-def test_custom_callbacks_replace_defaults_and_alias(tmp_path):
+def test_custom_callbacks_replace_defaults(tmp_path):
     events = []
     O = NS(
         at_start=lambda L, P, G: events.append("start"),
-        after_ever_timestep=lambda L, P, G: events.append("step"),
+        after_every_timestep=lambda L, P, G: events.append("step"),
         after_every_savetime=lambda L, P, G: events.append("save"),
         at_end=lambda L, P, G: events.append("end"),
-        plot_continuum=True,
+        figures=("continuum",),
     )
-    P, G, L = state(O=O, save_dir=str(tmp_path), savetime=1e-5)
+    P, G, L = state(O=O, output_dir=str(tmp_path), savetime=1e-5)
     run(P, G, L, max_steps=2)
     assert events == ["start", "step", "save", "step", "save", "end"]
     assert not list(tmp_path.rglob("*.png"))
@@ -81,7 +72,7 @@ def test_custom_callbacks_replace_defaults_and_alias(tmp_path):
 
 def test_custom_save_creates_directory_without_flags(tmp_path):
     O = NS(after_every_savetime=lambda L, P, G: Plotting().save_u(L, P, G))
-    P, G, L = state(O=O, save_dir=str(tmp_path / "nested"), savetime=1e-5)
+    P, G, L = state(O=O, output_dir=str(tmp_path / "nested"), savetime=1e-5)
     run(P, G, L, max_steps=1)
     assert (tmp_path / "nested/data/u_00000.npy").is_file()
 
@@ -98,7 +89,7 @@ def test_ball_custom_callback(tmp_path):
 def test_reused_plots_refresh_data_colors_and_keep_layout(tmp_path):
     import matplotlib.pyplot as plt
 
-    P, G, L = state(save_dir=str(tmp_path))
+    P, G, L = state(output_dir=str(tmp_path))
     run(P, G, L, max_steps=1, output=False)
     plot = Plotting()
     managers = plt.get_fignums()

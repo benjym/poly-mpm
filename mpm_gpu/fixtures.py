@@ -25,12 +25,12 @@ def column(
     from inputs.granular_column import Params
 
     P = Params([])
-    P.G.nx = round((P.G.x_M - P.G.x_m) / spacing) + 1
-    P.G.ny = round((P.G.y_M - P.G.y_m) / spacing) + 1
+    P.G.nx = round((P.G.x_max - P.G.x_min) / spacing) + 1
+    P.G.ny = round((P.G.y_max - P.G.y_min) / spacing) + 1
     s = spacing / particles_per_cell
     # Edge cases fill the domain so that every node near an edge carries mass.
-    width, height = (P.G.x_M - P.G.x_m, P.G.y_M - P.G.y_m) if edges else (1.0, 1.0)
-    x, y = np.meshgrid(P.G.x_m + np.arange(s / 2, width, s), P.G.y_m + np.arange(s / 2, height, s))
+    width, height = (P.G.x_max - P.G.x_min, P.G.y_max - P.G.y_min) if edges else (1.0, 1.0)
+    x, y = np.meshgrid(P.G.x_min + np.arange(s / 2, width, s), P.G.y_min + np.arange(s / 2, height, s))
     P.S.X, P.S.Y = x.ravel(), y.ravel()
     P.S.n, P.S.A = x.size, s**2
     P.dt = 0.005
@@ -38,8 +38,8 @@ def column(
     P.granular_max_nodes = 10**6  # CPU prototype guard; the fixtures exceed it
     P.transfer, P.pic_fraction = transfer, pic_fraction
     if periodic:
-        P.B.has_left = P.B.has_right = False
-        P.B.cyclic_lr = True
+        P.B.walls = set(P.B.walls) - {"left", "right"}
+        P.B.periodic = True
     P, G, L = prepare(P)
     b = L.materials[0]
     b.x[:, :2] += np.random.default_rng(seed).uniform(-perturbation, perturbation, (len(b), 2)) * s

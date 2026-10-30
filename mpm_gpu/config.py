@@ -22,7 +22,7 @@ def validate(P):
     if P.granular_solver not in ("velocity", "cidr"):
         raise ValueError("Metal requires granular_solver='velocity' or 'cidr'")
     if P.granular_solver == "cidr" and P.B.separable:
-        raise ValueError("Metal granular_solver='cidr' does not support one-sided walls (B.separable)")
+        raise ValueError("Metal granular_solver='cidr' does not support one-sided walls (B.one_sided)")
     if P.granular_solver == "cidr" and P.granular_cidr_tolerance < 1e-5:
         raise ValueError("Metal FP32 requires granular_cidr_tolerance >= 1e-5")
     required = dict(
@@ -47,20 +47,14 @@ def validate(P):
         raise ValueError("Metal supports only granular_stopping='residual'")
     if P.granular_viscosity != 0:
         raise ValueError("Metal does not support granular_viscosity")
-    if P.segregate and (P.smooth_gamma_dot or P.G.ns > 8):
-        raise ValueError("Metal segregation requires smooth_gamma_dot=False and at most 8 grain sizes")
+    if P.segregate and (P.smooth_shear_rate or P.G.ns > 8):
+        raise ValueError("Metal segregation requires smooth_shear_rate=False and at most 8 grain sizes")
     if P.time_stepping not in ("static", "dynamic"):
         raise ValueError("Metal supports static or built-in dynamic time stepping")
-    for name in (
-        "conveyor",
-        "force_boundaries",
-        "vertical_force",
-        "horizontal_force",
-    ):
-        if getattr(P.B, name, False):
-            raise ValueError(f"Metal does not support boundary flag {name}")
-    for name in ("packing_correction", "density_correction", "granular_density_correction", "damping"):
-        if getattr(P, name, False):
-            raise ValueError(f"Metal does not support {name}")
-    if getattr(P.O, "check_positions", False):
+    for name in ("conveyor_speed", "traction_vertical", "traction_horizontal"):
+        if getattr(P.B, name) is not None:
+            raise ValueError(f"Metal does not support B.{name}")
+    if P.force_scale != 1:
+        raise ValueError("Metal does not support force_scale")
+    if P.O.check_positions:
         raise ValueError("Metal does not support O.check_positions")

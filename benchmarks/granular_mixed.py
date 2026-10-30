@@ -35,9 +35,8 @@ def parameters(name, method):
     if name == "refined":
         P.t_f = 0.05
     elif name.startswith("incline"):
-        P.B.has_left = P.B.has_right = False
-        P.B.cyclic_lr = P.B.roughness = True
-        P.theta = np.arctan(0.25 if name == "incline_static" else 0.75)
+        P.B.walls, P.B.periodic, P.B.wall_contact = {"bottom"}, True, "no_slip"
+        P.gravity_angle = np.arctan(0.25 if name == "incline_static" else 0.75)
         P.t_f = 0.05
     elif name == "plane_strain":
         P.granular_stress = "plane_strain"

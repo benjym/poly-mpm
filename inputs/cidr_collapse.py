@@ -23,4 +23,4 @@ class Params(CollapseParams):
         S.grain_diameter = 0.003
         S.phi_min = 0.05
         S.cidr_deficit = 0.005
-        S.cidr_p_ref = 2 * S.rho * abs(self.max_g) * 1.0
+        S.cidr_p_ref = 2 * S.rho * abs(self.gravity) * 1.0

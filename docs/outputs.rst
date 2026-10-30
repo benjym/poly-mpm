@@ -4,19 +4,20 @@ Output and Python API
 Where files go
 --------------
 
-Output paths are relative to the process's working directory. ``P.save_dir``
-overrides ``P.supername``; otherwise the default is
-``im/<example>/<first-material-law>/``. Choose a different directory for each run
+Output paths are relative to the process's working directory. ``P.output_dir``
+sets the output directory; the default is ``im/<example>/<first-material-law>/``. Choose a different directory for each run
 if you want to preserve results. Existing filenames may be overwritten.
 
 Matplotlib uses the noninteractive Agg backend, so no plot window is expected.
 Open saved PNGs in an image viewer. Simulation output is ignored by Git.
 
-Output flags
-------------
+Figures and fields
+------------------
 
-Set flags on ``P.O`` before initialisation. Missing flags default to false.
-The default adapter writes requested figures/arrays at each ``savetime`` and at
+``P.O.figures`` and ``P.O.fields`` list the figures and arrays to write, for
+example ``self.figures = {"continuum", "material_points"}``. Both default to
+empty. The other output settings are listed in :doc:`features`. The default
+adapter writes the requested figures and arrays at each ``savetime`` and at
 the end. A custom callback replaces the corresponding default stage, so some
 examples intentionally produce different output.
 
@@ -24,19 +25,21 @@ examples intentionally produce different output.
    :header-rows: 1
    :widths: 30 70
 
-   * - Flag
+   * - Setting
      - Result under the output directory
-   * - ``plot_continuum``
+   * - figure ``continuum``
      - ``Continuum/*.png``: velocity, density, pressure, shear rate, mean size.
-   * - ``plot_material_points``
+   * - figure ``material_points``
      - ``MP/*.png``: material identity, speed, pressure.
-   * - ``plot_gsd_mp`` / ``plot_gsd_grid``
+   * - figure ``gsd_material_points`` / ``gsd_grid``
      - ``GSD/*.png``: grain fractions on particles or grid.
-   * - ``save_u``
+   * - figure ``shear_rate``
+     - ``MP/gammadot_*.png``: shear rate on the particles.
+   * - field ``u``
      - ``data/u_*.npy`` and ``data/v_*.npy``, each ``(ny, nx)``.
-   * - ``save_density`` / ``save_s_bar``
+   * - field ``density`` / ``s_bar``
      - ``data/density_*.npy`` / ``data/s_bar_*.npy``, each ``(ny, nx)``.
-   * - ``save_phi_MP``
+   * - field ``phi_material_points``
      - ``data/MP_phi_*.npy``, columns ``x, y, phi_0, ..., phi_(ns-1)``.
    * - ``measure_energy``
      - Default callback records time, kinetic, potential, and the legacy strain-
@@ -44,13 +47,13 @@ examples intentionally produce different output.
    * - ``measure_stiffness``
      - Default end callback saves ``data/stiffness_material_*.npz``.
 
-With updated mechanics, ``O.save_diagnostics`` defaults to true and saves the
+``O.save_diagnostics`` defaults to true and saves the
 separate verification ledger to ``data/diagnostics.json``. See
 :doc:`numerical-foundations` for work budgets, sampling, and limitations.
 
 The legacy strain-energy estimate is not a validated stored-energy or dissipation
 budget for every nonlinear material. Likewise, the saved grid density is a
-reconstruction from nodal mass, not the physical particle density evolved through ``F`` in updated mode.
+reconstruction from nodal mass, not the physical particle density evolved through ``F``.
 
 Read a saved particle array with NumPy::
 
@@ -78,8 +81,8 @@ All callbacks receive ``(L, P, G)``:
 * ``after_every_savetime``: when a step crosses the next requested save time.
 * ``at_end``: once when the run ends, including a ``max_steps`` stop.
 
-``after_ever_timestep`` is a compatibility alias. Use the correctly spelled
-name in new code. A custom callback replaces that stage's default adapter; it
+A callback may be set on ``P.O`` as a function or defined as a method of the
+input's output class. A custom callback replaces that stage's default adapter; it
 does not automatically add default plotting or energy recording. Explicitly call
 ``plotting.Plotting`` methods if both behaviours are needed.
 
@@ -138,6 +141,6 @@ one-sided and frictional walls. A Metal restart re-uploads the host state; in th
 frictional-wall column it reproduced the uninterrupted run exactly. The file is a
 Python pickle: load only checkpoints you wrote.
 
-Diagnostics also record the selected ``mechanics``, ``interpolation``,
-``quadrature`` and ``transfer``, plus ``maximum_stencil_entries``. Finite-domain
+Diagnostics also record the selected ``interpolation``, ``quadrature`` and
+``transfer``, plus ``maximum_stencil_entries``. Finite-domain
 support varies with particle geometry; see :doc:`quadrature`.

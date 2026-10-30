@@ -8,8 +8,8 @@ class Params(ColumnParams):
     def __init__(self, args):
         super().__init__(args)
         self.G.nx = 9
-        self.G.x_M = 2.0
-        self.B.roughness = True
+        self.G.x_max = 2.0
+        self.B.wall_contact = "no_slip"
         self.t_f = 0.3
         self.savetime = 0.05
         keep = self.S.X < 0.5

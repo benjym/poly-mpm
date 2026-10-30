@@ -12,16 +12,15 @@ Run the quadratic/APIC example:
 uv run --locked python MPM.py modern_ball
 ```
 
-This uses updated mechanics, quadratic B-splines, APIC, and dynamic timestepping.
-The `ball` example uses linear interpolation and FLIP, but also uses
-updated mechanics. In a custom `Params` constructor, select:
+This uses quadratic B-splines, APIC and dynamic timestepping.
+The `ball` example uses linear interpolation and FLIP. In a custom `Params`
+constructor, select:
 
 ```python
-self.mechanics = 'updated'       # default
 self.interpolation = 'quadratic' # default: 'linear'
 self.transfer = 'apic'           # default: 'flip'; alternatives: 'pic', 'apic'
 self.time_stepping = 'dynamic'
-self.CFL = 0.15
+self.cfl = 0.15
 ```
 
 APIC is supported with quadratic interpolation and planar motion (`v_z=0`,
@@ -29,11 +28,6 @@ APIC is supported with quadratic interpolation and planar motion (`v_z=0`,
 linear APIC is avoided by rejecting that combination explicitly. For a PIC/FLIP
 blend, use `transfer='flip'` and `pic_fraction` between zero (pure FLIP, the
 default) and one (PIC). Changing transfer changes numerical dissipation.
-
-`mechanics='legacy'` is an explicit compatibility configuration with incremental
-constitutive equations, fixed volume, occupancy-based density, Lie stress
-correction, and acceleration-only FLIP. The default `updated` configuration is
-the one described below.
 
 ## Deformation and physical density
 
@@ -63,7 +57,7 @@ occupancy diagnostic. No separate porosity or critical-state dilation law is imp
 Particle quadrature samples the volumetric strain rate at every particle, which
 over-constrains nearly incompressible materials: the discrete velocity field
 cannot change volume freely, and bending is too stiff. `fbar = True` (explicit
-solver, updated mechanics, default off) replaces each particle's in-plane
+solver, default off) replaces each particle's in-plane
 volumetric rate `tr(L)` by its volume-weighted projection through the
 material's grid nodes,
 
@@ -207,7 +201,7 @@ the final grid velocity. Thus a wall's velocity projection reaches particles.
 
 Dynamic stepping additionally considers particle speed, elastic waves, viscosity,
 segregation advection/diffusion, and material-specific limits **before the first
-step** and subsequently. `CFL` scales the central estimates. Neo-Hookean waves use a deformation-dependent norm bound on the reference
+step** and subsequently. `cfl` scales the central estimates. Neo-Hookean waves use a deformation-dependent norm bound on the reference
 energy Hessian, pushed to the spatial configuration; plastic solids use their
 elastic wave estimate. These and the explicit transport estimates remain local
 restrictions, not a universal nonlinear stability proof.
@@ -229,8 +223,8 @@ The ledger records mass/species inventory, momentum, APIC angular momentum and
 represented kinetic energy, material work, stored-energy estimates, plastic and
 viscous work, external work/impulses, constraint work/impulses, numerical force
 scaling, boundary inventory/energy changes, density/J ranges, support deficiencies,
-and timestep restrictions. The legacy `damping=True` force multiplier is recorded
-as numerical force scaling, not labelled physical damping.
+and timestep restrictions. A `force_scale` other than 1 is recorded as numerical
+force scaling, not as physical damping.
 
 Energy residuals are measured, not forced to zero. They include transfer and time
 integration error. `stored_energy_exact` distinguishes the implemented elastic/

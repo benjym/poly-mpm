@@ -1,152 +1,86 @@
-import os
-from numpy import *
-import matplotlib.pyplot as plt
+"""An elastic disc intruder buried in a periodic granular layer.
+
+python MPM.py francois <grid_nodes>
+"""
+
+import numpy as np
 
 
 class Params:
     def __init__(self, args):
-        self.t = 0.0
-        self.dt = 1e-5  # timestep (s)
-        self.savetime = 0.001  # 1e1*self.dt#0.01
-        self.t_f = 10.0  # 100.0 # 3*self.dt # final time (s)
-        self.max_g = -9.81  # gravity (ms^-2)
-        self.max_v = array([0.1, 0.0, 0.0])  # maximum speed for intruder particle
-        self.update_forces()
+        self.dt = 1e-5  # (s)
+        self.savetime = 0.001  # (s)
+        self.t_f = 10.0  # (s)
+        self.gravity = -9.81  # (m/s^2)
+        self.initial_stress = "lithostatic"
         self.G = Grid_Params(args)
         self.B = Boundary_Params()
-        self.O = Output_Params()  # self.nt)
-        self.S = [Solid_Params(self.G, self)]
-        self.S.append(Intruder_Params(self.G, self))
-        self.supername = "im/francois/ny_" + str(self.G.ny) + "/"
-        self.pressure = "lithostatic"
-        print(self.supername)
-
-    def update_forces(self):
-        self.g = self.max_g
-        t_c = 0.01
-        self.intruder_v = self.max_v * (1.0 - exp(-3.0 * self.t**2 / t_c**2))
-        # self.intruder_v = self.max_v
+        self.O = Output_Params()
+        self.S = [Solid_Params(self.G, self), Intruder_Params(self.G)]
+        self.output_dir = f"im/francois/ny_{self.G.ny}/"
 
 
 class Grid_Params:
     def __init__(self, args):
-        self.x_m = 0.0  # (m)
-        self.x_M = 0.5  # (m)
-        self.y_m = 0.0  # (m)
-        self.y_M = 0.1  # (m)
+        self.x_min, self.x_max = 0.0, 0.5  # (m)
+        self.y_min, self.y_max = 0.0, 0.1  # (m)
         self.ny = int(args[1])
         self.nx = 5 * (self.ny - 1) + 1
-        self.x = linspace(self.x_m, self.x_M, self.nx)
-        self.y = linspace(self.y_m, self.y_M, self.ny)
-        self.dx = self.x[1] - self.x[0]  # grid spacing (m)
-        self.dy = self.y[1] - self.y[0]  # grid spacing (m)
-        self.R = 0.01  # radius of intruder
-        self.x_c = (self.x_m + self.x_M) / 2.0  # initial x location of intruder
-        self.y_c = (self.y_m + self.y_M - self.dy) / 2.0  # initial y location of intruder
-
-        self.top_gap = self.dy  # no material at top - HACK - NEED TO UPDATE self.y IF THIS CHANGES!!!
+        self.top_gap = (self.y_max - self.y_min) / (self.ny - 1)  # one empty cell at the top (m)
 
 
 class Boundary_Params:
     def __init__(self):
-        self.has_bottom = True
-        self.cyclic_lr = True
+        self.walls = {"bottom"}
+        self.periodic = True
+
+
+def _lattice(G, inside, pts_per_cell=3):
+    """Particles inside (or outside) the intruder, a disc of radius 0.01 m at mid-depth."""
+    dx = (G.x_max - G.x_min) / (G.nx - 1)
+    dy = (G.y_max - G.y_min) / (G.ny - 1)
+    radius, x_c, y_c = 0.01, (G.x_min + G.x_max) / 2.0, (G.y_min + G.y_max - dy) / 2.0
+    nx = (G.nx - 1) * pts_per_cell
+    ny = (G.ny - 2) * pts_per_cell
+    gap = np.array((dx, dy)) / (2 * pts_per_cell)
+    xp = np.linspace(G.x_min + gap[0], G.x_max - gap[0], nx)
+    yp = np.linspace(G.y_min + gap[1], G.y_max - gap[1] - G.top_gap, ny)
+    X, Y = np.tile(xp, ny), np.repeat(yp, nx)
+    keep = (X - x_c) ** 2 + (Y - y_c) ** 2 <= radius**2
+    if not inside:
+        keep = ~keep
+    return X[keep], Y[keep], dx * dy / pts_per_cell**2
 
 
 class Solid_Params:
     def __init__(self, G, P):
-        self.X = []
-        self.Y = []
-        self.n = 0
-        self.rho = 2700.0  # density (kg/m^3)
-        self.phi_flow = 0.6  # packing fraction
-        self.rho_s = self.rho / self.phi_flow  # solid density
-
         self.law = "pouliquen"
-        self.mu_s = tan(deg2rad(20.9))  # 0.3
-        self.mu_d = tan(deg2rad(32.76))
+        self.rho = 2700.0  # (kg/m^3)
+        self.phi_flow = 0.6  # packing fraction
+        self.rho_s = self.rho / self.phi_flow  # solid density (kg/m^3)
+        self.mu_s = np.tan(np.radians(20.9))
+        self.mu_d = np.tan(np.radians(32.76))
         self.I_0 = 0.279
-
-        self.E = 1e4
-        self.nu = 0.4  # poissons ratio
-        self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))
-        self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
-        self.eta_max = 1.0 * self.rho * sqrt(-P.max_g * (G.y_M - G.y_m) ** 3)
-
-        self.pts_per_cell = 3
-        self.x = (G.nx - 1) * self.pts_per_cell  # particles in x direction
-        self.y = (G.ny - 2) * self.pts_per_cell  # particles in y direction
-        gap = array((G.dx, G.dy)) / (2 * self.pts_per_cell)
-
-        xp = linspace(G.x_m + gap[0], G.x_M - gap[0], self.x)
-        yp = linspace(G.y_m + gap[1], G.y_M - gap[1] - G.top_gap, self.y)
-        X = tile(xp, self.y)
-        Y = repeat(yp, self.x)
-
-        for i in range(self.x * self.y):
-            if (X[i] - G.x_c) ** 2 + (Y[i] - G.y_c) ** 2 > G.R**2:
-                self.X.append(X[i])
-                self.Y.append(Y[i])
-                self.n += 1
-
-        # self.A = ((G.x_M-G.x_m)*(G.y_M-G.y_m-G.top_gap) - pi*G.R**2)/self.n # area (m^2)
-        self.A = G.dy * G.dx / self.pts_per_cell**2
+        E, nu = 1e4, 0.4  # elastic modulus (Pa) and Poisson's ratio
+        self.K = E / (3.0 * (1.0 - 2.0 * nu))  # bulk modulus (Pa)
+        self.eta_max = self.rho * np.sqrt(-P.gravity * (G.y_max - G.y_min) ** 3)
+        self.X, self.Y, self.A = _lattice(G, inside=False)
+        self.n = len(self.X)
 
 
 class Intruder_Params:
-    def __init__(self, G, P):
-        self.X = []
-        self.Y = []
-        self.n = 0
-        self.rho = 2700.0
-
+    def __init__(self, G):
         self.law = "elastic"
-        self.E = 1e4  # young's modulus (Pa)
-        self.nu = 0.4  # poisson's ratio (-)
-        self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
-        self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
-
-        self.pts_per_cell = 3
-        self.x = (G.nx - 1) * self.pts_per_cell  # particles in x direction
-        self.y = (G.ny - 2) * self.pts_per_cell  # particles in y direction
-        gap = array((G.dx, G.dy)) / (2 * self.pts_per_cell)
-
-        xp = linspace(G.x_m + gap[0], G.x_M - gap[0], self.x)
-        yp = linspace(G.y_m + gap[1], G.y_M - gap[1] - G.top_gap, self.y)
-        X = tile(xp, self.y)
-        Y = repeat(yp, self.x)
-
-        self.initial_v = P.intruder_v
-        for i in range(self.x * self.y):
-            if (X[i] - G.x_c) ** 2 + (Y[i] - G.y_c) ** 2 <= G.R**2:
-                self.X.append(X[i])
-                self.Y.append(Y[i])
-                self.n += 1
-
-        # self.A = pi*G.R**2/self.n # area (m^2)
-        self.A = G.dy * G.dx / self.pts_per_cell**2
-
-        # Advective terms
-        elastic_wave_speed = sqrt(self.K / self.rho)
-        max_speed = maximum(elastic_wave_speed, P.max_v[0])
-        distance = minimum(G.dx, G.dy)
-        critical_adv_time = distance / max_speed
-        # Diffusive terms
-        critical_diff_time = distance**2 / P.S[0].eta_max
-
-        critical_time = minimum(critical_adv_time, critical_diff_time)
-        CFL = critical_time / P.dt
-
-        if CFL < 2:
-            print("WARNING: STABILITY IS GUARANTEED TO BE POOR")
-            print(critical_adv_time)
-            print(critical_diff_time)
-        print("Current CFL: " + str(CFL))
+        self.rho = 2700.0  # (kg/m^3)
+        E, nu = 1e4, 0.4  # elastic modulus (Pa) and Poisson's ratio
+        self.K = E / (3.0 * (1.0 - 2.0 * nu))  # bulk modulus (Pa)
+        self.G = E / (2.0 * (1.0 + nu))  # shear modulus (Pa)
+        self.X, self.Y, self.A = _lattice(G, inside=True)
+        self.n = len(self.X)
 
 
 class Output_Params:
     def __init__(self):
-        self.plot_continuum = True
-        # self.plot_material_points = True
+        self.figures = {"continuum"}
         self.continuum_fig_size = [22, 4]
         self.mp_fig_size = [6, 6]

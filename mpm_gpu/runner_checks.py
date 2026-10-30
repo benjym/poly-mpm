@@ -130,7 +130,7 @@ def frozen_residual_check(rt, kind):
 
 
 def _incline(slope, **options):
-    state = _column(theta=np.arctan(slope), t_f=0.05, **options)
+    state = _column(gravity_angle=np.arctan(slope), t_f=0.05, **options)
     P, G, L = state
     P.B.cyclic_lr = P.B.roughness = True
     G.boundary_v[:] = False
@@ -188,7 +188,7 @@ def freefall_check(rt):
     """Low packing without walls: stress free and exactly ballistic."""
     from MPM import step
 
-    P, G, L = _column(dt=0.005, max_g=-2.0)
+    P, G, L = _column(dt=0.005, gravity=-2.0)
     P.backend = "metal"
     P.B.has_bottom = P.B.has_left = P.B.has_right = False
     G.boundary_h[:] = False
@@ -210,7 +210,7 @@ def freefall_check(rt):
 
 def lift_check(rt, kind="separable"):
     """One-sided or frictional walls: a column under upward gravity leaves the floor ballistically."""
-    cpu, metal = _pair(_column(dt=0.005, t_f=0.05, max_g=2.0))
+    cpu, metal = _pair(_column(dt=0.005, t_f=0.05, gravity=2.0))
     for P, G, L in (cpu, metal):
         if kind == "separable":
             P.B.separable = True
@@ -239,7 +239,7 @@ def lift_check(rt, kind="separable"):
 def wall_slide_check(rt, wall_mu):
     """Frictional floor: a periodic layer on tan(theta) = 0.4 with internal mu = 0.5 slides
     as a block at g (sin - wall_mu cos) t when wall_mu < 0.4 and otherwise rests."""
-    state = _column(dt=0.005, t_f=0.05, theta=np.arctan(0.4))
+    state = _column(dt=0.005, t_f=0.05, gravity_angle=np.arctan(0.4))
     P, G, L = state
     P.B.wall_mu, P.B.cyclic_lr = wall_mu, True
     P.B.has_left = P.B.has_right = False
@@ -280,11 +280,16 @@ def _silo(inlet):
         dt=0.005,
         t_f=0.3,
         savetime=0.1,
-        max_g=-9.81,
-        save_dir="im/metal_silo/",
+        gravity=-9.81,
+        output_dir="im/metal_silo/",
         # Ten nodes keep the top inlet at x = 0.5 off a node line.
-        G=NS(nx=10, ny=11, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0),
-        B=NS(has_left=True, has_right=True, silo_bottom=True, outlet_bottom=True, inlet_top=inlet),
+        G=NS(nx=10, ny=11, x_min=0.0, x_max=1.0, y_min=0.0, y_max=1.0),
+        B=NS(
+            walls={"left", "right"},
+            obstacles={"silo_bottom"},
+            outlets={"bottom"},
+            inlets={"top"} if inlet else (),
+        ),
         O=NS(),
     )
     P.S = NS(
@@ -299,7 +304,7 @@ def _silo(inlet):
         mu_s=0.5,
     )
     if inlet:
-        P.S.inlet_rate, P.S.gap = 0.02, (0.025, 0.025)
+        P.S.inlet_rate, P.S.inlet_gap = 0.02, (0.025, 0.025)
     return prepare(P)
 
 
@@ -358,7 +363,7 @@ def collapse_check(rt, transfer="flip", pic_fraction=0.0, *, dynamic=False, sepa
     """Column collapse: positions, runout and overpacking against the CPU at the same tolerance."""
     options = dict(dt=0.005, transfer=transfer, pic_fraction=pic_fraction)
     if dynamic:
-        options.update(time_stepping="dynamic", CFL=0.1)
+        options.update(time_stepping="dynamic", cfl=0.1)
     state = _collapse(**options)
     state[0].B.separable = separable
     state[0].B.wall_mu = wall_mu
@@ -413,8 +418,8 @@ def scale_check(rt, spacing=0.05, particle_spacing=0.0125, steps=3):
     P = Params([])
     P.granular_solver, P.granular_tolerance, P.diagnostics = "velocity", TOLERANCE, True
     P.granular_max_nodes, P.granular_max_iterations, P.dt = 10**7, 2000, 0.002
-    P.G.nx = round((P.G.x_M - P.G.x_m) / spacing) + 1
-    P.G.ny = round((P.G.y_M - P.G.y_m) / spacing) + 1
+    P.G.nx = round((P.G.x_max - P.G.x_min) / spacing) + 1
+    P.G.ny = round((P.G.y_max - P.G.y_min) / spacing) + 1
     x, y = np.meshgrid(
         np.arange(particle_spacing / 2, 0.5, particle_spacing),
         np.arange(particle_spacing / 2, 1.0, particle_spacing),
@@ -474,16 +479,16 @@ def segregation_check(rt, kind, sizes=(0.001, 0.003), normalise=False):
         from inputs.granular_column import Params
 
         P = Params([])
-        P.theta, P.t_f, c = np.arctan(0.75), 0.2, 1e-2
+        P.gravity_angle, P.t_f, c = np.arctan(0.75), 0.2, 1e-2
     else:
         from inputs.granular_collapse import Params
 
         P = Params([])
         P.dt, P.t_f, c = 0.005, 0.15, 1e-1
     P.granular_solver, P.granular_tolerance, P.diagnostics = "velocity", TOLERANCE, True
-    P.G.ns, P.G.s = ns, list(sizes)
+    P.G.grain_sizes = list(sizes)
     P.S.phi = np.tile(np.full(ns, 1.0 / ns), (P.S.n, 1))
-    P.segregate, P.c, P.normalise_phi = True, c, normalise
+    P.segregate, P.segregation_rate, P.segregation_normalise = True, c, normalise
     state = prepare(P)
     P, G, L = state
     if kind == "incline":

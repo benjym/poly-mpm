@@ -8,9 +8,9 @@ from initialise import prepare
 from MPM import run
 
 
-@pytest.mark.parametrize("mode", [None, "lithostatic", "compression", "non-zero", "temperature"])
+@pytest.mark.parametrize("mode", [None, "lithostatic", "compression"])
 def test_pressure_initialisation(mode):
-    P, G, L = state(pressure=mode, initial_pressure=7.0, max_g=-10.0)
+    P, G, L = state(initial_stress=mode, initial_pressure=7.0, gravity=-10.0)
     b = L.materials[0]
     assert_allclose(b.pressure, np.trace(b.stress, axis1=1, axis2=2) / 3)
     assert_allclose(b.dev_stress, b.stress - b.pressure[:, None, None] * np.eye(3))
@@ -30,7 +30,9 @@ def test_pressure_initialisation(mode):
 
 @pytest.mark.parametrize("law", ["viscous", "pouliquen"])
 def test_steady_flow_initialisation(law):
-    P, G, L = state(law, pressure="lithostatic", initial_flow="steady", max_g=-10.0, theta=0.5)
+    P, G, L = state(
+        law, initial_stress="lithostatic", initial_flow="steady", gravity=-10.0, gravity_angle=0.5
+    )
     b = L.materials[0]
     assert np.isfinite(b.v).all() and np.isfinite(b.pk).all()
     assert np.any(b.v[:, 0] != 0)
@@ -40,20 +42,14 @@ def test_steady_flow_initialisation(law):
 def test_poiseuille_initialisation():
     P, G, L = state(
         "pouliquen",
-        initial_flow="steady_poiseulle",
-        max_g=-0.01,
-        pressure="compression",
+        initial_flow="steady_poiseuille",
+        gravity=-0.01,
+        initial_stress="compression",
         initial_pressure=100.0,
     )
     b = L.materials[0]
     assert np.isfinite(b.v).all()
     assert np.any(b.v[:, 0] != 0)
-
-
-def test_aliases_and_conflicting_segregation_flags():
-    assert state(segregate_grid=True)[0].segregate
-    with pytest.raises(ValueError, match="disagree"):
-        state(segregate=True, segregate_grid=False)
 
 
 def test_dynamic_limit_across_materials():
@@ -62,7 +58,7 @@ def test_dynamic_limit_across_materials():
     materials[1].critical_time = lambda P: 0.0001
     P, G, L = state(materials=materials)
     P.update_timestep(P, G)
-    assert_allclose(P.dt, P.CFL * 0.0001)
+    assert_allclose(P.dt, P.cfl * 0.0001)
 
 
 def test_final_time_no_extra_step_or_overshoot():
@@ -83,28 +79,20 @@ def test_prescribed_particle_velocities_survive_removal():
 
 
 def test_inlet_initialises_fresh_stress_history():
-    P, G, L = state()
+    S = material(inlet_rate=0.1, inlet_gap=[0.01, 0.01], inlet_y=[0.2])
+    P, G, L = state(materials=S, B=NS(inlets={"right"}))
     b = L.materials[0]
     b.stress[:] = 999
-    template = L.templates[0]
-    template.inlet_rate, template.gap, template.yp = 0.1, [0.01, 0.01], [0.2]
-    P.B.inlet_right, P.t = True, 0.1
+    P.t = 0.1
     L.process_boundaries(P, G)
     assert_allclose(b.stress[-1], 0)
     assert_allclose(b.x[-1], [0.99, 0.2, 0])
 
 
 def test_grid_traction_and_conveyor():
-    P, G, L = state(B=NS(vertical_force=True, horizontal_force=True, conveyor=True), max_q=4.0)
+    P, G, L = state(B=NS(traction_vertical=4.0, traction_horizontal=4.0, conveyor_speed=0.25))
     G.m[:] = 2
     G.BCs(P)
     assert_allclose(G.fe[0, :2], [2 * 4 * 2 / 1000 / G.dx, 2 * 4 * 2 / 1000 / G.dy])
-    P.v_0 = 0.25
     G.update_momentum(P)
     assert_allclose(G.q[G.boundary_conveyor, 0], 0.5)
-
-
-def test_declared_grain_bounds_are_preserved():
-    grid = NS(nx=5, ny=5, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0, ns=2, s=[0.002, 0.003], s_m=0.001, s_M=0.004)
-    P, G, L = state(ns=2, G=grid)
-    assert P.G.s_m == 0.001 and P.G.s_M == 0.004

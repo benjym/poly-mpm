@@ -18,8 +18,8 @@ def test_p0_assembly_matches_independent_particle_sum_and_compact_operator(stres
     P = parameters("static", "velocity")
     P.granular_stress_basis, P.granular_stress = "P0", stress
     if periodic:
-        P.B.has_left = P.B.has_right = False
-        P.B.cyclic_lr = True
+        P.B.walls = set(P.B.walls) - {"left", "right"}
+        P.B.periodic = True
     P, G, L = prepare(P)
     b = L.materials[0]
     b.x[:, :2] += np.random.default_rng(9).uniform(-0.01, 0.01, (len(b), 2))
@@ -32,8 +32,8 @@ def test_p0_assembly_matches_independent_particle_sum_and_compact_operator(stres
         assert_allclose(actual, expected, atol=0, rtol=0)
     expected = np.zeros(B.shape)
     for p in range(len(b)):
-        ix = min(int((b.x[p, 0] - P.G.x_m) / G.dx), P.G.nx - 2)
-        iy = min(int((b.x[p, 1] - P.G.y_m) / G.dy), P.G.ny - 2)
+        ix = min(int((b.x[p, 0] - P.G.x_min) / G.dx), P.G.nx - 2)
+        iy = min(int((b.x[p, 1] - P.G.y_min) / G.dy), P.G.ny - 2)
         row = int(np.flatnonzero(active == ix + (P.G.nx - 1) * iy)[0])
         for j, node in enumerate(b.n[p]):
             if periodic and node % P.G.nx == P.G.nx - 1:
@@ -75,9 +75,9 @@ def test_p0_integrates_affine_velocity_gradient_and_preserves_grain_volume():
 @pytest.mark.parametrize("periodic", [False, True])
 def test_cell_ownership_at_upper_edge_and_periodic_seam(periodic):
     P = parameters("static", "velocity")
-    P.B.cyclic_lr = periodic
+    P.B.periodic = periodic
     P, G, _ = prepare(P)
-    points = np.array([[P.G.x_m, P.G.y_m, 0], [P.G.x_M, P.G.y_M, 0]])
+    points = np.array([[P.G.x_min, P.G.y_min, 0], [P.G.x_max, P.G.y_max, 0]])
     expected_last = (P.G.nx - 1) * (P.G.ny - 2) + (0 if periodic else P.G.nx - 2)
     assert_allclose(cell_indices(P, G, points), [0, expected_last], atol=0)
 
@@ -116,9 +116,9 @@ def test_p0_evolving_collapse_matches_assembled_solver(stress):
 def test_p0_periodic_segregation_conserves_species():
     P = parameters("incline_static", "velocity")
     P.granular_stress_basis = "P0"
-    P.G.ns, P.G.s = 2, [0.001, 0.003]
+    P.G.grain_sizes = [0.001, 0.003]
     P.S.phi = np.tile([0.25, 0.75], (P.S.n, 1))
-    P.segregate, P.c = True, 1e-4
+    P.segregate, P.segregation_rate = True, 1e-4
     P, G, L = prepare(P)
     b = L.materials[0]
     before = (b.m[:, None] * b.phi).sum(axis=0)
@@ -132,7 +132,7 @@ def test_p0_preserves_plot_formats_and_save_cadence(tmp_path):
     P = parameters("static", "velocity")
     P.granular_stress_basis = "P0"
     P.dt, P.t_f, P.savetime = 0.005, 0.02, 0.01
-    P.save_dir = str(tmp_path)
+    P.output_dir = str(tmp_path)
     P, G, L = prepare(P)
     run(P, G, L)
     # Saves at .01 and .02, followed by the existing at_end output callback.

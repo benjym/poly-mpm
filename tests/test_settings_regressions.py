@@ -17,19 +17,24 @@ def _parameters(args):
 
 
 def test_traction_ramp_starts_from_zero():
-    # Inputs ramp q_v and q_h in update_forces; they once ramped an unread P.q, so the
-    # boundary load stayed at max_q from the first step.
+    # Inputs once ramped an unread P.q, so the boundary load stayed at its maximum from
+    # the first step. B.traction_vertical is now evaluated at P.t each step.
     P, G, L = _parameters(["triaxial"])
-    assert P.B.vertical_force and P.max_q > 0
+    assert P.B.vertical_force
     assert P.q_v == 0.0
     run(P, G, L, max_steps=3, output=False)
-    assert 0 < P.q_v < P.max_q
+    assert 0 < P.q_v < 200.0
+    # Forces are evaluated at the start of each step.
+    assert np.isclose(P.q_v, P.B.traction_vertical(P.t - P.dt), rtol=1e-12)
 
 
-@pytest.mark.parametrize("roughness", [False, True])
-def test_explicit_wall_friction_acts_without_roughness(roughness):
-    P, G, L = _parameters(["ball"])
-    P.B.wall_mu, P.B.roughness = 0.3, roughness
+def test_coulomb_wall_friction_acts():
+    from inputs.ball import Params
+    from initialise import prepare
+
+    P = Params(["ball"])
+    P.B.wall_contact, P.B.wall_friction = "coulomb", 0.3
+    P, G, L = prepare(P)
     bottom = np.arange(1, P.G.nx - 1)
     G.m[:] = 1.0
     G.q[:] = 0.0

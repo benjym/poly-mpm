@@ -39,10 +39,13 @@ def strip(
     square=False,
     quadrature="point",
     gravity=0.0,
-    pressure=None,
+    initial_stress=None,
     speed=0.0,
+    prepared=True,
 ):
-    """Uniform midpoint quadrature, periodic x and slip/impermeable y walls."""
+    """Uniform midpoint quadrature, periodic x and slip/impermeable y walls.
+
+    prepared=False returns the parameters before initialise.prepare."""
     nx, ny = (4, cells) if vertical else (cells, 2)
     height = 1.0 if vertical or square else height
     if square:
@@ -67,18 +70,18 @@ def strip(
         t_f=final_time,
         savetime=1.0,
         S=S,
-        max_g=gravity,
-        pressure=pressure,
+        gravity=gravity,
+        initial_stress=initial_stress,
         interpolation=basis,
         transfer=transfer,
         quadrature=quadrature,
-        CFL=0.5,
+        cfl=0.5,
         timestep_policy="enforce",
-        G=NS(nx=nx + 1, ny=ny + 1, x_m=0.0, x_M=1.0, y_m=0.0, y_M=height),
-        B=NS(cyclic_lr=True, has_bottom=True, has_top=not vertical),
+        G=NS(nx=nx + 1, ny=ny + 1, x_min=0.0, x_max=1.0, y_min=0.0, y_max=height),
+        B=NS(periodic=True, walls={"bottom"} if vertical else {"bottom", "top"}),
         O=NS(),
     )
-    return prepare(P)
+    return prepare(P) if prepared else P
 
 
 def _fields(b):
@@ -126,7 +129,7 @@ def hydrostatic(
         quadrature=quadrature,
         vertical=True,
         gravity=-1.0,
-        pressure="lithostatic",
+        initial_stress="lithostatic",
     )
     b = L.materials[0]
     expected_stress = b.stress.copy()
@@ -410,7 +413,7 @@ def force_balance(
     if quadrature == "gauss" and integration != "point":
         raise ValueError("Gaussian control uses point integration, not finite particle domains")
     hydro = case == "hydrostatic"
-    P, G, L = strip(
+    P = strip(
         cells,
         256,
         0.25,
@@ -421,7 +424,8 @@ def force_balance(
         vertical=hydro,
         square=case == "translated_stress",
         gravity=-1.0 if hydro else 0.0,
-        pressure="lithostatic" if hydro else None,
+        initial_stress="lithostatic" if hydro else None,
+        prepared=False,
     )
     if quadrature not in ("midpoint", "gauss"):
         raise ValueError(f"Unknown quadrature: {quadrature}")
@@ -436,7 +440,7 @@ def force_balance(
             )
 
         gx, wx = axis(P.G.nx, 1.0)
-        gy, wy = axis(P.G.ny, P.G.y_M)
+        gy, wy = axis(P.G.ny, P.G.y_max)
         xx, yy = np.meshgrid(gx, gy)
         volume = (wy[:, None] * wx).ravel()
         reference = xx.ravel().copy()
@@ -446,11 +450,11 @@ def force_balance(
                     1 + 0.4 * np.cos(2 * np.pi * reference)
                 )
             volume /= 1 + 0.4 * np.cos(2 * np.pi * reference)
-        P.S[0].n = xx.size
-        P.S[0].X, P.S[0].Y, P.S[0].A = xx.ravel(), yy.ravel(), volume
-        P, G, L = prepare(P)
-        if case == "large_deformation":
-            L.materials[0].x0[:, 0] = reference
+        P.S.n = xx.size
+        P.S.X, P.S.Y, P.S.A = xx.ravel(), yy.ravel(), volume
+    P, G, L = prepare(P)
+    if quadrature == "gauss" and case == "large_deformation":
+        L.materials[0].x0[:, 0] = reference
     b = L.materials[0]
     acceleration = np.zeros_like(b.v)
     body = np.zeros_like(b.v)

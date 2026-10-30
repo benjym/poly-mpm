@@ -29,13 +29,15 @@ class Beam:
         self.dt = 1.0
         self.t_f = 1.0
         self.savetime = 1.0
-        self.max_g = GRAVITY
-        self.save_dir = "im/locking_cantilever/"
+        self.gravity = GRAVITY
+        self.output_dir = "im/locking_cantilever/"
         self.time_stepping = "static"
         nx = int(round(1.25 / spacing)) + 1
         ny = int(round(0.5 / spacing)) + 1
-        self.G = NS(nx=nx, ny=ny, x_m=0.0, x_M=(nx - 1) * spacing, y_m=0.25, y_M=0.25 + (ny - 1) * spacing)
-        self.B = NS(has_left=True, roughness=True)
+        self.G = NS(
+            nx=nx, ny=ny, x_min=0.0, x_max=(nx - 1) * spacing, y_min=0.25, y_max=0.25 + (ny - 1) * spacing
+        )
+        self.B = NS(walls={"left"}, wall_contact="no_slip")
         self.O = NS()
         quarter = spacing / 4
         xs = np.arange(quarter, LENGTH, spacing / 2)

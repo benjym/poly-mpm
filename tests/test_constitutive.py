@@ -7,6 +7,7 @@ from numpy.testing import assert_allclose
 from conftest import material, state
 from constit import EYE, RETIRED, update_stress
 from MPM import run
+from settings import MATERIAL_FIELDS
 from initialise import get_parameters
 
 NEW = ("bingham", "linear_mu", "dp", "dp_rate")
@@ -18,6 +19,7 @@ def sample(name, n=4, **overrides):
     )
     if name == "linear_mu":
         data["mu_s"] = 0.3
+    data = {key: value for key, value in data.items() if key in MATERIAL_FIELDS[name]}
     data.update(overrides)
     P, G, L = state(materials=material(name, n=n, **data), dt=0.1)
     return P, G, L, L.materials[0]
@@ -310,18 +312,19 @@ def test_dp_examples_write_array_histories(example, tmp_path):
 
 
 @pytest.mark.parametrize("name", ["viscous", "pouliquen", "bingham", "linear_mu"])
-@pytest.mark.parametrize("mode", ["compression", "lithostatic", "non-zero", "temperature"])
+@pytest.mark.parametrize("mode", ["compression", "lithostatic"])
 def test_fluid_initialisation_needs_no_elastic_shear_modulus(name, mode):
-    # The test material fixture normally contains G, unlike real Bingham inputs.
-    P, _, _, b = sample(name)
-    S = deepcopy(b.material)
-    del S.G
+    # These laws read no shear modulus G, so material() leaves it out.
+    data = dict(yield_stress=2.0, eta_0=100.0, b=0.4, eta_max=1e6)
+    data = {key: value for key, value in data.items() if key in MATERIAL_FIELDS[name]}
     # Keep all nonzero stress-gradient nodes mass-supported; this test targets
     # fluid initialisation, not a particle exactly on an empty cell edge.
+    S = material(name, **data)
+    assert not hasattr(S, "G")
     S.Y = S.Y + 0.01
     for K in (0.0, 100.0):
         S.K = K
-        P, G, L = state(materials=S, pressure=mode, initial_pressure=10.0, max_g=-1.0)
+        P, G, L = state(materials=deepcopy(S), initial_stress=mode, initial_pressure=10.0, gravity=-1.0)
         L.materials[0].check_finite(P)
         if mode == "compression":
             assert_allclose(L.materials[0].p, 10.0)

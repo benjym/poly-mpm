@@ -37,7 +37,7 @@ def test_coarse_basis_partition_volumes_and_adjoint(periodic):
     b = start(P, G, L)
     nodes, weights = coarse_stencil(P, G, b.x)
     assert_allclose(weights.sum(axis=1), 1, atol=1e-15)
-    area = (P.G.x_M - P.G.x_m) * (P.G.y_M - P.G.y_m) * P.G.thickness
+    area = (P.G.x_max - P.G.x_min) * (P.G.y_max - P.G.y_min) * P.G.thickness
     assert_allclose(coarse_volumes(P, G).sum(), area, rtol=1e-14)
     compact, _, active, occupied, gap = assemble(P, G, b, compact=True)
     assembled, *_ = assemble(P, G, b, compact=False)

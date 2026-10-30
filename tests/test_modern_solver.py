@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 from scipy.linalg import expm
-from conftest import state, material
+from conftest import grid, material, state
 from constit import update_stress, EYE
 from kinematics import advance
 from interpolation import stencil, moment, affine_matrix
@@ -144,7 +144,9 @@ def test_elastic_energy_derivative_matches_first_piola_stress():
 def test_viscous_and_zero_yield_bingham_agree_and_dissipate():
     outcomes = []
     for name in ("viscous", "bingham"):
-        P, G, L, b = mapped(materials=material(name, yield_stress=0.0, eta_0=100.0))
+        P, G, L, b = mapped(
+            materials=material(name, **(dict(yield_stress=0.0, eta_0=100.0) if name == "bingham" else {}))
+        )
         b.L[:] = [[-0.2, 1.0, 0], [0.2, -0.1, 0], [0, 0, 0]]
         b.dstrain = 0.5 * (b.L + b.L_T) * P.dt
         advance(b, P)
@@ -261,7 +263,7 @@ def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic, qu
         quadrature=quadrature,
         ns=3,
         segregate=True,
-        c=1e-3,
+        segregation_rate=1e-3,
         materials=material(
             "pouliquen",
             n=20,
@@ -272,9 +274,9 @@ def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic, qu
             initial_v=np.column_stack((0.1 * xy[:, 1], np.zeros((20, 2)))),
             initial_C=[[0, 0.1, 0], [0, 0, 0], [0, 0, 0]],
         ),
-        pressure="compression",
+        initial_stress="compression",
         initial_pressure=10.0,
-        B=NS(cyclic_lr=periodic),
+        B=NS(periodic=periodic),
     )
     before = (b.m[:, None] * b.phi).sum(axis=0)
     initial_phi = b.phi.copy()
@@ -287,7 +289,7 @@ def test_new_stencil_transport_preserves_species_and_mass(transfer, periodic, qu
 
 
 def test_uniform_acceleration_diagnostics_account_for_work_and_impulse():
-    P, G, L, b = mapped(interpolation="quadratic", transfer="apic", max_g=-2.0)
+    P, G, L, b = mapped(interpolation="quadratic", transfer="apic", gravity=-2.0)
     initial = inventory(P, L)
     run(P, G, L, max_steps=20, output=False)
     row = L.diagnostics.history[-1]
@@ -338,7 +340,7 @@ def test_standing_wave_refinement_and_transfer_dissipation():
 
 def test_energy_and_impulse_ledger_tracks_fixed_wall_constraint():
     P, G, L, b = mapped(
-        materials=material(n=1, X=[0.4], Y=[0.0], initial_v=[0.0, -1.0, 0.0]), B=NS(has_bottom=True)
+        materials=material(n=1, X=[0.4], Y=[0.0], initial_v=[0.0, -1.0, 0.0]), B=NS(walls={"bottom"})
     )
     run(P, G, L, max_steps=1, output=False)
     row = L.diagnostics.history[-1]
@@ -348,7 +350,7 @@ def test_energy_and_impulse_ledger_tracks_fixed_wall_constraint():
 
 
 def test_diagnostics_json_and_sampling(tmp_path):
-    P, G, L = state(save_dir=str(tmp_path), diagnostics_stride=2)
+    P, G, L = state(output_dir=str(tmp_path), diagnostics_stride=2)
     run(P, G, L, max_steps=3)
     import json
 
@@ -372,7 +374,7 @@ def test_boundary_injection_initialises_deformation_and_affine_history():
     b.F[:] = 2 * EYE
     b.affine_momentum[:] = 0.1
     template = L.templates[0]
-    template.inlet_rate, template.gap, template.yp = 0.1, [0.01, 0.01], [0.2]
+    template.inlet_rate, template.inlet_gap, template.inlet_y = 0.1, [0.01, 0.01], [0.2]
     P.B.inlet_right, P.t = True, 0.1
     L.process_boundaries(P, G)
     assert_allclose(b.F[-1], EYE)
@@ -428,7 +430,7 @@ def test_translation_at_sparse_corner_does_not_generate_strain(basis, transfer):
 def test_quadratic_completeness_on_small_grids(nodes):
     P, G, L, b = mapped(
         interpolation="quadratic",
-        G=NS(nx=nodes, ny=nodes, x_m=0.0, x_M=1.0, y_m=0.0, y_M=1.0, ns=1, s=[0.001]),
+        G=grid(nodes, nodes),
     )
     assert_allclose(b.N.sum(axis=1), 1)
     assert_allclose(np.einsum("nr,nri->ni", b.N, b.offsets), 0, atol=1e-14)
@@ -441,7 +443,7 @@ def test_quadratic_completeness_on_small_grids(nodes):
 
 def test_stressed_particle_cannot_discard_massless_support_forces():
     P, G, L, b = mapped(
-        materials=material(n=1, X=[0.0], Y=[0.0]), pressure="compression", initial_pressure=1.0
+        materials=material(n=1, X=[0.0], Y=[0.0]), initial_stress="compression", initial_pressure=1.0
     )
     with pytest.raises(FloatingPointError, match="massless grid support"):
         step(P, G, L)

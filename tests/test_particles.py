@@ -104,18 +104,19 @@ def test_domain_edges_and_periodic_multiple_crossings(basic):
     b.x[0, 0] = -0.001
     with pytest.raises(ValueError, match="outside domain"):
         b.get_reference_nodes(P, G)
-    P.B.cyclic_lr = True
+    P, G, L = state(B=NS(periodic=True))
+    b = L.materials[0]
     b.x[:, 0] = [-3.1, 4.2, 1, 0]
     b.get_reference_nodes(P, G)
     assert_allclose(b.x[:, 0], [0.9, 0.2, 0, 0])
 
 
 def test_periodic_mass_validity_after_merge():
-    P, G, L = state(materials=material(n=1, X=[0.99], Y=[0.3]), B=NS(cyclic_lr=True))
+    P, G, L = state(materials=material(n=1, X=[0.99], Y=[0.3]), B=NS(periodic=True))
     mapping(P, G, L)
     L.get_nodal_mass_momentum(P, G)
     assert_allclose(G.m[:: P.G.nx], G.m[P.G.nx - 1 :: P.G.nx])
-    assert np.array_equal(G.valid_nodes, G.m > P.M_tol)
+    assert np.array_equal(G.valid_nodes, G.m > P.mass_tolerance)
     # Duplicated seam endpoints count once in physical totals.
     mass = G.m.reshape(P.G.ny, P.G.nx)
     assert_allclose(mass[:, :-1].sum(), L.materials[0].m.sum())
@@ -182,26 +183,21 @@ def test_remove_and_append_all_fields(basic):
     mapping(P, G, L)
 
 
-def test_outlet_and_inlet(basic):
-    P, G, L = basic
+def test_outlet_and_inlet():
+    S = material(inlet_rate=0.1, inlet_gap=[0.01, 0.01], inlet_y=[0.2, 0.4])
+    P, G, L = state(materials=S, B=NS(outlets={"bottom"}, inlets={"right"}))
     b = L.materials[0]
-    P.B.outlet_bottom = True
     b.x[:2, 1] = -0.1
     L.process_boundaries(P, G)
     assert len(b) == 2
-    template = L.templates[0]
-    template.inlet_rate, template.gap, template.yp = 0.1, [0.01, 0.01], [0.2, 0.4]
-    P.B.inlet_right, P.t = True, 0.1
+    P.t = 0.1
     L.process_boundaries(P, G)
     assert len(b) == 4
     assert_allclose(b.x[-2:, :2], [[0.99, 0.2], [0.99, 0.4]])
 
 
-def test_friction_boundaries_use_masks_without_mutation(basic):
-    P, G, L = basic
-    P.B.has_bottom = P.B.has_left = P.B.roughness = True
-    P.B.wall_mu = 0.5
-    G.boundary(P)
+def test_friction_boundaries_use_masks_without_mutation():
+    P, G, L = state(B=NS(walls={"bottom", "left"}, wall_contact="coulomb", wall_friction=0.5))
     before = G.boundary_h.copy()
     G.fe[1] = [10, -4, 0]
     G.fe[P.G.nx + 1] = [10, -4, 0]
@@ -219,10 +215,10 @@ def test_dynamic_timestep_and_callback_alias(basic):
     G.m[:] = 1
     G.q[:, 0] = 2
     P.update_timestep(P, G)
-    assert_allclose(P.dt, P.CFL * 0.1 * min(G.dx, G.dy) / 2)
+    assert_allclose(P.dt, P.cfl * 0.1 * min(G.dx, G.dy) / 2)
     P.S.append(NS(critical_time=lambda P: 1e-7))
     P.update_timestep(P, G)
-    assert_allclose(P.dt, P.CFL * 1e-7)
+    assert_allclose(P.dt, P.cfl * 1e-7)
 
 
 def test_bad_timestep_and_finite_error_context(basic):

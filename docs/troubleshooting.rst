@@ -37,6 +37,15 @@ An example reports a usage error
     its grid node count: use ``silo 11``; its two size classes are fixed, and the
     formerly documented trailing ``2`` was ignored.
 
+``unknown setting``
+    Each name an input sets on ``P``, ``P.G``, ``P.B``, ``P.O`` or a material must
+    be a setting listed in :doc:`features`; the error names the closest setting
+    when the name looks like a misspelling. Keep helper values as local variables
+    or give them names that start with an underscore. The error ``... is required``
+    names a setting with no default, and an input that defines ``update_forces`` is
+    rejected: use ``gravity_ramp``, ``gravity_angle`` and ``B.traction_vertical``
+    or ``B.traction_horizontal``, which may be functions of time.
+
 ``Unsupported material law``
     Check the exact registry name and :doc:`constitutive-models`. The retired
     ``elastic_time``, ``ken_kamrin``, and ``ken_simple`` implementations are not
@@ -47,8 +56,8 @@ Output and runtime
 ------------------
 
 No plot window appears
-    Expected: figures are saved as PNGs. Check ``P.save_dir``, the output flags,
-    and whether the input replaces a default callback. ``output=False`` disables
+    Expected: figures are saved as PNGs. Check ``output_dir``, ``O.figures``,
+    ``O.fields`` and whether the input replaces a default callback. ``output=False`` disables
     all output, including custom histories.
 
 No files after a short preview
@@ -88,18 +97,17 @@ Grain fractions do not sum to one
     Initial rows must be nonnegative and sum to one. Use ``phi`` of shape
     ``(ns,)`` or ``(n, ns)``. The segregation tests conserve species mass
     without clipping or renormalisation. Investigate inventory and boundary fluxes
-    rather than enabling ``normalise_phi`` to hide drift.
+    rather than enabling ``segregation_normalise`` to hide drift.
 
 What the solver currently does
 ------------------------------
 
 This is a research solver with a regular 2D grid and explicit mechanics sharing
-one nodal momentum field. Updated mode evolves deformation/volume/density and
+one nodal momentum field. It evolves deformation, volume and density and
 supports linear/quadratic interpolation plus FLIP/PIC/APIC transfers. APIC requires
 a quadratic basis and planar motion. There is no GIMP, independent multi-body
 contact, general curved boundary or implicit/quasistatic solve.
 Rate-form plasticity is not a multiplicative finite-strain plasticity model.
-Legacy mode preserves the earlier numerical conventions explicitly.
 
 See :doc:`numerical-foundations`, :doc:`array-conversion`, :doc:`constitutive-models`,
 and :doc:`segregation-conservation` for exact scope. Smoke-tested examples, equation

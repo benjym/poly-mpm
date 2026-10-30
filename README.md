@@ -107,15 +107,14 @@ for example `silo 11`; its two grain size classes are fixed in the input.
 The solver supports `rigid`, `elastic`, `viscous`, `von_mises`, `pouliquen`,
 `bingham`, `dp`, `dp_rate`, and `linear_mu`, and the rigid-grain solver the
 `granular` law. Retired or absent laws fail explicitly.
-Geometry is 2D despite three-component vectors and 3-by-3 stress tensors. Updated
-mechanics evolves deformation, volume, and physical density. Linear/quadratic
+Geometry is 2D despite three-component vectors and 3-by-3 stress tensors. The
+solver evolves deformation, volume, and physical density. Linear/quadratic
 interpolation and FLIP/PIC/APIC transfers are selectable; `modern_ball` demonstrates
 the combined configuration. Mechanics still uses explicit stepping and shared
 nodal momentum, with no independent body contact or implicit solve; runs can be
 checkpointed and restarted (`O.save_checkpoint`). Finite-domain integration is available in source checkouts through
 `quadrature='domain'` with declared particle geometry; the published `1.0.0`
-package uses point quadrature. The explicit `mechanics='legacy'` compatibility configuration uses fixed-volume,
-incremental mechanics; the user guide describes the default configuration.
+package uses point quadrature.
 
 ## Tests and benchmarks
 

@@ -44,11 +44,17 @@ CASES = [
     (["granular_column"], dict(dt=0.005, t_f=0.2, granular_solver="velocity", granular_tolerance=1e-9)),
     (
         ["granular_column"],
-        dict(dt=0.005, t_f=0.2, max_g=2.0, granular_solver="velocity", B=dict(separable=True)),
+        dict(dt=0.005, t_f=0.2, gravity=2.0, granular_solver="velocity", B=dict(one_sided=True)),
     ),
     (
         ["granular_column"],
-        dict(dt=0.005, t_f=0.2, theta=0.3, granular_solver="velocity", B=dict(wall_mu=0.2)),
+        dict(
+            dt=0.005,
+            t_f=0.2,
+            gravity_angle=0.3,
+            granular_solver="velocity",
+            B=dict(wall_contact="coulomb", wall_friction=0.2),
+        ),
     ),
 ]
 

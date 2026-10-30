@@ -59,14 +59,14 @@ def columns(
 
     P = Params([])
     if figures is not None:
-        P.save_dir = str(figures) + "/"
-        P.O.plot_material_points = P.O.plot_continuum = True
+        P.output_dir = str(figures)
+        P.O.figures = ("material_points", "continuum")
     P.granular_solver, P.granular_tolerance, P.diagnostics = "velocity", TOLERANCE, True
     P.granular_max_nodes, P.granular_max_iterations, P.dt = 10**8, 2000, 0.002
-    P.G.x_M = count * pitch
-    P.G.y_M = 1.5 * height
-    P.G.nx = round(P.G.x_M / spacing) + 1
-    P.G.ny = round(P.G.y_M / spacing) + 1
+    P.G.x_max = count * pitch
+    P.G.y_max = 1.5 * height
+    P.G.nx = round(P.G.x_max / spacing) + 1
+    P.G.ny = round(P.G.y_max / spacing) + 1
     s = particle_spacing
     x, y = np.meshgrid(np.arange(s / 2, width, s), np.arange(s / 2, height, s))
     X = np.concatenate([x.ravel() + k * pitch for k in range(count)])
@@ -74,12 +74,12 @@ def columns(
     P.S.X, P.S.Y, P.S.n, P.S.A = X, Y, X.size, s * s
     if static:
         # Walls on both sides of a single full-width column hold it at rest.
-        P.B.has_left = P.B.has_right = True
+        P.B.walls = set(P.B.walls) | {"left", "right"}
     if solver == "cidr":
         P.granular_solver = "cidr"
         for key, value in CIDR.items():
             setattr(P.S, key, value)
-        P.S.cidr_p_ref = 2 * P.S.rho * abs(P.max_g) * height
+        P.S.cidr_p_ref = 2 * P.S.rho * abs(P.gravity) * height
     return prepare(P)
 
 

@@ -1,157 +1,97 @@
-import os
-from numpy import *
-import matplotlib.pyplot as plt
+"""A half-filled rotating circular drum of bidisperse grains, the drum wall a rigid material.
+
+python MPM.py bi_drum <grid_nodes> <Froude_number>
+"""
+
+import numpy as np
 
 
 class Params:
     def __init__(self, args):
-        self.dt = 1e-4  # timestep (s)
-        self.savetime = 1e-1  # 1e1*self.dt#0.01
-        self.t_f = 10.0  # 100.0 # 3*self.dt # final time (s)
-        self.max_g = -9.81  # gravity (ms^-2)
-        self.max_q = 0.0
-        self.theta = 0 * pi / 180.0  # slope angle (radians)
-        self.Fr = float(args[2])  # Froude number
-        self.r = 0.1  # radius of drum
+        self.dt = 1e-4  # (s)
+        self.savetime = 1e-1  # (s)
+        self.t_f = 10.0  # (s)
+        self.gravity = -9.81  # (m/s^2)
+        self._Fr = float(args[2])  # Froude number
+        self._r = 0.1  # drum radius (m)
+        self.segregate = True
+        self.segregation_rate = 1e-6  # inter-particle drag coefficient
+        self.initial_stress = "lithostatic"
         self.G = Grid_Params(self, args)
         self.B = Boundary_Params()
-        self.O = Output_Params()  # self.nt)
-        self.S = [
-            Solid_Params(self.G, self, args),
-        ]
-        self.S.append(Drum_Params(self.G, self))
-        self.segregate_grid = True
-        self.c = 1e-6  # inter-particle drag coefficient
-        self.D = 0.0  # segregation diffusion coefficient
-        self.supername = "im/drum/ny_" + str(self.G.ny) + "/"
-        self.pressure = "lithostatic"
-        self.smooth_gamma_dot = False  # smooth calculation of gamma_dot
-        self.intruder_v = array([0.0, 0.0, 0.0])
-        print(self.supername)
+        self.O = Output_Params()
+        self.S = [Solid_Params(self.G, self), Drum_Params(self.G, self)]
+        self.output_dir = f"im/drum/ny_{self.G.ny}/"
 
-    def update_forces(self):
-        t_c = sqrt(4 * pi**2 * self.r / (abs(self.max_g) * self.Fr))  # rotation period
-        self.theta = (self.t / t_c) * 2.0 * pi  # slope angle (radians)
-        self.g = self.max_g
+    def gravity_angle(self, t):
+        """Gravity turns once per rotation period, which the Froude number sets."""
+        period = np.sqrt(4 * np.pi**2 * self._r / (abs(self.gravity) * self._Fr))
+        return (t / period) * 2.0 * np.pi
 
 
 class Grid_Params:
     def __init__(self, P, args):
-        self.y_m = -P.r * 1.1  # (m)
-        self.y_M = P.r * 1.1  # (m)
-        self.x_m = -P.r * 1.1  # (m)
-        self.x_M = P.r * 1.1  # (m)
+        self.x_min, self.x_max = -P._r * 1.1, P._r * 1.1  # (m)
+        self.y_min, self.y_max = -P._r * 1.1, P._r * 1.1  # (m)
         self.ny = int(args[1])
         self.nx = self.ny
-        self.x = linspace(self.x_m, self.x_M, self.nx)
-        self.y = linspace(self.y_m, self.y_M, self.ny)
-        self.dx = self.x[1] - self.x[0]  # grid spacing (m)
-        self.dy = self.y[1] - self.y[0]  # grid spacing (m)
-        # self.s = array([0.5,1.0]) # s coordinate
-
-        self.R = 10.0  # float(args[2])
-        self.s_M = 0.003  # 3mm beads, following https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961
-        # self.s_m = 0.1
-        self.s_m = self.s_M / self.R
-        self.ns = 2
-        self.s = array([self.s_m, self.s_M])
-        # s_edges = linspace(self.s_m,self.s_M,self.ns+1)
-        # self.s = (s_edges[1:] + s_edges[:-1])/2.
-        self.ds = self.s[1] - self.s[0]
+        # 3 mm and 0.3 mm beads (https://journals.aps.org/pre/pdf/10.1103/PhysRevE.62.961).
+        self.grain_sizes = np.array([0.003 / 10.0, 0.003])  # (m)
 
 
 class Boundary_Params:
     def __init__(self):
-        pass
-        self.has_bottom = True
-        self.has_top = True
-        self.has_right = True
-        self.has_left = True
-        self.roughness = True
+        self.walls = {"bottom", "top", "left", "right"}
+        self.wall_contact = "no_slip"
+
+
+def _lattice(G, rows_below_top, pts_per_cell=3):
+    """Regular particle positions over the grid, pts_per_cell per cell in each direction."""
+    dx = (G.x_max - G.x_min) / (G.nx - 1)
+    dy = (G.y_max - G.y_min) / (G.ny - 1)
+    nx = (G.nx - 1) * pts_per_cell
+    ny = (G.ny - rows_below_top) * pts_per_cell
+    gap = np.array((dx, dy)) / (2 * pts_per_cell)
+    xp = np.linspace(G.x_min + gap[0], G.x_max - gap[0], nx)
+    yp = np.linspace(G.y_min + gap[1], G.y_max - gap[1], ny)
+    return np.tile(xp, ny), np.repeat(yp, nx), dx * dy / pts_per_cell**2
 
 
 class Solid_Params:
-    def __init__(self, G, P, args):
-        self.X = []
-        self.Y = []
-        self.n = 0
-        self.rho = 2700.0  # density (kg/m^3)
-        self.phi_flow = 0.6  # packing fraction
-        self.rho_s = self.rho / self.phi_flow  # solid density
-
+    def __init__(self, G, P):
         self.law = "pouliquen"
-        self.mu_s = tan(deg2rad(20.9))  # 0.3
-        self.mu_d = tan(deg2rad(32.76))
+        self.rho = 2700.0  # (kg/m^3)
+        self.phi_flow = 0.6  # packing fraction
+        self.rho_s = self.rho / self.phi_flow  # solid density (kg/m^3)
+        self.mu_s = np.tan(np.radians(20.9))
+        self.mu_d = np.tan(np.radians(32.76))
         self.I_0 = 0.279
-        self.eta_max = 100.0 * self.rho * sqrt(-P.max_g * (G.y_M - G.y_m) ** 3)
+        self.eta_max = 100.0 * self.rho * np.sqrt(-P.gravity * (G.y_max - G.y_min) ** 3)
+        E, nu = 1e6, 0.4  # elastic modulus (Pa) and Poisson's ratio
+        self.K = E / (3 * (1 - 2 * nu))  # bulk modulus (Pa)
 
-        self.E = 1e6
-        self.nu = 0.4  # poissons ratio
-        self.K = self.E / (3 * (1 - 2 * self.nu))
-        self.G = self.E / (2 * (1 + self.nu))
-
-        c = [0.0, 0.0]  # centre
-        fill = 0.5  # filling fraction
-
-        self.pts_per_cell = 3
-        self.x = (G.nx - 1) * self.pts_per_cell  # particles in x direction
-        self.y = (G.ny - 1) * self.pts_per_cell  # particles in y direction
-        gap = array((G.dx, G.dy)) / (2 * self.pts_per_cell)
-
-        xp = linspace(G.x_m + gap[0], G.x_M - gap[0], self.x)
-        yp = linspace(G.y_m + gap[1], G.y_M - gap[1], self.y)
-        X = tile(xp, self.y)
-        Y = repeat(yp, self.x)
-        for i in range(self.x * self.y):
-            if (X[i] - c[0]) ** 2 + (Y[i] - c[1]) ** 2 < P.r**2:
-                if ((Y[i] - c[1]) / P.r + 1.0) / 2.0 < fill:
-                    self.X.append(X[i])
-                    self.Y.append(Y[i])
-                    self.n += 1
-
-        self.A = pi * P.r**2 / self.n  # area (m^2)
+        # The lower half of the drum, centred at the origin.
+        X, Y, _ = _lattice(G, 1)
+        fill = 0.5
+        inside = (X**2 + Y**2 < P._r**2) & ((Y / P._r + 1.0) / 2.0 < fill)
+        self.X, self.Y = X[inside], Y[inside]
+        self.n = len(self.X)
+        self.A = np.pi * P._r**2 / self.n  # (m^2)
 
 
 class Drum_Params:
     def __init__(self, G, P):
-        self.X = []
-        self.Y = []
-        self.n = 0
-        self.rho = 2700.0
-
         self.law = "rigid"
-        self.E = 1e7  # young's modulus (Pa)
-        self.nu = 0.4  # poisson's ratio (-)
-        self.K = self.E / (3.0 * (1.0 - 2.0 * self.nu))  # bulk modulus (Pa)
-        self.G = self.E / (2.0 * (1.0 + self.nu))  # shear modulus (Pa)
-
-        c = [0.0, 0.0]  # centre
-
-        self.pts_per_cell = 3
-        self.x = (G.nx - 1) * self.pts_per_cell  # particles in x direction
-        self.y = (G.ny - 2) * self.pts_per_cell  # particles in y direction
-        gap = array((G.dx, G.dy)) / (2 * self.pts_per_cell)
-
-        xp = linspace(G.x_m + gap[0], G.x_M - gap[0], self.x)
-        yp = linspace(G.y_m + gap[1], G.y_M - gap[1], self.y)
-        X = tile(xp, self.y)
-        Y = repeat(yp, self.x)
-
-        for i in range(self.x * self.y):
-            if (X[i] - c[0]) ** 2 + (Y[i] - c[1]) ** 2 >= P.r**2:
-                self.X.append(X[i])
-                self.Y.append(Y[i])
-                self.n += 1
-
-        self.A = G.dy * G.dx / self.pts_per_cell**2  # FIXME
+        self.rho = 2700.0  # (kg/m^3)
+        X, Y, self.A = _lattice(G, 2)
+        outside = X**2 + Y**2 >= P._r**2
+        self.X, self.Y = X[outside], Y[outside]
+        self.n = len(self.X)
 
 
 class Output_Params:
     def __init__(self):
-        self.plot_continuum = True
-        self.plot_material_points = True
-        # self.plot_gsd_grid = True
-        self.save_s_bar = True
-        self.save_u = True
+        self.figures = {"continuum", "material_points"}
+        self.fields = {"s_bar", "u"}
         self.continuum_fig_size = [24, 8]
         self.mp_fig_size = [18, 4]

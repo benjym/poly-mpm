@@ -17,7 +17,7 @@ def frozen():
     data = json.loads((Path(__file__).parent / "fixtures/sand6_frozen.json").read_text())
     P = configuration("static", 0.005)
     P.G.nx = P.G.ny = 2
-    P.G.x_M = P.G.y_M = 1.0
+    P.G.x_max = P.G.y_max = 1.0
     P.granular_stress = "plane_strain"
     P.granular_viscosity = 0.001
     points = np.array(data["points"])
@@ -72,11 +72,11 @@ def test_source_viscosity_stage_is_dissipative_and_work_is_accounted(periodic, m
     P.granular_solver = method
     P.transfer = "apic_gradient"
     P.granular_viscosity = 10.0
-    P.max_g = 0.0
+    P.gravity = 0.0
     P.S.rho = 150.0
     if periodic:
-        P.B.has_left = P.B.has_right = False
-        P.B.cyclic_lr = True
+        P.B.walls = set(P.B.walls) - {"left", "right"}
+        P.B.periodic = True
     P.S.initial_v = np.column_stack((0.1 * np.sin(3 * P.S.Y), np.zeros(P.S.n), np.zeros(P.S.n)))
     P, G, L = prepare(P)
     step(P, G, L)

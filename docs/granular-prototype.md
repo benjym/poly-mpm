@@ -19,16 +19,16 @@ no-slip walls. Both examples use linear interpolation, point quadrature and FLIP
 transfer, with one material configured as follows:
 
 ```python
-P.solver = "granular"
-P.S.law = "granular"
-P.S.rho_s = 2500.0       # intrinsic grain density, kg/m^3
-P.S.rho = 1500.0        # initial bulk density, kg/m^3
-P.S.phi_max = 0.6
-P.S.mu_s = 0.5          # intrinsic 2D shear/pressure yield ratio
+self.solver = "granular"
+self.granular_solver = "velocity"  # Coulomb friction; the default is "cidr"
+self.S.law = "granular"
+self.S.rho_s = 2500.0  # intrinsic grain density, kg/m^3
+self.S.rho = 1500.0  # initial bulk density, kg/m^3
+self.S.phi_max = 0.6
+self.S.mu_s = 0.5  # intrinsic 2D shear/pressure yield ratio
 ```
 
-These attributes can also be supplied in an input's parameter constructor, as
-the examples do. No bulk modulus, shear modulus or viscosity cap is required.
+These lines belong in an input's `Params` constructor. No bulk modulus, shear modulus or viscosity cap is required.
 Initial bulk density must not exceed `rho_s * phi_max`.
 
 ## Discrete model
@@ -87,15 +87,15 @@ quadrature and one granular material. FLIP is the example default. PIC is
 available but showed substantial timestep-dependent damping in the collapse
 experiment. Quadratic interpolation/APIC and finite-domain quadrature are
 excluded pending a suitable mixed discretization and convergence checks.
-Fixed frictionless or no-slip walls, frictional walls (`B.wall_mu`, velocity
-solver only) and horizontal periodicity are supported; conveyors, traction
-boundary flags and damping are rejected.
+Fixed frictionless or no-slip walls, frictional walls (`B.wall_contact = "coulomb"`
+with `B.wall_friction`, velocity solver only) and horizontal periodicity are supported; conveyors, boundary
+tractions and `force_scale` other than 1 are rejected.
 
 By default a wall node has its normal velocity (and, for no-slip walls, its
 tangential velocity) set to zero in both directions. The mass mapped to wall
 nodes then cannot move away from the wall, so grains within one cell of a wall
 lag the material that is leaving it: under upward gravity a resting column
-stays partly on the floor. `B.separable = True` makes the domain edges
+stays partly on the floor. `B.one_sided = True` makes the domain edges
 one-sided. A wall node is fixed only while its velocity, after the gathered
 momentum and again after gravity, does not move it away from the wall. If the
 solve then drives a released node into its wall, the node is fixed again and
@@ -104,14 +104,14 @@ Interior walls stay two-sided. A no-slip wall still fixes the tangential
 velocity of a node that is not moving away from it, even without a normal
 load.
 
-With `B.wall_mu` set, each node on the left, right, bottom or top wall is a
+With `B.wall_contact = "coulomb"`, each node on the left, right, bottom or top wall is a
 contact row in the same complementarity problem as the grain stresses,
 instead of a fixed velocity. The row's strain-rate equivalent is
 `s (-n.u, t.u, 0)`, with outward normal `n` and tangent `t`. The grain
-contact law applies unchanged with `wall_mu` in place of `mu`: the node may
-leave the wall (`r_n w_n = 0`), sticks while `|r_t| < wall_mu r_n` and
-otherwise slides against the wall. No re-solve is needed, and `roughness`
-and `separable` do not affect these walls. The wall reaction enters the step
+contact law applies unchanged with `wall_friction` in place of `mu`: the node may
+leave the wall (`r_n w_n = 0`), sticks while `|r_t| < wall_friction r_n` and
+otherwise slides against the wall. No re-solve is needed, and `one_sided` does
+not affect these walls. The wall reaction enters the step
 as a constraint impulse, not an internal force.
 
 The scale `s = V/h` does not change the solution. `h` is half the spacing
@@ -126,10 +126,10 @@ FP64, so the scale is capped at the geometric value.
 
 Checks: a column under upward gravity leaves the floor ballistically, and a
 periodic layer on a slope `tan(theta) = 0.4` with internal `mu = 0.5` slides
-as a block at `g (sin(theta) - wall_mu cos(theta)) t` for `wall_mu = 0.2`
-and rests for `wall_mu = 0.6`, to `1e-8` at tolerance `1e-9`. The Metal
+as a block at `g (sin(theta) - wall_friction cos(theta)) t` for `wall_friction = 0.2`
+and rests for `wall_friction = 0.6`, to `1e-8` at tolerance `1e-9`. The Metal
 backend appends the wall rows to its static row topology and agrees with the
-CPU (`docs/gpu.md`). In the walled collapse with `wall_mu = 0.3` the
+CPU (`docs/gpu.md`). In the walled collapse with `wall_friction = 0.3` the
 integrated nodal overpacking reaches 0.029 on both backends, against 0.008
 with fixed walls; this has not been investigated.
 Any existing segregation operator remains separately explicit and uncalibrated

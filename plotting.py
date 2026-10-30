@@ -80,9 +80,7 @@ class Plotting:
             G.s_bar,
         )
         names = ("u", "v", "density", "pressure (tension positive)", "shear rate", "mean grain size")
-        fig, axes = self._cached_figure(
-            "continuum", P, G, (2, 3), getattr(P.O, "continuum_fig_size", (12, 7))
-        )
+        fig, axes = self._cached_figure("continuum", P, G, (2, 3), P.O.continuum_fig_size or (12, 7))
         for i, (name, data) in enumerate(zip(names, fields)):
             masked = np.ma.masked_where(~G.valid_nodes, data).reshape(P.G.ny, P.G.nx)
             if axes is not None:
@@ -99,7 +97,7 @@ class Plotting:
 
     def draw_material_points(self, L, P, G, name=None):
         x, v, pressure = values(L, "x"), values(L, "v"), values(L, "pressure")
-        fig, axes = self._cached_figure("particles", P, G, (1, 3), getattr(P.O, "mp_fig_size", (12, 4)))
+        fig, axes = self._cached_figure("particles", P, G, (1, 3), P.O.mp_fig_size or (12, 4))
         material = np.concatenate([np.full(len(b), i) for i, b in enumerate(L.materials)])
         for i, (title, data) in enumerate(
             zip(("material", "speed", "pressure"), (material, np.linalg.norm(v, axis=1), pressure))
@@ -204,24 +202,24 @@ class Plotting:
 class PQHistory:
     """Growing array histories for the Drucker-Prager loading examples."""
 
-    def __init__(self, nt=None, n=None):
-        self.time, self.p, self.q = [], [], []
+    def __init__(self):
+        self._time, self._p, self._q = [], [], []
 
     def at_start(self, L, P, G):
         Path(P.save_dir).mkdir(parents=True, exist_ok=True)
         self.after_every_timestep(L, P, G)
 
     def after_every_timestep(self, L, P, G):
-        self.time.append(P.t)
-        self.p.append(values(L, "p").copy())
-        self.q.append(values(L, "q").copy())
+        self._time.append(P.t)
+        self._p.append(values(L, "p").copy())
+        self._q.append(values(L, "q").copy())
 
     def at_end(self, L, P, G):
         directory = Path(P.save_dir) / "data"
         directory.mkdir(parents=True, exist_ok=True)
-        np.savez(directory / "pq_history.npz", time=self.time, p=self.p, q=self.q)
+        np.savez(directory / "pq_history.npz", time=self._time, p=self._p, q=self._q)
         plt.figure()
-        p, q = np.asarray(self.p), np.asarray(self.q)
+        p, q = np.asarray(self._p), np.asarray(self._q)
         plt.plot(p, q, alpha=0.5)
         limit = max(float(p.max(initial=0)), 1e-12)
         for S in P.S:
@@ -252,8 +250,6 @@ def install_callbacks(P):
         ):
             if getattr(O, flag):
                 getattr(plot, method)(L, P, G)
-        if O.plot_gsd_debug:
-            plot.draw_gsd_grid(L, P, G)
         if getattr(O, "plot_gamma_dot", False):
             plot.draw_gamma_dot(L, P, G)
 
@@ -271,8 +267,7 @@ def install_callbacks(P):
     if not hasattr(O, "at_start"):
         O.at_start = lambda L, P, G: Path(P.save_dir).mkdir(parents=True, exist_ok=True)
     if not hasattr(O, "after_every_timestep"):
-        O.after_every_timestep = getattr(O, "after_ever_timestep", each_step)
-    O.after_ever_timestep = O.after_every_timestep
+        O.after_every_timestep = each_step
     if not hasattr(O, "after_every_savetime"):
         O.after_every_savetime = default_output
     if not hasattr(O, "at_end"):

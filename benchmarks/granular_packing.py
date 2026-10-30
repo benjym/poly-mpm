@@ -23,7 +23,7 @@ from MPM import run
 def sampling(particles_per_cell):
     """Exact area-preserving affine motion, without any numerical time solver."""
     P = configuration("static", 0.005, particles_per_cell=particles_per_cell)
-    P.G.x_M, P.G.nx = 2.0, 9
+    P.G.x_max, P.G.nx = 2.0, 9
     P.S.X += 0.5
     P.S.Y += 0.25
     P, G, L = prepare(P)
@@ -56,9 +56,8 @@ def sampling(particles_per_cell):
 
 def incline(slope, method):
     P = configuration("static", 0.005, solver=method)
-    P.B.has_left = P.B.has_right = False
-    P.B.cyclic_lr = P.B.roughness = True
-    P.theta = np.arctan(slope)
+    P.B.walls, P.B.periodic, P.B.wall_contact = {"bottom"}, True, "no_slip"
+    P.gravity_angle = np.arctan(slope)
     P.t_f = 0.05
     P, G, L = prepare(P)
     start = perf_counter()
